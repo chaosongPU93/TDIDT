@@ -1,0 +1,16 @@
+project2021/
+miscellaneous/
+split_correction/
+2005/
+2004/
+2003/
+.DS_Store
+PGCtrio/
+LZBtrio/
+templates/
+testfigs/
+data-no-resp/
+*.m~
+*.asv
+_git
+

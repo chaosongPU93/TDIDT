@@ -1,0 +1,9 @@
+rads=pi/180.;
+erad=6372.028;
+lat0=48.0+26.03/60.;
+lon0=123.0+35.33/60.;
+srad=erad*cos(lat0*rads);
+lat2=48.0+26.15/60.;
+lon2=123.0+34.09/60.;
+dy=rads*(lat2-lat0)*erad
+dx=-rads*(lon2-lon0)*srad  %(minus bcause 123 is -123)

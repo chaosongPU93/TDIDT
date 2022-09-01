@@ -1,0 +1,28 @@
+This directory contains Matlab codes for deconvolution of receiver functions. Please note, that this package is a pre-release and should not be distributed further. The final codes will be distributed in the second half of 2017. The package is part of the GLImER project: "GLImER - A new global database of teleseismic receiver functions for imaging Earth structure" (Rondenay et al. 2017, SRL).
+Contact: kathrin.spieker@uni-leipzig.de
+
+1) Frequency-domain spectral division (e.g. Langston 1979)
+
+spectraldivision.m - where the regularisation parameter is set to the maximum of the pre-event noise; the user can choose the type of regularisation: adding a constant parameter ('con'), using a waterlevel ('wat') or using frequency regularisation, where the frequency values of the pre-event noise are added to the spectrum ('fqd')
+
+2) Time-domain spiking deconvolution, least-square (e.g., Abers et al. 1995, Gurrola et al. 1995)
+
+timedeco_noise.m - where the regularisation parameter is set to the maximum of the pre-event noise
+
+3) Frequency-domain multitaper deconvolution (Park & Levin 2000, Helffrich 2006)
+(the Matlab code is based on Lekic & Fischer, Contrasting lithospheric signatures across the western United States revealed by Sp receiver functions, 2013)
+
+multitaper_matlab.m - multitaper code in Matlab based on Lekic's code, extended by picking the regularisation parameter via the pre-event noise, same as in 1), the user can choose the type of regularisation: adding a constant parameter ('con') or using frequency regularisation, where the frequency values of the pre-event noise are added to the spectrum ('fqd')
+
+multitaper_weighting.m - stacking procedure, using the output of the multitaper_matlab.m code to do a frequency variance weighting explained in Park & Levin (2000), this is only useful, if there are enough traces for stacking
+
+4) Time-domain iterative deconvolution (Ligorria & Ammon 1999): iterdecon.m
+
+5) Other Matlab codes that are needed for some of the deconvolution codes:
+convol.m - Convolution
+correlat.m - Correlation
+gaussian.m - Creating a Gaussian filter of certain width
+gfilter.m - Filter using the Gaussian filter
+glev.m - Levison recursion 
+
+
