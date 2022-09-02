@@ -205,7 +205,7 @@ end
 STAort = ccstackort;
 
 %flag of normalization
-normflg = 0;
+normflg = 1;
 
 % %plot the raw templates, not filtered, not best aligned
 % figure
@@ -506,15 +506,15 @@ ihicc123 = [1,3,6,7,8,24,56,71,75,77,81,83,93,102,114,116,132,145,149,185];
 ihicc123n = intersect(inbst,ihicc123);
 
 indtest = [18,21,22,23];
-for iii = 1: length(ihicc123n)
-  [iets,i,j] = indofburst(trange,ihicc123n(iii));
+% for iii = 1: length(ihicc123n)
+%   [iets,i,j] = indofburst(trange,ihicc123n(iii));
 
-% for iets = 1: nets
+for iets = 3: nets
   % dates in each ets
   year = years(iets);
   datesets = dates(floor(dates/1000)==year);
     
-%   for i = 1: length(datesets)
+  for i = 2: length(datesets)
     
     date = datesets(i);
     jday = floor(date-year*1000);
@@ -568,7 +568,7 @@ for iii = 1: length(ihicc123n)
     
 %     keyboard
 %%
-%     for j = 35: size(rangetemp,1)  
+    for j = 14: size(rangetemp,1)  
 %       close all
       k = k+1;  
       disp(k);
@@ -736,7 +736,7 @@ for iii = 1: length(ihicc123n)
       
       %%%Is it true that the coherence between 2-3 is the highest among 3 pairs?
       %%%---Yes, for the concatenated rcc
-%       [f] = plt_rcccat(rccpaircat,sps);
+      [f] = plt_rcccat(rccpaircat,sps);
       
       %%%obtain a single best alignment based on the entire win 
       msftadd = (round(max(abs([off12ran off13ran])))+1)*sps/40;  %+1 for safety
@@ -833,8 +833,7 @@ for iii = 1: length(ihicc123n)
       %%%finalize the signal, noise, and template (Green's function)
       sigdecon = [];
       pred = [];
-      ampit = [];
-      
+      ampit = [];      
       for ista = 1:nsta
         wlet = greenf(:,ista);  %template here is best aligned, tapered, linear trend removed, filtered
         lwlet = length(wlet);
@@ -884,24 +883,24 @@ for iii = 1: length(ihicc123n)
 %       %%%plot the individually deconvolved impulses and the grouping result
 %       [f] = plt_groupimptriplets(sigdecon,impindep,stas,ircccat,rcccat);
       
-%       %note here 'impindepst' inherits the first 6 cols from 'impindep', but the last three cols 
-%       %are adjusted from arrival time difference to the true location offset accounting for the best
-%       %alignment upon each subwin that is also used in grouping!
-%       impindepst = sortrows(impindep,1);
-%       impindepst(:,7:8) = impindepst(:,7:8)+repmat([off1i(k,2) off1i(k,3)],size(impindepst,1),1); %account for prealignment
-% 
-%       %%%plot the scatter of offsets, accounting for prealignment offset, == true offset
-%       span = max(range(off1iw(:,2))+2*loff_max, range(off1iw(:,3))+2*loff_max);
-%       xran = [round(mean(minmax(off1iw(:,2)'))-span/2)-1, round(mean(minmax(off1iw(:,2)'))+span/2)+1];
-%       yran = [round(mean(minmax(off1iw(:,3)'))-span/2)-1, round(mean(minmax(off1iw(:,3)'))+span/2)+1];
-%       cran = [0 lsig];
-%       f1.fig = figure;
-%       f1.fig.Renderer = 'painters';
-%       ax1=gca;
-%       [ax1,torispl,mamp] = plt_decon_imp_scatter_ref(ax1,impindepst,xran,yran,cran,off1iw,loff_max,...
-%         sps,50,'mean','tori','comb');
-%       scatter(ax1,off1i(k,2),off1i(k,3),20,'ks','filled','MarkerEdgeColor','k');
-%       title(ax1,'Independent, grouped');
+      %note here 'impindepst' inherits the first 6 cols from 'impindep', but the last three cols 
+      %are adjusted from arrival time difference to the true location offset accounting for the best
+      %alignment upon each subwin that is also used in grouping!
+      impindepst = sortrows(impindep,1);
+      impindepst(:,7:8) = impindepst(:,7:8)+repmat([off1i(k,2) off1i(k,3)],size(impindepst,1),1); %account for prealignment
+
+      %%%plot the scatter of offsets, accounting for prealignment offset, == true offset
+      span = max(range(off1iw(:,2))+2*loff_max, range(off1iw(:,3))+2*loff_max);
+      xran = [round(mean(minmax(off1iw(:,2)'))-span/2)-1, round(mean(minmax(off1iw(:,2)'))+span/2)+1];
+      yran = [round(mean(minmax(off1iw(:,3)'))-span/2)-1, round(mean(minmax(off1iw(:,3)'))+span/2)+1];
+      cran = [0 lsig];
+      f1.fig = figure;
+      f1.fig.Renderer = 'painters';
+      ax1=gca;
+      [ax1,torispl,mamp] = plt_decon_imp_scatter_ref(ax1,impindepst,xran,yran,cran,off1iw,loff_max,...
+        sps,50,'mean','tori','comb');
+      scatter(ax1,off1i(k,2),off1i(k,3),20,'ks','filled','MarkerEdgeColor','k');
+      title(ax1,'Independent, grouped');
       
 %       %%%plot the scatter of offsets, shifted to the same origin, the best alignment
 %       xran = [-loff_max+off1i(k,2)-1 loff_max+off1i(k,2)+1];
@@ -1471,14 +1470,14 @@ for iii = 1: length(ihicc123n)
 %       [f] = plt_srcprojdist(implocst,nsep,sps,dist,dift,torisplst,ttype);
 % 
 
-%     end
+    end
     
-%   end
+  end
   
-% end
+end
 
 % close all
-end
+% end
 
 %%
 figure

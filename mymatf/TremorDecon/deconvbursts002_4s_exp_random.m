@@ -570,7 +570,7 @@ for iets = 3: nets
 %       msftadd = round(sps/8);    % maximum allowed shift between 2 traces
 
       %FLAG to simulate the behavior of noise                    
-      noiseflag = 1;
+      noiseflag = 0;
       
       if noiseflag
         %chop a record segment
@@ -627,11 +627,11 @@ for iets = 3: nets
         optcc = optseg(:,2:end);
         
       else
-        optcc = STAopt(max(floor((tstbuf+1)*sps+1),1): min(floor((tedbuf-1)*sps),86400*sps), 2:end);
+        optcc = STAopt(max(floor((tstbuf)*sps+1),1): min(floor((tedbuf)*sps),86400*sps), 2:end);
       end
 
       ccmid = ceil(size(optcc,1)/2);
-      ccwlen = round(size(optcc,1)-2*(msftadd+1));
+      ccwlen = round(size(optcc,1)-2*(msftadd+1));  % minus ensures successful shifting of records
       loffmax = 4*sps/40;
       ccmin = 0.01;  % depending on the length of trace, cc could be very low
       iup = 1;    % times of upsampling
@@ -837,7 +837,7 @@ for iets = 3: nets
       [~,rcc13] = RunningCC(sigsta(:,1), sigsta(:,3), mwlen);
       [~,rcc23] = RunningCC(sigsta(:,2), sigsta(:,3), mwlen);
       ircc = ircc-overshoot;
-%       rcc = (rcc12+rcc13+rcc23)/3;
+      rcc = (rcc12+rcc13+rcc23)/3;
       rccpair = [rcc12 rcc13 rcc23];
       sigsta = sigsta(overshoot+1:end-overshoot, :);  %excluding the overshoot
       
@@ -880,8 +880,8 @@ for iets = 3: nets
         mcc(itry,1) = (cc12+cc13+cc23)/3;
       end
 
-      [~,ind] = min([cc12 cc13 cc23]);
-      rcc = sum(rccpair(:,setdiff(1:3,ind)), 2) / 2;
+%       [~,ind] = min([cc12 cc13 cc23]);
+%       rcc = sum(rccpair(:,setdiff(1:3,ind)), 2) / 2;
 
 %       end
       

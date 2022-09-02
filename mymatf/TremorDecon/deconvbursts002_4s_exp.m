@@ -881,8 +881,7 @@ for iets = 3: nets
       sigdecon = [];
       pred = [];
       ampit = [];
-      %%
-      for ista = 3:nsta
+      for ista = 1:nsta
         wlet = greenf(:,ista);  %template here is best aligned, tapered, linear trend removed, filtered
         lwlet = length(wlet);
         sig = sigsta(:,ista); %best aligned, filtered, tapered
