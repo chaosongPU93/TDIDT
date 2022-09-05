@@ -570,7 +570,7 @@ for iets = 3: nets
 %       msftadd = round(sps/8);    % maximum allowed shift between 2 traces
 
       %FLAG to simulate the behavior of noise                    
-      noiseflag = 0;
+      noiseflag = 1;
       
       if noiseflag
         %chop a record segment
@@ -589,13 +589,13 @@ for iets = 3: nets
         rng(seed);
         pharand = (rand(nfft,3)-0.5)*2*pi;  %make the phases span from -pi to pi
 
-%         figure
-%         subplot(131)
-%         histogram(pharand(:,1));
-%         subplot(132)
-%         histogram(pharand(:,2));
-%         subplot(133)
-%         histogram(pharand(:,3));
+        figure
+        subplot(131)
+        histogram(pharand(:,1));
+        subplot(132)
+        histogram(pharand(:,2));
+        subplot(133)
+        histogram(pharand(:,3));
         
         %construct record with the same amplitude but random phase
         xfrand = amp*nfft.*exp(1i*pharand);   %compose the complex with amp and pha
