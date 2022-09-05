@@ -210,6 +210,9 @@ for ista = 1: nsta
 end
 STAort = ccstackort;
 
+%flag of normalization
+normflg = 0;
+
 % %plot the raw templates, not filtered, not best aligned
 % figure
 % subplot(211)
@@ -260,9 +263,12 @@ for ista=2:nsta
     STAtmp(mshiftadd+1:end-(mshiftadd+1),ista)=STAtmp(mshiftadd+1-imax(ista):end-(mshiftadd+1)-imax(ista),ista);
     STAtmport(mshiftadd+1:end-(mshiftadd+1),ista)=STAtmport(mshiftadd+1-imax(ista):end-(mshiftadd+1)-imax(ista),ista);
 end
-for ista=1:nsta
-    STAtmp(:,ista)=STAtmp(:,ista)/spread(ista); % now templates are 'aligned' indeoendently by x-corr wrt. sta 1
-    STAtmport(:,ista)=STAtmport(:,ista)/spread(ista);
+%normalization
+if normflg 
+  for ista=1:nsta
+      STAtmp(:,ista)=STAtmp(:,ista)/spread(ista); % now templates are 'aligned' indeoendently by x-corr wrt. sta 1
+      STAtmport(:,ista)=STAtmport(:,ista)/spread(ista);
+  end
 end
 % figure
 % subplot(211)
@@ -336,18 +342,22 @@ for ista = 1: nsta
   %detrend again for caution
   green(:,ista)=detrend(green(:,ista));
   greenf(:,ista)=detrend(greenf(:,ista));
-  %normalize by max amp
-  green(:,ista)=green(:,ista)/max(abs(green(:,ista)));    % normalize
-  greenf(:,ista)=greenf(:,ista)/max(abs(green(:,ista)));    % normalize
+  if normflg
+    %normalize by max amp
+    green(:,ista)=green(:,ista)/max(abs(green(:,ista)));    % normalize
+    greenf(:,ista)=greenf(:,ista)/max(abs(green(:,ista)));    % normalize
+  end
   
   %same process for orthogonal
   greenort(:,ista) = tmpwletort(zcsta1+8*sps-greenlen+1-offwlet1i(ista): zcsta1+8*sps-offwlet1i(ista), ista);
   greenfort(:,ista) = tmpwletfort(zcsta1+8*sps-greenlen+1-offwlet1i(ista): zcsta1+8*sps-offwlet1i(ista), ista);
   greenort(:,ista)=detrend(greenort(:,ista));
   greenfort(:,ista)=detrend(greenfort(:,ista));
-  greenort(:,ista)=greenort(:,ista)/max(abs(green(:,ista)));    % normalize
-  greenfort(:,ista)=greenfort(:,ista)/max(abs(green(:,ista)));    % normalize
-
+  if normflg
+    greenort(:,ista)=greenort(:,ista)/max(abs(green(:,ista)));    % normalize
+    greenfort(:,ista)=greenfort(:,ista)/max(abs(green(:,ista)));    % normalize
+  end
+  
   %re-find the zero-crossing as the template length has changed
   [~,imin] = min(greenf(:,ista));
   [~,imax] = max(greenf(:,ista));
@@ -366,6 +376,11 @@ iup = 1;    % times of upsampling
 if ~(off12con==0 && off13con==0)
   disp('Filtered templates are NOT best aligned');
 end
+
+amprat(1,:) = minmax(greenf(:,1)')./minmax(greenf(:,2)');	% amp ratio between max at sta 3 and 2 or min
+amprat(2,:) = minmax(greenf(:,1)')./minmax(greenf(:,3)');	% amp ratio between max at sta 3 and 1 or min  
+amprat(3,:) = minmax(greenf(:,2)')./minmax(greenf(:,3)');	% amp ratio between max at sta 3 and 1 or min  
+spread = range(greenf);   % range of the amp of template
 
 %%%plot the unfiltered and filtered templates
 figure
@@ -570,7 +585,7 @@ for iets = 3: nets
 %       msftadd = round(sps/8);    % maximum allowed shift between 2 traces
 
       %FLAG to simulate the behavior of noise                    
-      noiseflag = 1;
+      noiseflag = 0;
       
       if noiseflag
         %chop a record segment
@@ -996,14 +1011,17 @@ for iets = 3: nets
         
         if noiseflag
           if ista == 1
-%             fixthresh = 1.2352e-01; % for test purpose if the records are like noise, sta 1
-            fixthresh = 1.7766e-01;
+            fixthresh = 1.2352e-01; % for test purpose if the records are like noise, sta 1
+%             fixthresh = 1.7766e-01; % use this if do not normalize the templates
+%             fixthresh = 6.3908e-02;
           elseif ista == 2
-%             fixthresh = 7.3467e-02; % for test purpose if the records are like noise, sta 2
-            fixthresh = 9.5637e-02;
+            fixthresh = 7.3467e-02; % for test purpose if the records are like noise, sta 2
+%             fixthresh = 9.5637e-02; % use this if do not normalize the templates
+%             fixthresh = 2.9388e-02;
           elseif ista == 3
-%             fixthresh = 1.0873e-01; % for test purpose if the records are like noise, sta 3
-            fixthresh = 1.3470e-01;
+            fixthresh = 1.0873e-01; % for test purpose if the records are like noise, sta 3
+%             fixthresh = 1.3470e-01; % use this if do not normalize the templates
+%             fixthresh = 4.2047e-02;
           end
           [sigdecon(:,ista),pred(:,ista),res,dresit,mfitit,ampit{ista},nit,fighdl] = ...
             iterdecon_fixthresh(sig,wlet,rcc,noi,fixthresh,dt,twlet,width,dres_min,mfit_min,nit_max,nimp_max,fpltit,fpltend,fpltchk);

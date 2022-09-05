@@ -776,8 +776,8 @@ for iets = 3: nets
       end
       off1iwk{k} = off1iw;
       
-      [~,ind] = min(sum(ccwpair,1));
-      rcccat = sum(rccpaircat(:,setdiff(1:3,ind)), 2) / 2;
+%       [~,ind] = min(sum(ccwpair,1));
+%       rcccat = sum(rccpaircat(:,setdiff(1:3,ind)), 2) / 2;
       
       figure
       subplot(231)
