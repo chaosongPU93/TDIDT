@@ -1,4 +1,4 @@
-function [f,amprat,ampratscl] = plt_srcampratio(imploc,impindepst,greenf,sps,mapview)
+function [f,amprat,ampratsclp,ampratscln] = plt_srcampratio(imploc,impindepst,greenf,sps,mapview)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % [f,amprat,ampratscl] = plt_srcampratio(imploc,impindepst,greenf,sps,mapview)
 %
@@ -120,8 +120,11 @@ c.Label.String = sprintf('log_{10}(Scaled template amp ratio 2 / 3)');
 caxis([-0.8 1.2]);
 grid on; box on;
 
-ampratscl = [impindepst(:,2)*range(greenf(:,1))./(impindepst(:,4)*range(greenf(:,2))) ...
-  impindepst(:,2)*range(greenf(:,1))./(impindepst(:,6)*range(greenf(:,3))) ...
-  impindepst(:,4)*range(greenf(:,2))./(impindepst(:,6)*range(greenf(:,3)))];
+ampratsclp = [impindepst(:,2)*max(greenf(:,1))./(impindepst(:,4)*max(greenf(:,2))) ...
+  impindepst(:,2)*max(greenf(:,1))./(impindepst(:,6)*max(greenf(:,3))) ...
+  impindepst(:,4)*max(greenf(:,2))./(impindepst(:,6)*max(greenf(:,3)))];
 
+ampratscln = [impindepst(:,2)*min(greenf(:,1))./(impindepst(:,4)*min(greenf(:,2))) ...
+  impindepst(:,2)*min(greenf(:,1))./(impindepst(:,6)*min(greenf(:,3))) ...
+  impindepst(:,4)*min(greenf(:,2))./(impindepst(:,6)*min(greenf(:,3)))];
 

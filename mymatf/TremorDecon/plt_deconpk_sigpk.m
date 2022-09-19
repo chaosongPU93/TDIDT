@@ -39,7 +39,7 @@ yran=1.2*[-ym ym];
 
 lsig = size(sigsta,1); 
 
-pkght = cell(size(sigsta,2),1);
+pkhgt = cell(size(sigsta,2),1);
 pk = cell(size(sigsta,2),1);
 for i = 1: nrow
   ax=f.ax(i);

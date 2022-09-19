@@ -1,20 +1,22 @@
-function [off12,off13,cc,iloff,loff] = constrained_cc_interp(trace,mid,wlen,mshift,loffmax,ccmin,iup)
+function [off12,off13,cc,iloff,loff] = constrained_cc_loose(trace,mid,wlen,mshift,loffmax,ccmin,iup)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% This function is to the constrained cross-correlation between the waveforms
-% at the 3 stations to make sure off13-off12+off32=0, note that this is
-% different from the independent cross-correlaton 'xcorr', which only align
-% separately between two records. This is necessary to ensure only two offsets
-% among the 3 station pairs are independent to represent detections
-% 
-% similar to 'constrained_cc.m', but this allows for interpolation, i.e. 
-% upsampling to obtain a higher precision. More important for higher-frequency
-% detections. If the 'iup' is set to 1, theoretically should return the same
-% result as 'constrained_cc.m'.
+% Similar to 'constrained_cc_interp.m', this function is to carry out a 
+% constrained cross-correlation between waveforms at 3 stations to best 
+% align them. Unlike 'constrained_cc_interp.m' that finds the global max
+% independently at each station and then reject all trials if the circuit
+% of offsets from 3 indepmax CC does not meet the thresholds, here we try
+% to align trace to our best. In detail, rather than looking at global max
+% only, we track all ranked peaks in CC function and look at the triplets
+% that meet the offset circuit and find the one with the hightest CC. 
+% --This is likely to guarantee a solution (alignment) no worse than using
+% a smaller max allowable 'mshift' when you try to increase 'mshift', in case
+% that a larger 'mshift' leads to a higher gloabl max of CC, but the causing
+% time shift is big.
 %
 %
 % Chao Song, chaosong@princeton.edu
-% First created date:   2021/06/17
-% Last modified date:   2021/06/17
+% First created date:   2022/09/19
+% Last modified date:   2022/09/19
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 stackauto = trace.*trace;
@@ -70,6 +72,7 @@ sumstack12n=sumstack12./denomstack12n;   % suffix 'n' means normalized
 sumstack13n=sumstack13./denomstack13n;
 sumstack32n=sumstack32./denomstack32n;
 
+%below finds the global max
 [xcmaxstack12n,imaxstack12]=max(sumstack12n,[],2);   %Integer-offset max cross-correlation
 [xcmaxstack13n,imaxstack13]=max(sumstack13n,[],2);   % along row, max cc val and index in each window
 [xcmaxstack32n,imaxstack32]=max(sumstack32n,[],2);
@@ -94,6 +97,27 @@ xcmaxAVEn=(xcmaxstack12n+xcmaxstack13n+xcmaxstack32n)/3;
 off12=xmaxstack12n;    % tmp == temporary
 off13=xmaxstack13n;
 off32=xmaxstack32n;
+
+%find all peaks, ie, local max
+[ppkht12, ppk12] = findpeaks(sumstack12n);
+ppk12 = ppk12-mshift-1;
+[ppkht13, ppk13] = findpeaks(sumstack13n);
+ppk13 = ppk13-mshift-1;
+[ppkht32, ppk32] = findpeaks(sumstack32n);
+ppk32 = ppk32-mshift-1;
+
+
+figure
+subplot(311); hold on
+plot(-mshift:mshift,sumstack12n); 
+scatter(ppk12,ppkht12,10);
+subplot(312); hold on
+plot(-mshift:mshift,sumstack13n);
+scatter(ppk13,ppkht13,10);
+subplot(313); hold on
+plot(-mshift:mshift,sumstack32n);
+scatter(ppk32,ppkht32,10);
+
 
 
 if xcmaxAVEn<ccmin || abs(loff)>loffmax || isequal(abs(imaxstack12cent),mshift)...

@@ -383,86 +383,7 @@ amprat(3,:) = minmax(greenf(:,2)')./minmax(greenf(:,3)');	% amp ratio between ma
 spread = range(greenf);   % range of the amp of template
 
 %%%plot the unfiltered and filtered templates
-figure
-subplot(2,2,1)
-hold on
-plot(green(:,1),'r')
-plot(green(:,2),'b')
-plot(green(:,3),'k')
-text(0.95,0.9,'Raw opt.','Units','normalized','HorizontalAlignment',...
-  'right');
-mx=max(max(abs(green(:,:))));
-xlim([0 greenlen])
-ylim([-mx mx])
-box on
-
-subplot(2,2,2)
-hold on
-plot(greenf(:,1),'r')
-plot(greenf(:,2),'b')
-plot(greenf(:,3),'k')
-text(0.95,0.9,sprintf('%.1f-%.1f Hz opt.',lowlet,hiwlet),'Units','normalized','HorizontalAlignment',...
-  'right');
-mx=max(max(abs(greenf(:,:))));
-
-%%%running CC using a window length of 'cclen'
-mwlen=sps/2;
-[ircc,rcc12] = RunningCC(greenf(:,1), greenf(:,2), mwlen);
-[~,rcc13] = RunningCC(greenf(:,1), greenf(:,3), mwlen);
-[~,rcc23] = RunningCC(greenf(:,2), greenf(:,3), mwlen);
-rcc = (rcc12+rcc13+rcc23)/3;
-%alln(alln<0)=-10^4*yma; %just so they don't plot.
-% plot(samples(cclen/2+1:greenlen-cclen/2),mx*alln,'co','markersize',2); % scale with data amp.
-plot(ircc,mx*rcc,'co','markersize',2); % scale with data amp.
-xlim([0 greenlen])
-ylim([-mx mx])
-box on
-xc23=xcorr(greenf(:,2),greenf(:,3),10,'coeff');
-xc13=xcorr(greenf(:,1),greenf(:,3),10,'coeff');
-xc12=xcorr(greenf(:,1),greenf(:,2),10,'coeff');
-[ccmax23,imax23]=max(xc23);
-[ccmax13,imax13]=max(xc13);
-[ccmax12,imax12]=max(xc12);
-
-subplot(2,2,3)
-hold on
-plot(greenort(:,1),'r')
-plot(greenort(:,2),'b')
-plot(greenort(:,3),'k')
-text(0.95,0.9,'Raw ort.','Units','normalized','HorizontalAlignment',...
-  'right');
-mx=max(max(abs(green(:,:))));
-xlim([0 greenlen])
-ylim([-mx mx])
-box on
-
-subplot(2,2,4)
-hold on
-plot(greenfort(:,1),'r')
-plot(greenfort(:,2),'b')
-plot(greenfort(:,3),'k')
-text(0.95,0.9,sprintf('%.1f-%.1f Hz ort.',lowlet,hiwlet),'Units','normalized','HorizontalAlignment',...
-  'right');
-mx=max(max(abs(greenf(:,:))));
-
-%%%running CC using a window length of 'cclen'
-mwlen=sps/2;
-[ircc,rcc12] = RunningCC(greenfort(:,1), greenfort(:,2), mwlen);
-[~,rcc13] = RunningCC(greenfort(:,1), greenfort(:,3), mwlen);
-[~,rcc23] = RunningCC(greenfort(:,2), greenfort(:,3), mwlen);
-rcc = (rcc12+rcc13+rcc23)/3;
-%alln(alln<0)=-10^4*yma; %just so they don't plot.
-% plot(samples(cclen/2+1:greenlen-cclen/2),mx*alln,'co','markersize',2); % scale with data amp.
-plot(ircc,mx*rcc,'co','markersize',2); % scale with data amp.
-xlim([0 greenlen])
-ylim([-mx mx])
-box on
-xc23=xcorr(greenfort(:,2),greenfort(:,3),10,'coeff');
-xc13=xcorr(greenfort(:,1),greenfort(:,3),10,'coeff');
-xc12=xcorr(greenfort(:,1),greenfort(:,2),10,'coeff');
-[ccmax23,imax23]=max(xc23);
-[ccmax13,imax13]=max(xc13);
-[ccmax12,imax12]=max(xc12);
+% plt_templates(green,greenf,greenort,greenfort,lowlet,hiwlet,sps);
 
 
 %% prepare the signal and noise windows
@@ -581,18 +502,22 @@ for iets = 3: nets
 %       overshoot = 0;
 
       %align records
-      msftadd = (round(max(abs([off12ran off13ran])))+1)*sps/40;  %+1 for safety
-%       msftadd = round(sps/8);    % maximum allowed shift between 2 traces
-
-      %FLAG to simulate the behavior of noise                    
-      noiseflag = 0;
+%       msftaddm = (round(max(abs([off12ran off13ran])))+1)*sps/40;  %+1 for safety
+      msftaddm = sps+1;  %+1 for safety
+%       msftaddm = 1.5*sps;  %+1 for safety
       
+      %FLAG to simulate the behavior of noise                    
+      noiseflag = 1;
+      
+%       seedmat = randi(1000,200,1);
+%       for iii = 1: length(seedmat)
+%       seed = seedmat(iii);
       if noiseflag
         %chop a record segment
-        optseg = STAopt(max(floor(tstbuf*sps+1-overshoot-msftadd),1): ...
-          min(floor(tedbuf*sps+overshoot+msftadd),86400*sps), :); % sta 1
-        ortseg = STAort(max(floor(tstbuf*sps+1-overshoot-msftadd),1): ...
-          min(floor(tedbuf*sps+overshoot+msftadd),86400*sps), :);
+        optseg = STAopt(max(floor(tstbuf*sps+1-overshoot-msftaddm),1): ...
+          min(floor(tedbuf*sps+overshoot+msftaddm),86400*sps), :); % sta 1
+        ortseg = STAort(max(floor(tstbuf*sps+1-overshoot-msftaddm),1): ...
+          min(floor(tedbuf*sps+overshoot+msftaddm),86400*sps), :);
 
         %obtain the amp and phase spectra of records via fft
         nfft = size(optseg,1); % number of points in fft
@@ -604,33 +529,33 @@ for iets = 3: nets
         rng(seed);
         pharand = (rand(nfft,3)-0.5)*2*pi;  %make the phases span from -pi to pi
 
-        figure
-        subplot(131)
-        histogram(pharand(:,1));
-        subplot(132)
-        histogram(pharand(:,2));
-        subplot(133)
-        histogram(pharand(:,3));
+%         figure
+%         subplot(131)
+%         histogram(pharand(:,1));
+%         subplot(132)
+%         histogram(pharand(:,2));
+%         subplot(133)
+%         histogram(pharand(:,3));
         
         %construct record with the same amplitude but random phase
         xfrand = amp*nfft.*exp(1i*pharand);   %compose the complex with amp and pha
         optseg(:,2:4) = real(ifft(xfrand,nfft));  %overwrite the original record
 
-        figure
-        subplot(311)
-        plot(optseg(:,2));
-        subplot(312)
-        plot(optseg(:,3));
-        subplot(313)
-        plot(optseg(:,4));
-        
-        figure
-        subplot(131)
-        histogram(optseg(:,2)); [MUHAT,SIGMAHAT] = normfit(optseg(:,2))
-        subplot(132)
-        histogram(optseg(:,3)); [MUHAT,SIGMAHAT] = normfit(optseg(:,3))
-        subplot(133)
-        histogram(optseg(:,4)); [MUHAT,SIGMAHAT] = normfit(optseg(:,4))
+%         figure
+%         subplot(311)
+%         plot(optseg(:,2));
+%         subplot(312)
+%         plot(optseg(:,3));
+%         subplot(313)
+%         plot(optseg(:,4));
+%         
+%         figure
+%         subplot(131)
+%         histogram(optseg(:,2)); [MUHAT,SIGMAHAT] = normfit(optseg(:,2))
+%         subplot(132)
+%         histogram(optseg(:,3)); [MUHAT,SIGMAHAT] = normfit(optseg(:,3))
+%         subplot(133)
+%         histogram(optseg(:,4)); [MUHAT,SIGMAHAT] = normfit(optseg(:,4))
         
         %%%for orthogonal components, with the same phase??
         [xf,ft,amp,pha,power,psd] = fftspectrum(ortseg(:,2:4), nfft, sps,'twosided');
@@ -638,19 +563,31 @@ for iets = 3: nets
         xfrand = amp*nfft.*exp(1i*pharand);
         ortseg(:,2:4) = real(ifft(xfrand,nfft));  %overwrite the original record
 
-        %align the synthetic noise allowing some shift
-        optcc = optseg(:,2:end);
+        optcc = optseg(1+msftaddm: end-msftaddm, 2:end);
         
       else
         optcc = STAopt(max(floor((tstbuf)*sps+1),1): min(floor((tedbuf)*sps),86400*sps), 2:end);
       end
 
+      %align the synthetic noise allowing some shift
+      
+      %how much do you allow the shifting of noise??
+%       msftaddvec = 10: 5: sps;
+      if noiseflag
+        msftadd = 50;
+        loffmax = 20*sps/40;
+      else
+        msftadd = (round(max(abs([off12ran off13ran])))+1)*sps/40;  %+1 for safety
+        loffmax = 4*sps/40;
+      end
       ccmid = ceil(size(optcc,1)/2);
       ccwlen = round(size(optcc,1)-2*(msftadd+1));  % minus ensures successful shifting of records
-      loffmax = 4*sps/40;
+%       ccwlen = round(size(optcc,1)-2*(max(msftaddvec)+1));
       ccmin = 0.01;  % depending on the length of trace, cc could be very low
       iup = 1;    % times of upsampling
-      [off12con,off13con,ccali(k),iloopoff,loopoff] = constrained_cc_interp(optcc',ccmid,...
+%       for isft = 1: length(msftaddvec)
+%       msftadd = msftaddvec(isft)
+      [off12con,off13con,ccali(k),iloopoff,loopoff] = constrained_cc_loose(optcc',ccmid,...
         ccwlen,msftadd,loffmax,ccmin,iup);
       % if a better alignment cannot be achieved, use 0,0
       if off12con == msftadd+1 && off13con == msftadd+1
@@ -664,6 +601,28 @@ for iets = 3: nets
 %       off1i(k,1) = 0;
 %       off1i(k,2) = 0;
 %       off1i(k,3) = 0;
+%         off1isft(isft,1) = 0;
+%         off1isft(isft,2) = round(off12con);
+%         off1isft(isft,3) = round(off13con);
+%         ccsft(isft) = ccali(k);
+%         loff(isft) = loopoff;
+%       end
+      
+%       figure
+%       subplot(121)
+%       hold on; box on; grid on
+%       scatter(msftaddvec,ccsft,'ko','filled');
+%       xlabel('Max. allowable shift in samples (160 sps)');
+%       ylabel('Max. CC');
+%       subplot(122)
+%       hold on; box on; grid on
+%       scatter(msftaddvec,off1isft(:,2),'ro','filled');
+%       scatter(msftaddvec,off1isft(:,3),'bo','filled');
+%       scatter(msftaddvec,loff,'ko');
+%       plot([0 msftaddvec(end)],[loffmax loffmax],'k--');
+%       xlabel('Max. allowable shift in samples (160 sps)');
+%       ylabel('Shifts that reach to max. CC in samples (160 sps)');
+%       legend('off12','off13','summed offset loop');
       
       %%%what if the alignment is random or as extreme to the search boundary?
       ALIGN = 'random';
@@ -701,12 +660,12 @@ for iets = 3: nets
       ortdat = [];
       
       if noiseflag
-        optdat(:, 1:2) = optseg(1+msftadd: end-msftadd, 1:2); % sta 1
-        ortdat(:, 1:2) = ortseg(1+msftadd: end-msftadd, 1:2);  
-        optdat(:, 3) = optseg(1+msftadd-off1i(k,2): end-msftadd-off1i(k,2), 3); % sta 2
-        ortdat(:, 3) = ortseg(1+msftadd-off1i(k,2): end-msftadd-off1i(k,2), 3);
-        optdat(:, 4) = optseg(1+msftadd-off1i(k,3): end-msftadd-off1i(k,3), 4); % sta 3
-        ortdat(:, 4) = ortseg(1+msftadd-off1i(k,3): end-msftadd-off1i(k,3), 4);
+        optdat(:, 1:2) = optseg(1+msftaddm: end-msftaddm, 1:2); % sta 1
+        ortdat(:, 1:2) = ortseg(1+msftaddm: end-msftaddm, 1:2);  
+        optdat(:, 3) = optseg(1+msftaddm-off1i(k,2): end-msftaddm-off1i(k,2), 3); % sta 2
+        ortdat(:, 3) = ortseg(1+msftaddm-off1i(k,2): end-msftaddm-off1i(k,2), 3);
+        optdat(:, 4) = optseg(1+msftaddm-off1i(k,3): end-msftaddm-off1i(k,3), 4); % sta 3
+        ortdat(:, 4) = ortseg(1+msftaddm-off1i(k,3): end-msftaddm-off1i(k,3), 4);
 
       else  
         optdat(:, 1:2) = STAopt(max(floor(tstbuf*sps+1-overshoot),1): ...
@@ -856,19 +815,19 @@ for iets = 3: nets
       rccpair = [rcc12 rcc13 rcc23];
       sigsta = sigsta(overshoot+1:end-overshoot, :);  %excluding the overshoot
       
-      figure
-      subplot(231)
-      histogram(rcc12); title('rcc12'); [MUHAT,SIGMAHAT] = normfit(rcc12)
-      subplot(232)
-      histogram(rcc13); title('rcc13'); [MUHAT,SIGMAHAT] = normfit(rcc13)
-      subplot(233)
-      histogram(rcc23); title('rcc23'); [MUHAT,SIGMAHAT] = normfit(rcc23)
-      subplot(234)
-      histogram(rcc12+rcc13); title('rcc12+rcc13'); [MUHAT,SIGMAHAT] = normfit(rcc12+rcc13)
-      subplot(235)
-      histogram(rcc13+rcc23); title('rcc13+rcc23'); [MUHAT,SIGMAHAT] = normfit(rcc13+rcc23)
-      subplot(236)
-      histogram(rcc12+rcc23); title('rcc12+rcc23'); [MUHAT,SIGMAHAT] = normfit(rcc12+rcc23)
+%       figure
+%       subplot(231)
+%       histogram(rcc12); title('rcc12'); [MUHAT,SIGMAHAT] = normfit(rcc12)
+%       subplot(232)
+%       histogram(rcc13); title('rcc13'); [MUHAT,SIGMAHAT] = normfit(rcc13)
+%       subplot(233)
+%       histogram(rcc23); title('rcc23'); [MUHAT,SIGMAHAT] = normfit(rcc23)
+%       subplot(234)
+%       histogram(rcc12+rcc13); title('rcc12+rcc13'); [MUHAT,SIGMAHAT] = normfit(rcc12+rcc13)
+%       subplot(235)
+%       histogram(rcc13+rcc23); title('rcc13+rcc23'); [MUHAT,SIGMAHAT] = normfit(rcc13+rcc23)
+%       subplot(236)
+%       histogram(rcc12+rcc23); title('rcc12+rcc23'); [MUHAT,SIGMAHAT] = normfit(rcc12+rcc23)
       
       %for ort. comp
       sigstaort = zeros(size(ortdat,1), nsta);
@@ -895,8 +854,9 @@ for iets = 3: nets
         mcc(itry,1) = (cc12+cc13+cc23)/3;
       end
 
-%       [~,ind] = min([cc12 cc13 cc23]);
-%       rcc = sum(rccpair(:,setdiff(1:3,ind)), 2) / 2;
+      %if only use the mean RCC from the 2 pairs that have the highest overall CC
+      [~,ind] = min([cc12 cc13 cc23]);
+      rcc = sum(rccpair(:,setdiff(1:3,ind)), 2) / 2;
 
 %       end
       
@@ -952,7 +912,7 @@ for iets = 3: nets
         
       %%%Is it true that the coherence between 2-3 is the highest among 3 pairs?
       %%%---Not really, or align with 1 offset upon the whole long window might not support it
-      [f] = plt_rcccat(rccpair,sps);
+%       [f] = plt_rcccat(rccpair,sps);
 
       %%%what about the indices of times when there are 4-s in-bound detections; no detections;
       %%%out-bound detections, etc?
@@ -1011,17 +971,20 @@ for iets = 3: nets
         
         if noiseflag
           if ista == 1
-            fixthresh = 1.2352e-01; % for test purpose if the records are like noise, sta 1
-%             fixthresh = 1.7766e-01; % use this if do not normalize the templates
-%             fixthresh = 6.3908e-02;
+%             fixthresh = 1.2352e-01; % if use 3-pair rcc and normalize templates, sta 1
+%             fixthresh = 1.7766e-01; % if use 2-pair rcc and normalize templates
+%             fixthresh = 6.3908e-02; % if use 3-pair rcc and do not normalize templates
+            fixthresh = 9.1922e-02; % if use 2-pair rcc and do not normalize templates
           elseif ista == 2
-            fixthresh = 7.3467e-02; % for test purpose if the records are like noise, sta 2
-%             fixthresh = 9.5637e-02; % use this if do not normalize the templates
-%             fixthresh = 2.9388e-02;
+%             fixthresh = 7.3467e-02; % if use 3-pair rcc and normalize templates, sta 2
+%             fixthresh = 9.5637e-02; % if use 2-pair rcc and normalize templates
+%             fixthresh = 2.9388e-02; % if use 3-pair rcc and do not normalize templates
+            fixthresh = 3.8256e-02; % if use 2-pair rcc and do not normalize templates
           elseif ista == 3
-            fixthresh = 1.0873e-01; % for test purpose if the records are like noise, sta 3
-%             fixthresh = 1.3470e-01; % use this if do not normalize the templates
-%             fixthresh = 4.2047e-02;
+%             fixthresh = 1.0873e-01; % if use 3-pair rcc and normalize templates, sta 3
+%             fixthresh = 1.3470e-01; % if use 2-pair rcc and normalize templates
+%             fixthresh = 4.2047e-02; % if use 3-pair rcc and do not normalize templates
+            fixthresh = 5.2089e-02; % if use 2-pair rcc and do not normalize templates
           end
           [sigdecon(:,ista),pred(:,ista),res,dresit,mfitit,ampit{ista},nit,fighdl] = ...
             iterdecon_fixthresh(sig,wlet,rcc,noi,fixthresh,dt,twlet,width,dres_min,mfit_min,nit_max,nimp_max,fpltit,fpltend,fpltchk);
@@ -1053,6 +1016,16 @@ for iets = 3: nets
 %       [impindep,imppairf,indpair] = groupimptriplets(sigdecon,rcc,loff_max,'wtamp',refsta);
       [impindep,imppairf,indpair] = groupimptripdecon(sigdecon,ampit,rcc,loff_max,refsta);
       
+%       nsrc(iii) = size(impindep,1);
+%       end
+    
+%     figure
+%     histogram(nsrc);
+%     text(0.05,0.9,sprintf('med=%d',median(nsrc)),'Units','normalized');
+%     xlabel('number of sources');
+%     ylabel('counts');
+%     
+%     keyboard
       %%%plot the individually deconvolved impulses and the grouping result                 
 %       [f] = plt_groupimptriplets(sigdecon,impindep,stas,ircc,rcc);
      
