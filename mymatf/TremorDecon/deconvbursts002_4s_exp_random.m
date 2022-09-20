@@ -29,7 +29,7 @@
 format short e   % Set the format to 5-digit floating point
 clear
 clc
-close all
+% close all
 
 set(0,'DefaultFigureVisible','on');
 % set(0,'DefaultFigureVisible','off');   % switch to show the plots or not
@@ -572,22 +572,23 @@ for iets = 3: nets
       %align the synthetic noise allowing some shift
       
       %how much do you allow the shifting of noise??
-%       msftaddvec = 10: 5: sps;
-      if noiseflag
-        msftadd = 50;
-        loffmax = 20*sps/40;
-      else
-        msftadd = (round(max(abs([off12ran off13ran])))+1)*sps/40;  %+1 for safety
-        loffmax = 4*sps/40;
-      end
+      msftaddvec = 10: 5: sps;
+      for isft = 1: length(msftaddvec)
+      msftadd = msftaddvec(isft)
+%       if noiseflag
+%         msftadd = 50;
+%         loffmax = 4*sps/40;
+%       else
+%         msftadd = (round(max(abs([off12ran off13ran])))+1)*sps/40;  %+1 for safety
+%         loffmax = 4*sps/40;
+%       end
       ccmid = ceil(size(optcc,1)/2);
-      ccwlen = round(size(optcc,1)-2*(msftadd+1));  % minus ensures successful shifting of records
+      ccwlen = round(size(optcc,1)-2*(msftaddm+1));  % minus ensures successful shifting of records
 %       ccwlen = round(size(optcc,1)-2*(max(msftaddvec)+1));
       ccmin = 0.01;  % depending on the length of trace, cc could be very low
       iup = 1;    % times of upsampling
-%       for isft = 1: length(msftaddvec)
-%       msftadd = msftaddvec(isft)
-      [off12con,off13con,ccali(k),iloopoff,loopoff] = constrained_cc_loose(optcc',ccmid,...
+
+      [off12con,off13con,ccali(k),iloopoff] = constrained_cc_loose(optcc',ccmid,...
         ccwlen,msftadd,loffmax,ccmin,iup);
       % if a better alignment cannot be achieved, use 0,0
       if off12con == msftadd+1 && off13con == msftadd+1
@@ -595,34 +596,34 @@ for iets = 3: nets
         off13con = 0;
         fprintf('Tremor burst %d cannot be properly aligned, double-check needed \n',k);
       end
-      off1i(k,1) = 0;
-      off1i(k,2) = round(off12con);
-      off1i(k,3) = round(off13con);
+%       off1i(k,1) = 0;
+%       off1i(k,2) = round(off12con);
+%       off1i(k,3) = round(off13con);
 %       off1i(k,1) = 0;
 %       off1i(k,2) = 0;
 %       off1i(k,3) = 0;
-%         off1isft(isft,1) = 0;
-%         off1isft(isft,2) = round(off12con);
-%         off1isft(isft,3) = round(off13con);
-%         ccsft(isft) = ccali(k);
-%         loff(isft) = loopoff;
-%       end
+        off1isft(isft,1) = 0;
+        off1isft(isft,2) = round(off12con);
+        off1isft(isft,3) = round(off13con);
+        ccsft(isft) = ccali(k);
+        loff(isft) = loopoff;
+      end
       
-%       figure
-%       subplot(121)
-%       hold on; box on; grid on
-%       scatter(msftaddvec,ccsft,'ko','filled');
-%       xlabel('Max. allowable shift in samples (160 sps)');
-%       ylabel('Max. CC');
-%       subplot(122)
-%       hold on; box on; grid on
-%       scatter(msftaddvec,off1isft(:,2),'ro','filled');
-%       scatter(msftaddvec,off1isft(:,3),'bo','filled');
-%       scatter(msftaddvec,loff,'ko');
-%       plot([0 msftaddvec(end)],[loffmax loffmax],'k--');
-%       xlabel('Max. allowable shift in samples (160 sps)');
-%       ylabel('Shifts that reach to max. CC in samples (160 sps)');
-%       legend('off12','off13','summed offset loop');
+      figure
+      subplot(121)
+      hold on; box on; grid on
+      scatter(msftaddvec,ccsft,'ko','filled');
+      xlabel('Max. allowable shift in samples (160 sps)');
+      ylabel('Max. CC');
+      subplot(122)
+      hold on; box on; grid on
+      scatter(msftaddvec,off1isft(:,2),'ro','filled');
+      scatter(msftaddvec,off1isft(:,3),'bo','filled');
+      scatter(msftaddvec,loff,'ko');
+      plot([0 msftaddvec(end)],[loffmax loffmax],'k--');
+      xlabel('Max. allowable shift in samples (160 sps)');
+      ylabel('Shifts that reach to max. CC in samples (160 sps)');
+      legend('off12','off13','summed offset loop');
       
       %%%what if the alignment is random or as extreme to the search boundary?
       ALIGN = 'random';
