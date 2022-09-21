@@ -13,10 +13,21 @@ function [off12,off13,cc,iloff] = constrained_cc_loose(trace,mid,wlen,mshift,ccm
 % that a larger 'mshift' leads to a higher gloabl max of CC, but the causing
 % time shift is big.
 %
+% --The 1st version was to check every local peak, see if there is one best 
+%   triplet that has the highest CC and the circuit of offsets is smaller than
+%   'loffmax'; then within its proximity, find the triplet that whose circuit
+%   is exactly 0. The shortcoming is, the final solution may not necessarily
+%   has the highest CC if there is another solution around other peaks that 
+%   were abondoned in the 1st step. Therefore, when you allow a larger 'mshift',
+%   the solution could be inconsistent.
+% --The 2nd version is to check EVERY possible triplets of offsets, and find
+%   the one whose the circuit is 0, and has the highest CC. The offset could be
+%   located at the boundary. In this manner, 'loffmax' became meaningless.
+%
 %
 % Chao Song, chaosong@princeton.edu
 % First created date:   2022/09/19
-% Last modified date:   2022/09/19
+% Last modified date:   2022/09/21
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 stackauto = trace.*trace;

@@ -503,7 +503,8 @@ for iets = 3: nets
                           
       %max allowable shift in best alignment
 %       msftaddm = (round(max(abs([off12ran off13ran])))+1)*sps/40;  %+1 for safety
-      msftaddm = sps+1;  %+1 for safety
+%       msftaddm = sps+1;  %+1 for safety
+      msftaddm = 1.5*sps+1;  %+1 for safety
 %       msftaddm = round(sps/8);    % maximum allowed shift between 2 traces
 
       %have some overshoot, so that the resulted rcc would have the same length as the signal
@@ -513,9 +514,9 @@ for iets = 3: nets
       %FLAG to simulate the behavior of noise
       noiseflag = 1;
 
-      seedmat = randi(1000,200,1);
-      for iii = 1: length(seedmat)
-      seed = seedmat(iii);
+%       seedmat = randi(1000,200,1);
+%       for iii = 1: length(seedmat)
+%       seed = seedmat(iii);
 
       %chop a record segment
       optseg = STAopt(max(floor(tstbuf*sps+1-overshoot-msftaddm),1): ...
@@ -530,7 +531,7 @@ for iets = 3: nets
 
         %uniform, random phase with the same span [-pi,pi];
         mpharan = minmax(pha');
-%         seed = k;
+        seed = k;
         rng(seed);
         pharand = (rand(nfft,3)-0.5)*2*pi;  %make the phases span from -pi to pi
 
@@ -629,19 +630,29 @@ for iets = 3: nets
 %         optcc(:,2) = STAopt(max(isubwst*sps,1): min(isubwed*sps,86400*sps), 3);
 %         optcc(:,3) = STAopt(max(isubwst*sps,1): min(isubwed*sps,86400*sps), 4);
         optcc = optseg(isubwst: isubwed, 2:end);
-        if noiseflag
-          msftadd = 50;
-          loffmax = 20*sps/40;
-        else
+        %%%for each short win, allow the same shift for noise as for data
+%         if noiseflag
+%           msftadd = 50;
+%           loffmax = 20*sps/40;
+%         else
           msftadd = (round(max(abs([off12ran off13ran])))+1)*sps/40;  %+1 for safety
           loffmax = 4*sps/40;
-        end
+%         end
         ccmid = ceil(size(optcc,1)/2);
         ccwlen = round(size(optcc,1)-2*(msftadd+1));  % minus ensures successful shifting of records
         ccmin = 0.01;  % depending on the length of trace, cc could be very low
         iup = 1;    % times of upsampling
-        [off12con,off13con,ccali(k),iloopoff,loopoff] = constrained_cc_interp(optcc',ccmid,...
-          ccwlen,msftadd,loffmax,ccmin,iup);
+        
+        %%%For short win, do we align noise *exactly* the same way as data?
+        if noiseflag
+          %ask how well can you align the noise, does not matter if the location is
+          %the most reliable, but the resulting CC is the highest possible
+          [off12con,off13con,ccali(k),iloopoff] = constrained_cc_loose(optcc',ccmid,...
+            ccwlen,msftadd,ccmin,iup);
+        else
+          [off12con,off13con,ccali(k),iloopoff,loopoff] = constrained_cc_interp(optcc',ccmid,...
+            ccwlen,msftadd,loffmax,ccmin,iup);
+        end
         % if a better alignment cannot be achieved, use 0,0
         if off12con == msftadd+1 && off13con == msftadd+1
           off12con = 0;
@@ -739,13 +750,15 @@ for iets = 3: nets
       %%%obtain a single best alignment based on the entire win 
 %       optcc = optseg(:, 2:end);
       optcc = optseg(1+msftaddm: end-msftaddm, 2:end);
-      
+      msftadd = 0.5*sps;
       ccmid = ceil(size(optcc,1)/2);
       ccwlen = round(size(optcc,1)-2*(msftadd+1));
       ccmin = 0.01;  % depending on the length of trace, cc could be very low
       iup = 1;    % times of upsampling
-      [off12con,off13con,ccali(k),iloopoff,loopoff] = constrained_cc_interp(optcc',ccmid,...
-        ccwlen,msftadd,loffmax,ccmin,iup);
+      %for the whole win, ask how well can you align the noise, does not matter if the location is
+      %the most reliable, but the resulting CC is the highest possible
+      [off12con,off13con,ccali(k),iloopoff] = constrained_cc_loose(optcc',ccmid,...
+        ccwlen,msftadd,ccmin,iup);
       % if a better alignment cannot be achieved, use 0,0
       if off12con == msftadd+1 && off13con == msftadd+1
         off12con = 0;
@@ -890,16 +903,16 @@ for iets = 3: nets
       [impindep,imppairf,indpair] = groupimptripdecon_ref(sigdecon,ampit,irccran,rcccat,...
         off1i(k,:),off1iw,loff_max,refsta);
       
-      nsrc(iii) = size(impindep,1);
-      end
-    
-    figure
-    histogram(nsrc);
-    text(0.05,0.9,sprintf('med=%d',median(nsrc)),'Units','normalized');
-    xlabel('number of sources');
-    ylabel('counts');
-    
-    keyboard
+%       nsrc(iii) = size(impindep,1);
+%       end
+%     
+%     figure
+%     histogram(nsrc);
+%     text(0.05,0.9,sprintf('med=%d',median(nsrc)),'Units','normalized');
+%     xlabel('number of sources');
+%     ylabel('counts');
+%     
+%     keyboard
       
 %       %%%plot the individually deconvolved impulses and the grouping result
 %       [f] = plt_groupimptriplets(sigdecon,impindep,stas,ircccat,rcccat);

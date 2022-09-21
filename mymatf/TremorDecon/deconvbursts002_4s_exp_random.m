@@ -507,7 +507,7 @@ for iets = 3: nets
       msftaddm = 1.5*sps+1;  %+1 for safety
       
       %FLAG to simulate the behavior of noise                    
-      noiseflag = 1;
+      noiseflag = 0;
       
 %       seedmat = randi(1000,200,1);
 %       for iii = 1: length(seedmat)
@@ -572,60 +572,69 @@ for iets = 3: nets
       %align the synthetic noise allowing some shift
       
       %how much do you allow the shifting of noise??
-      msftaddvec = 10: 5: 1.5*sps;
-      for isft = 1: length(msftaddvec)
-      msftadd = msftaddvec(isft)
-%       if noiseflag
-%         msftadd = 50;
-%         loffmax = 4*sps/40;
-%       else
-%         msftadd = (round(max(abs([off12ran off13ran])))+1)*sps/40;  %+1 for safety
-%         loffmax = 4*sps/40;
-%       end
+%       msftaddvec = 10: 5: 1.5*sps;
+%       for isft = 1: length(msftaddvec)
+%       msftadd = msftaddvec(isft)
+      if noiseflag
+%         msftadd = round(1/losig*sps);
+        msftadd = 0.5*sps;
+        loffmax = 4*sps/40;
+      else
+        msftadd = (round(max(abs([off12ran off13ran])))+1)*sps/40;  %+1 for safety
+        loffmax = 4*sps/40;
+      end
       ccmid = ceil(size(optcc,1)/2);
       ccwlen = round(size(optcc,1)-2*(msftaddm+1));  % minus ensures successful shifting of records
 %       ccwlen = round(size(optcc,1)-2*(max(msftaddvec)+1));
       ccmin = 0.01;  % depending on the length of trace, cc could be very low
       iup = 1;    % times of upsampling
 
-      [off12con,off13con,ccali(k),iloopoff] = constrained_cc_loose(optcc',ccmid,...
-        ccwlen,msftadd,ccmin,iup);
+      if noiseflag
+        %for the whole win, ask how well can you align the noise, does not matter if the location is
+        %the most reliable, but the resulting CC is the highest possible
+        [off12con,off13con,ccali(k),iloopoff] = constrained_cc_loose(optcc',ccmid,...
+          ccwlen,msftadd,ccmin,iup);
+      else
+        [off12con,off13con,ccali(k),iloopoff,loopoff] = constrained_cc_interp(optcc',ccmid,...
+          ccwlen,msftadd,loffmax,ccmin,iup);
+      end
+
       % if a better alignment cannot be achieved, use 0,0
       if off12con == msftadd+1 && off13con == msftadd+1
         off12con = 0;
         off13con = 0;
         fprintf('Tremor burst %d cannot be properly aligned, double-check needed \n',k);
       end
-%       off1i(k,1) = 0;
-%       off1i(k,2) = round(off12con);
-%       off1i(k,3) = round(off13con);
+      off1i(k,1) = 0;
+      off1i(k,2) = round(off12con);
+      off1i(k,3) = round(off13con);
 %       off1i(k,1) = 0;
 %       off1i(k,2) = 0;
 %       off1i(k,3) = 0;
-        off1isft(isft,1) = 0;
-        off1isft(isft,2) = round(off12con);
-        off1isft(isft,3) = round(off13con);
-        ccsft(isft) = ccali(k);
-        loff(isft) = loopoff;
-      end
+%         off1isft(isft,1) = 0;
+%         off1isft(isft,2) = round(off12con);
+%         off1isft(isft,3) = round(off13con);
+%         ccsft(isft) = ccali(k);
+%         loff(isft) = loopoff;
+%       end
       
-      figure
-      subplot(121)
-      hold on; box on; grid on
-      scatter(msftaddvec,ccsft,20,'ko','filled');
-      xlabel('Max. allowable shift in samples (160 sps)');
-      ylabel('Max. CC');
-      subplot(122)
-      hold on; box on; grid on
-      scatter(msftaddvec,off1isft(:,2),20,'ro','filled');
-      scatter(msftaddvec,off1isft(:,3),20,'bo','filled');
-%       scatter(msftaddvec,loff,'ko');
-      plot([0 msftaddvec(end)],[0 msftaddvec(end)],'k--');
-      plot([0 msftaddvec(end)],[0 -msftaddvec(end)],'k--');
-      xlabel('Max. allowable shift in samples (160 sps)');
-      ylabel('Shifts that reach to max. CC in samples (160 sps)');
-      legend('off12','off13');
-      axis equal
+%       figure
+%       subplot(121)
+%       hold on; box on; grid on
+%       scatter(msftaddvec,ccsft,20,'ko','filled');
+%       xlabel('Max. allowable shift in samples (160 sps)');
+%       ylabel('Max. CC');
+%       subplot(122)
+%       hold on; box on; grid on
+%       scatter(msftaddvec,off1isft(:,2),20,'ro','filled');
+%       scatter(msftaddvec,off1isft(:,3),20,'bo','filled');
+% %       scatter(msftaddvec,loff,'ko');
+%       plot([0 msftaddvec(end)],[0 msftaddvec(end)],'k--');
+%       plot([0 msftaddvec(end)],[0 -msftaddvec(end)],'k--');
+%       xlabel('Max. allowable shift in samples (160 sps)');
+%       ylabel('Shifts that reach to max. CC in samples (160 sps)');
+%       legend('off12','off13');
+%       axis equal
       
       %%%what if the alignment is random or as extreme to the search boundary?
       ALIGN = 'random';
