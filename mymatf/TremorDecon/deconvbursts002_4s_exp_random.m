@@ -503,8 +503,8 @@ for iets = 3: nets
 
       %align records
 %       msftaddm = (round(max(abs([off12ran off13ran])))+1)*sps/40;  %+1 for safety
-      msftaddm = sps+1;  %+1 for safety
-%       msftaddm = 1.5*sps;  %+1 for safety
+%       msftaddm = sps+1;  %+1 for safety
+      msftaddm = 1.5*sps+1;  %+1 for safety
       
       %FLAG to simulate the behavior of noise                    
       noiseflag = 1;
@@ -572,7 +572,7 @@ for iets = 3: nets
       %align the synthetic noise allowing some shift
       
       %how much do you allow the shifting of noise??
-      msftaddvec = 10: 5: sps;
+      msftaddvec = 10: 5: 1.5*sps;
       for isft = 1: length(msftaddvec)
       msftadd = msftaddvec(isft)
 %       if noiseflag
@@ -589,7 +589,7 @@ for iets = 3: nets
       iup = 1;    % times of upsampling
 
       [off12con,off13con,ccali(k),iloopoff] = constrained_cc_loose(optcc',ccmid,...
-        ccwlen,msftadd,loffmax,ccmin,iup);
+        ccwlen,msftadd,ccmin,iup);
       % if a better alignment cannot be achieved, use 0,0
       if off12con == msftadd+1 && off13con == msftadd+1
         off12con = 0;
@@ -612,18 +612,20 @@ for iets = 3: nets
       figure
       subplot(121)
       hold on; box on; grid on
-      scatter(msftaddvec,ccsft,'ko','filled');
+      scatter(msftaddvec,ccsft,20,'ko','filled');
       xlabel('Max. allowable shift in samples (160 sps)');
       ylabel('Max. CC');
       subplot(122)
       hold on; box on; grid on
-      scatter(msftaddvec,off1isft(:,2),'ro','filled');
-      scatter(msftaddvec,off1isft(:,3),'bo','filled');
-      scatter(msftaddvec,loff,'ko');
-      plot([0 msftaddvec(end)],[loffmax loffmax],'k--');
+      scatter(msftaddvec,off1isft(:,2),20,'ro','filled');
+      scatter(msftaddvec,off1isft(:,3),20,'bo','filled');
+%       scatter(msftaddvec,loff,'ko');
+      plot([0 msftaddvec(end)],[0 msftaddvec(end)],'k--');
+      plot([0 msftaddvec(end)],[0 -msftaddvec(end)],'k--');
       xlabel('Max. allowable shift in samples (160 sps)');
       ylabel('Shifts that reach to max. CC in samples (160 sps)');
-      legend('off12','off13','summed offset loop');
+      legend('off12','off13');
+      axis equal
       
       %%%what if the alignment is random or as extreme to the search boundary?
       ALIGN = 'random';
