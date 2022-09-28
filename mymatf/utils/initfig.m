@@ -1,6 +1,6 @@
 function [f] = initfig(widin,htin,nrow,ncol,ifig)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% [f] = initfig(widin,htin,nrow,ncol)
+% [f] = initfig(widin,htin,nrow,ncol,ifig)
 %
 % This function would create a figure composed by subplots with 'nrow' and 
 % 'ncol'. Figure dimension is set by a width [widin] and height [htin] in 

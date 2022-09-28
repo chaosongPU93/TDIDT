@@ -1,4 +1,4 @@
-function ax = plt_src_slip_area(ax,imp,xran,yran,cran,radi,sps,ftrans,fsty)
+function ax = plt_srcsliparea(ax,imp,xran,yran,cran,radi,sps,ftrans,fsty)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % ax = plt_src_slip_area(ax,imp,xran,yran,cran,radi,sps,ftrans,fsty)
 %

@@ -108,7 +108,7 @@ coefeff = coef(lag+itwlet >= 1+round(ldiff/2) & ...
 [pkhgt, pkind] = findpeaks(coefeff);
 %rcc serves the weight as the peak height, aka the master raw cc value at the peak
 wtcoef = rcc(pkind).* pkhgt;
-medwtcoef = median(wtcoef);  % median of the weighted master CC, could be percentile?
+% medwtcoef = median(wtcoef);  % median of the weighted master CC, could be percentile?
 % medwtcoef = prctile(wtcoef,25);
 medwtcoef = fixthresh;
 medwtcoef

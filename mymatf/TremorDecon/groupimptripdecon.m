@@ -1,4 +1,4 @@
-function [impindep,imptripf,indtrip] = groupimptripdecon(sigdecon,ampit,rcc,loff_max,refsta)
+function [impindep,imptripf,indtrip] = groupimptripdecon(sigdecon,ampit,rcc,loff_max,refsta,refampr)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % [impindep,imppairf,indpair] = groupimptripdecon(sigdecon,ampit,rcc,loff_max)
 %
@@ -34,7 +34,18 @@ function [impindep,imptripf,indtrip] = groupimptripdecon(sigdecon,ampit,rcc,loff
 %   fraction is small, we don't have to worry about it.
 %
 % --2022/06/23, added the option of selecting different stations as the 
-%   reference, not necessarily the 1st in the station list, eg., PGC  
+%   reference, not necessarily the 1st in the station list, eg., PGC 
+%
+% --2022/09/22, how do you incorporate the possbile amp ratio between sta pairs
+%   info into the grouping algorithm?
+%   a. where do you do it? After grouping, throw whose ratio too large? OR, add
+%     it into the grouping, ie. not only care about decon order. But if do the 
+%     former, should you do before or after removing 2ndary srcs? If later, how
+%     to add 2 things together?
+%   b. suppose you can do it, what is the acceptable range? ratio for all 3 pairs
+%     need to be within same range, sad 1*mad? 1*sigma?
+%   c. now i am adding 'refampr' as the reference amp ratio which is a 3*1 vector
+%     of sensible amp ratios
 %
 % 
 % By Chao Song, chaosong@princeton.edu
@@ -43,6 +54,7 @@ function [impindep,imptripf,indtrip] = groupimptripdecon(sigdecon,ampit,rcc,loff
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 defval('refsta',1);   % default reference station is sta 1, ie. PGC
+defval('refampr',[]);   % default reference station is sta 1, ie. PGC
 
 %different stations has different number of non-zero impulses
 npair = sum(sigdecon(:,refsta)>0); 
@@ -138,6 +150,17 @@ for ip = 1: npair
   %choose the pair whose sum of decon order is smallest
   %NOTE: you can't do this independently, otherwise 'off23' is not guaranteed to be <=loff_max
   [~,ind] = min(inddecon2(ind2(sub2))+inddecon3(ind3(sub3)));
+  
+  %say you have some reference amp ratio between sta pairs, discard the found source, if it's amp
+  %ratio is deviated from the reference by too much
+  %first assume refsta=1, 
+  if ~isempty(refampr)
+    if ~(log10(impref(ip,2)/imp2(ind2(sub2(ind)),2))-log10(refampr(1,1))<= log10(refampr(2,1))) || ...
+        ~(log10(impref(ip,2)/imp3(ind3(sub3(ind)),2))-log10(refampr(1,2))<= log10(refampr(2,2))) || ...
+        ~(log10(imp2(ind2(sub2(ind)),2)/imp3(ind3(sub3(ind)),2))-log10(refampr(1,3))<= log10(refampr(2,3)))
+      continue
+    end
+  end
   
   %assign the grouped impulses at the 2nd and 3rd sta accordingly
   imptrip(ip,(sta2-1)*4+1: sta2*4) = imp2(ind2(sub2(ind)),1:4);

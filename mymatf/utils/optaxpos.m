@@ -12,6 +12,12 @@ function varargout = optaxpos(f,nrow,ncol,xran,yran,xsep,ysep)
 % First created date:   2021/11/29
 % Last modified date:   2021/11/29
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+defval('xran',[0.1 0.9]);
+defval('yran',[0.1 0.9]);
+defval('xsep',0.05);
+defval('ysep',0.05);
+
 axpos = zeros(nrow*ncol,4);
 for irow = 1: nrow
   for icol = 1: ncol

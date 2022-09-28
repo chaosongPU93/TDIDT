@@ -434,14 +434,18 @@ ihicc123n = intersect(inbst,ihicc123);
 indtest = [18,21,22,23];
 
 srcamprall = [];  %store all target windows
+lndevsrcamprall = [];
+lgdevsrcamprall = [];
+rcccatsrcall = [];
+rccpairsrcall = [];
 psrcamprsall = [];
 nsrcamprsall = [];
 clppkhtwfrall = [];
 clnpkhtwfrall = [];
 
 
-for iii = 1: length(ihicc123n)
-  [iets,i,j] = indofburst(trange,ihicc123n(iii));
+for iii = 98: length(idbst)
+  [iets,i,j] = indofburst(trange,idbst(iii));
 
 % for iets = 3: nets
   % dates in each ets
@@ -835,13 +839,29 @@ for iii = 1: length(ihicc123n)
         fpltend = 0;  % plot flag for the final iteration
         fpltchk = 0; % plot flag for intermediate computations
         if noiseflag
-          if ista == 1
-            fixthresh = 1.4189e-01; % if use 2-pair rcc and do not normalize templates
-          elseif ista == 2
-            fixthresh = 6.3791e-02; % if use 2-pair rcc and do not normalize templates
-          elseif ista == 3
-            fixthresh = 8.5560e-02; % if use 2-pair rcc and do not normalize templates
-          end
+%           if ista == 1
+%             fixthresh = 1.4189e-01; % if use 2-pair rcc and do not normalize templates
+%           elseif ista == 2
+%             fixthresh = 6.3791e-02; % if use 2-pair rcc and do not normalize templates
+%           elseif ista == 3
+%             fixthresh = 8.5560e-02; % if use 2-pair rcc and do not normalize templates
+%           end
+          
+          %get the master CC between sig and wlet, to know what is range of weighted master CC
+          nfft = lsig;
+          [coef, lag] = xcorr(sig, wlet, nfft, 'none'); % unnormalized master raw CC
+          lrcc = length(rcccat); % length of running CC
+          ldiff = nfft-lrcc;  % difference in length
+          %effective raw CC that corresponds to the index of the overlapping portion between signal (or
+          %sigdecon) and running CC, same length as rcc
+          itwlet = round(twlet/dt); % time shift of main arrival of wavelet in samples
+          coefeff = coef(lag+itwlet >= 1+round(ldiff/2) & ...
+            lag+itwlet <= nfft-round(ldiff/2));
+          %find all peaks in the effective master raw CC
+          [pkhgt, pkind] = findpeaks(coefeff);
+          %rcc serves the weight as the peak height, aka the master raw cc value at the peak
+          wtcoef = rcccat(pkind).* pkhgt;
+          fixthresh = median(wtcoef);  % median of the weighted master CC, could be percentile?
           [sigdecon(:,ista),pred(:,ista),res,dresit,mfitit,ampit{ista},nit,fighdl] = ...
             iterdecon_fixthresh(sig,wlet,rcccat,noi,fixthresh,dt,twlet,width,dres_min,mfit_min,nit_max,nimp_max,fpltit,fpltend,fpltchk);
         else
@@ -893,19 +913,19 @@ for iii = 1: length(ihicc123n)
       impindepst = sortrows(impindep,1);
       impindepst(:,7:8) = impindepst(:,7:8)+repmat([off1i(k,2) off1i(k,3)],size(impindepst,1),1); %account for prealignment
 
-%       %%%plot the scatter of offsets, accounting for prealignment offset, == true offset
-%       span = max(range(off1iw(:,2))+2*loff_max, range(off1iw(:,3))+2*loff_max);
-%       xran = [round(mean(minmax(off1iw(:,2)'))-span/2)-1, round(mean(minmax(off1iw(:,2)'))+span/2)+1];
-%       yran = [round(mean(minmax(off1iw(:,3)'))-span/2)-1, round(mean(minmax(off1iw(:,3)'))+span/2)+1];
-%       cran = [0 lsig];
-%       f1.fig = figure;
-%       f1.fig.Renderer = 'painters';
-%       ax1=gca;
-%       [ax1,torispl,mamp] = plt_decon_imp_scatter_ref(ax1,impindepst,xran,yran,cran,off1iw,loff_max,...
-%         sps,50,'mean','tori','comb');
-%       scatter(ax1,off1i(k,2),off1i(k,3),20,'ks','filled','MarkerEdgeColor','k');
-%       title(ax1,'Independent, grouped');
-% 
+      %%%plot the scatter of offsets, accounting for prealignment offset, == true offset
+      span = max(range(off1iw(:,2))+2*loff_max, range(off1iw(:,3))+2*loff_max);
+      xran = [round(mean(minmax(off1iw(:,2)'))-span/2)-1, round(mean(minmax(off1iw(:,2)'))+span/2)+1];
+      yran = [round(mean(minmax(off1iw(:,3)'))-span/2)-1, round(mean(minmax(off1iw(:,3)'))+span/2)+1];
+      cran = [0 lsig];
+      f1.fig = figure;
+      f1.fig.Renderer = 'painters';
+      ax1=gca;
+      [ax1,torispl,mamp] = plt_decon_imp_scatter_ref(ax1,impindepst,xran,yran,cran,off1iw,loff_max,...
+        sps,50,'mean','tori','comb');
+      scatter(ax1,off1i(k,2),off1i(k,3),20,'ks','filled','MarkerEdgeColor','k');
+      title(ax1,'Independent, grouped');
+
 %       %%%plot the scatter of offsets, shifted to the same origin, the best alignment
 %       xran = [-loff_max+off1i(k,2)-1 loff_max+off1i(k,2)+1];
 %       yran = [-loff_max+off1i(k,3)-1 loff_max+off1i(k,3)+1];
@@ -993,18 +1013,18 @@ for iii = 1: length(ihicc123n)
       impindepst(:,7:8) = impindepst(:,7:8)+repmat([off1i(k,2) off1i(k,3)],size(impindepst,1),1); %account for prealignment
 
       %% plot the scatter of sources in terms of offsets, accounting for prealignment offset
-%       span = max(range(off1iw(:,2))+2*loff_max, range(off1iw(:,3))+2*loff_max);
-%       xran = [round(mean(minmax(off1iw(:,2)'))-span/2)-1, round(mean(minmax(off1iw(:,2)'))+span/2)+1];
-%       yran = [round(mean(minmax(off1iw(:,3)'))-span/2)-1, round(mean(minmax(off1iw(:,3)'))+span/2)+1];
-%       cran = [0 lsig];
-%       %%%plot the scatter of offsets, accounting for prealignment offset, == true offset
-%       f1.fig = figure;
-%       f1.fig.Renderer = 'painters';
-%       ax1=gca;
-%       [ax1,torispl,mamp,xbndcvhl,ybndcvhl] = plt_decon_imp_scatter_ref(ax1,impindepst,xran,yran,cran,off1iw,loff_max,...
-%         sps,50,'mean','tori','comb');
-%       scatter(ax1,off1i(k,2),off1i(k,3),20,'ks','filled','MarkerEdgeColor','k');
-%       title(ax1,'Independent, grouped, no secondary sources');
+      span = max(range(off1iw(:,2))+2*loff_max, range(off1iw(:,3))+2*loff_max);
+      xran = [round(mean(minmax(off1iw(:,2)'))-span/2)-1, round(mean(minmax(off1iw(:,2)'))+span/2)+1];
+      yran = [round(mean(minmax(off1iw(:,3)'))-span/2)-1, round(mean(minmax(off1iw(:,3)'))+span/2)+1];
+      cran = [0 lsig];
+      %%%plot the scatter of offsets, accounting for prealignment offset, == true offset
+      f1.fig = figure;
+      f1.fig.Renderer = 'painters';
+      ax1=gca;
+      [ax1,torispl,mamp,xbndcvhl,ybndcvhl] = plt_decon_imp_scatter_ref(ax1,impindepst,xran,yran,cran,off1iw,loff_max,...
+        sps,50,'mean','tori','comb');
+      scatter(ax1,off1i(k,2),off1i(k,3),20,'ks','filled','MarkerEdgeColor','k');
+      title(ax1,'Independent, grouped, no secondary sources');
       
 %       %%%plot the scatter of offsets, shifted to the same origin, the best alignment
 %       xran = [-loff_max+off1i(k,2)-1 loff_max+off1i(k,2)+1];
@@ -1052,52 +1072,141 @@ for iii = 1: length(ihicc123n)
       psrcamprsall = [psrcamprsall; psrcamprs];
       nsrcamprsall = [nsrcamprsall; nsrcamprats];
       
-%       figure;
-%       for ista = 1: nsta
-%         subplot(3,3,ista); hold on; ax=gca;
-%         histogram(log10(srcampr(:,ista))); 
-%         plot([log10(msrcampr(iii,ista)) log10(msrcampr(iii,ista))],ax.YLim,'r--');      
-% %         errorbar(mclppkhtwfr(i),mpsrcamprs(i),madpsrcamprs(i),madpsrcamprs(i),...
-% %           madclppkhtwfr(i),madclppkhtwfr(i),'color',[.5 .5 .5],'linewidth',0.8,'CapSize',5);
-%         text(0.05,0.9,sprintf('med=%.2f',msrcampr(iii,ista)),'Units','normalized');
-%         text(0.9,0.9,'imp','Units','normalized','HorizontalAlignment','right');
-%         ylabel('Counts');
-%         if ista == 1
-%           xlabel('log_{10}{Amp ratio 1/2}');
-%         elseif ista == 2
-%           xlabel('log_{10}{Amp ratio 1/3}');
-%         else
-%           xlabel('log_{10}{Amp ratio 2/3}');
+      %what is the deviation of amp ratio from the median for each source?
+      lndevsrcampr = srcampr-median(srcampr, 1); % in linear scale
+      lgdevsrcampr = log10(srcampr)-log10(median(srcampr, 1)); % in log scale, note that log2+log5=log10, so this means a ratio
+      lndevsrcamprall = [lndevsrcamprall; lndevsrcampr];
+      lgdevsrcamprall = [lgdevsrcamprall; lgdevsrcampr];
+      
+      %%%what are the corresponding RCC at each source
+      rccpairsrc = [];
+      rccpairsrc(:,1) = rccpaircat(round(mean(impindepst(:,[1 3]),2)),1);
+      rccpairsrc(:,2) = rccpaircat(round(mean(impindepst(:,[1 5]),2)),2);
+      rccpairsrc(:,3) = rccpaircat(round(mean(impindepst(:,[3 5]),2)),3);
+      rccpairsrcall = [rccpairsrcall; rccpairsrc];
+      
+      %use the concatenated rcc at the average arrival time of each source
+      rcccatsrc = rcccat(round(mean(impindepst(:,[1 3 5]),2)));
+      rcccatsrcall = [rcccatsrcall; rcccatsrc];
+        
+%       keyboard
+      
+      %% source amp ratio vs. RCC
+      f.fig=figure;
+      f.fig.Renderer='Painters';
+      for jj = 1:3
+        subplot(2,3,jj); hold on; box on; grid on;
+        scatter(log10(srcampr(:,jj)),rccpairsrc(:,jj),50,'MarkerFaceColor','k','MarkerEdgeColor',...
+          'none','MarkerFaceAlpha',.2);
+        axis([-1 1 -1 1]);
+        plot([log10(median(srcampr(:,jj))) log10(median(srcampr(:,jj)))], [-1 1], 'r--','linew',1);
+        if jj == 1
+          ylabel('RCC between the same pair');
+        end
+        longticks(gca,2);
+      end
+      for jj = 1:3
+        subplot(2,3,3+jj); hold on; box on; grid on;
+        scatter(log10(srcampr(:,jj)),rcccatsrc,50,'MarkerFaceColor','k','MarkerEdgeColor','none',...
+          'MarkerFaceAlpha',.2);
+        axis([-1 1 -1 1]);
+        plot([log10(median(srcampr(:,jj))) log10(median(srcampr(:,jj)))], [-1 1], 'r--','linew',1);
+        if jj == 1
+          xlabel('log_{10}{Amp ratio 1/2}');
+        elseif jj == 2
+          xlabel('log_{10}{Amp ratio 1/3}');
+        else
+          xlabel('log_{10}{Amp ratio 2/3}');
+        end
+        if jj == 1
+          ylabel('Mean RCC of the 2 best pairs');
+        end
+        longticks(gca,2);
+      end      
+      
+      %% deviation of source amp ratio from some median vs. RCC; shift the plot above to center
+%       f.fig=figure;
+%       f.fig.Renderer='Painters';
+%       for jj = 1:3
+%         subplot(2,3,jj); hold on; box on; grid on;
+%         scatter(lgdevsrcampr(:,jj),rccpairsrc(:,jj),50,'MarkerFaceColor','k','MarkerEdgeColor',...
+%           'none','MarkerFaceAlpha',.2);
+%         axis([-1 1 -1 1]);
+%         if jj == 1
+%           ylabel('RCC between the same pair');
 %         end
-%         
-%         subplot(3,3,3+ista); hold on; ax=gca;
-%         histogram(log10(psrcamprs(:,ista))); 
-%         plot([log10(mpsrcamprs(iii,ista)) log10(mpsrcamprs(iii,ista))],ax.YLim,'r--');      
-%         text(0.05,0.9,sprintf('med=%.2f',mpsrcamprs(iii,ista)),'Units','normalized');
-%         text(0.9,0.9,'imp*temp max','Units','normalized','HorizontalAlignment','right');
-%         ylabel('Counts');      
-%         if ista == 1
-%           xlabel('log_{10}{Scaled positive amp ratio 1/2}');
-%         elseif ista == 2
-%           xlabel('log_{10}{Scaled positive amp ratio 1/3}');
-%         else
-%           xlabel('log_{10}{Scaled positive amp ratio 2/3}');
-%         end
-%         
-%         subplot(3,3,6+ista); hold on; ax=gca;
-%         histogram(log10(nsrcamprats(:,ista))); 
-%         plot([log10(mnsrcamprs(iii,ista)) log10(mnsrcamprs(iii,ista))],ax.YLim,'r--');      
-%         text(0.05,0.9,sprintf('med=%.2f',mnsrcamprs(iii,ista)),'Units','normalized');
-%         text(0.9,0.9,'imp*temp min','Units','normalized','HorizontalAlignment','right');
-%         ylabel('Counts');      
-%         if ista == 1
-%           xlabel('log_{10}{Scaled negative amp ratio 1/2}');
-%         elseif ista == 2
-%           xlabel('log_{10}{Scaled negative amp ratio 1/3}');
-%         else
-%           xlabel('log_{10}{Scaled negative amp ratio 2/3}');
-%         end
+%         longticks(gca,2);
 %       end
+%       for jj = 1:3
+%         subplot(2,3,3+jj); hold on; box on; grid on;
+%         scatter(lgdevsrcampr(:,jj),rcccatsrc,50,'MarkerFaceColor','k','MarkerEdgeColor','none',...
+%           'MarkerFaceAlpha',.2);
+%         axis([-1 1 -1 1]);
+%         if jj == 1
+%           xlabel('deviation from median amp ratio 1/2 (log)');
+%         elseif jj == 2
+%           xlabel('deviation from median amp ratio 1/3 (log)');
+%         else
+%           xlabel('deviation from median amp ratio 2/3 (log)');
+%         end
+%         if jj == 1
+%           ylabel('Mean RCC of the 2 best pairs');
+%         end
+%         longticks(gca,2);
+%       end      
+      
+      %% histograms of source amp
+      figure;
+      for ista = 1: nsta
+        subplot(3,3,ista); hold on; box on; grid on; ax=gca;
+        histogram(log10(srcampr(:,ista))); 
+        plot([log10(msrcampr(iii,ista)) log10(msrcampr(iii,ista))],ax.YLim,'r--');      
+%         errorbar(mclppkhtwfr(i),mpsrcamprs(i),madpsrcamprs(i),madpsrcamprs(i),...
+%           madclppkhtwfr(i),madclppkhtwfr(i),'color',[.5 .5 .5],'linewidth',0.8,'CapSize',5);
+        text(0.05,0.9,sprintf('med=%.2f',msrcampr(iii,ista)),'Units','normalized');
+        text(0.9,0.9,'imp','Units','normalized','HorizontalAlignment','right');
+        ylabel('Counts');
+        if ista == 1
+          xlabel('log_{10}{Amp ratio 1/2}');
+        elseif ista == 2
+          xlabel('log_{10}{Amp ratio 1/3}');
+        else
+          xlabel('log_{10}{Amp ratio 2/3}');
+        end
+        xlim([-1 1]);
+        
+        subplot(3,3,3+ista); hold on; box on; grid on; ax=gca;
+        histogram(log10(psrcamprs(:,ista))); 
+        plot([log10(mpsrcamprs(iii,ista)) log10(mpsrcamprs(iii,ista))],ax.YLim,'r--');      
+        text(0.05,0.9,sprintf('med=%.2f',mpsrcamprs(iii,ista)),'Units','normalized');
+        text(0.9,0.9,'imp*temp max','Units','normalized','HorizontalAlignment','right');
+        ylabel('Counts');      
+        if ista == 1
+          xlabel('log_{10}{Scaled positive amp ratio 1/2}');
+        elseif ista == 2
+          xlabel('log_{10}{Scaled positive amp ratio 1/3}');
+        else
+          xlabel('log_{10}{Scaled positive amp ratio 2/3}');
+        end
+        xlim([-1 1]);
+        
+        subplot(3,3,6+ista); hold on; box on; grid on; ax=gca;
+        histogram(log10(nsrcamprats(:,ista))); 
+        plot([log10(mnsrcamprs(iii,ista)) log10(mnsrcamprs(iii,ista))],ax.YLim,'r--');      
+        text(0.05,0.9,sprintf('med=%.2f',mnsrcamprs(iii,ista)),'Units','normalized');
+        text(0.9,0.9,'imp*temp min','Units','normalized','HorizontalAlignment','right');
+        ylabel('Counts');      
+        if ista == 1
+          xlabel('log_{10}{Scaled negative amp ratio 1/2}');
+        elseif ista == 2
+          xlabel('log_{10}{Scaled negative amp ratio 1/3}');
+        else
+          xlabel('log_{10}{Scaled negative amp ratio 2/3}');
+        end
+        xlim([-1 1]);
+
+      end
+
       
       %% plot deconvolved positive peaks with waveform peaks
 %       %%plot the positive peaks indicated by the grouped triplets, see if they indeed match the
@@ -1652,10 +1761,9 @@ for i = 1: 3
   subplot(3,3,i)
   hold on; box on; grid on; ax=gca;
   histogram(log10(srcamprall(:,i)));
-  plot([median(log10(srcamprall(:,i))) median(log10(srcamprall(:,i)))],ax.YLim,'r--','linew',1);
-  
-  text(0.95,0.9,sprintf('med=%.2f',median(srcamprall(:,i))),'Units','normalized',...
-    'HorizontalAlignment','right');
+  plot([median(log10(srcamprall(:,i))) median(log10(srcamprall(:,i)))],ax.YLim,'r--','linew',1);  
+  text(0.95,0.9,sprintf('med=%.2f; MAD=%.2f',median(srcamprall(:,i)),mad(srcamprall(:,i), 1)),...
+    'Units','normalized','HorizontalAlignment','right');
   if i ==1
     ylabel('# of source');
     xlabel('log_{10}{src amp ratio 1/2}');
@@ -1669,9 +1777,8 @@ for i = 1: 3
   hold on; box on; grid on; ax=gca;
   histogram(log10(psrcamprsall(:,i)));
   plot([median(log10(psrcamprsall(:,i))) median(log10(psrcamprsall(:,i)))],ax.YLim,'r--','linew',1);
-  
-  text(0.95,0.9,sprintf('med=%.2f',median(psrcamprsall(:,i))),'Units','normalized',...
-    'HorizontalAlignment','right');
+  text(0.95,0.9,sprintf('med=%.2f; MAD=%.2f',median(psrcamprsall(:,i)),mad(psrcamprsall(:,i), 1)),...
+    'Units','normalized','HorizontalAlignment','right');
   if i ==1
     xlabel('log_{10}{src scaled pos amp ratio 1/2}');
   elseif i ==2
@@ -1683,10 +1790,9 @@ for i = 1: 3
   subplot(3,3,6+i)
   hold on; box on; grid on; ax=gca;
   histogram(log10(nsrcamprsall(:,i)));
-  plot([median(log10(nsrcamprsall(:,i))) median(log10(nsrcamprsall(:,i)))],ax.YLim,'r--','linew',1);
-  
-  text(0.95,0.9,sprintf('med=%.2f',median(nsrcamprsall(:,i))),'Units','normalized',...
-    'HorizontalAlignment','right');
+  plot([median(log10(nsrcamprsall(:,i))) median(log10(nsrcamprsall(:,i)))],ax.YLim,'r--','linew',1);  
+  text(0.95,0.9,sprintf('med=%.2f; MAD=%.2f',median(nsrcamprsall(:,i)),mad(nsrcamprsall(:,i), 1)),...
+    'Units','normalized','HorizontalAlignment','right');
   if i ==1
     xlabel('log_{10}{src scaled neg amp ratio 1/2}');
   elseif i ==2
@@ -1697,6 +1803,72 @@ for i = 1: 3
 
 end
 
+%%
+%%%deviation of source amp ratio from some median vs. RCC
+widin = 9;  % maximum width allowed is 8.5 inches
+htin = 6;   % maximum height allowed is 11 inches
+nrow = 2; 
+ncol = 3;
+f = initfig(widin,htin,nrow,ncol); %initialize fig  
+optaxpos(f,2,3);%get the locations for each axis
+for i = 1: 3
+  ax=f.ax(i); hold(ax,'on'); grid(ax,'on');
+  scatter(ax,lgdevsrcamprall(:,i),rccpairsrcall(:,i),40,'MarkerFaceColor','k','MarkerEdgeColor',...
+    'none','MarkerFaceAlpha',.2);
+  text(ax,0.95,0.1,sprintf('med=%.2f; %.2f',median(srcamprall(:,i)), median(rccpairsrcall(:,i))),...
+    'Units','normalized','HorizontalAlignment','right');
+  axis(ax,[-1 1 -1 1]);
+  if i == 1
+    ylabel(ax,'RCC between the same pair');
+  end
+  longticks(ax,2);
+  
+  ax=f.ax(i+3); hold(ax,'on'); grid(ax,'on');
+  scatter(ax,lgdevsrcamprall(:,i),rcccatsrcall,40,'MarkerFaceColor','k','MarkerEdgeColor','none',...
+    'MarkerFaceAlpha',.2);
+  text(ax,0.95,0.1,sprintf('med=%.2f; %.2f',median(srcamprall(:,i)), median(rcccatsrcall)),...
+    'Units','normalized','HorizontalAlignment','right');
+  axis(ax,[-1 1 -1 1]);
+  if i == 1
+    xlabel(ax,'deviation from median amp ratio 1/2 (log)');
+  elseif i == 2
+    xlabel(ax,'deviation from median amp ratio 1/3 (log)');
+  else
+    xlabel(ax,'deviation from median amp ratio 2/3 (log)');
+  end
+  if i == 1
+    ylabel(ax,'Mean RCC of the 2 best pairs');
+  end
+  longticks(ax,2);
+end
+
+%%
+figure
+for i = 1:3
+  subplot(1,4,i)
+  hold on; box on; grid on; ax=gca;
+  histogram(rccpairsrcall(:,i));
+  plot([median(rccpairsrcall(:,i)) median(rccpairsrcall(:,i))],ax.YLim,'r--','linew',1);  
+  text(0.05,0.9,sprintf('med=%.2f',median(rccpairsrcall(:,i))),...
+    'Units','normalized','HorizontalAlignment','left');
+  if i ==1
+    ylabel('# of source');
+    xlabel('RCC_{12}');
+  elseif i ==2
+    xlabel('RCC_{13}');
+  else
+    xlabel('RCC_{23}');
+  end
+end
+subplot(1,4,4)
+hold on; box on; grid on; ax=gca;
+histogram(rcccatsrcall);
+plot([median(rcccatsrcall) median(rcccatsrcall)],ax.YLim,'r--','linew',1);
+text(0.05,0.9,sprintf('med=%.2f',median(rcccatsrcall)),...
+  'Units','normalized','HorizontalAlignment','left');
+xlabel('Mean RCC of 2 best pairs');
+
+keyboard
 %%
 figure
 for i = 1: 3
@@ -1826,6 +1998,8 @@ ylabel('Scaled negative source amplitude ratio 2/3');
 xlabel('Negative waveform peak height ratio 2/3');
 
 
+%%%%%%%%2022/09/27, It is less meaningful to compare all waveform peaks with source amp, unless you 
+%%%%%%%%just want to know an overall amp level of the waveform
 % %%%the scaled deconvolved POS source peak ratio VS. the waveform POS peak ratio, note that
 % %%%waveform peaks are much more than sources
 % figure
