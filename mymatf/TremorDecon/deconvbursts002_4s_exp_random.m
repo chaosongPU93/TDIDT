@@ -509,6 +509,7 @@ for iets = 3: nets
       %%%%2022/09/26, obtain all information for data before decon, so that you know the threshold
       %%%%being used for the noise; the idea is, if 'noiseflag' is on, then overwrite related
       %%%%variables with the synthetic noise
+      %%%%%%%%%%%%%%%%%%%%%%%% PART FOR DATA %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
       optcc = STAopt(max(floor((tstbuf)*sps+1),1): min(floor((tedbuf)*sps),86400*sps), 2:end);
       
       msftadd = (round(max(abs([off12ran off13ran])))+1)*sps/40;  %+1 for safety
@@ -861,8 +862,9 @@ for iets = 3: nets
         fixthresh(ista) = median(wtcoef);  % median of the weighted master CC, could be percentile?
 
       end
+      %%%%%%%%%%%%%%%%%%%%%%%% PART FOR DATA %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
       
-      %%%%%%% BEGIN the noise analysis, if 'noiseflag' is on
+      %%%%%%% BEGIN the noise analysis, if 'noiseflag' is on %%%%%%%%%%
       %FLAG to simulate the behavior of noise
       noiseflag = 1;
 
