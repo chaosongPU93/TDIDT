@@ -207,5 +207,3 @@ title(ax,'Quiet times');
 
 
 
-
-

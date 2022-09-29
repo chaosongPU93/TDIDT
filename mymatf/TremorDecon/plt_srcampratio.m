@@ -1,4 +1,4 @@
-function [f,amprat,ampratsclp,ampratscln] = plt_srcampratio(imploc,impindepst,greenf,sps,mapview)
+function [f,amprat,ampsclp,ampscln,ampratsclp,ampratscln] = plt_srcampratio(imploc,impindepst,greenf,sps,mapview)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % [f,amprat,ampratscl] = plt_srcampratio(imploc,impindepst,greenf,sps,mapview)
 %
@@ -124,7 +124,13 @@ ampratsclp = [impindepst(:,2)*max(greenf(:,1))./(impindepst(:,4)*max(greenf(:,2)
   impindepst(:,2)*max(greenf(:,1))./(impindepst(:,6)*max(greenf(:,3))) ...
   impindepst(:,4)*max(greenf(:,2))./(impindepst(:,6)*max(greenf(:,3)))];
 
+ampsclp = [impindepst(:,2)*max(greenf(:,1)) impindepst(:,4)*max(greenf(:,2)) ...
+  impindepst(:,6)*max(greenf(:,3))];
+
 ampratscln = [impindepst(:,2)*min(greenf(:,1))./(impindepst(:,4)*min(greenf(:,2))) ...
   impindepst(:,2)*min(greenf(:,1))./(impindepst(:,6)*min(greenf(:,3))) ...
   impindepst(:,4)*min(greenf(:,2))./(impindepst(:,6)*min(greenf(:,3)))];
+
+ampscln = [impindepst(:,2)*min(greenf(:,1)) impindepst(:,4)*min(greenf(:,2))...
+  impindepst(:,6)*min(greenf(:,3))];
 

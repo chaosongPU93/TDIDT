@@ -1,4 +1,4 @@
-function plt_deconpkvswfpk_rat(f,clppkhtwfrall,psrcamprsall,clnpkhtwfrall,nsrcamprsall,color)
+function plt_deconpkvswfpk_rat(f,clppkhtwfall,psrcampsall,clnpkhtwfall,nsrcampsall,color)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % plt_deconpkvswfpk_rat(f,clppkhtwfrall,psrcamprsall,clnpkhtwfrall,nsrcamprsall,color)
 %
@@ -19,7 +19,7 @@ for i = 1: 3
   ax=f.ax(i);
   hold(ax,'on');  
   grid(ax,'on');
-  temp = clppkhtwfrall(:,i)./psrcamprsall(:,i);
+  temp = clppkhtwfall(:,i)./psrcampsall(:,i);
   temp = temp(temp>0);
   histogram(ax,log10(temp),'FaceColor',color);
   plot(ax,[median(log10(temp)) median(log10(temp))],ax.YLim,'--',...
@@ -27,19 +27,19 @@ for i = 1: 3
 %   text(ax,0.95,0.9,sprintf('med=%.2f',median(log10(temp))),'Units','normalized',...
 %     'HorizontalAlignment','right');
   if i ==1
-    xlabel(ax,'log_{10}{closest pos amp ratio 1/2 / pos waveform peak height ratio 1/2}');
+    xlabel(ax,'log_{10}{closest pos amp / pos waveform peak height at sta 1}');
     ylabel('Count');
   elseif i ==2
-    xlabel(ax,'log_{10}{closest pos amp ratio 1/3 / pos waveform peak height ratio 1/3}');
+    xlabel(ax,'log_{10}{closest pos amp / pos waveform peak height at sta 2}');
   else
-    xlabel(ax,'log_{10}{closest pos amp ratio 2/3 / pos waveform peak height ratio 2/3}');
+    xlabel(ax,'log_{10}{closest pos amp / pos waveform peak height at sta 3}');
   end
   xlim(ax,[-1 1]);
 
   ax=f.ax(3+i);
   hold(ax,'on');  
   grid(ax,'on');
-  temp = clnpkhtwfrall(:,i)./nsrcamprsall(:,i);
+  temp = clnpkhtwfall(:,i)./nsrcampsall(:,i);
   temp = temp(temp>0);
   histogram(ax,log10(temp),'FaceColor',color);
   plot(ax,[median(log10(temp)) median(log10(temp))],ax.YLim,'--',...
@@ -47,12 +47,12 @@ for i = 1: 3
 %   text(ax,0.95,0.9,sprintf('med=%.2f',median(log10(temp))),'Units','normalized',...
 %     'HorizontalAlignment','right');
   if i ==1
-    xlabel(ax,'log_{10}{closest neg amp ratio 1/2 / neg waveform peak height ratio 1/2}');
-    ylabel(ax,'Count');
+    xlabel(ax,'log_{10}{closest neg amp / neg waveform peak height at sta 1}');
+    ylabel('Count');
   elseif i ==2
-    xlabel(ax,'log_{10}{closest neg amp ratio 1/3 / neg waveform peak height ratio 1/3}');
+    xlabel(ax,'log_{10}{closest neg amp / neg waveform peak height at sta 2}');
   else
-    xlabel(ax,'log_{10}{closest neg amp ratio 2/3 / neg waveform peak height ratio 2/3}');
+    xlabel(ax,'log_{10}{closest neg amp / neg waveform peak height at sta 3}');
   end
   xlim(ax,[-1 1]);
 

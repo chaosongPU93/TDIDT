@@ -1,4 +1,4 @@
-function rststruct = deconv_ref_4s_exp_rand_fn(idxburst,normflag,noiseflag,pltflag)
+% function rststruct = deconv_ref_4s_exp_rand_fn(idxburst,normflag,noiseflag,pltflag)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Based on 'deconvbursts002_ref_4s_exp', but this script tries to simulate what 
 % the current deconvolution algorithm would behave if the records are 
@@ -29,7 +29,7 @@ function rststruct = deconv_ref_4s_exp_rand_fn(idxburst,normflag,noiseflag,pltfl
 %% for easy testing
 defval('idxburst',181);   % the 250-s example 
 defval('normflag',0);
-defval('noiseflag',0);
+defval('noiseflag',1);
 defval('pltflag',1);
 
 
@@ -38,8 +38,8 @@ defval('pltflag',1);
 %%% AND if using the same family, same station trio
 format short e   % Set the format to 5-digit floating point
 % clear
-clc
-close all
+% clc
+% close all
 
 set(0,'DefaultFigureVisible','on');
 % set(0,'DefaultFigureVisible','off');   % switch to show the plots or not
@@ -455,10 +455,12 @@ lndevsrcamprall = [];
 lgdevsrcamprall = [];
 rcccatsrcall = [];
 rccpairsrcall = [];
+psrcampsall = [];
+nsrcampsall = [];
 psrcamprsall = [];
 nsrcamprsall = [];
-clppkhtwfrall = [];
-clnpkhtwfrall = [];
+clppkhtwfall = [];
+clnpkhtwfall = [];
 
 for iii = 1: length(idxburst)
   [iets,i,j] = indofburst(trange,idxburst(iii));
@@ -1357,19 +1359,21 @@ for iii = 1: length(idxburst)
       %convert time offset to relative loc
       imploc = off2space002(impindepst(:,7:8),sps,ftrans,0); % 8 cols, format: dx,dy,lon,lat,dep,ttrvl,off12,off13
       mapview = 'offset';
-      [f,srcampr,psrcamprs,nsrcamprats] = plt_srcampratio(imploc,impindepst,greenf,sps,mapview);
+      [f,srcampr,psrcamps,nsrcamps,psrcamprs,nsrcamprs] = plt_srcampratio(imploc,impindepst,greenf,sps,mapview);
       close(f.fig);
 %       iii = 1;
       msrcampr(iii,:) = median(srcampr, 1);
       madsrcampr(iii,:) = mad(srcampr, 1, 1);
       mpsrcamprs(iii,:) = median(psrcamprs, 1);
       madpsrcamprs(iii,:) = mad(psrcamprs, 1, 1);
-      mnsrcamprs(iii,:) = median(nsrcamprats, 1);
-      madnsrcamprs(iii,:) = mad(nsrcamprats, 1, 1);
+      mnsrcamprs(iii,:) = median(nsrcamprs, 1);
+      madnsrcamprs(iii,:) = mad(nsrcamprs, 1, 1);
       nsrc(iii,1) = size(srcampr,1);
       srcamprall = [srcamprall; srcampr];
+      psrcampsall = [psrcampsall; psrcamps];
+      nsrcampsall = [nsrcampsall; nsrcamps];
       psrcamprsall = [psrcamprsall; psrcamprs];
-      nsrcamprsall = [nsrcamprsall; nsrcamprats];
+      nsrcamprsall = [nsrcamprsall; nsrcamprs];
       
       %what is the deviation of amp ratio from the median for each source?
       lndevsrcampr = srcampr-median(srcampr, 1); % in linear scale
@@ -1529,22 +1533,22 @@ for iii = 1: length(idxburst)
       close(f1.fig);
       close(f2.fig);
       clppkhtwf = clppk.clppkhtwf;
-      clppkhtwfr = [clppkhtwf(:,1)./clppkhtwf(:,2) clppkhtwf(:,1)./clppkhtwf(:,3) ...
-        clppkhtwf(:,2)./clppkhtwf(:,3)];
-      mclppkhtwfr(iii, :) = median(clppkhtwfr, 1);
-      madclppkhtwfr(iii, :) = mad(clppkhtwfr,1, 1);
-      clppkhtwfrall = [clppkhtwfrall; clppkhtwfr];
+%       clppkhtwfr = [clppkhtwf(:,1)./clppkhtwf(:,2) clppkhtwf(:,1)./clppkhtwf(:,3) ...
+%         clppkhtwf(:,2)./clppkhtwf(:,3)];  % if the point is to check the fitting, why bother ratio?
+      mclppkhtwf(iii, :) = median(clppkhtwf, 1);
+      madclppkhtwf(iii, :) = mad(clppkhtwf,1, 1);
+      clppkhtwfall = [clppkhtwfall; clppkhtwf];
 %       clppkhtsrc = clppk.ppkhtsrc;  % note that this is IDENTICAL to '?srcamprats'
 %       clppkhtsrcr = clppkhtsrc(:,2)./clppkhtsrc(:,3);
 %       mclppkhtsrcr(iii) = median(clppkhtsrcr);
 %       madclppkhtsrcr(iii) = mad(clppkhtsrcr,1);
       
       clnpkhtwf = clnpk.clnpkhtwf;
-      clnpkhtwfr =  [clnpkhtwf(:,1)./clnpkhtwf(:,2) clnpkhtwf(:,1)./clnpkhtwf(:,3) ...
-        clnpkhtwf(:,2)./clnpkhtwf(:,3)];
-      mclnpkhtwfr(iii, :) = median(clnpkhtwfr, 1);
-      madclnpkhtwfr(iii, :) = mad(clnpkhtwfr,1, 1);
-      clnpkhtwfrall = [clnpkhtwfrall; clnpkhtwfr];
+%       clnpkhtwfr =  [clnpkhtwf(:,1)./clnpkhtwf(:,2) clnpkhtwf(:,1)./clnpkhtwf(:,3) ...
+%         clnpkhtwf(:,2)./clnpkhtwf(:,3)];
+      mclnpkhtwf(iii, :) = median(clnpkhtwf, 1);
+      madclnpkhtwf(iii, :) = mad(clnpkhtwf,1, 1);
+      clnpkhtwfall = [clnpkhtwfall; clnpkhtwf];
       
 %       keyboard
       end
@@ -1990,18 +1994,20 @@ rststruct.lndevsrcamprall = lndevsrcamprall;
 rststruct.lgdevsrcamprall = lgdevsrcamprall;
 rststruct.rcccatsrcall = rcccatsrcall;
 rststruct.rccpairsrcall = rccpairsrcall;
+rststruct.psrcampsall = psrcampsall;
+rststruct.nsrcampsall = nsrcampsall;
 rststruct.psrcamprsall = psrcamprsall;
 rststruct.nsrcamprsall = nsrcamprsall;
-rststruct.clppkhtwfrall = clppkhtwfrall;
-rststruct.clnpkhtwfrall = clnpkhtwfrall;
+rststruct.clppkhtwfall = clppkhtwfall;
+rststruct.clnpkhtwfall = clnpkhtwfall;
 rststruct.nsrc = nsrc;
 rststruct.nsrcraw = nsrcraw;
 rststruct.msrcampr = msrcampr;
 rststruct.madsrcampr = madsrcampr;
-rststruct.mpsrcamprs = mpsrcamprs;
-rststruct.madpsrcamprs = madpsrcamprs;
-rststruct.mnsrcamprs = mnsrcamprs;
-rststruct.madnsrcamprs = madnsrcamprs;
+rststruct.mpsrcamps = mpsrcamps;
+rststruct.madpsrcamps = madpsrcamps;
+rststruct.mnsrcamps = mnsrcamps;
+rststruct.madnsrcamps = madnsrcamps;
 
 
 %% if 'pltflag' is on, then summary plots for each choice of inputs would be made 
@@ -2051,12 +2057,12 @@ if pltflag
   %%%scatter between closest pos amp ratio and pos waveform peak height ratio between diff station
   %%%pairs
   f4 = initfig(9,6,2,3); %initialize fig  
-  plt_deconpkvswfpk(f4,clppkhtwfrall,psrcamprsall,clnpkhtwfrall,nsrcamprsall,'k');
+  plt_deconpkvswfpk(f4,clppkhtwfall,psrcampsall,clnpkhtwfall,nsrcampsall,'k');
   
   %%%histogram of the ratio between closest pos amp ratio and pos waveform peak height ratio between
   %%%diff station pairs
   f5 = initfig(9,6,2,3); %initialize fig  
-  plt_deconpkvswfpk_rat(f5,clppkhtwfrall,psrcamprsall,clnpkhtwfrall,nsrcamprsall,'k');
+  plt_deconpkvswfpk_rat(f5,clppkhtwfall,psrcampsall,clnpkhtwfall,nsrcampsall,'k');
 
 % keyboard
 end

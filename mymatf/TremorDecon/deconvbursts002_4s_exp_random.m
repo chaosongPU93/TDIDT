@@ -866,7 +866,7 @@ for iets = 3: nets
       
       %%%%%%% BEGIN the noise analysis, if 'noiseflag' is on %%%%%%%%%%
       %FLAG to simulate the behavior of noise
-      noiseflag = 0;
+      noiseflag = 1;
 
 %       seedmat = randi(1000,200,1);
 %       for iii = 1: length(seedmat)
