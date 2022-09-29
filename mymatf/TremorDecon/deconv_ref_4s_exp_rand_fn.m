@@ -26,6 +26,13 @@ function rststruct = deconv_ref_4s_exp_rand_fn(idxburst,normflag,noiseflag,pltfl
 % Last modified date:   2022/08/09
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%% for easy testing
+defval('idxburst',181);   % the 250-s example 
+defval('normflag',0);
+defval('noiseflag',0);
+defval('pltflag',1);
+
+
 %% Initialization
 %%% SAME if focusing on the same region (i.e. same PERMROTS and POLROTS)
 %%% AND if using the same family, same station trio
@@ -416,7 +423,8 @@ mwlen=sps/2;
 k = 0;  % counting the burst windows
 
 off1iwk = cell(size(trange,1),1);  % the best alignment between sta 2, 3 wrt 1 for all subwins and all burst wins
-off1i = zeros(size(trange,1),3);  % single best alignment between sta 2, 3 wrt 1 for entire win
+off1ia = zeros(size(trange,1),3);  % single best alignment between sta 2, 3 wrt 1 for entire win
+off1i = zeros(size(trange,1),3);  
 ccali = zeros(size(trange,1),1);  % CC value using the best alignment
 subwsec = zeros(size(trange,1),1);  % subwin length in sec used in practice
 subwseclfit = zeros(size(trange,1),1);  % subwin length from linear fitting, ie, time for 1-sample offset change
@@ -735,19 +743,21 @@ for iii = 1: length(idxburst)
         off13con = 0;
         fprintf('Tremor burst %d cannot be properly aligned, double-check needed \n',k);
       end
-      off1i(k,1) = 0;
-      off1i(k,2) = round(off12con);
-      off1i(k,3) = round(off13con);
+      off1ia(k,1) = 0;
+      off1ia(k,2) = round(off12con);
+      off1ia(k,3) = round(off13con);
       
       %%%Align and compute the RCC based on the entire win, and take that as the input signal!      
       optdat = [];  % win segment of interest
       ortdat = [];
-      optdat(:, 1:2) = optseg(1+msftaddm: end-msftaddm, 1:2); % sta 1
-      ortdat(:, 1:2) = ortseg(1+msftaddm: end-msftaddm, 1:2);
-      optdat(:, 3) = optseg(1+msftaddm-off1i(k,2): end-msftaddm-off1i(k,2), 3); % sta 2
-      ortdat(:, 3) = ortseg(1+msftaddm-off1i(k,2): end-msftaddm-off1i(k,2), 3);
-      optdat(:, 4) = optseg(1+msftaddm-off1i(k,3): end-msftaddm-off1i(k,3), 4); % sta 3
-      ortdat(:, 4) = ortseg(1+msftaddm-off1i(k,3): end-msftaddm-off1i(k,3), 4);
+%       optdat(:, 1:2) = optseg(1+msftaddm: end-msftaddm, 1:2); % sta 1
+%       ortdat(:, 1:2) = ortseg(1+msftaddm: end-msftaddm, 1:2);
+%       optdat(:, 3) = optseg(1+msftaddm-off1i(k,2): end-msftaddm-off1i(k,2), 3); % sta 2
+%       ortdat(:, 3) = ortseg(1+msftaddm-off1i(k,2): end-msftaddm-off1i(k,2), 3);
+%       optdat(:, 4) = optseg(1+msftaddm-off1i(k,3): end-msftaddm-off1i(k,3), 4); % sta 3
+%       ortdat(:, 4) = ortseg(1+msftaddm-off1i(k,3): end-msftaddm-off1i(k,3), 4);
+      optdat(:, 1:4) = optseg(1+msftaddm: end-msftaddm, 1:4); % sta 1
+      ortdat(:, 1:4) = ortseg(1+msftaddm: end-msftaddm, 1:4);
 
       %Align the noise using the same offset
       noidat = [];  % 4-s prior to signal win
@@ -1021,7 +1031,7 @@ for iii = 1: length(idxburst)
         %%%obtain a single best alignment based on the entire win 
 %       optcc = optseg(:, 2:end);
         optcc = optseg(1+msftaddm: end-msftaddm, 2:end);
-        msftadd = 0.5*sps;
+        msftadd = 1*sps;
         ccmid = ceil(size(optcc,1)/2);
         ccwlen = round(size(optcc,1)-2*(msftadd+1));
         ccmin = 0.01;  % depending on the length of trace, cc could be very low
@@ -1036,19 +1046,21 @@ for iii = 1: length(idxburst)
           off13con = 0;
           fprintf('Tremor burst %d cannot be properly aligned, double-check needed \n',k);
         end
-        off1i(k,1) = 0;
-        off1i(k,2) = round(off12con);
-        off1i(k,3) = round(off13con);
+        off1ia(k,1) = 0;
+        off1ia(k,2) = round(off12con);
+        off1ia(k,3) = round(off13con);
 
         %%%Align and compute the RCC based on the entire win, and take that as the input signal!      
         optdat = [];  % win segment of interest
         ortdat = [];
-        optdat(:, 1:2) = optseg(1+msftaddm: end-msftaddm, 1:2); % sta 1
-        ortdat(:, 1:2) = ortseg(1+msftaddm: end-msftaddm, 1:2);
-        optdat(:, 3) = optseg(1+msftaddm-off1i(k,2): end-msftaddm-off1i(k,2), 3); % sta 2
-        ortdat(:, 3) = ortseg(1+msftaddm-off1i(k,2): end-msftaddm-off1i(k,2), 3);
-        optdat(:, 4) = optseg(1+msftaddm-off1i(k,3): end-msftaddm-off1i(k,3), 4); % sta 3
-        ortdat(:, 4) = ortseg(1+msftaddm-off1i(k,3): end-msftaddm-off1i(k,3), 4);
+%         optdat(:, 1:2) = optseg(1+msftaddm: end-msftaddm, 1:2); % sta 1
+%         ortdat(:, 1:2) = ortseg(1+msftaddm: end-msftaddm, 1:2);
+%         optdat(:, 3) = optseg(1+msftaddm-off1i(k,2): end-msftaddm-off1i(k,2), 3); % sta 2
+%         ortdat(:, 3) = ortseg(1+msftaddm-off1i(k,2): end-msftaddm-off1i(k,2), 3);
+%         optdat(:, 4) = optseg(1+msftaddm-off1i(k,3): end-msftaddm-off1i(k,3), 4); % sta 3
+%         ortdat(:, 4) = ortseg(1+msftaddm-off1i(k,3): end-msftaddm-off1i(k,3), 4);
+        optdat(:, 1:4) = optseg(1+msftaddm: end-msftaddm, 1:4); % sta 1
+        ortdat(:, 1:4) = ortseg(1+msftaddm: end-msftaddm, 1:4);
 
         %%%taper the signal and obtain the new rcc between tapered signals
         %%%2022/06/06, do NOT taper whatsoever!!
@@ -1194,18 +1206,20 @@ for iii = 1: length(idxburst)
       impindepst(:,7:8) = impindepst(:,7:8)+repmat([off1i(k,2) off1i(k,3)],size(impindepst,1),1); %account for prealignment
       nsrcraw(iii,1) = size(impindepst,1);  % number of sources before removing 2ndary 
 
-%       %%%plot the scatter of offsets, accounting for prealignment offset, == true offset
-%       span = max(range(off1iw(:,2))+2*loff_max, range(off1iw(:,3))+2*loff_max);
-%       xran = [round(mean(minmax(off1iw(:,2)'))-span/2)-1, round(mean(minmax(off1iw(:,2)'))+span/2)+1];
-%       yran = [round(mean(minmax(off1iw(:,3)'))-span/2)-1, round(mean(minmax(off1iw(:,3)'))+span/2)+1];
-%       cran = [0 lsig];
-%       f1.fig = figure;
-%       f1.fig.Renderer = 'painters';
-%       ax1=gca;
-%       [ax1,torispl,mamp] = plt_decon_imp_scatter_ref(ax1,impindepst,xran,yran,cran,off1iw,loff_max,...
-%         sps,50,'mean','tori','comb');
-%       scatter(ax1,off1i(k,2),off1i(k,3),20,'ks','filled','MarkerEdgeColor','k');
-%       title(ax1,'Independent, grouped');
+      %%%plot the scatter of offsets, accounting for prealignment offset, == true offset
+      span = max(range(off1iw(:,2))+2*loff_max, range(off1iw(:,3))+2*loff_max);
+      xran = [round(mean(minmax(off1iw(:,2)'))-span/2)-1, round(mean(minmax(off1iw(:,2)'))+span/2)+1];
+      yran = [round(mean(minmax(off1iw(:,3)'))-span/2)-1, round(mean(minmax(off1iw(:,3)'))+span/2)+1];
+      cran = [0 lsig];
+      f1.fig = figure;
+      f1.fig.Renderer = 'painters';
+      ax1=gca;
+      [ax1,torispl,mamp] = plt_decon_imp_scatter_ref(ax1,impindepst,xran,yran,cran,off1iw,loff_max,...
+        sps,50,'mean','tarvl','comb');
+      scatter(ax1,off1ia(k,2),off1ia(k,3),20,'ks','filled','MarkerEdgeColor','k');
+      title(ax1,'Independent, grouped');
+      
+      keyboard
       
 %       %%%plot the scatter of offsets, shifted to the same origin, the best alignment
 %       xran = [-loff_max+off1i(k,2)-1 loff_max+off1i(k,2)+1];
