@@ -866,7 +866,7 @@ for iets = 3: nets
       
       %%%%%%% BEGIN the noise analysis, if 'noiseflag' is on %%%%%%%%%%
       %FLAG to simulate the behavior of noise
-      noiseflag = 1;
+      noiseflag = 0;
 
 %       seedmat = randi(1000,200,1);
 %       for iii = 1: length(seedmat)
@@ -930,7 +930,7 @@ for iets = 3: nets
 %       msftaddvec = 10: 5: 1.5*sps;
 %       for isft = 1: length(msftaddvec)
 %       msftadd = msftaddvec(isft)
-        msftadd = 0.5*sps;
+        msftadd = 1*sps;
         loffmax = 4*sps/40;
 %         msftadd = round(1/losig*sps);
         %for the whole win, ask how well can you align the noise, does not matter if the location is
@@ -1161,7 +1161,7 @@ for iets = 3: nets
       f1.fig.Renderer = 'painters';
       ax1=gca;
       [ax1,torispl,mamp] = plt_decon_imp_scatter(ax1,impindepst,xran,yran,cran,offxran,offyran,...
-        sps,75,'mean','tori');
+        sps,75,'mean','tarvl');
       scatter(ax1,off1i(k,2),off1i(k,3),20,'ks','filled','MarkerEdgeColor','k');
       title(ax1,'Independent, grouped');
       
