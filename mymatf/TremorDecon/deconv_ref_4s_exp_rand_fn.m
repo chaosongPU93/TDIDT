@@ -423,8 +423,8 @@ mwlen=sps/2;
 k = 0;  % counting the burst windows
 
 off1iwk = cell(size(trange,1),1);  % the best alignment between sta 2, 3 wrt 1 for all subwins and all burst wins
-off1ia = zeros(size(trange,1),3);  % single best alignment between sta 2, 3 wrt 1 for entire win
-off1i = zeros(size(trange,1),3);  
+off1ia = zeros(size(trange,1),3);  % single best alignment 'computed' between sta 2, 3 wrt 1 for entire win
+off1i = zeros(size(trange,1),3);  % single best alignment 'actually used' for entire win
 ccali = zeros(size(trange,1),1);  % CC value using the best alignment
 subwsec = zeros(size(trange,1),1);  % subwin length in sec used in practice
 subwseclfit = zeros(size(trange,1),1);  % subwin length from linear fitting, ie, time for 1-sample offset change
@@ -749,17 +749,20 @@ for iii = 1: length(idxburst)
       off1ia(k,2) = round(off12con);
       off1ia(k,3) = round(off13con);
       
+      %for real data, use the best whole-win alignment before decon
+      off1i(k,:) = off1ia(k,:);   
+      
       %%%Align and compute the RCC based on the entire win, and take that as the input signal!      
       optdat = [];  % win segment of interest
       ortdat = [];
-%       optdat(:, 1:2) = optseg(1+msftaddm: end-msftaddm, 1:2); % sta 1
-%       ortdat(:, 1:2) = ortseg(1+msftaddm: end-msftaddm, 1:2);
-%       optdat(:, 3) = optseg(1+msftaddm-off1i(k,2): end-msftaddm-off1i(k,2), 3); % sta 2
-%       ortdat(:, 3) = ortseg(1+msftaddm-off1i(k,2): end-msftaddm-off1i(k,2), 3);
-%       optdat(:, 4) = optseg(1+msftaddm-off1i(k,3): end-msftaddm-off1i(k,3), 4); % sta 3
-%       ortdat(:, 4) = ortseg(1+msftaddm-off1i(k,3): end-msftaddm-off1i(k,3), 4);
-      optdat(:, 1:4) = optseg(1+msftaddm: end-msftaddm, 1:4); % sta 1
-      ortdat(:, 1:4) = ortseg(1+msftaddm: end-msftaddm, 1:4);
+      optdat(:, 1:2) = optseg(1+msftaddm: end-msftaddm, 1:2); % sta 1
+      ortdat(:, 1:2) = ortseg(1+msftaddm: end-msftaddm, 1:2);
+      optdat(:, 3) = optseg(1+msftaddm-off1i(k,2): end-msftaddm-off1i(k,2), 3); % sta 2
+      ortdat(:, 3) = ortseg(1+msftaddm-off1i(k,2): end-msftaddm-off1i(k,2), 3);
+      optdat(:, 4) = optseg(1+msftaddm-off1i(k,3): end-msftaddm-off1i(k,3), 4); % sta 3
+      ortdat(:, 4) = ortseg(1+msftaddm-off1i(k,3): end-msftaddm-off1i(k,3), 4);
+%       optdat(:, 1:4) = optseg(1+msftaddm: end-msftaddm, 1:4); % sta 1
+%       ortdat(:, 1:4) = ortseg(1+msftaddm: end-msftaddm, 1:4);
 
       %Align the noise using the same offset
       noidat = [];  % 4-s prior to signal win
@@ -1051,18 +1054,21 @@ for iii = 1: length(idxburst)
         off1ia(k,1) = 0;
         off1ia(k,2) = round(off12con);
         off1ia(k,3) = round(off13con);
+        
+        %for synthetic noise case, do NOT align traces
+        off1i(k,:) = [0 0 0];  % technically unnecessary given it has been predefined 
 
         %%%Align and compute the RCC based on the entire win, and take that as the input signal!      
         optdat = [];  % win segment of interest
         ortdat = [];
-%         optdat(:, 1:2) = optseg(1+msftaddm: end-msftaddm, 1:2); % sta 1
-%         ortdat(:, 1:2) = ortseg(1+msftaddm: end-msftaddm, 1:2);
-%         optdat(:, 3) = optseg(1+msftaddm-off1i(k,2): end-msftaddm-off1i(k,2), 3); % sta 2
-%         ortdat(:, 3) = ortseg(1+msftaddm-off1i(k,2): end-msftaddm-off1i(k,2), 3);
-%         optdat(:, 4) = optseg(1+msftaddm-off1i(k,3): end-msftaddm-off1i(k,3), 4); % sta 3
-%         ortdat(:, 4) = ortseg(1+msftaddm-off1i(k,3): end-msftaddm-off1i(k,3), 4);
-        optdat(:, 1:4) = optseg(1+msftaddm: end-msftaddm, 1:4); % sta 1
-        ortdat(:, 1:4) = ortseg(1+msftaddm: end-msftaddm, 1:4);
+        optdat(:, 1:2) = optseg(1+msftaddm: end-msftaddm, 1:2); % sta 1
+        ortdat(:, 1:2) = ortseg(1+msftaddm: end-msftaddm, 1:2);
+        optdat(:, 3) = optseg(1+msftaddm-off1i(k,2): end-msftaddm-off1i(k,2), 3); % sta 2
+        ortdat(:, 3) = ortseg(1+msftaddm-off1i(k,2): end-msftaddm-off1i(k,2), 3);
+        optdat(:, 4) = optseg(1+msftaddm-off1i(k,3): end-msftaddm-off1i(k,3), 4); % sta 3
+        ortdat(:, 4) = ortseg(1+msftaddm-off1i(k,3): end-msftaddm-off1i(k,3), 4);
+%         optdat(:, 1:4) = optseg(1+msftaddm: end-msftaddm, 1:4); % sta 1
+%         ortdat(:, 1:4) = ortseg(1+msftaddm: end-msftaddm, 1:4);
 
         %%%taper the signal and obtain the new rcc between tapered signals
         %%%2022/06/06, do NOT taper whatsoever!!
