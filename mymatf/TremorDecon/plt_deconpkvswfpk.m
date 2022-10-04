@@ -27,8 +27,9 @@ for i = 1: 3
       'markeredgecolor','k','linew',1);
   end
   axis(ax,'equal');
-  axis(ax,[-1.5 1.5 -1.5 1.5]);
-  plot(ax,[-1.5 1.5 ],[-1.5 1.5],'r--');
+%   axis(ax,[-1.5 1.5 -1.5 1.5]);
+  plot(ax,[min([clppkhtwfall(:,i); psrcampsall(:,i)]), max([clppkhtwfall(:,i); psrcampsall(:,i)])],...
+    [min([clppkhtwfall(:,i); psrcampsall(:,i)]), max([clppkhtwfall(:,i); psrcampsall(:,i)])],'r--');
   if i ==1
     ylabel(ax,'closest pos amp at sta 1');
     xlabel(ax,'pos waveform peak height at sta 1');
@@ -52,8 +53,9 @@ for i = 1: 3
       'markeredgecolor','k','linew',1);
   end
   axis(ax,'equal');
-  axis(ax,[-1.5 1.5 -1.5 1.5]);
-  plot(ax,[-1.5 1.5 ],[-1.5 1.5],'r--');
+%   axis(ax,[-1.5 1.5 -1.5 1.5]);
+  plot(ax,[min([clnpkhtwfall(:,i); nsrcampsall(:,i)]), max([clnpkhtwfall(:,i); nsrcampsall(:,i)])],...
+    [min([clnpkhtwfall(:,i); nsrcampsall(:,i)]), max([clnpkhtwfall(:,i); nsrcampsall(:,i)])],'r--');
   if i ==1
     ylabel(ax,'closest neg amp at sta 1');
     xlabel(ax,'neg waveform peak height at sta 1');

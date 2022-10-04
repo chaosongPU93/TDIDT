@@ -1,4 +1,4 @@
-% function rststruct = deconv_ref_4s_exp_rand_fn(idxburst,normflag,noiseflag,pltflag)
+function rststruct = deconv_ref_4s_exp_rand_fn(idxburst,normflag,noiseflag,pltflag)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Based on 'deconvbursts002_ref_4s_exp', but this script tries to simulate what 
 % the current deconvolution algorithm would behave if the records are 
@@ -1033,7 +1033,7 @@ for iii = 1: length(idxburst)
         %%%obtain a single best alignment based on the entire win 
 %       optcc = optseg(:, 2:end);
         optcc = optseg(1+msftaddm: end-msftaddm, 2:end);
-        msftadd = 1*sps;
+        msftadd = 0.5*sps;
         ccmid = ceil(size(optcc,1)/2);
         ccwlen = round(size(optcc,1)-2*(msftadd+1));
         ccmin = 0.01;  % depending on the length of trace, cc could be very low
@@ -1208,20 +1208,20 @@ for iii = 1: length(idxburst)
       impindepst(:,7:8) = impindepst(:,7:8)+repmat([off1i(k,2) off1i(k,3)],size(impindepst,1),1); %account for prealignment
       nsrcraw(iii,1) = size(impindepst,1);  % number of sources before removing 2ndary 
 
-      %%%plot the scatter of offsets, accounting for prealignment offset, == true offset
-      span = max(range(off1iw(:,2))+2*loff_max, range(off1iw(:,3))+2*loff_max);
-      xran = [round(mean(minmax(off1iw(:,2)'))-span/2)-1, round(mean(minmax(off1iw(:,2)'))+span/2)+1];
-      yran = [round(mean(minmax(off1iw(:,3)'))-span/2)-1, round(mean(minmax(off1iw(:,3)'))+span/2)+1];
-      cran = [0 lsig];
-      f1.fig = figure;
-      f1.fig.Renderer = 'painters';
-      ax1=gca;
-      [ax1,torispl,mamp] = plt_decon_imp_scatter_ref(ax1,impindepst,xran,yran,cran,off1iw,loff_max,...
-        sps,50,'mean','tarvl','comb');
-      scatter(ax1,off1ia(k,2),off1ia(k,3),20,'ks','filled','MarkerEdgeColor','k');
-      title(ax1,'Independent, grouped');
-      
-      keyboard
+%       %%%plot the scatter of offsets, accounting for prealignment offset, == true offset
+%       span = max(range(off1iw(:,2))+2*loff_max, range(off1iw(:,3))+2*loff_max);
+%       xran = [round(mean(minmax(off1iw(:,2)'))-span/2)-1, round(mean(minmax(off1iw(:,2)'))+span/2)+1];
+%       yran = [round(mean(minmax(off1iw(:,3)'))-span/2)-1, round(mean(minmax(off1iw(:,3)'))+span/2)+1];
+%       cran = [0 lsig];
+%       f1.fig = figure;
+%       f1.fig.Renderer = 'painters';
+%       ax1=gca;
+%       [ax1,torispl,mamp] = plt_decon_imp_scatter_ref(ax1,impindepst,xran,yran,cran,off1iw,loff_max,...
+%         sps,50,'mean','tarvl','comb');
+%       scatter(ax1,off1ia(k,2),off1ia(k,3),20,'ks','filled','MarkerEdgeColor','k');
+%       title(ax1,'Independent, grouped');
+%       
+%       keyboard
       
 %       %%%plot the scatter of offsets, shifted to the same origin, the best alignment
 %       xran = [-loff_max+off1i(k,2)-1 loff_max+off1i(k,2)+1];
@@ -2004,10 +2004,10 @@ rststruct.nsrc = nsrc;
 rststruct.nsrcraw = nsrcraw;
 rststruct.msrcampr = msrcampr;
 rststruct.madsrcampr = madsrcampr;
-rststruct.mpsrcamps = mpsrcamps;
-rststruct.madpsrcamps = madpsrcamps;
-rststruct.mnsrcamps = mnsrcamps;
-rststruct.madnsrcamps = madnsrcamps;
+rststruct.mpsrcamprs = mpsrcamprs;
+rststruct.madpsrcamprs = madpsrcamprs;
+rststruct.mnsrcamprs = mnsrcamprs;
+rststruct.madnsrcamprs = madnsrcamprs;
 
 
 %% if 'pltflag' is on, then summary plots for each choice of inputs would be made 

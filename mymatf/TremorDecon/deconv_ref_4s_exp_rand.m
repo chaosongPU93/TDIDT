@@ -60,15 +60,6 @@ ihicc123n = intersect(inbst,ihicc123);
 indtest = [18,21,22,23];
 
 %% call function 'deconv_ref_4s_exp_rand_fn'
-% normflag = 0; %do not normalize the templates
-% pltflag = 1;  %do not create summary plots for each choice of inputs
-% %%% noisy burst wins using synthetic noise
-% noiseflag = 1;
-% nbstnoi = deconv_ref_4s_exp_rand_fn(inbst,normflag,noiseflag,pltflag);
-% 
-% keyboard
-
-%% call function 'deconv_ref_4s_exp_rand_fn'
 normflag = 0; %do not normalize the templates
 pltflag = 0;  %do not create summary plots for each choice of inputs
 
@@ -80,98 +71,104 @@ nbstsig = deconv_ref_4s_exp_rand_fn(inbst,normflag,noiseflag,pltflag);
 noiseflag = 1;
 nbstnoi = deconv_ref_4s_exp_rand_fn(inbst,normflag,noiseflag,pltflag);
 
-%% call function 'deconv_ref_4s_exp_rand_fn'
-%%% noisy burst wins using real data
-noiseflag = 0;
-dbstsig = deconv_ref_4s_exp_rand_fn(idbst,normflag,noiseflag,pltflag);
+bstsig = nbstsig;
+bstnoi = nbstnoi;
 
-%%% noisy burst wins using synthetic noise
-noiseflag = 1;
-dbstnoi = deconv_ref_4s_exp_rand_fn(idbst,normflag,noiseflag,pltflag);
+%% call function 'deconv_ref_4s_exp_rand_fn'
+% %%% noisy burst wins using real data
+% noiseflag = 0;
+% dbstsig = deconv_ref_4s_exp_rand_fn(idbst,normflag,noiseflag,pltflag);
+% 
+% %%% noisy burst wins using synthetic noise
+% noiseflag = 1;
+% dbstnoi = deconv_ref_4s_exp_rand_fn(idbst,normflag,noiseflag,pltflag);
 
 
 %% comparison plots, syn noise vs data, noisy wins vs. quiet wins
 %%%the direct/scaled deconvolved pos/neg source peak ratio between all station pairs, for each
 %%%burst win separately
 [f1] = initfig(12,8,3,3);
-rstplt = dbstsig;
-nsrc = rstplt.nsrc;
-msrcampr = rstplt.msrcampr;
-madsrcampr = rstplt.madsrcampr;
-mpsrcamprs = rstplt.mpsrcamprs;
-madpsrcamprs = rstplt.madpsrcamprs;
-mnsrcamprs = rstplt.mnsrcamprs;
-madnsrcamprs = rstplt.madnsrcamprs;
+nsrc = bstsig.nsrc;
+msrcampr = bstsig.msrcampr;
+madsrcampr = bstsig.madsrcampr;
+mpsrcamprs = bstsig.mpsrcamprs;
+madpsrcamprs = bstsig.madpsrcamprs;
+mnsrcamprs = bstsig.mnsrcamprs;
+madnsrcamprs = bstsig.madnsrcamprs;
 plt_deconpk_rat(f1,msrcampr,madsrcampr,nsrc,'b',mpsrcamprs,madpsrcamprs,mnsrcamprs,madnsrcamprs);
 
-rstplt = dbstnoi;
-nsrc = rstplt.nsrc;
-msrcampr = rstplt.msrcampr;
-madsrcampr = rstplt.madsrcampr;
-mpsrcamprs = rstplt.mpsrcamprs;
-madpsrcamprs = rstplt.madpsrcamprs;
-mnsrcamprs = rstplt.mnsrcamprs;
-madnsrcamprs = rstplt.madnsrcamprs;
+nsrc = bstnoi.nsrc;
+msrcampr = bstnoi.msrcampr;
+madsrcampr = bstnoi.madsrcampr;
+mpsrcamprs = bstnoi.mpsrcamprs;
+madpsrcamprs = bstnoi.madpsrcamprs;
+mnsrcamprs = bstnoi.mnsrcamprs;
+madnsrcamprs = bstnoi.madnsrcamprs;
 plt_deconpk_rat(f1,msrcampr,madsrcampr,nsrc,'r',mpsrcamprs,madpsrcamprs,mnsrcamprs,madnsrcamprs);
 
 
 %%%combine the direct/scaled deconvolved pos/neg source peak ratio between all station pairs of
 %%%all burst wins, and summarize into one histogram
 [f2] = initfig(12,8,3,3);
-rstplt = dbstsig;
-srcamprall = rstplt.srcamprall;
-srcamprsall = rstplt.psrcamprsall;
-nsrcamprsall = rstplt.nsrcamprsall;
-plt_deconpk_rat_comb(f2,srcamprall,'b',srcamprsall,nsrcamprsall);
+srcamprall = bstsig.srcamprall;
+psrcamprsall = bstsig.psrcamprsall;
+nsrcamprsall = bstsig.nsrcamprsall;
+plt_deconpk_rat_comb(f2,srcamprall,'b',psrcamprsall,nsrcamprsall);
 
-rstplt = dbstnoi;
-srcamprall = rstplt.srcamprall;
-srcamprsall = rstplt.psrcamprsall;
-nsrcamprsall = rstplt.nsrcamprsall;
-plt_deconpk_rat_comb(f2,srcamprall,'r',srcamprsall,nsrcamprsall);
+srcamprall = bstnoi.srcamprall;
+psrcamprsall = bstnoi.psrcamprsall;
+nsrcamprsall = bstnoi.nsrcamprsall;
+plt_deconpk_rat_comb(f2,srcamprall,'r',psrcamprsall,nsrcamprsall);
 
 
 %%%deviation of source amp ratio from some median vs. RCC
 f3 = initfig(12,6,2,3); %initialize fig
-rstplt = dbstsig;
-lgdevsrcamprall = rstplt.lgdevsrcamprall;
-rccpairsrcall = rstplt.rccpairsrcall;
-rcccatsrcall = rstplt.rcccatsrcall;
+lgdevsrcamprall = bstsig.lgdevsrcamprall;
+rccpairsrcall = bstsig.rccpairsrcall;
+rcccatsrcall = bstsig.rcccatsrcall;
 plt_deconpk_ratdevvsrcc(f3,lgdevsrcamprall,rccpairsrcall,rcccatsrcall,'b');
 
-rstplt = dbstnoi;
-lgdevsrcamprall = rstplt.lgdevsrcamprall;
-rccpairsrcall = rstplt.rccpairsrcall;
-rcccatsrcall = rstplt.rcccatsrcall;
+lgdevsrcamprall = bstnoi.lgdevsrcamprall;
+rccpairsrcall = bstnoi.rccpairsrcall;
+rcccatsrcall = bstnoi.rcccatsrcall;
 plt_deconpk_ratdevvsrcc(f3,lgdevsrcamprall,rccpairsrcall,rcccatsrcall,'r');
+
 
 
 %%%scatter between closest pos amp ratio and pos waveform peak height ratio between diff station
 %%%pairs
 f4 = initfig(12,6,2,3); %initialize fig
-rstplt = dbstsig;
-clppkhtwfrall = rstplt.clppkhtwfrall;
-psrcamprsall = rstplt.psrcamprsall;
-clnpkhtwfrall = rstplt.clnpkhtwfrall;
-nsrcamprsall = rstplt.nsrcamprsall;
-plt_deconpkvswfpk(f4,clppkhtwfrall,psrcamprsall,clnpkhtwfrall,nsrcamprsall,'b');
+clppkhtwfall = bstsig.clppkhtwfall;
+psrcampsall = bstsig.psrcampsall;
+clnpkhtwfall = bstsig.clnpkhtwfall;
+nsrcampsall = bstsig.nsrcampsall;
+plt_deconpkvswfpk(f4,clppkhtwfall,psrcampsall,clnpkhtwfall,nsrcampsall,'b');
 
-rstplt = dbstnoi;
-clppkhtwfrall = rstplt.clppkhtwfrall;
-psrcamprsall = rstplt.psrcamprsall;
-clnpkhtwfrall = rstplt.clnpkhtwfrall;
-nsrcamprsall = rstplt.nsrcamprsall;
-plt_deconpkvswfpk(f4,clppkhtwfrall,psrcamprsall,clnpkhtwfrall,nsrcamprsall,'r');
+clppkhtwfall = bstnoi.clppkhtwfall;
+psrcampsall = bstnoi.psrcampsall;
+clnpkhtwfall = bstnoi.clnpkhtwfall;
+nsrcampsall = bstnoi.nsrcampsall;
+plt_deconpkvswfpk(f4,clppkhtwfall,psrcampsall,clnpkhtwfall,nsrcampsall,'r');
 
-
-keyboard
 
 
 %%
 %%%histogram of the ratio between closest pos amp ratio and pos waveform peak height ratio between
 %%%diff station pairs
-f5 = initfig(9,6,2,3); %initialize fig
-plt_deconpkvswfpk_rat(f5,clppkhtwfrall,srcamprsall,clnpkhtwfrall,nsrcamprsall,'b');
+f5 = initfig(12,6,2,3); %initialize fig
+clppkhtwfall = bstsig.clppkhtwfall;
+psrcampsall = bstsig.psrcampsall;
+clnpkhtwfall = bstsig.clnpkhtwfall;
+nsrcampsall = bstsig.nsrcampsall;
+plt_deconpkvswfpk_rat(f5,clppkhtwfall,psrcampsall,clnpkhtwfall,nsrcampsall,'b');
+
+clppkhtwfall = bstnoi.clppkhtwfall;
+psrcampsall = bstnoi.psrcampsall;
+clnpkhtwfall = bstnoi.clnpkhtwfall;
+nsrcampsall = bstnoi.nsrcampsall;
+plt_deconpkvswfpk_rat(f5,clppkhtwfall,psrcampsall,clnpkhtwfall,nsrcampsall,'r');
+
+keyboard
 
 
 
