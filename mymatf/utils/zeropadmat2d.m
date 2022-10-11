@@ -1,6 +1,6 @@
-function [xyzgridpad,xgrid,ygrid,zgrid,ind2] = zeropadmat2d(xyzscatter,xvec,yvec)
+function [xyzgridpad,xgrid,ygrid,zgrid,ind2] = zeropadmat2d(xyzscatter,xvec,yvec,const)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% [data2dpad,xmesh,ymesh] = mat2dzeropad(xvec,yvec,data2d)
+% [xyzgridpad,xgrid,ygrid,zgrid,ind2] = zeropadmat2d(xyzscatter,xvec,yvec)
 %
 % Imagine you have a sparse scattered 2D data set (which has an intrisic 
 % sampling rate) with the x and y as locations and z as the some value on
@@ -13,12 +13,16 @@ function [xyzgridpad,xgrid,ygrid,zgrid,ind2] = zeropadmat2d(xyzscatter,xvec,yvec
 % 'xvec' and 'yvec'are also returned. The main output 'xyzgridpad' has the
 % same format as the input 'xyzscatter' that has 3 colomns.
 %
+% --2022/10/05, modify from padding 0s to padding any constant as desired, but
+%   the default is still zero.
 %
 %
 % Chao Song, chaosong@princeton.edu
 % First created date:   2022/04/13
-% Last modified date:   2022/04/13
+% Last modified date:   2022/10/05
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+defval('const',0);
 
 %force the input grid range to a column vector
 xvec = reshape(xvec,[],1);
@@ -29,7 +33,7 @@ end
 
 %create a rectangular grid
 [xgrid, ygrid] = meshgrid(xvec,yvec);
-zgrid = zeros(size(xgrid));
+zgrid = zeros(size(xgrid))+const*ones(size(xgrid));
 
 %make them a column vector for easy processing
 x = reshape(xgrid,[],1);

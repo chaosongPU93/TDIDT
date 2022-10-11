@@ -87,7 +87,7 @@ bstnoi = nbstnoi;
 %% comparison plots, syn noise vs data, noisy wins vs. quiet wins
 %%%the direct/scaled deconvolved pos/neg source peak ratio between all station pairs, for each
 %%%burst win separately
-[f1] = initfig(12,8,3,3);
+f1 = initfig(12,8,3,3);
 nsrc = bstsig.nsrc;
 msrcampr = bstsig.msrcampr;
 madsrcampr = bstsig.madsrcampr;
@@ -109,7 +109,7 @@ plt_deconpk_rat(f1,msrcampr,madsrcampr,nsrc,'r',mpsrcamprs,madpsrcamprs,mnsrcamp
 
 %%%combine the direct/scaled deconvolved pos/neg source peak ratio between all station pairs of
 %%%all burst wins, and summarize into one histogram
-[f2] = initfig(12,8,3,3);
+f2 = initfig(12,8,3,3);
 srcamprall = bstsig.srcamprall;
 psrcamprsall = bstsig.psrcamprsall;
 nsrcamprsall = bstsig.nsrcamprsall;
