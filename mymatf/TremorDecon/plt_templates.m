@@ -16,11 +16,18 @@ function plt_templates(green,greenf,greenort,greenfort,lowlet,hiwlet,sps)
 figure
 subplot(2,2,1)
 hold on
-plot(green(:,1),'r')
-plot(green(:,2),'b')
-plot(green(:,3),'k')
+if size(green,2) == 3
+  plot(green(:,1),'r')
+  plot(green(:,2),'b')
+  plot(green(:,3),'k')
+else
+  for ista = 1: size(green,2)
+    plot(green(:,ista));
+  end
+end
 text(0.95,0.9,'Raw opt.','Units','normalized','HorizontalAlignment',...
   'right');
+legend(stas,'Location','southeast');
 mx=max(max(abs(green(:,:))));
 greenlen = size(green,1);
 xlim([0 greenlen])
@@ -29,9 +36,15 @@ box on
 
 subplot(2,2,2)
 hold on
-plot(greenf(:,1),'r')
-plot(greenf(:,2),'b')
-plot(greenf(:,3),'k')
+if size(green,2) == 3
+  plot(greenf(:,1),'r')
+  plot(greenf(:,2),'b')
+  plot(greenf(:,3),'k')
+else
+  for ista = 1: size(green,2)
+    plot(greenf(:,ista));
+  end
+end
 text(0.95,0.9,sprintf('%.1f-%.1f Hz opt.',lowlet,hiwlet),'Units','normalized','HorizontalAlignment',...
   'right');
 mx=max(max(abs(greenf(:,:))));
@@ -57,9 +70,15 @@ xc12=xcorr(greenf(:,1),greenf(:,2),10,'coeff');
 
 subplot(2,2,3)
 hold on
-plot(greenort(:,1),'r')
-plot(greenort(:,2),'b')
-plot(greenort(:,3),'k')
+if size(green,2) == 3
+  plot(greenort(:,1),'r')
+  plot(greenort(:,2),'b')
+  plot(greenort(:,3),'k')
+else
+  for ista = 1: size(green,2)
+    plot(greenort(:,ista));
+  end
+end  
 text(0.95,0.9,'Raw ort.','Units','normalized','HorizontalAlignment',...
   'right');
 mx=max(max(abs(green(:,:))));
@@ -69,9 +88,15 @@ box on
 
 subplot(2,2,4)
 hold on
-plot(greenfort(:,1),'r')
-plot(greenfort(:,2),'b')
-plot(greenfort(:,3),'k')
+if size(green,2) == 3
+  plot(greenfort(:,1),'r')
+  plot(greenfort(:,2),'b')
+  plot(greenfort(:,3),'k')
+else
+  for ista = 1: size(green,2)
+    plot(greenfort(:,ista));
+  end
+end
 text(0.95,0.9,sprintf('%.1f-%.1f Hz ort.',lowlet,hiwlet),'Units','normalized','HorizontalAlignment',...
   'right');
 mx=max(max(abs(greenf(:,:))));

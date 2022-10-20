@@ -1,4 +1,4 @@
-function plt_templates_bp(greenf,lowlet,hiwlet,sps)
+function plt_templates_bp(greenf,stas,lowlet,hiwlet,sps)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % plt_templates_bp(greenf,lowlet,hiwlet,sps)
 %
@@ -14,11 +14,18 @@ function plt_templates_bp(greenf,lowlet,hiwlet,sps)
 
 figure
 hold on
-plot(greenf(:,1),'r')
-plot(greenf(:,2),'b')
-plot(greenf(:,3),'k')
+if size(greenf,2) == 3
+  plot(greenf(:,1),'r')
+  plot(greenf(:,2),'b')
+  plot(greenf(:,3),'k')
+else
+  for ista = 1: size(greenf,2)
+    plot(greenf(:,ista));
+  end
+end  
 text(0.95,0.9,sprintf('%.1f-%.1f Hz opt.',lowlet,hiwlet),'Units','normalized','HorizontalAlignment',...
   'right');
+legend(stas,'Location','southeast');
 mx=max(max(abs(greenf(:,:))));
 %%%running CC using a window length of 'cclen'
 mwlen=sps/2;

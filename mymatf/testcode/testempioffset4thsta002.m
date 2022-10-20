@@ -152,7 +152,7 @@ nstasnew = size(stasnew,1);
 f1 = initfig(16,9,3,4);
 dataplt = hfall;
 
-flagsmooth = 1;
+flagsmooth = 0;
 
 if isequaln(dataplt, hfall)
   sybsz = 5; 
@@ -173,7 +173,7 @@ for i = 1: nstasnew
   colioff = 50+i; % column num for the offset needed to align 4th sta and original trio
   colcc = 54+i; % column num for ave CC of aligning 4th sta and original trio
   ccavethres = 0.8*xcmaxAVEnmin;  %% average cc threshold
-  offavethres = 2;    % average differential offset threshold
+  offavethres = 2*sps/40;    % average differential offset threshold
   
   ind = find(dataplt(:,colflg)==1);
   loff = dataplt(ind,colloff)*sps/40;

@@ -338,12 +338,13 @@ iup = 1;    % times of upsampling
 [off12con,off13con,cc,iloopoff,loopoff] = constrained_cc_interp(greenf(:,1:3)',ccmid,...
   ccwlen,mshiftadd,loffmax,ccmin,iup);
 if ~(off12con==0 && off13con==0)
-  disp('Filtered templates are NOT best aligned');
+  disp('Filtered templates are NOT best aligned \n');
 end
 for ista = 4: nsta
-  [coef,lag] = xcorr(tmpwletf(:,1), tmpwletf(:,ista), mshiftadd, 'coeff');
+  [coef,lag] = xcorr(greenf(:,1), greenf(:,ista), mshiftadd, 'coeff');
+  [mcoef, idx] = max(coef);   % max of master raw cc
   if lag(idx)~=0   % offset in samples
-    fprintf('Filtered templates are NOT best aligned at %s',stas(ista,:));
+    fprintf('Filtered templates are NOT best aligned at %s \n',stas(ista,:));
   end
 end
 

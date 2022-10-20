@@ -1,14 +1,13 @@
-function [f1,f2,clppk,clnpk] = plt_deconpk_sigpk_comp(sigsta,zcrssrc,ppksrc,npksrc,greenf)
+function [f1,clppk,clnpk] = plt_deconpk_sigpk_comp_4thsta(sigsta,stas,zcrssrc,ppksrc,npksrc,greenf)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% [f1,f2,clppk,clnpk] = plt_deconpk_sigpk_comp(sigsta,zcrssrc,ppksrc,npksrc,greenf)
+% [f1,f2,clppk,clnpk] = plt_deconpk_sigpk_comp_4thsta(sigsta,zcrssrc,ppksrc,npksrc,greenf)
 %
-% Different from 'plt_deconpk_sigpk' which only show the location of deconvolved
-% positive peaks and waveform peaks to see if they are close enough, thus 
-% reasonable, this script inherits most of it, but also shows the amplitude
-% of the deconvolved, to see how comparable they are to the nearest waveform
-% peaks. This comparison may give us some insights on if it is necessary to bring
-% the waveform amplitude ratio information into the grouping algorithm of the
-% the deconvolved sources.
+% Similar to 'plt_deconpk_sigpk_comp', but this script shows instead the 
+% *inferred* amplitude and arrival time of the deconvolved impulses at 
+% the 4th stations, to see how comparable they are to the nearest waveform
+% peaks. This gives the 1st-order, visual check if the inferred impulses
+% could fit the waveform at 4th stas as well before actually calculating
+% the residual reduction, etc.
 % 
 % 
 %
@@ -20,7 +19,7 @@ function [f1,f2,clppk,clnpk] = plt_deconpk_sigpk_comp(sigsta,zcrssrc,ppksrc,npks
 f1.fig = figure;
 f1.fig.Renderer = 'painters';
 widin = 12;  % maximum width allowed is 8.5 inches
-htin = 6;   % maximum height allowed is 11 inches
+htin = 9;   % maximum height allowed is 11 inches
 [scrsz, resol] = pixelperinch(1);
 set(f1.fig,'Position',[1*scrsz(3)/20 scrsz(4)/10 widin*resol htin*resol]);
 nrow = size(sigsta,2); 
@@ -28,12 +27,11 @@ ncol = 1;
 for isub = 1:nrow*ncol
   f1.ax(isub) = subplot(nrow,ncol,isub);
 end
-pltxran = [0.1 0.9]; pltyran = [0.15 0.9];
-pltxsep = 0.02; pltysep = 0.05;
+pltxran = [0.1 0.9]; pltyran = [0.1 0.9];
+pltxsep = 0.02; pltysep = 0.03;
 %get the locations for each axis
 optaxpos(f1,nrow,ncol,pltxran,pltyran,pltxsep,pltysep);
 
-color = ['r';'b';'k'];
 
 ym = max(abs(sigsta(:)));
 yran=1.2*[-ym ym];
@@ -47,15 +45,15 @@ npkwf = cell(size(sigsta,2),1); %negative peak index of the waveform
 for i = 1: nrow
   ax=f1.ax(i);
   hold(ax,'on');
-  plot(ax, sigsta(:,i), '-','Color',color(i,:)); 
+  plot(ax, sigsta(:,i), '-','Color','k'); 
   xlim(ax,[0,lsig]); ylim(ax,yran);
   [ppkhtwf{i}, ppkwf{i}] = findpeaks(sigsta(:,i));
   [npkhtwf{i}, npkwf{i}] = findpeaks(-sigsta(:,i));
   npkhtwf{i} = -npkhtwf{i}; %reverse back the sign
-  scatter(ax,ppkwf{i},ppkhtwf{i},8,color(i,:)); %plot the negative waveform peaks only
-  for j = 1: size(zcrssrc,1)
-    plot(ax,[zcrssrc(j,(i-1)*2+1) zcrssrc(j,(i-1)*2+1)], ax.YLim, '--','Color',[.7 .7 .7]);
-  end
+  scatter(ax,ppkwf{i},ppkhtwf{i},8,'k'); %plot the negative waveform peaks only
+%   for j = 1: size(zcrssrc,1)
+%     plot(ax,[zcrssrc(j,(i-1)*2+1) zcrssrc(j,(i-1)*2+1)], ax.YLim, '--','Color',[.7 .7 .7]);
+%   end
 %   for j = 1: size(ppkisave,1)
 %     plot(ax,[ppkisave(j,(i-1)*2+1) ppkisave(j,(i-1)*2+1)], [0 ppkisave(j,i*2).*max(greenf(:,i))],...
 %       '-','Color',[.5 .5 .5],'linew',1);
@@ -67,92 +65,25 @@ for i = 1: nrow
 %   end
 %   scatter(ax,npkisave(:,(i-1)*2+1),npkisave(:,i*2).*min(greenf(:,i)),10,[.5 .5 .5],'filled');
   stem(ax,ppksrc(:,(i-1)*2+1),ppksrc(:,i*2).*max(greenf(:,i)),'LineStyle','-','MarkerFaceColor',...
-    [.5 .5 .5],'MarkerEdgeColor',[.5 .5 .5],'Color',[.5 .5 .5],'linew',1,'MarkerSize',2);
+    [.5 .5 .5],'MarkerEdgeColor',[.5 .5 .5],'Color','r','linew',1,'MarkerSize',2);
   stem(ax,npksrc(:,(i-1)*2+1),npksrc(:,i*2).*min(greenf(:,i)),'LineStyle','-','MarkerFaceColor',...
-    [.5 .5 .5],'MarkerEdgeColor',[.5 .5 .5],'Color',[.5 .5 .5],'linew',1,'MarkerSize',2); 
-
+    [.5 .5 .5],'MarkerEdgeColor',[.5 .5 .5],'Color','r','linew',1,'MarkerSize',2); 
+  text(ax,0.98,0.9,stas(i,:),'Units','normalized','HorizontalAlignment','right','fontsize',10);
   ax.Box='on'; 
 %   grid(ax,'on');
+  longticks(ax,4);
+  if i~=nrow
+    nolabels(ax,1);
+  else
+    xlabel(ax,'Samples','fontsize',10);
+    ylabel(ax,'Amplitude','fontsize',10);
+  end
+  if i==1
+    title(ax,'Predicted impulses vs. waveform at 4th stations','FontSize',12);
+  end
 end
-xlabel(f1.ax(3),'Samples');
-ylabel(f1.ax(3),'Amplitude');
 
-
-
-f2.fig = figure;
-f2.fig.Renderer = 'painters';
-widin = 12;  % maximum width allowed is 8.5 inches
-htin = 6;   % maximum height allowed is 11 inches
-set(f2.fig,'Position',[1*scrsz(3)/20 scrsz(4)/10 widin*resol htin*resol]);
-nrow = 4; 
-ncol = 1;
-for isub = 1:nrow*ncol
-  f2.ax(isub) = subplot(nrow,ncol,isub);
-end
-%get the locations for each axis
-optaxpos(f2,nrow,ncol,pltxran,pltyran,pltxsep,pltysep);
-
-
-ax=f2.ax(1);
-hold(ax,'on');
-%obtain the mean envelope
-tmp = detrend(sigsta);
-envup = envelope(tmp);
-menv = median(envup,1);
-for j = 1: size(sigsta,2)
-  plot(ax, sigsta(:,j)./menv(j), '-','Color',color(j,:));
-end
-xlim(ax,[0,lsig/2]); %ylim(ax,yran);
-for j = 1: size(zcrssrc,1)
-  plot(ax,[zcrssrc(j,(2-1)*2+1) zcrssrc(j,(2-1)*2+1)], ax.YLim, '--','Color',[.7 .7 .7]);
-end
-text(ax,0.05,0.9,'each normalized by its median envelope',...
-  'HorizontalAlignment','left','Units','normalized');
-ax.Box='on';
-%   grid(ax,'on');
-
-ax=f2.ax(2);
-hold(ax,'on');
-for j = 1: size(zcrssrc,1)
-  plot(ax,[zcrssrc(j,(2-1)*2+1) zcrssrc(j,(2-1)*2+1)], ax.YLim, '--','Color',[.7 .7 .7]);
-end
-for j = 1: size(sigsta,2)
-  scatter(ax,zcrssrc(:,(j-1)*2+1),zcrssrc(:,j*2),10,color(j,:),'filled');
-end
-ax.Box='on';
-%   grid(ax,'on');
-xlim(ax,[0,lsig/2]);
-
-ax=f2.ax(3);
-hold(ax,'on');
-%obtain the mean envelope
-tmp = detrend(sigsta);
-envup = envelope(tmp);
-menv = median(envup,1);
-for j = 1: size(sigsta,2)
-  plot(ax, sigsta(:,j)./menv(j), '-','Color',color(j,:));
-end
-xlim(ax,[lsig/2,lsig]); %ylim(ax,yran);
-for j = 1: size(zcrssrc,1)
-  plot(ax,[zcrssrc(j,(2-1)*2+1) zcrssrc(j,(2-1)*2+1)], ax.YLim, '--','Color',[.7 .7 .7]);
-end
-ax.Box='on';
-ylabel(ax,'Amplitude');
-
-ax=f2.ax(4);
-hold(ax,'on');
-for j = 1: size(zcrssrc,1)
-  plot(ax,[zcrssrc(j,(2-1)*2+1) zcrssrc(j,(2-1)*2+1)], ax.YLim, '--','Color',[.7 .7 .7]);
-end
-for j = 1: size(sigsta,2)
-  scatter(ax,zcrssrc(:,(j-1)*2+1),zcrssrc(:,j*2),10,color(j,:),'filled');
-end
-ax.Box='on';
-%   grid(ax,'on');
-xlabel(ax,'Samples');
-ylabel(ax,'Deconvolved source amplitude');
-xlim(ax,[lsig/2,lsig]);
-
+% keyboard
 
 %%%beside the plot, we want to identify the nearest, ie, related pair of waveform pos&neg peaks and 
 %%%the deconvolved sources shown by the scaled templates that also have a pos&neg peaks
@@ -194,7 +125,3 @@ clnpk.mindisn = mindisn;
 clnpk.clnpkwf = clnpkwf;
 clnpk.clnpkhtwf = clnpkhtwf;
 clnpk.npkhtsrc = npkhtsrc;
- 
-% keyboard
-
-

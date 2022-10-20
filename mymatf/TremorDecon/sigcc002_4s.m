@@ -164,22 +164,21 @@ for ista = 1: nsta
 end
 STAort = ccstackort;
 
-% for ista=1:nsta
-%     STA(:,ista)=Bandpass(STA(:,ista),sps,0.1,15,2,2,'butter');   % change 'bandpass' to 'Bandpass'
-% end
+%flag of normalization
+normflag = 0;
 
-%plot the raw templates, not filtered, not best aligned
-figure
-subplot(211)
-hold on
-for ista = 1: nsta
-  plot(STA(:,ista));
-end
-subplot(212)
-hold on
-for ista = 1: nsta
-  plot(STAort(:,ista));
-end
+% %plot the raw templates, not filtered, not best aligned
+% figure
+% subplot(211)
+% hold on
+% for ista = 1: nsta
+%   plot(STA(:,ista));
+% end
+% subplot(212)
+% hold on
+% for ista = 1: nsta
+%   plot(STAort(:,ista));
+% end
 
 %%%The below aligns the templates by x-correlation
 ist = templensec*sps*4/10;  %not using whole window in case any station has very long-period energy
@@ -221,21 +220,24 @@ for ista=2:nsta
     STAtmp(mshiftadd+1:end-(mshiftadd+1),ista)=STAtmp(mshiftadd+1-imax(ista):end-(mshiftadd+1)-imax(ista),ista);
     STAtmport(mshiftadd+1:end-(mshiftadd+1),ista)=STAtmport(mshiftadd+1-imax(ista):end-(mshiftadd+1)-imax(ista),ista);
 end
-for ista=1:nsta
-    STAtmp(:,ista)=STAtmp(:,ista)/spread(ista); % now templates are 'aligned' indeoendently by x-corr wrt. sta 1
-    STAtmport(:,ista)=STAtmport(:,ista)/spread(ista);
+%normalization
+if normflag 
+  for ista=1:nsta
+      STAtmp(:,ista)=STAtmp(:,ista)/spread(ista); % now templates are 'aligned' indeoendently by x-corr wrt. sta 1
+      STAtmport(:,ista)=STAtmport(:,ista)/spread(ista);
+  end
 end
-figure
-subplot(211)
-hold on
-for ista = 1: nsta
-  plot(STAtmp(:,ista));
-end
-subplot(212)
-hold on
-for ista = 1: nsta
-  plot(STAtmport(:,ista));
-end
+% figure
+% subplot(211)
+% hold on
+% for ista = 1: nsta
+%   plot(STAtmp(:,ista));
+% end
+% subplot(212)
+% hold on
+% for ista = 1: nsta
+%   plot(STAtmport(:,ista));
+% end
 %%%The above aligns the templates by x-correlation
 
 %%%detrend, taper and bandpass templates
@@ -293,7 +295,8 @@ zcsta1 = zcsta1+imin-1;
 greenlen = pow2(9)*sps/40;
 green = zeros(greenlen,nsta); % no bandpass
 greenf = zeros(greenlen,nsta);  % bandpassed version
-ppeaks = zeros(nsta,1);
+ppeaks = zeros(nsta,1); % positive peaks
+npeaks = zeros(nsta,1); % negative peaks
 greenort = zeros(greenlen,nsta); % no bandpass
 greenfort = zeros(greenlen,nsta);  % bandpassed version
 for ista = 1: nsta
@@ -303,24 +306,29 @@ for ista = 1: nsta
   %detrend again for caution
   green(:,ista)=detrend(green(:,ista));
   greenf(:,ista)=detrend(greenf(:,ista));
-  %normalize by max amp
-  green(:,ista)=green(:,ista)/max(abs(green(:,ista)));    % normalize
-  greenf(:,ista)=greenf(:,ista)/max(abs(green(:,ista)));    % normalize
+  if normflag
+    %normalize by max amp
+    green(:,ista)=green(:,ista)/max(abs(green(:,ista)));    % normalize
+    greenf(:,ista)=greenf(:,ista)/max(abs(green(:,ista)));    % normalize
+  end
   
   %same process for orthogonal
   greenort(:,ista) = tmpwletort(zcsta1+8*sps-greenlen+1-offwlet1i(ista): zcsta1+8*sps-offwlet1i(ista), ista);
   greenfort(:,ista) = tmpwletfort(zcsta1+8*sps-greenlen+1-offwlet1i(ista): zcsta1+8*sps-offwlet1i(ista), ista);
   greenort(:,ista)=detrend(greenort(:,ista));
   greenfort(:,ista)=detrend(greenfort(:,ista));
-  greenort(:,ista)=greenort(:,ista)/max(abs(green(:,ista)));    % normalize
-  greenfort(:,ista)=greenfort(:,ista)/max(abs(green(:,ista)));    % normalize
-
+  if normflag
+    greenort(:,ista)=greenort(:,ista)/max(abs(green(:,ista)));    % normalize
+    greenfort(:,ista)=greenfort(:,ista)/max(abs(green(:,ista)));    % normalize
+  end
+  
   %re-find the zero-crossing as the template length has changed
   [~,imin] = min(greenf(:,ista));
   [~,imax] = max(greenf(:,ista));
   [~,zcrosses(ista)] = min(abs(greenf(imin:imax,ista)));
   zcrosses(ista) = zcrosses(ista)+imin-1;
   ppeaks(ista) = imax;
+  npeaks(ista) = imin;
 end
 %the following is just a check, because now the templates must be best aligned 
 ccmid = round(size(greenf,1)/2);
@@ -331,66 +339,27 @@ iup = 1;    % times of upsampling
 [off12con,off13con,cc,iloopoff,loopoff] = constrained_cc_interp(greenf(:,1:3)',ccmid,...
   ccwlen,mshiftadd,loffmax,ccmin,iup);
 if ~(off12con==0 && off13con==0)
-  disp('Filtered templates are NOT best aligned');
+  disp('Filtered templates are NOT best aligned \n');
 end
 for ista = 4: nsta
-  [coef,lag] = xcorr(tmpwletf(:,1), tmpwletf(:,ista), mshiftadd, 'coeff');
+  [coef,lag] = xcorr(greenf(:,1), greenf(:,ista), mshiftadd, 'coeff');
+  [mcoef, idx] = max(coef);   % max of master raw cc
   if lag(idx)~=0   % offset in samples
-    fprintf('Filtered templates are NOT best aligned at %s',stas(ista,:));
+    fprintf('Filtered templates are NOT best aligned at %s \n',stas(ista,:));
   end
 end
 
-%%
+amprat(1,:) = minmax(greenf(:,1)')./minmax(greenf(:,2)');	% amp ratio between max at sta 3 and 2 or min
+amprat(2,:) = minmax(greenf(:,1)')./minmax(greenf(:,3)');	% amp ratio between max at sta 3 and 1 or min  
+amprat(3,:) = minmax(greenf(:,2)')./minmax(greenf(:,3)');	% amp ratio between max at sta 3 and 1 or min  
+spread = range(greenf);   % range of the amp of template
+
 %%%plot the unfiltered and filtered templates
-figure
-subplot(2,2,1)
-hold on
-color = jet(nsta);
-for ista = 1: nsta
-  plot(green(:,ista),'color',color(ista,:));
-end
-text(0.95,0.9,'Raw opt.','Units','normalized','HorizontalAlignment',...
-  'right');
-mx=max(max(abs(green(:,:))));
-xlim([0 greenlen])
-ylim([-mx mx])
-box on
+% plt_templates(green,greenf,stas,greenort,greenfort,lowlet,hiwlet,sps);
 
-subplot(2,2,2)
-hold on
-for ista = 1: nsta
-  plot(greenf(:,ista),'color',color(ista,:));
-end
-text(0.95,0.9,sprintf('%.1f-%.1f Hz opt.',lowlet,hiwlet),'Units','normalized','HorizontalAlignment',...
-  'right');
-mx=max(max(abs(greenf(:,:))));
-xlim([0 greenlen])
-ylim([-mx mx])
-box on
+%just the filtered templates
+% plt_templates_bp(greenf,stas,lowlet,hiwlet,sps);
 
-subplot(2,2,3)
-hold on
-for ista = 1: nsta
-  plot(greenort(:,ista),'color',color(ista,:));
-end
-text(0.95,0.9,'Raw ort.','Units','normalized','HorizontalAlignment',...
-  'right');
-mx=max(max(abs(green(:,:))));
-xlim([0 greenlen])
-ylim([-mx mx])
-box on
-
-subplot(2,2,4)
-hold on
-for ista = 1: nsta
-  plot(greenfort(:,ista),'color',color(ista,:));
-end
-text(0.95,0.9,sprintf('%.1f-%.1f Hz ort.',lowlet,hiwlet),'Units','normalized','HorizontalAlignment',...
-  'right');
-mx=max(max(abs(greenf(:,:))));
-xlim([0 greenlen])
-ylim([-mx mx])
-box on
 
 %%
 % dates and ets
@@ -409,21 +378,7 @@ losig=1.8;
 k = 0;  %deconvolution burst win count
 n = 0;  %auto-determined migration win count
 
-off1i = zeros(nbst,nsta);
-
 sps = 160;
-
-ccmij = zeros(3, nmig, nsta-3);   %coef of CC the wlet-sig cc of opt comp. at 4th sta with that at sta 1/2/3 for migs
-lagmij = zeros(3, nmig, nsta-3);  %lag of CC the wlet-sig cc of opt comp. at 4th sta with that at sta 1/2/3 for migs
-ccm123 = zeros(nmig, 3);  %coef of CC the wlet-sig cc of opt comp. within sta 1,2,3 for migs
-lagm123 = zeros(nmig, 3); %lag of CC the wlet-sig cc of opt comp. within sta 1,2,3 for migs
-
-ccbij = zeros(3, nbst, nsta-3); %coef of CC the wlet-sig cc of opt comp. at 4th sta with that at sta 1/2/3 for bursts
-lagbij = zeros(3, nbst, nsta-3);  %lag of CC the wlet-sig cc of opt comp. at 4th sta with that at sta 1/2/3 for bursts
-ccb123 = zeros(nbst, 3);  %coef of CC the wlet-sig cc of opt comp. within sta 1,2,3 for bursts
-lagb123 = zeros(nbst, 3); %lag of CC the wlet-sig cc of opt comp. within sta 1,2,3 for bursts
-ccboo = zeros(nbst, 3); %coef of CC the wlet-sig cc of opt comp. with that of ort within sta 1,2,3 for bursts
-lagboo = zeros(nbst, 3);  %lag of CC the wlet-sig cc of opt comp. with that of ort within sta 1,2,3 for bursts
 
 %empirically determined indices of bursts fall into local day times (noisier)
 %or night times (quieter)
@@ -445,10 +400,27 @@ ihioo123n = intersect(inbst,ihioo123);
 ihicc123 = [1,3,6,7,8,24,56,71,75,77,81,83,93,102,114,116,132,145,149,185];
 ihicc123n = intersect(inbst,ihicc123);
 
-[~,~,~,idate,ibst] = indofburst(tranbst,34);
+idxburst = idbst;
+[~,~,~,idate,ibst] = indofburst(tranbst,idxburst);
 
-for i = 1: length(dates)  % dates in each ets
-%   i = idate;
+ccmij = zeros(3, nmig, nsta-3);   %coef of CC the wlet-sig cc of opt comp. at 4th sta with that at sta 1/2/3 for migs
+lagmij = zeros(3, nmig, nsta-3);  %lag of CC the wlet-sig cc of opt comp. at 4th sta with that at sta 1/2/3 for migs
+ccm123 = zeros(nmig, 3);  %coef of CC the wlet-sig cc of opt comp. within sta 1,2,3 for migs
+lagm123 = zeros(nmig, 3); %lag of CC the wlet-sig cc of opt comp. within sta 1,2,3 for migs
+
+off1i = zeros(length(idxburst),nsta);
+
+ccbij = zeros(3, length(idxburst), nsta-3); %coef of CC the wlet-sig cc of opt comp. at 4th sta with that at sta 1/2/3 for bursts
+lagbij = zeros(3, length(idxburst), nsta-3);  %lag of CC the wlet-sig cc of opt comp. at 4th sta with that at sta 1/2/3 for bursts
+ccb123 = zeros(length(idxburst), 3);  %coef of CC the wlet-sig cc of opt comp. within sta 1,2,3 for bursts
+lagb123 = zeros(length(idxburst), 3); %lag of CC the wlet-sig cc of opt comp. within sta 1,2,3 for bursts
+ccboo = zeros(length(idxburst), 3); %coef of CC the wlet-sig cc of opt comp. with that of ort within sta 1,2,3 for bursts
+lagboo = zeros(length(idxburst), 3);  %lag of CC the wlet-sig cc of opt comp. with that of ort within sta 1,2,3 for bursts
+
+for iii = 1: length(idxburst)
+  iii
+% for i = 1: length(dates)  % dates in each ets
+  i = idate(iii);
   date = dates(i);
   year = floor(date/1000);
   jday = floor(date-year*1000);
@@ -498,10 +470,13 @@ for i = 1: length(dates)  % dates in each ets
 %     PERMROTS,POLROTS,sps,losig,hisig,npo,npa,[],[],[],[],'Z');
 
   %%%CC between stations for decon windows
-  for j = 1: size(rangetemp,1)
-%     j = ibst;
+%   for j = 1: size(rangetemp,1)
+    j = ibst(iii);
     tst = rangetemp(j,2); % start and end time of bursts
     ted = rangetemp(j,3);
+    
+    icount = iii;
+%     icount = j+k-size(rangetemp,1);
     
     %how many 4-s detections fall into the burst range
     indtmaxi = find(tmaxi>=tst-0.1 & tmaxi<=ted+0.1);
@@ -519,7 +494,7 @@ for i = 1: length(dates)  % dates in each ets
     loffmax = 4*sps/40;
     ccmin = 0.01;  % depending on the length of trace, cc could be very low
     iup = 1;    % times of upsampling
-    [off12con,off13con,ccali(j+k-size(rangetemp,1)),iloopoff,loopoff] = constrained_cc_interp(optcc(:,1:3)',ccmid,...
+    [off12con,off13con,ccali(icount),iloopoff,loopoff] = constrained_cc_interp(optcc(:,1:3)',ccmid,...
       ccwlen,msftadd,loffmax,ccmin,iup);
     % if a better alignment cannot be achieved, use 0,0
     if off12con == msftadd+1 && off13con == msftadd+1
@@ -527,14 +502,14 @@ for i = 1: length(dates)  % dates in each ets
       off13con = 0;
       fprintf('Tremor burst %d cannot be properly aligned, double-check needed \n',k);
     end
-    off1i(j+k-size(rangetemp,1),1) = 0;
-    off1i(j+k-size(rangetemp,1),2) = round(off12con);
-    off1i(j+k-size(rangetemp,1),3) = round(off13con);
+    off1i(icount,1) = 0;
+    off1i(icount,2) = round(off12con);
+    off1i(icount,3) = round(off13con);
     
     for ista = 4: nsta
       [coef,lag] = xcorr(optcc(:,1), optcc(:,ista), msftadd, 'coeff');
       [mcoef, idx] = max(coef);   % max of master raw cc
-      off1i(j+k-size(rangetemp,1),ista) = lag(idx);   % offset in samples
+      off1i(icount,ista) = lag(idx);   % offset in samples
     end
     
     %Align records
@@ -543,10 +518,10 @@ for i = 1: length(dates)  % dates in each ets
     optdat(:, 1:2) = STAopt(max(floor(tstbuf*sps+1),1): min(floor(tedbuf*sps),86400*sps), 1:2); % sta 1
     ortdat(:, 1:2) = STAort(max(floor(tstbuf*sps+1),1): min(floor(tedbuf*sps),86400*sps), 1:2);
     for ista = 2: nsta
-      optdat(:, ista+1) = STAopt(max(floor(tstbuf*sps+1)-off1i(j+k-size(rangetemp,1),ista),1): ...
-        min(floor(tedbuf*sps)-off1i(j+k-size(rangetemp,1),ista),86400*sps), ista+1); % sta 2
-      ortdat(:, ista+1) = STAort(max(floor(tstbuf*sps+1)-off1i(j+k-size(rangetemp,1),ista),1): ...
-        min(floor(tedbuf*sps)-off1i(j+k-size(rangetemp,1),ista),86400*sps), ista+1);
+      optdat(:, ista+1) = STAopt(max(floor(tstbuf*sps+1)-off1i(icount,ista),1): ...
+        min(floor(tedbuf*sps)-off1i(icount,ista),86400*sps), ista+1); % sta 2
+      ortdat(:, ista+1) = STAort(max(floor(tstbuf*sps+1)-off1i(icount,ista),1): ...
+        min(floor(tedbuf*sps)-off1i(icount,ista),86400*sps), ista+1);
     end
     
     sigsta = zeros(size(optdat,1), nsta);
@@ -572,38 +547,38 @@ for i = 1: length(dates)  % dates in each ets
     
     maxlag = 2*sps;
         
-%     %%%for 4th and more stations, relative to sta 1/2/3, between opt and opt
-%     for ista = 4: nsta
-%       [cccoef, lagcoef] = xcorr(sigsta(:,1), sigsta(:,ista), maxlag, 'coeff');
-%       [ccbij(1,j+k-size(rangetemp,1),ista-3), mind] = max(cccoef);
-%       lagbij(1,j+k-size(rangetemp,1),ista-3) = lagcoef(mind);
-%       
-%       [cccoef, lagcoef] = xcorr(sigsta(:,2), sigsta(:,ista), maxlag, 'coeff');
-%       [ccbij(2,j+k-size(rangetemp,1),ista-3), mind] = max(cccoef);
-%       lagbij(2,j+k-size(rangetemp,1),ista-3) = lagcoef(mind);
-%       
-%       [cccoef, lagcoef] = xcorr(sigsta(:,3), sigsta(:,ista), maxlag, 'coeff');
-%       [ccbij(3,j+k-size(rangetemp,1),ista-3), mind] = max(cccoef);
-%       lagbij(3,j+k-size(rangetemp,1),ista-3) = lagcoef(mind);
-%     end
+    %%%for 4th and more stations, relative to sta 1/2/3, between opt and opt
+    for ista = 4: nsta
+      [cccoef, lagcoef] = xcorr(sigsta(:,1), sigsta(:,ista), maxlag, 'coeff');
+      [ccbij(1,icount,ista-3), mind] = max(cccoef);
+      lagbij(1,icount,ista-3) = lagcoef(mind);
+      
+      [cccoef, lagcoef] = xcorr(sigsta(:,2), sigsta(:,ista), maxlag, 'coeff');
+      [ccbij(2,icount,ista-3), mind] = max(cccoef);
+      lagbij(2,icount,ista-3) = lagcoef(mind);
+      
+      [cccoef, lagcoef] = xcorr(sigsta(:,3), sigsta(:,ista), maxlag, 'coeff');
+      [ccbij(3,icount,ista-3), mind] = max(cccoef);
+      lagbij(3,icount,ista-3) = lagcoef(mind);
+    end
     
-    %%%for stas 1, 2, 3, between opt and opt
-    [cccoef, lagcoef] = xcorr(sigsta(:,1), sigsta(:,2), maxlag, 'coeff');
-    [ccb123(j+k-size(rangetemp,1),1), mind] = max(cccoef);
-    lagb123(j+k-size(rangetemp,1),1) = lagcoef(mind);
-    
-    [cccoef, lagcoef] = xcorr(sigsta(:,1), sigsta(:,3), maxlag, 'coeff');
-    [ccb123(j+k-size(rangetemp,1),2), mind] = max(cccoef);
-    lagb123(j+k-size(rangetemp,1),2) = lagcoef(mind);
-    
-    [cccoef, lagcoef] = xcorr(sigsta(:,2), sigsta(:,3), maxlag, 'coeff');
-    [ccb123(j+k-size(rangetemp,1),3), mind] = max(cccoef);
-    lagb123(j+k-size(rangetemp,1),3) = lagcoef(mind);
+%     %%%for stas 1, 2, 3, between opt and opt
+%     [cccoef, lagcoef] = xcorr(sigsta(:,1), sigsta(:,2), maxlag, 'coeff');
+%     [ccb123(icount,1), mind] = max(cccoef);
+%     lagb123(icount,1) = lagcoef(mind);
+%     
+%     [cccoef, lagcoef] = xcorr(sigsta(:,1), sigsta(:,3), maxlag, 'coeff');
+%     [ccb123(icount,2), mind] = max(cccoef);
+%     lagb123(icount,2) = lagcoef(mind);
+%     
+%     [cccoef, lagcoef] = xcorr(sigsta(:,2), sigsta(:,3), maxlag, 'coeff');
+%     [ccb123(icount,3), mind] = max(cccoef);
+%     lagb123(icount,3) = lagcoef(mind);
 
     
-  end
-  
-  
+%   end
+% end
+
 end
 
 %%
@@ -646,9 +621,10 @@ for ii = 1:nrow
       xlabel(ax,'Lag (s) of max CC');
       ylabel(ax,'Max CC');
     end
+    longticks(ax,1);
   end
 end
-supertit(f.ax(1:ncol),'Bursts');
+supertit(f.ax(1:ncol),'day-time bursts');
 
 %%
 figure
@@ -682,7 +658,7 @@ for ii = 1:nrow
   end
 end
 
-
+keyboard
 
 %% burst windows for stas 1/2/3
 widin = 9;

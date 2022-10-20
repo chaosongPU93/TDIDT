@@ -140,8 +140,7 @@ hfout = sortrows(hfout, [daycol, seccol]);
 %%%   27:sumsSTA32n(n,iSTA32bang) 28:sigma(nin) 29:sigma12(nin) 30:sigma13(nin)
 %%%   in(1:nstanew) loff(1:nstanew) ioff(1:nstanew) ccmaxave(1:nstanew)
 
-
-%% 2D plane fitting
+%% extra settings
 sps = 160;
 
 stasnew=['LZB  '
@@ -152,18 +151,12 @@ nstasnew = size(stasnew,1);
 
 data = hfall;
 
-flagplt = 0;
-
-% if flagplt
-%   f1 = initfig(16,4,1,4);
-% end
+flagplt = 1;
 
 if isequaln(data, hfall)
   sybsz = 5; 
-  filtsigma = 5;
 elseif isequaln(data, hfbnd)
   sybsz = 20;
-  filtsigma = 1;
 end
 
 xran = [min(data(:,7))-1 max(data(:,7))+1];
@@ -172,13 +165,18 @@ xvec = xran(1): 1: xran(2);
 yvec = yran(1): 1: yran(2);
 
 
+%% raw data
+f1 = initfig(16,6,2,4);
+f2 = initfig(16,6,2,4);
+f3 = initfig(16,6,2,4);
+
 for i = 1: nstasnew
   colflg = 42+i;  % column num for the flag to indicate if the 4th sta passes the check
   colloff = 46+i; % column num for the summed difference in offset needed to align 4th sta and original trio
   colioff = 50+i; % column num for the offset needed to align 4th sta and original trio
   colcc = 54+i; % column num for ave CC of aligning 4th sta and original trio
   ccavethres = 0.8*xcmaxAVEnmin;  %% average cc threshold
-  offavethres = 2;    % average differential offset threshold
+  offavethres = 2*sps/40;    % average differential offset threshold
   
   ind = find(data(:,colflg)==1);
   loff = data(ind,colloff)*sps/40;
@@ -190,34 +188,168 @@ for i = 1: nstasnew
   mioff = median_pixel(off12,off13,ioff);
   mcc = median_pixel(off12,off13,cc);
 
-  if isequaln(data, hfall)
-    ran = [-20 20 -75 55];
-    ind2 = find(off12>=ran(1) & off12<=ran(2) & off13>=ran(3) & off13<=ran(4));
-    off12 = off12(ind2);
-    off13 = off13(ind2);
-    ioff = ioff(ind2);
-    mloff = mloff(mloff(:,1)>=ran(1) & mloff(:,1)<=ran(2) & mloff(:,2)>=ran(3) & mloff(:,2)<=ran(4), :);
-    mioff = mioff(mioff(:,1)>=ran(1) & mioff(:,1)<=ran(2) & mioff(:,2)>=ran(3) & mioff(:,2)<=ran(4), :);
-    mcc = mcc(mcc(:,1)>=ran(1) & mcc(:,1)<=ran(2) & mcc(:,2)>=ran(3) & mcc(:,2)<=ran(4), :);
-  end
+  ran = [-30 50 -60 40];
+
+  %%%figure 1, averaged difference in offset between 3 pairs, 14,24,34
+  %median
+  ax = f1.ax(i);
+  hold(ax,'on'); grid(ax,'on');
+  scatter(ax,data(:,7),data(:,8),sybsz,[.8 .8 .8],'filled');
+  scatter(ax,mloff(:,1),mloff(:,2),sybsz,mloff(:,3),'filled');
+  text(ax,0.98,0.15,sprintf('%d/%d',length(ind),size(data,1)),'Units','normalized',...
+    'HorizontalAlignment','right');
+  text(ax,0.98,0.05,sprintf('=%.1f%%',length(ind)/size(data,1)*100),'Units','normalized',...
+    'HorizontalAlignment','right');
+  c=colorbar(ax);
+  c.Label.String = 'med of averaged offset diff.';
+  %  colormap(ax,flipud(colormap(ax,'gray')));
+  colormap(ax,'jet');
+  caxis(ax,[0 offavethres]);
+  axis(ax,[xran yran],'equal');
+  text(ax,0.02,0.95,stasnew(i,:),'Units','normalized','HorizontalAlignment','left');
+  hold(ax,'off');
+  
+  %standard deviation
+  ax = f1.ax(4+i);
+  hold(ax,'on'); grid(ax,'on');
+  idx = find(mloff(:,end)~=0);  %only show non-zeros, ie., has duplicates
+  scatter(ax,mloff(idx,1),mloff(idx,2),sybsz,mloff(idx,end),'filled','MarkerEdgeColor','none');
+  c=colorbar(ax);
+  c.Label.String = 'std of averaged offset diff.';
+  colormap(ax,flipud(colormap(ax,'gray')));
+  caxis(ax,[0 prctile(mloff(idx,end),95)]);
+  axis(ax,'equal',ran);
+  hold(ax,'off');
+
+  
+  %%%figure 2, observational weighted off14 (equivalent to 24 and 34)
+  %median
+  ax = f2.ax(i);
+  hold(ax,'on'); grid(ax,'on');
+  scatter(ax,mioff(:,1),mioff(:,2),sybsz,mioff(:,3),'filled');
+  c=colorbar(ax);
+  c.Label.String = 'med of weighted off14';
+  colormap(ax,'jet');
+  caxis(ax,[prctile(mioff(:,3),5), prctile(mioff(:,3),95)]);
+  axis(ax,[xran yran],'equal');
+  text(ax,0.02,0.95,stasnew(i,:),'Units','normalized','HorizontalAlignment','left');
+  hold(ax,'off');
+
+  %standard deviation
+  ax = f2.ax(4+i);
+  hold(ax,'on'); grid(ax,'on');
+  idx = find(mloff(:,end)~=0);  %only show non-zeros, ie., has duplicates
+  scatter(ax,mioff(idx,1),mioff(idx,2),sybsz,mioff(idx,end),'filled','MarkerEdgeColor','none');
+  c=colorbar(ax);
+  c.Label.String = 'std of weighted off14';
+  colormap(ax,flipud(colormap(ax,'gray')));
+  caxis(ax,[0 prctile(mioff(idx,end),95)]);
+  axis(ax,'equal',ran);
+  hold(ax,'off');
+  
+  
+  %%%figure 3, averaged CC
+  %median
+  ax = f3.ax(i);
+  hold(ax,'on'); grid(ax,'on');
+  scatter(ax,mcc(:,1),mcc(:,2),sybsz,mcc(:,3),'filled');
+  c=colorbar(ax);
+  c.Label.String = 'med of averaged CC';
+  colormap(ax,'jet');
+  caxis(ax,[0 prctile(mcc(:,3),95)]);
+  axis(ax,[xran yran],'equal');
+  text(ax,0.02,0.95,stasnew(i,:),'Units','normalized','HorizontalAlignment','left');
+  hold(ax,'off');
+  
+  %standard deviation
+  ax = f3.ax(4+i);
+  hold(ax,'on'); grid(ax,'on');
+  idx = find(mloff(:,end)~=0);  %only show non-zeros, ie., has duplicates
+  scatter(ax,mcc(idx,1),mcc(idx,2),sybsz,mcc(idx,end),'filled','MarkerEdgeColor','none');
+  c=colorbar(ax);
+  c.Label.String = 'std of averaged CC';
+  colormap(ax,flipud(colormap(ax,'gray')));
+  caxis(ax,[0 prctile(mcc(idx,end),95)]);
+  axis(ax,'equal',ran);
+  hold(ax,'off');
+end
+xlabel(f1.ax(1),'off12 (160 sps)');
+ylabel(f1.ax(1),'off13 (160 sps)');
+title(f1.ax(1),'averaged offset diff.');
+xlabel(f2.ax(1),'off12 (160 sps)');
+ylabel(f2.ax(1),'off13 (160 sps)');
+title(f2.ax(1),'weighted off14');
+xlabel(f3.ax(1),'off12 (160 sps)');
+ylabel(f3.ax(1),'off13 (160 sps)');
+title(f3.ax(1),'averaged CC');
+
+
+
+%% 2D plane fitting
+modparam = [];
+off14pred = [];
+for i = 1: nstasnew
+  colflg = 42+i;  % column num for the flag to indicate if the 4th sta passes the check, 43-46
+  colloff = 46+i; % column num for the summed difference in offset needed to align 4th sta and original trio, 47-50
+  colioff = 50+i; % column num for the offset needed to align 4th sta and original trio, 51-54
+  colcc = 54+i; % column num for ave CC of aligning 4th sta and original trio, 55-58
+  ccavethres = 0.8*xcmaxAVEnmin;  %% average cc threshold
+  offavethres = 2*sps/40;    % average differential offset threshold
+  
+  ind = find(data(:,colflg)==1);
+  loff = data(ind,colloff)*sps/40;  %convert to the same sps 
+  ioff = data(ind,colioff)*sps/40;  %convert to the same sps 
+  cc = data(ind,colcc);
+  off12 = data(ind,7);  %note that the location off12 and off13 are already consistent here
+  off13 = data(ind,8);
+  mloff = median_pixel(off12,off13,loff);
+  mioff = median_pixel(off12,off13,ioff);
+  mcc = median_pixel(off12,off13,cc);
+
+%   if isequaln(data, hfall)
+%     if i==1
+%       ran = [-30 20 -75 35];
+%     elseif i==2
+%       ran = [-30 25 -70 40];
+%     elseif i==3
+%       ran = [-30 25 -65 40];
+%     elseif i==4
+%       ran = [-40 45 -70 50];
+%     end
+%     ind2 = find(off12>=ran(1) & off12<=ran(2) & off13>=ran(3) & off13<=ran(4));
+%     off12 = off12(ind2);
+%     off13 = off13(ind2);
+%     ioff = ioff(ind2);
+%     mloff = mloff(mloff(:,1)>=ran(1) & mloff(:,1)<=ran(2) & mloff(:,2)>=ran(3) & mloff(:,2)<=ran(4), :);
+%     mioff = mioff(mioff(:,1)>=ran(1) & mioff(:,1)<=ran(2) & mioff(:,2)>=ran(3) & mioff(:,2)<=ran(4), :);
+%     mcc = mcc(mcc(:,1)>=ran(1) & mcc(:,1)<=ran(2) & mcc(:,2)>=ran(3) & mcc(:,2)<=ran(4), :);
+%   end
 
   
   %%%plane fitting
-  [xData, yData, zData] = prepareSurfaceData(mioff(:,1),mioff(:,2),mioff(:,3));
-%   [xData, yData, zData] = prepareSurfaceData(off12,off13,ioff);
+%   [xData, yData, zData] = prepareSurfaceData(mioff(:,1),mioff(:,2),mioff(:,3));
+  [xData, yData, zData] = prepareSurfaceData(off12,off13,ioff);
 
   % Set up fittype and options.
-  ft = fittype( 'a*x+b*y+c', 'independent', {'x', 'y'}, 'dependent', 'z' );
   opts = fitoptions( 'Method', 'NonlinearLeastSquares' );
   opts.Display = 'Off';
   opts.Robust = 'Bisquare';
-  opts.StartPoint = [0.5 0.5 0.5];
 
   % Fit model to data.
-  [fitresult, gof] = fit( [xData, yData], zData, ft, opts );
+  %%%plane fit model
+  ftplane = fittype( 'a*x+b*y+c', 'independent', {'x', 'y'}, 'dependent', 'z' );
+  opts.StartPoint = [0.5 0.5 0.5];
+  [fitresult, gof] = fit( [xData, yData], zData, ftplane, opts );
   modparam(i,:) = [fitresult.a fitresult.b fitresult.c];
+  off14pred{i} = fitresult.a .* off12 + fitresult.b .* off13 + fitresult.c;
   
-  off14pred{i} = fitresult.a.*off12+fitresult.b.*off13+fitresult.c;
+%   %%%parabolic fit model
+%   ftpara = fittype( '(x-x0)^2/a^2+(y-y0)^2/b^2+z0', 'independent', {'x', 'y'}, 'dependent', 'z' );
+%   opts.StartPoint = [0.5 0.5 0.5 0.5 0.5];
+%   [fitresult, gof] = fit( [xData, yData], zData, ftpara, opts );
+%   modparam(i,:) = [fitresult.a fitresult.b fitresult.x0 fitresult.y0 fitresult.z0];
+%   off14pred{i} = (off12-(fitresult.x0)).^2./(fitresult.a)^2+(off13-(fitresult.y0)).^2./(fitresult.b)^2+...
+%     (fitresult.z0);
 
   if flagplt
     % Plot fit with data.
@@ -228,24 +360,24 @@ for i = 1: nstasnew
     p2 = plot(fitresult);
     colormap('jet');
     c=colorbar;
-    c.Label.String = 'off14';
+    c.Label.String = sprintf('off14 at %d sps',sps);
     %   h = plot( fitresult, [xData, yData], zData );
     legend([p1 p2], 'z vs. x, y', 'plane fit', 'Location', 'NorthEast', 'Interpreter', 'none' );
     % Label axes
-    xlabel('x', 'Interpreter', 'none' );
-    ylabel('y', 'Interpreter', 'none' );
-    zlabel('z', 'Interpreter', 'none' );
+    xlabel(sprintf('off12 at %d sps',sps), 'Interpreter', 'none' );
+    ylabel(sprintf('off13 at %d sps',sps), 'Interpreter', 'none' );
+    zlabel(sprintf('off14 at %d sps',sps), 'Interpreter', 'none' );
     title(stasnew(i,:));
     %   axis equal
     %   zlim([-20 10]);
-    %   view( -74.8, 5.4 );
-    view(2);
+    view(85, 3);
+%     view(2);
   end
 
 end
 
 % keyboard
-fid = fopen(strcat(rstpath, '/MAPS/timeoff_planefitparam_4thsta'),'w+');
+fid = fopen(strcat(rstpath, '/MAPS/timeoff_planefitparam_4thsta_160sps'),'w+');
 fprintf(fid,'%.4f %.4f %.4f \n',modparam');
 fclose(fid);
 
