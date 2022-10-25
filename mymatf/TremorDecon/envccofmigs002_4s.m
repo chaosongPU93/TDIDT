@@ -146,7 +146,6 @@ nmig = size(tranmig,1);
 
 % median(tranmig(:,3)-tranmig(:,2))
 
-
 %%
 % dates and ets
 %%% NOTE: 'dates' is the dates that the tremor is active at the region of interest, so that the
@@ -166,280 +165,220 @@ n = 0;  %auto-determined migration win count
 
 sps = 160;
 
-ccmij = zeros(3, nmig, nsta-3);
-lagmij = zeros(3, nmig, nsta-3);
-ccm123 = zeros(nmig, 3);
-lagm123 = zeros(nmig, 3);
+%empirically determined indices of bursts fall into local day times (noisier)
+%or night times (quieter)
+inbst = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,...
+  34,35,56,57,58,59,60,61,62,70,71,72,73,74,75,76,77,78,79,80,81,82,110,111,112,113,114,115,116,117,...
+  118,119,120,142,143,144,145,146,147,148,149,150,151,152,153,154,172,173,174,175];
+idbst = [36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,63,64,65,66,67,68,69,83,84,85,...
+  86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,121,122,123,124,...
+  125,126,127,128,129,130,131,132,133,134,135,136,137,138,139,140,141,155,156,157,158,159,160,161,...
+  162,163,164,165,166,167,168,169,170,171,176,177,178,179,180,181,182,183,184,185,186,187,188,189,...
+  190,191,192,193,194,195];
 
-ccbij = zeros(3, nbst, nsta-3);
-lagbij = zeros(3, nbst, nsta-3);
-ccb123 = zeros(nbst, 3);
-lagb123 = zeros(nbst, 3);
+%indices of bursts whose wlet-sig cc between the opt and ort components at sta 1/2/3 are very
+%similar, above 75 percentile
+ihioo123 = [20,23,59,60,80,113,116,120,134,189,194];
+ihioo123n = intersect(inbst,ihioo123);
 
-for i = 1: length(dates)  % dates in each ets
-  date = dates(i);
-  year = floor(date/1000);
-  jday = floor(date-year*1000);
-  a = jul2dat(year,jday);
-  if a(1) == 9
-    mo = 'Sep.';
-  elseif a(1) == 7
-    mo = 'Jul.';
-  else
-    mo = 'Mar.';
-  end
-  dy = num2str(a(2));
-  yr = num2str(a(3));
-  
-  %bursts and 4-s detections of the same day
-  rangetemp = tranbst(tranbst(:,1)==date, :);
-  hfdayi = hfbnd(hfbnd(:,daycol)==date, :);  % inside bound of the day
-  hfdayo = hfout(hfout(:,daycol)==date, :);  % outside bound of the day
-  k = k+size(rangetemp,1);
-  
-  %migrations of the same day
-  mig = tranmig(tranmig(:,1)==date, :);
-  n = n+size(mig,1);
-  
-  tmaxi = hfdayi(:, seccol); % starting time of max power rate of half sec inside the ellipse
-  tmaxo = hfdayo(:, seccol); % starting time of max power rate of half sec outside the ellipse
-  tcnti = hfdayi(:, 15);  % the center of detecting win is the 15th col
-  tcnto = hfdayo(:, 15);  % the center of detecting win is the 15th col
+%indices of bursts whose sig cc between sta 1/2/3 are very similar, above 90 percentile
+ihicc123 = [1,3,6,7,8,24,56,71,75,77,81,83,93,102,114,116,132,145,149,185];
+ihicc123n = intersect(inbst,ihicc123);
+
+idxburst = 1:size(tranbst,1);
+
+nibst = size(idxburst,1);
+[~,~,~,idate,ibst] = indofburst(tranbst,idxburst);
+
+ccmij = zeros(3, nmig, nsta-3);   %coef of CC at 4th sta with that at sta 1/2/3 for migs
+lagmij = zeros(3, nmig, nsta-3);  %lag of CC at 4th sta with that at sta 1/2/3 for migs
+ccm123 = zeros(nmig, 3);  %coef of CC within sta 1,2,3 for migs
+lagm123 = zeros(nmig, 3); %lag of CC within sta 1,2,3 for migs
+ccm45 = zeros(nmig, 6);  %coef of CC within sta 4,5,6,7 for migs
+lagm45 = zeros(nmig, 6); %lag of CC within sta 4,5,6,7 for migs
+
+ccbij = zeros(3, nibst, nsta-3); %coef of CC at 4th sta with that at sta 1/2/3 for bursts
+lagbij = zeros(3, nibst, nsta-3);  %lag of CC at 4th sta with that at sta 1/2/3 for bursts
+ccb123 = zeros(nibst, 3);  %coef of CC within sta 1,2,3 for bursts
+lagb123 = zeros(nibst, 3); %lag of CC within sta 1,2,3 for bursts
+ccb45 = zeros(nibst, 6);  %coef of CC within sta 4,5,6,7 for bursts
+lagb45 = zeros(nibst, 6); %lag of CC within sta 4,5,6,7 for bursts
+
+%%%Flag to indicate if it is necessary to recalculate everything
+% flagrecalc = 0;
+flagrecalc = 1;
+
+if flagrecalc
+  for iii = 1: length(idxburst)
+    iii
+    %   for i = 1: length(dates)  % dates in each ets
+    i = idate(iii);
+    date = dates(i);
+    year = floor(date/1000);
+    jday = floor(date-year*1000);
+    a = jul2dat(year,jday);
+    if a(1) == 9
+      mo = 'Sep.';
+    elseif a(1) == 7
+      mo = 'Jul.';
+    else
+      mo = 'Mar.';
+    end
+    dy = num2str(a(2));
+    yr = num2str(a(3));
     
-  %read horizontal optimal and orthogonal components
-  JDAY = num2zeropadstr(jday,3);
-  MO=day2month(jday,year);     % EXTERNAL function, day2month, get the month of one particular date
-  direc=[datapath, '/arch', yr,'/',MO,'/'];     % directory name
-  prename=[direc,yr,'.',JDAY,'.00.00.00.0000.CN'];    %  path plus prefix of data file,
-  %     disp(prename);
-  [STAopt,STAort,~,fileflag] = rd_daily_bpdata(year,jday,prename,stas,PERMSTA,POLSTA,...
-    PERMROTS,POLROTS,sps,losig,hisig,npo,npa,[],[],[],[]);
-  
-  if fileflag == 0    % means there are missing files
-    fprintf('Day %s / %s will be omitted because of missing files. \n', yr, JDAY);
-    continue    % continue to the next day
-  end
- 
-  %%%obtain the mean envelope
-  tmp = detrend(STAopt(:,2:end));
-%   fractap = 20*sps/size(STAopt,1); % if fractap is >=1, n-point von Hann window is returned
-%   ptstap = fractap/2*size(STAopt,1); % if fractap is >=1, n-point von Hann window is returned
-%   w = tukeywin(size(STAopt,1),fractap);
-%   tmp = w.* tmp;
-  tmp = detrend(tmp); %detrend again for caution
-  [envup,~] = envelope(tmp);
-
-%   %%%CC between stations for migration windows
-%   for j = 1: size(mig,1)
-%     tst = mig(j,2)*3600;  %each migration is long enough, median is ~7 mins, no extra time needed
-%     ted = mig(j,3)*3600;
-%     envseg = envup(max(floor(tst*sps)+1, 1): min(floor(ted*sps),86400*sps), :);
-%     
-%     maxlag = 2*sps;
-%     
-%     for jj = 4: nsta
-%       [coef, lag] = xcorr(envseg(:,jj), envseg(:,1), maxlag, 'coeff');
-%       [ccmij(1,j+n-size(mig,1),jj-3),mind] = max(coef);
-%       lagmij(1,j+n-size(mig,1),jj-3) = lag(mind);
-%       
-%       [coef, lag] = xcorr(envseg(:,jj), envseg(:,2), maxlag, 'coeff');
-%       [ccmij(2,j+n-size(mig,1),jj-3),mind] = max(coef);
-%       lagmij(2,j+n-size(mig,1),jj-3) = lag(mind);
-%       
-%       [coef, lag] = xcorr(envseg(:,jj), envseg(:,3), maxlag, 'coeff');
-%       [ccmij(3,j+n-size(mig,1),jj-3),mind] = max(coef);
-%       lagmij(3,j+n-size(mig,1),jj-3) = lag(mind);      
-%     end
-%     
-%     [coef, lag] = xcorr(envseg(:,1), envseg(:,2), maxlag, 'coeff');
-%     [ccm123(j+n-size(mig,1),1),mind] = max(coef);
-%     lagm123(j+n-size(mig,1),1) = lag(mind);
-%     [coef, lag] = xcorr(envseg(:,1), envseg(:,3), maxlag, 'coeff');
-%     [ccm123(j+n-size(mig,1),2),mind] = max(coef);
-%     lagm123(j+n-size(mig,1),2) = lag(mind);
-%     [coef, lag] = xcorr(envseg(:,2), envseg(:,3), maxlag, 'coeff');
-%     [ccm123(j+n-size(mig,1),3),mind] = max(coef);
-%     lagm123(j+n-size(mig,1),3) = lag(mind);  
-%       
-%   end
+    %bursts and 4-s detections of the same day
+    rangetemp = tranbst(tranbst(:,1)==date, :);
+    hfdayi = hfbnd(hfbnd(:,daycol)==date, :);  % inside bound of the day
+    hfdayo = hfout(hfout(:,daycol)==date, :);  % outside bound of the day
+    k = k+size(rangetemp,1);
     
-  %%%CC between stations for decon windows
-  for j = 1: size(rangetemp,1)
+    %migrations of the same day
+    mig = tranmig(tranmig(:,1)==date, :);
+    n = n+size(mig,1);
+    
+    tmaxi = hfdayi(:, seccol); % starting time of max power rate of half sec inside the ellipse
+    tmaxo = hfdayo(:, seccol); % starting time of max power rate of half sec outside the ellipse
+    tcnti = hfdayi(:, 15);  % the center of detecting win is the 15th col
+    tcnto = hfdayo(:, 15);  % the center of detecting win is the 15th col
+    
+    %read horizontal optimal and orthogonal components
+    JDAY = num2zeropadstr(jday,3);
+    MO=day2month(jday,year);     % EXTERNAL function, day2month, get the month of one particular date
+    direc=[datapath, '/arch', yr,'/',MO,'/'];     % directory name
+    prename=[direc,yr,'.',JDAY,'.00.00.00.0000.CN'];    %  path plus prefix of data file,
+    %     disp(prename);
+    [STAopt,STAort,~,fileflag] = rd_daily_bpdata(year,jday,prename,stas,PERMSTA,POLSTA,...
+      PERMROTS,POLROTS,sps,losig,hisig,npo,npa,[],[],[],[]);
+    
+    if fileflag == 0    % means there are missing files
+      fprintf('Day %s / %s will be omitted because of missing files. \n', yr, JDAY);
+      continue    % continue to the next day
+    end
+    
+    %%%obtain the mean envelope
+    tmp = detrend(STAopt(:,2:end));
+    %   fractap = 20*sps/size(STAopt,1); % if fractap is >=1, n-point von Hann window is returned
+    %   ptstap = fractap/2*size(STAopt,1); % if fractap is >=1, n-point von Hann window is returned
+    %   w = tukeywin(size(STAopt,1),fractap);
+    %   tmp = w.* tmp;
+    tmp = detrend(tmp); %detrend again for caution
+    [envup,~] = envelope(tmp);
+    
+    %   %%%CC between stations for migration windows
+    %   for j = 1: size(mig,1)
+    %     tst = mig(j,2)*3600;  %each migration is long enough, median is ~7 mins, no extra time needed
+    %     ted = mig(j,3)*3600;
+    %     envseg = envup(max(floor(tst*sps)+1, 1): min(floor(ted*sps),86400*sps), :);
+    %
+    %     maxlag = 2*sps;
+    %
+    %     for jj = 4: nsta
+    %       [coef, lag] = xcorr(envseg(:,jj), envseg(:,1), maxlag, 'coeff');
+    %       [ccmij(1,j+n-size(mig,1),jj-3),mind] = max(coef);
+    %       lagmij(1,j+n-size(mig,1),jj-3) = lag(mind);
+    %
+    %       [coef, lag] = xcorr(envseg(:,jj), envseg(:,2), maxlag, 'coeff');
+    %       [ccmij(2,j+n-size(mig,1),jj-3),mind] = max(coef);
+    %       lagmij(2,j+n-size(mig,1),jj-3) = lag(mind);
+    %
+    %       [coef, lag] = xcorr(envseg(:,jj), envseg(:,3), maxlag, 'coeff');
+    %       [ccmij(3,j+n-size(mig,1),jj-3),mind] = max(coef);
+    %       lagmij(3,j+n-size(mig,1),jj-3) = lag(mind);
+    %     end
+    %
+    %     [coef, lag] = xcorr(envseg(:,1), envseg(:,2), maxlag, 'coeff');
+    %     [ccm123(j+n-size(mig,1),1),mind] = max(coef);
+    %     lagm123(j+n-size(mig,1),1) = lag(mind);
+    %     [coef, lag] = xcorr(envseg(:,1), envseg(:,3), maxlag, 'coeff');
+    %     [ccm123(j+n-size(mig,1),2),mind] = max(coef);
+    %     lagm123(j+n-size(mig,1),2) = lag(mind);
+    %     [coef, lag] = xcorr(envseg(:,2), envseg(:,3), maxlag, 'coeff');
+    %     [ccm123(j+n-size(mig,1),3),mind] = max(coef);
+    %     lagm123(j+n-size(mig,1),3) = lag(mind);
+    %
+    %   end
+    
+    %%%CC between stations for decon windows
+    %   for j = 1: size(rangetemp,1)
+    j = ibst(iii);
     tst = rangetemp(j,2); % start and end time of bursts
     ted = rangetemp(j,3);
+    
+    icount = iii;
+    %     icount = j+k-size(rangetemp,1);
     
     %how many 4-s detections fall into the burst range
     indtmaxi = find(tmaxi>=tst-0.1 & tmaxi<=ted+0.1);
     
-    %%%%Use the start and end of the 4-s detecting window 
-%     tstbuf = min(tcnti(indtmaxi)-2)-4;  %with some buffer
-%     tedbuf = max(tcnti(indtmaxi)+2)+4;
-    tstbuf = min(tcnti(indtmaxi)-2);  %no buffer
+    %%%%Use the start and end of the 4-s detecting window
+    tstbuf = min(tcnti(indtmaxi)-2);
     tedbuf = max(tcnti(indtmaxi)+2);
+    tlenbuf = tedbuf - tstbuf;
+    %add a buffer of the same length at the start and end
+    tstbuf = tstbuf - tlenbuf;
+    tedbuf = tedbuf + tlenbuf;
     
     envseg = envup(max(floor(tstbuf*sps)+1, 1): min(floor(tedbuf*sps),86400*sps), :);
     
     maxlag = 2*sps;
     
-    for jj = 4: nsta
-      [coef, lag] = xcorr(envseg(:,jj), envseg(:,1), maxlag, 'coeff');
-      [ccbij(1,j+k-size(rangetemp,1),jj-3),mind] = max(coef);
-      lagbij(1,j+k-size(rangetemp,1),jj-3) = lag(mind);
-      
-      [coef, lag] = xcorr(envseg(:,jj), envseg(:,2), maxlag, 'coeff');
-      [ccbij(2,j+k-size(rangetemp,1),jj-3),mind] = max(coef);
-      lagbij(2,j+k-size(rangetemp,1),jj-3) = lag(mind);
-      
-      [coef, lag] = xcorr(envseg(:,jj), envseg(:,3), maxlag, 'coeff');
-      [ccbij(3,j+k-size(rangetemp,1),jj-3),mind] = max(coef);
-      lagbij(3,j+k-size(rangetemp,1),jj-3) = lag(mind);      
+    %%%among stas 4, 5, 6, 7, between opt and opt, in order 45 46 47 56 57 67
+    tmp = 0;
+    for mm = 4: nsta-1
+      for nn = mm+1: nsta
+        tmp = tmp+1;
+        [coef, lag] = xcorr(envseg(:,mm), envseg(:,nn), maxlag, 'coeff');
+        [ccb45(icount,tmp), mind] = max(coef);
+        lagb45(icount,tmp) = lag(mind);
+      end
     end
     
-    [coef, lag] = xcorr(envseg(:,1), envseg(:,2), maxlag, 'coeff');
-    [ccb123(j+k-size(rangetemp,1),1),mind] = max(coef);
-    lagb123(j+k-size(rangetemp,1),1) = lag(mind);
-    [coef, lag] = xcorr(envseg(:,1), envseg(:,3), maxlag, 'coeff');
-    [ccb123(j+k-size(rangetemp,1),2),mind] = max(coef);
-    lagb123(j+k-size(rangetemp,1),2) = lag(mind);
-    [coef, lag] = xcorr(envseg(:,2), envseg(:,3), maxlag, 'coeff');
-    [ccb123(j+k-size(rangetemp,1),3),mind] = max(coef);
-    lagb123(j+k-size(rangetemp,1),3) = lag(mind);  
-      
+    %%%for 4th and more stations, relative to sta 1/2/3, between opt and opt
+    for mm = 4: nsta
+      for nn = 1: 3
+        [coef, lag] = xcorr(envseg(:,nn), envseg(:,mm), maxlag, 'coeff');
+        [ccbij(nn,icount,mm-3), mind] = max(coef);
+        lagbij(nn,icount,mm-3) = lag(mind);
+      end
+    end
+    
+    %%%among stas 1, 2, 3, between opt and opt, in order 12 13 23
+    tmp = 0;
+    for mm = 1: 3-1
+      for nn = mm+1: 3
+        tmp = tmp+1;
+        [coef, lag] = xcorr(envseg(:,mm), envseg(:,nn), maxlag, 'coeff');
+        [ccb123(icount,tmp), mind] = max(coef);
+        lagb123(icount,tmp) = lag(mind);
+      end
+    end
+    
+    %   end
+    % end
+    
   end
-      
+  
+  %%% save some variables
+  savefile = 'rst_envcc.mat';
+  save(strcat(rstpath, '/MAPS/',savefile), 'ccbij','lagbij','ccb123','lagb123','ccb45',...
+    'lagb45');
+  
+else
+  load(strcat(rstpath, '/MAPS/',savefile));
 end
 
-%% migration windows for stas 4/5/6/7 vs. 1/2/3
-widin = 12;
-htin = 9;
-nrow = 3;
-ncol = nsta-3;
-pltxran = [0.06 0.96]; pltyran = [0.06 0.96]; % optimal axis location
-pltxsep = 0.03; pltysep = 0.03;
-f = initfig(widin,htin,nrow,ncol);
-optaxpos(f,nrow,ncol,pltxran,pltyran,pltxsep,pltysep);
-
-for ii = 1:nrow
-  for jj = 1:ncol
-    isub = (ii-1)*ncol+jj;
-    ax = f.ax(isub);
-    hold(ax,'on');
-    ax.Box = 'on';
-    grid(ax,'on');
-    scatter(ax,lagmij(ii,:,jj)/sps,ccmij(ii,:,jj),8,'k');
-    ylim(ax,[0.2 0.9]);
-    xlim(ax,[-maxlag,maxlag]/sps);
-    text(ax,0.02,0.05,sprintf('%s-%s',strtrim(stas(jj+3,:)),strtrim(stas(ii,:))),'Units',...
-      'normalized');
-    text(ax,0.98,0.05,sprintf('%.2f, %.2f',median(lagmij(ii,:,jj)/sps),median(ccmij(ii,:,jj))),...
-      'Units','normalized','HorizontalAlignment','right');
-    if jj ~= 1
-      nolabels(ax,2);
-    end
-    if ii ~= nrow
-      nolabels(ax,1);
-    end
-    if ii == nrow && jj==1
-      xlabel(ax,'Lag (s) of max CC');
-      ylabel(ax,'Max CC');
-    end
-  end
-end
-supertit(f.ax(1:ncol),'Migrations');
-
-%% migration windows for stas 4/5/6/7 vs. 1/2/3, minus reference
-widin = 12;
-htin = 9;
-nrow = 3;
-ncol = nsta-3;
-pltxran = [0.06 0.96]; pltyran = [0.06 0.96]; % optimal axis location
-pltxsep = 0.03; pltysep = 0.03;
-f = initfig(widin,htin,nrow,ncol);
-optaxpos(f,nrow,ncol,pltxran,pltyran,pltxsep,pltysep);
-
-for ii = 1:nrow
-  for jj = 1:ncol
-    isub = (ii-1)*ncol+jj;
-    ax = f.ax(isub);
-    hold(ax,'on');
-    ax.Box = 'on';
-    grid(ax,'on');
-    if ii == 1
-      ref = mean(ccm123(:,[1 2]),2)';
-      text(ax,0.98,0.95,'ref=mean(12+13)','Units','normalized','HorizontalAlignment','right');
-    elseif ii == 2
-      ref = mean(ccm123(:,[1 3]),2)';
-      text(ax,0.98,0.95,'ref=mean(12+23)','Units','normalized','HorizontalAlignment','right');
-    else
-      ref = mean(ccm123(:,[2 3]),2)';
-      text(ax,0.98,0.95,'ref=mean(13+23)','Units','normalized','HorizontalAlignment','right');
-    end
-    scatter(ax,lagmij(ii,:,jj)/sps,ccmij(ii,:,jj)-ref,8,1:size(ccmij,2),'filled');
-    colormap(ax,'jet');
-    ylim(ax,[-0.4 0.3]);
-    xlim(ax,[-maxlag,maxlag]/sps);
-    text(ax,0.02,0.05,sprintf('%s-%s',strtrim(stas(jj+3,:)),strtrim(stas(ii,:))),'Units',...
-      'normalized');
-    text(ax,0.98,0.05,sprintf('%.2f, %.2f',median(lagmij(ii,:,jj)/sps),median(ccmij(ii,:,jj)-ref)),...
-      'Units','normalized','HorizontalAlignment','right');
-    if jj ~= 1
-      nolabels(ax,2);
-    end
-    if ii ~= nrow
-      nolabels(ax,1);
-    end
-    if ii == nrow && jj==1
-      xlabel(ax,'Lag (s) of max CC');
-      ylabel(ax,'Max CC - ref CC');
-      colorbar(ax,'Location','west');
-    end
-  end
-end
-supertit(f.ax(1:ncol),'Migrations (-reference)');
-
-
-%% migration windows for stas 1/2/3
-widin = 9;
-htin = 3;
-nrow = 1;
-ncol = 3;
-pltxran = [0.06 0.96]; pltyran = [0.12 0.95]; % optimal axis location
-pltxsep = 0.05; pltysep = 0.03;
-f = initfig(widin,htin,nrow,ncol);
-optaxpos(f,nrow,ncol,pltxran,pltyran,pltxsep,pltysep);
-
-for isub = 1:3
-  ax = f.ax(isub);
-  hold(ax,'on');
-  ax.Box = 'on';
-  grid(ax,'on');
-  scatter(ax,lagm123(:,isub)/sps,ccm123(:,isub),8,'k');
-  ylim(ax,[0.2 0.9]);
-  xlim(ax,[-maxlag,maxlag]/sps);
-  if isub ==1
-    text(ax,0.02,0.05,sprintf('%s-%s',strtrim(stas(1,:)),strtrim(stas(2,:))),'Units',...
-      'normalized');
-  elseif isub ==2
-    text(ax,0.02,0.05,sprintf('%s-%s',strtrim(stas(1,:)),strtrim(stas(3,:))),'Units',...
-      'normalized');
-  else
-    text(ax,0.02,0.05,sprintf('%s-%s',strtrim(stas(2,:)),strtrim(stas(3,:))),'Units',...
-      'normalized');
-  end
-  text(ax,0.98,0.05,sprintf('%.2f, %.2f',median(lagm123(:,isub)/sps),median(ccm123(:,isub))),...
-    'Units','normalized','HorizontalAlignment','right');
-  if isub~=1
-    nolabels(ax,2);
-  end
-  if isub==1
-    xlabel(ax,'Lag (s) of max CC');
-    ylabel(ax,'Max CC');
-  end
-end
-supertit(f.ax(1:ncol),'Migrations');
-
+%% target some high-correlation bursts
+% ind = find(ccboo(:,1)>=prctile(ccboo(:,1),75) & ccboo(:,2)>=prctile(ccboo(:,2),75) & ...
+%   ccboo(:,3)>=prctile(ccboo(:,3),75));
+% ind = [20,23,59,60,80,113,116,120,134,189,194];
+% 
+% ind = find(ccb123(:,1)>=prctile(ccb123(:,1),75) & ccb123(:,2)>=prctile(ccb123(:,2),75) & ...
+%   ccb123(:,3)>=prctile(ccb123(:,3),75));
+% 
 
 %% burst windows for stas 4/5/6/7 vs. 1/2/3
+%%%scatter of lag and CC 
 widin = 12;
 htin = 9;
 nrow = 3;
@@ -473,68 +412,61 @@ for ii = 1:nrow
       xlabel(ax,'Lag (s) of max CC');
       ylabel(ax,'Max CC');
     end
+    longticks(ax,2);
   end
 end
-supertit(f.ax(1:ncol),'Bursts');
+supertit(f.ax(1:ncol),'cc of sig env; extended bursts; 4th stas vs. trio stas');
 
-%% burst windows for stas 4/5/6/7 vs. 1/2/3, minus reference
-widin = 12;
-htin = 9;
-nrow = 3;
-ncol = nsta-3;
-pltxran = [0.06 0.96]; pltyran = [0.06 0.96]; % optimal axis location
+
+%% burst windows for stas 4/5/6/7 
+%%%scatter of lag and CC 
+widin = 9;
+htin = 6;
+nrow = 2;
+ncol = 3;
+pltxran = [0.06 0.96]; pltyran = [0.08 0.96]; % optimal axis location
 pltxsep = 0.03; pltysep = 0.03;
 f = initfig(widin,htin,nrow,ncol);
 optaxpos(f,nrow,ncol,pltxran,pltyran,pltxsep,pltysep);
 
-for ii = 1:nrow
-  for jj = 1:ncol
-    isub = (ii-1)*ncol+jj;
+isub = 0;
+for ii = 4: nsta-1
+  for jj = ii+1: nsta
+    isub = isub+1;
     ax = f.ax(isub);
     hold(ax,'on');
     ax.Box = 'on';
     grid(ax,'on');
-    if ii == 1
-      ref = mean(ccb123(:,[1 2]),2)';
-      text(ax,0.98,0.95,'ref=mean(12+13)','Units','normalized','HorizontalAlignment','right');
-    elseif ii == 2
-      ref = mean(ccb123(:,[1 3]),2)';
-      text(ax,0.98,0.95,'ref=mean(12+23)','Units','normalized','HorizontalAlignment','right');
-    else
-      ref = mean(ccb123(:,[2 3]),2)';
-      text(ax,0.98,0.95,'ref=mean(13+23)','Units','normalized','HorizontalAlignment','right');
-    end
-    scatter(ax,lagbij(ii,:,jj)/sps,ccbij(ii,:,jj)-ref,8,1:size(ccbij,2),'filled');
-    colormap(ax,'jet');
-    ylim(ax,[-0.3 0.2]);
+    scatter(ax,lagb45(:,isub)/sps,ccb45(:,isub),8,'k');
+    ylim(ax,[0.4 0.9]);
     xlim(ax,[-maxlag,maxlag]/sps);
-    text(ax,0.02,0.05,sprintf('%s-%s',strtrim(stas(jj+3,:)),strtrim(stas(ii,:))),'Units',...
+    text(ax,0.02,0.05,sprintf('%s-%s',strtrim(stas(ii,:)),strtrim(stas(jj,:))),'Units',...
       'normalized');
-    text(ax,0.98,0.05,sprintf('%.2f, %.2f',median(lagbij(ii,:,jj)/sps),median(ccbij(ii,:,jj)-ref)),...
+    text(ax,0.98,0.05,sprintf('%.2f, %.2f',median(lagb45(:,isub)/sps),median(ccb45(:,isub))),...
       'Units','normalized','HorizontalAlignment','right');
-    if jj ~= 1
+    if rem(isub,ncol) ~= 1
       nolabels(ax,2);
     end
-    if ii ~= nrow
+    if isub <= (nrow-1)*ncol
       nolabels(ax,1);
     end
-    if ii == nrow && jj==1
+    if isub == (nrow-1)*ncol+1
       xlabel(ax,'Lag (s) of max CC');
-      ylabel(ax,'Max CC - ref CC');
-      colorbar(ax,'Location','west');
+      ylabel(ax,'Max CC');
     end
+    longticks(ax,2);
   end
 end
-supertit(f.ax(1:ncol),'Bursts (-reference)');
+supertit(f.ax(1:ncol),'cc of sig env; extended bursts; among 4th stas');
 
 
 %% burst windows for stas 1/2/3
 widin = 9;
-htin = 3;
+htin = 3.5;
 nrow = 1;
 ncol = 3;
-pltxran = [0.06 0.96]; pltyran = [0.12 0.95]; % optimal axis location
-pltxsep = 0.05; pltysep = 0.03;
+pltxran = [0.08 0.96]; pltyran = [0.12 0.94]; % optimal axis location
+pltxsep = 0.03; pltysep = 0.03;
 f = initfig(widin,htin,nrow,ncol);
 optaxpos(f,nrow,ncol,pltxran,pltyran,pltxsep,pltysep);
 
@@ -566,8 +498,192 @@ for isub = 1:3
     xlabel(ax,'Lag (s) of max CC');
     ylabel(ax,'Max CC');
   end
+  longticks(ax,2);
 end
-supertit(f.ax(1:ncol),'Bursts');
+supertit(f.ax(1:ncol),'cc of sig env; extended bursts; among trio stas');
+
+keyboard
+
+% %% burst windows for stas 4/5/6/7 vs. 1/2/3, minus reference
+% widin = 12;
+% htin = 9;
+% nrow = 3;
+% ncol = nsta-3;
+% pltxran = [0.06 0.96]; pltyran = [0.06 0.96]; % optimal axis location
+% pltxsep = 0.03; pltysep = 0.03;
+% f = initfig(widin,htin,nrow,ncol);
+% optaxpos(f,nrow,ncol,pltxran,pltyran,pltxsep,pltysep);
+% 
+% for ii = 1:nrow
+%   for jj = 1:ncol
+%     isub = (ii-1)*ncol+jj;
+%     ax = f.ax(isub);
+%     hold(ax,'on');
+%     ax.Box = 'on';
+%     grid(ax,'on');
+%     if ii == 1
+%       ref = mean(ccb123(:,[1 2]),2)';
+%       text(ax,0.98,0.95,'ref=mean(12+13)','Units','normalized','HorizontalAlignment','right');
+%     elseif ii == 2
+%       ref = mean(ccb123(:,[1 3]),2)';
+%       text(ax,0.98,0.95,'ref=mean(12+23)','Units','normalized','HorizontalAlignment','right');
+%     else
+%       ref = mean(ccb123(:,[2 3]),2)';
+%       text(ax,0.98,0.95,'ref=mean(13+23)','Units','normalized','HorizontalAlignment','right');
+%     end
+%     scatter(ax,lagbij(ii,:,jj)/sps,ccbij(ii,:,jj)-ref,8,1:size(ccbij,2),'filled');
+%     colormap(ax,'jet');
+%     ylim(ax,[-0.3 0.2]);
+%     xlim(ax,[-maxlag,maxlag]/sps);
+%     text(ax,0.02,0.05,sprintf('%s-%s',strtrim(stas(jj+3,:)),strtrim(stas(ii,:))),'Units',...
+%       'normalized');
+%     text(ax,0.98,0.05,sprintf('%.2f, %.2f',median(lagbij(ii,:,jj)/sps),median(ccbij(ii,:,jj)-ref)),...
+%       'Units','normalized','HorizontalAlignment','right');
+%     if jj ~= 1
+%       nolabels(ax,2);
+%     end
+%     if ii ~= nrow
+%       nolabels(ax,1);
+%     end
+%     if ii == nrow && jj==1
+%       xlabel(ax,'Lag (s) of max CC');
+%       ylabel(ax,'Max CC - ref CC');
+%       colorbar(ax,'Location','west');
+%     end
+%   end
+% end
+% supertit(f.ax(1:ncol),'Bursts (-reference)');
+
+
+% %% migration windows for stas 4/5/6/7 vs. 1/2/3
+% %%%scatter of lag and CC 
+% widin = 12;
+% htin = 9;
+% nrow = 3;
+% ncol = nsta-3;
+% pltxran = [0.06 0.96]; pltyran = [0.06 0.96]; % optimal axis location
+% pltxsep = 0.03; pltysep = 0.03;
+% f = initfig(widin,htin,nrow,ncol);
+% optaxpos(f,nrow,ncol,pltxran,pltyran,pltxsep,pltysep);
+% 
+% for ii = 1:nrow
+%   for jj = 1:ncol
+%     isub = (ii-1)*ncol+jj;
+%     ax = f.ax(isub);
+%     hold(ax,'on');
+%     ax.Box = 'on';
+%     grid(ax,'on');
+%     scatter(ax,lagmij(ii,:,jj)/sps,ccmij(ii,:,jj),8,'k');
+%     ylim(ax,[0.2 0.9]);
+%     xlim(ax,[-maxlag,maxlag]/sps);
+%     text(ax,0.02,0.05,sprintf('%s-%s',strtrim(stas(jj+3,:)),strtrim(stas(ii,:))),'Units',...
+%       'normalized');
+%     text(ax,0.98,0.05,sprintf('%.2f, %.2f',median(lagmij(ii,:,jj)/sps),median(ccmij(ii,:,jj))),...
+%       'Units','normalized','HorizontalAlignment','right');
+%     if jj ~= 1
+%       nolabels(ax,2);
+%     end
+%     if ii ~= nrow
+%       nolabels(ax,1);
+%     end
+%     if ii == nrow && jj==1
+%       xlabel(ax,'Lag (s) of max CC');
+%       ylabel(ax,'Max CC');
+%     end
+%   end
+% end
+% supertit(f.ax(1:ncol),'Migrations');
+% 
+% %% migration windows for stas 4/5/6/7 vs. 1/2/3, minus reference
+% widin = 12;
+% htin = 9;
+% nrow = 3;
+% ncol = nsta-3;
+% pltxran = [0.06 0.96]; pltyran = [0.06 0.96]; % optimal axis location
+% pltxsep = 0.03; pltysep = 0.03;
+% f = initfig(widin,htin,nrow,ncol);
+% optaxpos(f,nrow,ncol,pltxran,pltyran,pltxsep,pltysep);
+% 
+% for ii = 1:nrow
+%   for jj = 1:ncol
+%     isub = (ii-1)*ncol+jj;
+%     ax = f.ax(isub);
+%     hold(ax,'on');
+%     ax.Box = 'on';
+%     grid(ax,'on');
+%     if ii == 1
+%       ref = mean(ccm123(:,[1 2]),2)';
+%       text(ax,0.98,0.95,'ref=mean(12+13)','Units','normalized','HorizontalAlignment','right');
+%     elseif ii == 2
+%       ref = mean(ccm123(:,[1 3]),2)';
+%       text(ax,0.98,0.95,'ref=mean(12+23)','Units','normalized','HorizontalAlignment','right');
+%     else
+%       ref = mean(ccm123(:,[2 3]),2)';
+%       text(ax,0.98,0.95,'ref=mean(13+23)','Units','normalized','HorizontalAlignment','right');
+%     end
+%     scatter(ax,lagmij(ii,:,jj)/sps,ccmij(ii,:,jj)-ref,8,1:size(ccmij,2),'filled');
+%     colormap(ax,'jet');
+%     ylim(ax,[-0.4 0.3]);
+%     xlim(ax,[-maxlag,maxlag]/sps);
+%     text(ax,0.02,0.05,sprintf('%s-%s',strtrim(stas(jj+3,:)),strtrim(stas(ii,:))),'Units',...
+%       'normalized');
+%     text(ax,0.98,0.05,sprintf('%.2f, %.2f',median(lagmij(ii,:,jj)/sps),median(ccmij(ii,:,jj)-ref)),...
+%       'Units','normalized','HorizontalAlignment','right');
+%     if jj ~= 1
+%       nolabels(ax,2);
+%     end
+%     if ii ~= nrow
+%       nolabels(ax,1);
+%     end
+%     if ii == nrow && jj==1
+%       xlabel(ax,'Lag (s) of max CC');
+%       ylabel(ax,'Max CC - ref CC');
+%       colorbar(ax,'Location','west');
+%     end
+%   end
+% end
+% supertit(f.ax(1:ncol),'Migrations (-reference)');
+% 
+% 
+% %% migration windows for stas 1/2/3
+% widin = 9;
+% htin = 3;
+% nrow = 1;
+% ncol = 3;
+% pltxran = [0.06 0.96]; pltyran = [0.12 0.95]; % optimal axis location
+% pltxsep = 0.05; pltysep = 0.03;
+% f = initfig(widin,htin,nrow,ncol);
+% optaxpos(f,nrow,ncol,pltxran,pltyran,pltxsep,pltysep);
+% 
+% for isub = 1:3
+%   ax = f.ax(isub);
+%   hold(ax,'on');
+%   ax.Box = 'on';
+%   grid(ax,'on');
+%   scatter(ax,lagm123(:,isub)/sps,ccm123(:,isub),8,'k');
+%   ylim(ax,[0.2 0.9]);
+%   xlim(ax,[-maxlag,maxlag]/sps);
+%   if isub ==1
+%     text(ax,0.02,0.05,sprintf('%s-%s',strtrim(stas(1,:)),strtrim(stas(2,:))),'Units',...
+%       'normalized');
+%   elseif isub ==2
+%     text(ax,0.02,0.05,sprintf('%s-%s',strtrim(stas(1,:)),strtrim(stas(3,:))),'Units',...
+%       'normalized');
+%   else
+%     text(ax,0.02,0.05,sprintf('%s-%s',strtrim(stas(2,:)),strtrim(stas(3,:))),'Units',...
+%       'normalized');
+%   end
+%   text(ax,0.98,0.05,sprintf('%.2f, %.2f',median(lagm123(:,isub)/sps),median(ccm123(:,isub))),...
+%     'Units','normalized','HorizontalAlignment','right');
+%   if isub~=1
+%     nolabels(ax,2);
+%   end
+%   if isub==1
+%     xlabel(ax,'Lag (s) of max CC');
+%     ylabel(ax,'Max CC');
+%   end
+% end
+% supertit(f.ax(1:ncol),'Migrations');
 
 
 
