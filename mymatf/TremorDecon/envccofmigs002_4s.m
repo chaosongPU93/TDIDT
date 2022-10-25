@@ -398,7 +398,7 @@ for ii = 1:nrow
     ax.Box = 'on';
     grid(ax,'on');
     scatter(ax,lagbij(ii,:,jj)/sps,ccbij(ii,:,jj),8,'k');
-    ylim(ax,[0.4 0.9]);
+    ylim(ax,[0.0 0.7]);
     xlim(ax,[-maxlag,maxlag]/sps);
     text(ax,0.02,0.05,sprintf('%s-%s',strtrim(stas(jj+3,:)),strtrim(stas(ii,:))),'Units',...
       'normalized');
@@ -440,7 +440,7 @@ for ii = 4: nsta-1
     ax.Box = 'on';
     grid(ax,'on');
     scatter(ax,lagb45(:,isub)/sps,ccb45(:,isub),8,'k');
-    ylim(ax,[0.4 0.9]);
+    ylim(ax,[0.0 0.7]);
     xlim(ax,[-maxlag,maxlag]/sps);
     text(ax,0.02,0.05,sprintf('%s-%s',strtrim(stas(ii,:)),strtrim(stas(jj,:))),'Units',...
       'normalized');
@@ -478,7 +478,7 @@ for isub = 1:3
   ax.Box = 'on';
   grid(ax,'on');
   scatter(ax,lagb123(:,isub)/sps,ccb123(:,isub),8,'k');
-  ylim(ax,[0.4 0.9]);
+  ylim(ax,[0.0 0.8]);
   xlim(ax,[-maxlag,maxlag]/sps);
   if isub ==1
     text(ax,0.02,0.05,sprintf('%s-%s',strtrim(stas(1,:)),strtrim(stas(2,:))),'Units',...
@@ -504,7 +504,7 @@ for isub = 1:3
 end
 supertit(f.ax(1:ncol),'cc of sig env; extended bursts; among trio stas');
 
-keyboard
+% keyboard
 
 % %% burst windows for stas 4/5/6/7 vs. 1/2/3, minus reference
 % widin = 12;

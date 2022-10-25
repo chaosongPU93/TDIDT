@@ -578,6 +578,8 @@ if flagrecalc
     for ista = 1:nsta
       [coef(:,ista), lag(:,ista)] = xcorr(sigsta(:,ista), greenf(:,ista), nfft, 'none'); % unnormalized master raw CC
     end
+    %REMOVE mean/linear trend before CC for caution
+    coef = detrend(coef);
     
     maxlag = 2*sps;
     
