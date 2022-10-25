@@ -320,6 +320,8 @@ if flagrecalc
     tedbuf = tedbuf + tlenbuf;
     
     envseg = envup(max(floor(tstbuf*sps)+1, 1): min(floor(tedbuf*sps),86400*sps), :);
+    %REMOVE the mean as the segment is truncated from the full-day trace
+    envseg = detrend(envseg); 
     
     maxlag = 2*sps;
     
@@ -360,7 +362,7 @@ if flagrecalc
   end
   
   %%% save some variables
-  savefile = 'rst_envcc.mat';
+  savefile = 'rst_envcc_dtr.mat';
   save(strcat(rstpath, '/MAPS/',savefile), 'ccbij','lagbij','ccb123','lagb123','ccb45',...
     'lagb45');
   
