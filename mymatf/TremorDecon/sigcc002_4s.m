@@ -14,7 +14,6 @@
 % First created date:   2022/08/04
 % Last modified date:   2022/08/04
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
  
 %% Initialization
 %%% SAME if focusing on the same region (i.e. same PERMROTS and POLROTS)
@@ -424,8 +423,8 @@ ccboo = zeros(nibst, 3); %coef of CC opt comp. with that of ort within sta 1,2,3
 lagboo = zeros(nibst, 3);  %lag of CC opt comp. with that of ort within sta 1,2,3 for bursts
 
 %%%Flag to indicate if it is necessary to recalculate everything
-% flagrecalc = 0;
-flagrecalc = 1;
+flagrecalc = 0;
+% flagrecalc = 1;
 
 if flagrecalc
   for iii = 1: length(idxburst)
@@ -596,11 +595,12 @@ if flagrecalc
   end
   
   %%% save some variables
-  savefile = 'rst_sigcc.mat';
+  savefile = 'rst_sigcc_dtr.mat';
   save(strcat(rstpath, '/MAPS/',savefile), 'off1i','ccbij','lagbij','ccb123','lagb123','ccb45',...
     'lagb45');
   
 else
+  savefile = 'rst_sigcc_dtr.mat';
   load(strcat(rstpath, '/MAPS/',savefile));
 end
 
@@ -629,7 +629,8 @@ for ii = 1:nrow
     hold(ax,'on');
     ax.Box = 'on';
     grid(ax,'on');
-    scatter(ax,lagbij(ii,:,jj)/sps,ccbij(ii,:,jj),8,'k');
+    scatter(ax,lagbij(ii,:,jj)/sps,ccbij(ii,:,jj),16,...
+      'MarkerFaceColor','k','MarkerEdgeColor','none','MarkerFaceAlpha',.15);
     ylim(ax,[0.0 0.7]);
     xlim(ax,[-maxlag,maxlag]/sps);
     text(ax,0.02,0.05,sprintf('%s-%s',strtrim(stas(jj+3,:)),strtrim(stas(ii,:))),'Units',...
@@ -704,7 +705,8 @@ for ii = 4: nsta-1
     hold(ax,'on');
     ax.Box = 'on';
     grid(ax,'on');
-    scatter(ax,lagb45(:,isub)/sps,ccb45(:,isub),8,'k');
+    scatter(ax,lagb45(:,isub)/sps,ccb45(:,isub),16,...
+    'MarkerFaceColor','k','MarkerEdgeColor','none','MarkerFaceAlpha',.15);
     ylim(ax,[0.0 0.7]);
     xlim(ax,[-maxlag,maxlag]/sps);
     text(ax,0.02,0.05,sprintf('%s-%s',strtrim(stas(ii,:)),strtrim(stas(jj,:))),'Units',...
@@ -743,7 +745,8 @@ for isub = 1:3
   hold(ax,'on');
   ax.Box = 'on';
   grid(ax,'on');
-  scatter(ax,lagb123(:,isub)/sps,ccb123(:,isub),8,'k');
+  scatter(ax,lagb123(:,isub)/sps,ccb123(:,isub),16,...
+    'MarkerFaceColor','k','MarkerEdgeColor','none','MarkerFaceAlpha',.15);
   ylim(ax,[0.1 0.8]);
   xlim(ax,[-maxlag,maxlag]/sps);
   if isub ==1

@@ -412,7 +412,7 @@ ihioo123n = intersect(inbst,ihioo123);
 ihicc123 = [1,3,6,7,8,24,56,71,75,77,81,83,93,102,114,116,132,145,149,185];
 ihicc123n = intersect(inbst,ihicc123);
 
-idxburst = 1:size(tranbst,1);
+idxburst = (1:size(tranbst,1))';
 
 nibst = size(idxburst,1);
 [~,~,~,idate,ibst] = indofburst(tranbst,idxburst);
@@ -633,11 +633,12 @@ if flagrecalc
   end
   
   %%% save some variables
-  savefile = 'rst_sigwletcc.mat';
+  savefile = 'rst_sigwletcc_dtr.mat';
   save(strcat(rstpath, '/MAPS/',savefile), 'off1i', 'ccbij','lagbij','ccb123','lagb123','ccb45',...
     'lagb45');
 
 else
+  savefile = 'rst_sigwletcc_dtr.mat';
   load(strcat(rstpath, '/MAPS/',savefile));
 end
   
@@ -669,7 +670,8 @@ for ii = 1:nrow
     hold(ax,'on');
     ax.Box = 'on';
     grid(ax,'on');
-    scatter(ax,lagbij(ii,:,jj)/sps,ccbij(ii,:,jj),8,'k');
+    scatter(ax,lagbij(ii,:,jj)/sps,ccbij(ii,:,jj),16,...
+    'MarkerFaceColor','k','MarkerEdgeColor','none','MarkerFaceAlpha',.15);
     ylim(ax,[0.0 0.7]);
     xlim(ax,[-maxlag,maxlag]/sps);
     text(ax,0.02,0.05,sprintf('%s-%s',strtrim(stas(jj+3,:)),strtrim(stas(ii,:))),'Units',...
@@ -743,7 +745,8 @@ for ii = 4: nsta-1
     hold(ax,'on');
     ax.Box = 'on';
     grid(ax,'on');
-    scatter(ax,lagb45(:,isub)/sps,ccb45(:,isub),8,'k');
+    scatter(ax,lagb45(:,isub)/sps,ccb45(:,isub),16,...
+    'MarkerFaceColor','k','MarkerEdgeColor','none','MarkerFaceAlpha',.15);
     ylim(ax,[0.0 0.7]);
     xlim(ax,[-maxlag,maxlag]/sps);
     text(ax,0.02,0.05,sprintf('%s-%s',strtrim(stas(ii,:)),strtrim(stas(jj,:))),'Units',...
@@ -782,7 +785,8 @@ for isub = 1:3
   hold(ax,'on');
   ax.Box = 'on';
   grid(ax,'on');
-  scatter(ax,lagb123(:,isub)/sps,ccb123(:,isub),8,'k');
+  scatter(ax,lagb123(:,isub)/sps,ccb123(:,isub),16,...
+    'MarkerFaceColor','k','MarkerEdgeColor','none','MarkerFaceAlpha',.15);
   ylim(ax,[0.1 0.8]);
   xlim(ax,[-maxlag,maxlag]/sps);
   if isub ==1
@@ -827,88 +831,88 @@ supertit(f.ax(1:ncol),'cc of sig-wlet cc; bursts; among trio stas');
 % legend(ax,p,'PGC-SSIB','PGC-SILB','SSIB-SILB','Location','southeast');
 % 
 
-%% burst windows for stas 1/2/3, opt. vs. ort
-widin = 9;
-htin = 3;
-nrow = 1;
-ncol = 3;
-pltxran = [0.06 0.96]; pltyran = [0.12 0.95]; % optimal axis location
-pltxsep = 0.05; pltysep = 0.03;
-f = initfig(widin,htin,nrow,ncol);
-optaxpos(f,nrow,ncol,pltxran,pltyran,pltxsep,pltysep);
-
-for isub = 1:3
-  ax = f.ax(isub);
-  hold(ax,'on');
-  ax.Box = 'on';
-  grid(ax,'on');
-  scatter(ax,lagboo(:,isub)/sps,ccboo(:,isub),8,'k');
-  ylim(ax,[0.1 0.8]);
-  xlim(ax,[-maxlag,maxlag]/sps);
-  text(ax,0.02,0.05,sprintf('%s',strtrim(stas(isub,:))),'Units',...
-    'normalized');
-  text(ax,0.98,0.05,sprintf('%.2f, %.2f',median(lagboo(:,isub)/sps),median(ccboo(:,isub))),...
-    'Units','normalized','HorizontalAlignment','right');
-  if isub~=1
-    nolabels(ax,2);
-  end
-  if isub==1
-    xlabel(ax,'Lag (s) of max CC');
-    ylabel(ax,'Max CC');
-  end
-end
-supertit(f.ax(1:ncol),'Bursts, opt--ort');
-
-
-%% burst windows for stas 4/5/6/7 vs. 1/2/3, minus reference
-widin = 12;
-htin = 9;
-nrow = 3;
-ncol = nsta-3;
-pltxran = [0.06 0.96]; pltyran = [0.06 0.96]; % optimal axis location
-pltxsep = 0.03; pltysep = 0.03;
-f = initfig(widin,htin,nrow,ncol);
-optaxpos(f,nrow,ncol,pltxran,pltyran,pltxsep,pltysep);
-
-for ii = 1:nrow
-  for jj = 1:ncol
-    isub = (ii-1)*ncol+jj;
-    ax = f.ax(isub);
-    hold(ax,'on');
-    ax.Box = 'on';
-    grid(ax,'on');
-    if ii == 1
-      ref = mean(ccb123(:,[1 2]),2)';
-      text(ax,0.98,0.95,'ref=mean(12+13)','Units','normalized','HorizontalAlignment','right');
-    elseif ii == 2
-      ref = mean(ccb123(:,[1 3]),2)';
-      text(ax,0.98,0.95,'ref=mean(12+23)','Units','normalized','HorizontalAlignment','right');
-    else
-      ref = mean(ccb123(:,[2 3]),2)';
-      text(ax,0.98,0.95,'ref=mean(13+23)','Units','normalized','HorizontalAlignment','right');
-    end
-    scatter(ax,lagbij(ii,:,jj)/sps,ccbij(ii,:,jj)-ref,8,1:size(ccbij,2),'filled');
-    colormap(ax,'jet');
-    ylim(ax,[-0.5 0.2]);
-    xlim(ax,[-maxlag,maxlag]/sps);
-    text(ax,0.02,0.05,sprintf('%s-%s',strtrim(stas(jj+3,:)),strtrim(stas(ii,:))),'Units',...
-      'normalized');
-    text(ax,0.98,0.05,sprintf('%.2f, %.2f',median(lagbij(ii,:,jj)/sps),median(ccbij(ii,:,jj)-ref)),...
-      'Units','normalized','HorizontalAlignment','right');
-    if jj ~= 1
-      nolabels(ax,2);
-    end
-    if ii ~= nrow
-      nolabels(ax,1);
-    end
-    if ii == nrow && jj==1
-      xlabel(ax,'Lag (s) of max CC');
-      ylabel(ax,'Max CC - ref CC');
-      colorbar(ax,'Location','west');
-    end
-  end
-end
-supertit(f.ax(1:ncol),'Bursts (-reference)');
-
-
+% %% burst windows for stas 1/2/3, opt. vs. ort
+% widin = 9;
+% htin = 3;
+% nrow = 1;
+% ncol = 3;
+% pltxran = [0.06 0.96]; pltyran = [0.12 0.95]; % optimal axis location
+% pltxsep = 0.05; pltysep = 0.03;
+% f = initfig(widin,htin,nrow,ncol);
+% optaxpos(f,nrow,ncol,pltxran,pltyran,pltxsep,pltysep);
+% 
+% for isub = 1:3
+%   ax = f.ax(isub);
+%   hold(ax,'on');
+%   ax.Box = 'on';
+%   grid(ax,'on');
+%   scatter(ax,lagboo(:,isub)/sps,ccboo(:,isub),8,'k');
+%   ylim(ax,[0.1 0.8]);
+%   xlim(ax,[-maxlag,maxlag]/sps);
+%   text(ax,0.02,0.05,sprintf('%s',strtrim(stas(isub,:))),'Units',...
+%     'normalized');
+%   text(ax,0.98,0.05,sprintf('%.2f, %.2f',median(lagboo(:,isub)/sps),median(ccboo(:,isub))),...
+%     'Units','normalized','HorizontalAlignment','right');
+%   if isub~=1
+%     nolabels(ax,2);
+%   end
+%   if isub==1
+%     xlabel(ax,'Lag (s) of max CC');
+%     ylabel(ax,'Max CC');
+%   end
+% end
+% supertit(f.ax(1:ncol),'Bursts, opt--ort');
+% 
+% 
+% %% burst windows for stas 4/5/6/7 vs. 1/2/3, minus reference
+% widin = 12;
+% htin = 9;
+% nrow = 3;
+% ncol = nsta-3;
+% pltxran = [0.06 0.96]; pltyran = [0.06 0.96]; % optimal axis location
+% pltxsep = 0.03; pltysep = 0.03;
+% f = initfig(widin,htin,nrow,ncol);
+% optaxpos(f,nrow,ncol,pltxran,pltyran,pltxsep,pltysep);
+% 
+% for ii = 1:nrow
+%   for jj = 1:ncol
+%     isub = (ii-1)*ncol+jj;
+%     ax = f.ax(isub);
+%     hold(ax,'on');
+%     ax.Box = 'on';
+%     grid(ax,'on');
+%     if ii == 1
+%       ref = mean(ccb123(:,[1 2]),2)';
+%       text(ax,0.98,0.95,'ref=mean(12+13)','Units','normalized','HorizontalAlignment','right');
+%     elseif ii == 2
+%       ref = mean(ccb123(:,[1 3]),2)';
+%       text(ax,0.98,0.95,'ref=mean(12+23)','Units','normalized','HorizontalAlignment','right');
+%     else
+%       ref = mean(ccb123(:,[2 3]),2)';
+%       text(ax,0.98,0.95,'ref=mean(13+23)','Units','normalized','HorizontalAlignment','right');
+%     end
+%     scatter(ax,lagbij(ii,:,jj)/sps,ccbij(ii,:,jj)-ref,8,1:size(ccbij,2),'filled');
+%     colormap(ax,'jet');
+%     ylim(ax,[-0.5 0.2]);
+%     xlim(ax,[-maxlag,maxlag]/sps);
+%     text(ax,0.02,0.05,sprintf('%s-%s',strtrim(stas(jj+3,:)),strtrim(stas(ii,:))),'Units',...
+%       'normalized');
+%     text(ax,0.98,0.05,sprintf('%.2f, %.2f',median(lagbij(ii,:,jj)/sps),median(ccbij(ii,:,jj)-ref)),...
+%       'Units','normalized','HorizontalAlignment','right');
+%     if jj ~= 1
+%       nolabels(ax,2);
+%     end
+%     if ii ~= nrow
+%       nolabels(ax,1);
+%     end
+%     if ii == nrow && jj==1
+%       xlabel(ax,'Lag (s) of max CC');
+%       ylabel(ax,'Max CC - ref CC');
+%       colorbar(ax,'Location','west');
+%     end
+%   end
+% end
+% supertit(f.ax(1:ncol),'Bursts (-reference)');
+% 
+% 
 

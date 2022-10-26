@@ -185,7 +185,7 @@ ihioo123n = intersect(inbst,ihioo123);
 ihicc123 = [1,3,6,7,8,24,56,71,75,77,81,83,93,102,114,116,132,145,149,185];
 ihicc123n = intersect(inbst,ihicc123);
 
-idxburst = 1:size(tranbst,1);
+idxburst = (1:size(tranbst,1))';
 
 nibst = size(idxburst,1);
 [~,~,~,idate,ibst] = indofburst(tranbst,idxburst);
@@ -205,8 +205,8 @@ ccb45 = zeros(nibst, 6);  %coef of CC within sta 4,5,6,7 for bursts
 lagb45 = zeros(nibst, 6); %lag of CC within sta 4,5,6,7 for bursts
 
 %%%Flag to indicate if it is necessary to recalculate everything
-% flagrecalc = 0;
-flagrecalc = 1;
+flagrecalc = 0;
+% flagrecalc = 1;
 
 if flagrecalc
   for iii = 1: length(idxburst)
@@ -367,6 +367,7 @@ if flagrecalc
     'lagb45');
   
 else
+  savefile = 'rst_envcc_dtr.mat';
   load(strcat(rstpath, '/MAPS/',savefile));
 end
 
@@ -397,7 +398,8 @@ for ii = 1:nrow
     hold(ax,'on');
     ax.Box = 'on';
     grid(ax,'on');
-    scatter(ax,lagbij(ii,:,jj)/sps,ccbij(ii,:,jj),8,'k');
+    scatter(ax,lagbij(ii,:,jj)/sps,ccbij(ii,:,jj),16,...
+    'MarkerFaceColor','k','MarkerEdgeColor','none','MarkerFaceAlpha',.15);
     ylim(ax,[0.0 0.7]);
     xlim(ax,[-maxlag,maxlag]/sps);
     text(ax,0.02,0.05,sprintf('%s-%s',strtrim(stas(jj+3,:)),strtrim(stas(ii,:))),'Units',...
@@ -439,7 +441,8 @@ for ii = 4: nsta-1
     hold(ax,'on');
     ax.Box = 'on';
     grid(ax,'on');
-    scatter(ax,lagb45(:,isub)/sps,ccb45(:,isub),8,'k');
+    scatter(ax,lagb45(:,isub)/sps,ccb45(:,isub),16,...
+    'MarkerFaceColor','k','MarkerEdgeColor','none','MarkerFaceAlpha',.15);
     ylim(ax,[0.0 0.7]);
     xlim(ax,[-maxlag,maxlag]/sps);
     text(ax,0.02,0.05,sprintf('%s-%s',strtrim(stas(ii,:)),strtrim(stas(jj,:))),'Units',...
@@ -477,7 +480,8 @@ for isub = 1:3
   hold(ax,'on');
   ax.Box = 'on';
   grid(ax,'on');
-  scatter(ax,lagb123(:,isub)/sps,ccb123(:,isub),8,'k');
+  scatter(ax,lagb123(:,isub)/sps,ccb123(:,isub),16,...
+    'MarkerFaceColor','k','MarkerEdgeColor','none','MarkerFaceAlpha',.15);
   ylim(ax,[0.0 0.8]);
   xlim(ax,[-maxlag,maxlag]/sps);
   if isub ==1
