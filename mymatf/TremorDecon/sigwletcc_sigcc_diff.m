@@ -257,7 +257,7 @@ for ii = 1:nrow
 end
 supertit(f.ax(1:ncol),'cc of sig-wlet cc - cc of sig; bursts; 4th stas vs. trio stas');
 
-keyboard
+% keyboard
 
 %% burst windows for stas 4/5/6/7 
 %%%scatter of lag and CC 

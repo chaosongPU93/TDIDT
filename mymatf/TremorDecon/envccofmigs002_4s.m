@@ -204,6 +204,8 @@ lagb123 = zeros(nibst, 3); %lag of CC within sta 1,2,3 for bursts
 ccb45 = zeros(nibst, 6);  %coef of CC within sta 4,5,6,7 for bursts
 lagb45 = zeros(nibst, 6); %lag of CC within sta 4,5,6,7 for bursts
 
+envprct = zeros(nibst, 2, nsta);
+
 %%%Flag to indicate if it is necessary to recalculate everything
 flagrecalc = 0;
 % flagrecalc = 1;
@@ -255,15 +257,6 @@ if flagrecalc
       fprintf('Day %s / %s will be omitted because of missing files. \n', yr, JDAY);
       continue    % continue to the next day
     end
-    
-    %%%obtain the mean envelope
-    tmp = detrend(STAopt(:,2:end));
-    %   fractap = 20*sps/size(STAopt,1); % if fractap is >=1, n-point von Hann window is returned
-    %   ptstap = fractap/2*size(STAopt,1); % if fractap is >=1, n-point von Hann window is returned
-    %   w = tukeywin(size(STAopt,1),fractap);
-    %   tmp = w.* tmp;
-    tmp = detrend(tmp); %detrend again for caution
-    [envup,~] = envelope(tmp);
     
     %   %%%CC between stations for migration windows
     %   for j = 1: size(mig,1)
@@ -319,9 +312,59 @@ if flagrecalc
     tstbuf = tstbuf - tlenbuf;
     tedbuf = tedbuf + tlenbuf;
     
-    envseg = envup(max(floor(tstbuf*sps)+1, 1): min(floor(tedbuf*sps),86400*sps), :);
-    %REMOVE the mean as the segment is truncated from the full-day trace
-    envseg = detrend(envseg); 
+    optcc = STAopt(max(floor((tstbuf+1)*sps+1),1): min(floor((tedbuf-1)*sps),86400*sps), 2:nsta+1);
+    msftadd = 10/40*sps;
+    ccmid = ceil(size(optcc,1)/2);
+    ccwlen = round(size(optcc,1)-2*(msftadd+1));
+    loffmax = 4*sps/40;
+    ccmin = 0.01;  % depending on the length of trace, cc could be very low
+    iup = 1;    % times of upsampling
+    [off12con,off13con,ccali(icount),iloopoff,loopoff] = constrained_cc_interp(optcc(:,1:3)',ccmid,...
+      ccwlen,msftadd,loffmax,ccmin,iup);
+    % if a better alignment cannot be achieved, use 0,0
+    if off12con == msftadd+1 && off13con == msftadd+1
+      off12con = 0;
+      off13con = 0;
+      fprintf('Tremor burst %d cannot be properly aligned, double-check needed \n',k);
+    end
+    off1i(icount,1) = 0;
+    off1i(icount,2) = round(off12con);
+    off1i(icount,3) = round(off13con);
+    
+    for ista = 4: nsta
+      [coef,lag] = xcorr(optcc(:,1), optcc(:,ista), msftadd, 'coeff');
+      [mcoef, idx] = max(coef);   % max of master raw cc
+      off1i(icount,ista) = lag(idx);   % offset in samples
+    end
+    
+    %Align records
+    optdat = [];  % win segment of interest
+    ortdat = [];
+    optdat(:, 1:2) = STAopt(max(floor(tstbuf*sps+1),1): min(floor(tedbuf*sps),86400*sps), 1:2); % sta 1
+    ortdat(:, 1:2) = STAort(max(floor(tstbuf*sps+1),1): min(floor(tedbuf*sps),86400*sps), 1:2);
+    for ista = 2: nsta
+      optdat(:, ista+1) = STAopt(max(floor(tstbuf*sps+1)-off1i(icount,ista),1): ...
+        min(floor(tedbuf*sps)-off1i(icount,ista),86400*sps), ista+1); % sta 2
+      ortdat(:, ista+1) = STAort(max(floor(tstbuf*sps+1)-off1i(icount,ista),1): ...
+        min(floor(tedbuf*sps)-off1i(icount,ista),86400*sps), ista+1);
+    end
+    
+    sigsta = zeros(size(optdat,1), nsta);
+    for ista = 1:nsta
+      tmp = optdat(:,ista+1); %best aligned, filtered
+      tmp = detrend(tmp);
+      sigsta(:,ista) = tmp;
+    end
+
+    %%%obtain envelope
+    [envseg,~] = envelope(sigsta);
+    
+    %get some estimate of the amplitude range/variation, using envelope
+    envprct(icount,1,:) = prctile(envseg,10);
+    envprct(icount,2,:) = prctile(envseg,90);
+    
+    %REMOVE the mean before CC
+    envseg = detrend(envseg);
     
     maxlag = 2*sps;
     
@@ -363,13 +406,16 @@ if flagrecalc
   
   %%% save some variables
   savefile = 'rst_envcc_dtr.mat';
-  save(strcat(rstpath, '/MAPS/',savefile), 'ccbij','lagbij','ccb123','lagb123','ccb45',...
-    'lagb45');
+  save(strcat(rstpath, '/MAPS/',savefile), 'off1i','ccbij','lagbij','ccb123','lagb123','ccb45',...
+    'lagb45','envprct');
   
 else
+  maxlag = 2*sps;
   savefile = 'rst_envcc_dtr.mat';
   load(strcat(rstpath, '/MAPS/',savefile));
 end
+
+% keyboard
 
 %% target some high-correlation bursts
 % ind = find(ccboo(:,1)>=prctile(ccboo(:,1),75) & ccboo(:,2)>=prctile(ccboo(:,2),75) & ...
@@ -379,6 +425,82 @@ end
 % ind = find(ccb123(:,1)>=prctile(ccb123(:,1),75) & ccb123(:,2)>=prctile(ccb123(:,2),75) & ...
 %   ccb123(:,3)>=prctile(ccb123(:,3),75));
 % 
+
+%% envelope (amplitude) range
+widin = 12;
+htin = 9;
+nrow = 3;
+ncol = 1;
+pltxran = [0.06 0.96]; pltyran = [0.06 0.96]; % optimal axis location
+pltxsep = 0.03; pltysep = 0.03;
+f = initfig(widin,htin,nrow,ncol);
+optaxpos(f,nrow,ncol,pltxran,pltyran,pltxsep,pltysep);
+itime = [1 69; 70 138; 139 195];
+color = jet(nsta);
+sybl = ['o';'x';'s';'d';'^';'v';'p'];
+for isub = 1: nrow*ncol
+  ax = f.ax(isub);
+  hold(ax,'on');
+  ax.Box = 'on';
+  grid(ax,'on');
+  
+  for ii = 1: nsta
+    for jj = 1: nibst
+      if jj == 1
+        p(ii)=plot(ax,[jj jj],[envprct(jj,1,ii) envprct(jj,2,ii)],'-','Marker',sybl(ii,:),...
+          'markersize',3.5,'color',color(ii,:));
+      else
+        plot(ax,[jj jj],[envprct(jj,1,ii) envprct(jj,2,ii)],'-','Marker',sybl(ii,:),'markersize',3.5,...
+          'color',color(ii,:));
+      end
+    end
+  end
+  
+%   for ii = 1: nsta
+%     p(ii)=plot(ax,envprct(:,2,ii),'o-','Color',color(ii,:),'linew',1.5,'markersize',2.5);
+%   end
+%   for ii = 1: nsta
+%     plot(ax,envprct(:,1,ii),':','Color',color(ii,:),'linew',0.5);   
+%   end
+  
+  xlim(ax,[itime(isub,1) itime(isub,2)]);
+  ylim(ax,[0 0.8]);
+  xlabel(ax,'Burst #');
+  ylabel(ax,'10-90 percentile of envelope');
+  if isub == 1
+    legend(ax,p,stas,'Location','northwest');
+  end
+  
+end
+ 
+%% envelope (amplitude) range
+widin = 12;
+htin = 9;
+nrow = 3;
+ncol = 1;
+pltxran = [0.06 0.96]; pltyran = [0.06 0.96]; % optimal axis location
+pltxsep = 0.03; pltysep = 0.03;
+f = initfig(widin,htin,nrow,ncol);
+optaxpos(f,nrow,ncol,pltxran,pltyran,pltxsep,pltysep);
+itime = [1 69; 70 138; 139 195];
+color = jet(nsta);
+sybl = ['o';'x';'s';'d';'^';'v';'p'];
+for isub = 1: nrow*ncol
+  ax = f.ax(isub);
+  hold(ax,'on');
+  ax.Box = 'on';
+  grid(ax,'on');
+  
+  
+  xlim(ax,[itime(isub,1) itime(isub,2)]);
+  ylim(ax,[0 0.8]);
+  xlabel(ax,'Burst #');
+  ylabel(ax,'10-90 percentile of envelope');
+  if isub == 1
+    legend(ax,stas,'Location','northwest');
+  end
+  
+end
 
 %% burst windows for stas 4/5/6/7 vs. 1/2/3
 %%%scatter of lag and CC 

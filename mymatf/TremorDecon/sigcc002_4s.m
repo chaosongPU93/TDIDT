@@ -600,6 +600,7 @@ if flagrecalc
     'lagb45');
   
 else
+  maxlag = 2*sps;
   savefile = 'rst_sigcc_dtr.mat';
   load(strcat(rstpath, '/MAPS/',savefile));
 end
