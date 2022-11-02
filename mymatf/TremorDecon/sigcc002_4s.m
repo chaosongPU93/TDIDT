@@ -510,14 +510,14 @@ if flagrecalc
     if off12con == msftadd+1 && off13con == msftadd+1
       off12con = 0;
       off13con = 0;
-      fprintf('Tremor burst %d cannot be properly aligned, double-check needed \n',k);
+      fprintf('Tremor burst %d cannot be properly aligned, double-check needed \n',icount);
     end
     off1i(icount,1) = 0;
     off1i(icount,2) = round(off12con);
     off1i(icount,3) = round(off13con);
     
     for ista = 4: nsta
-      [coef,lag] = xcorr(optcc(:,1), optcc(:,ista), msftadd, 'coeff');
+      [coef,lag] = xcorr(detrend(optcc(:,1)), detrend(optcc(:,ista)), msftadd, 'coeff');
       [mcoef, idx] = max(coef);   % max of master raw cc
       off1i(icount,ista) = lag(idx);   % offset in samples
     end

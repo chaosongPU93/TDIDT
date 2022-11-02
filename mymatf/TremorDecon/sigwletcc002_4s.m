@@ -437,11 +437,11 @@ lagboo = zeros(nibst, 3);  %lag of CC the wlet-sig cc of opt comp. with that of 
 
 
 %%%Flag to indicate if it is necessary to recalculate everything
-flagrecalc = 0;
-% flagrecalc = 1;
+% flagrecalc = 0;
+flagrecalc = 1;
 
 if flagrecalc
-  for iii = 1: nibst
+  for iii = 82: nibst
     iii
     %   for i = 1: length(dates)  % dates in each ets
     i = idate(iii);
@@ -525,7 +525,7 @@ if flagrecalc
     if off12con == msftadd+1 && off13con == msftadd+1
       off12con = 0;
       off13con = 0;
-      fprintf('Tremor burst %d cannot be properly aligned, double-check needed \n',k);
+      fprintf('Tremor burst %d cannot be properly aligned, double-check needed \n',icount);
     end
     off1i(icount,1) = 0;
     off1i(icount,2) = round(off12con);
@@ -578,8 +578,6 @@ if flagrecalc
     for ista = 1:nsta
       [coef(:,ista), lag(:,ista)] = xcorr(sigsta(:,ista), greenf(:,ista), nfft, 'none'); % unnormalized master raw CC
     end
-    %REMOVE mean/linear trend before CC for caution
-    coef = detrend(coef);
     
     maxlag = 2*sps;
     
@@ -588,7 +586,7 @@ if flagrecalc
     for mm = 4: nsta-1
       for nn = mm+1: nsta
         tmp = tmp+1;
-        [cccoef, lagcoef] = xcorr(coef(:,mm), coef(:,nn), maxlag, 'coeff');
+        [cccoef, lagcoef] = xcorr(detrend(coef(:,mm)), detrend(coef(:,nn)), maxlag, 'coeff');
         [ccb45(icount,tmp), mind] = max(cccoef);
         lagb45(icount,tmp) = lagcoef(mind);
       end
@@ -597,7 +595,7 @@ if flagrecalc
     %%%for 4th and more stations, relative to sta 1/2/3, between opt and opt
     for mm = 4: nsta
       for nn = 1: 3
-        [cccoef, lagcoef] = xcorr(coef(:,nn), coef(:,mm), maxlag, 'coeff');
+        [cccoef, lagcoef] = xcorr(detrend(coef(:,nn)), detrend(coef(:,mm)), maxlag, 'coeff');
         [ccbij(nn,icount,mm-3), mind] = max(cccoef);
         lagbij(nn,icount,mm-3) = lagcoef(mind);
       end
@@ -608,11 +606,15 @@ if flagrecalc
     for mm = 1: 3-1
       for nn = mm+1: 3
         tmp = tmp+1;
-        [cccoef, lagcoef] = xcorr(coef(:,mm), coef(:,nn), maxlag, 'coeff');
+        [cccoef, lagcoef] = xcorr(detrend(coef(:,mm)), detrend(coef(:,nn)), maxlag, 'coeff');
         [ccb123(icount,tmp), mind] = max(cccoef);
         lagb123(icount,tmp) = lagcoef(mind);
       end
     end
+    
+    f1 = plt_traceindetail(coef(20000:end,:),stas,25*sps);
+    title(f1.ax(1),'Sig-wlet CC');
+    keyboard
     
     %     %%%for stas 1, 2, 3, between opt and ort
     %     coefort = [];
@@ -648,10 +650,18 @@ end
 % ind = find(ccboo(:,1)>=prctile(ccboo(:,1),75) & ccboo(:,2)>=prctile(ccboo(:,2),75) & ...
 %   ccboo(:,3)>=prctile(ccboo(:,3),75));
 % ind = [20,23,59,60,80,113,116,120,134,189,194];
-% 
-% ind = find(ccb123(:,1)>=prctile(ccb123(:,1),75) & ccb123(:,2)>=prctile(ccb123(:,2),75) & ...
-%   ccb123(:,3)>=prctile(ccb123(:,3),75));
-% 
+
+%KLNB-PGC seems like a good pair
+[ccb41,idxst] = sort(reshape(ccbij(1,:,1),[],1),'descend');
+ind41 = find(ccb41>=prctile(ccb41,80));
+ind4123 = find(ccbij(1,:,1)>=prctile(ccbij(1,:,1),80) & ccbij(2,:,1)>=prctile(ccbij(2,:,1),80) &...
+  ccbij(3,:,1)>=prctile(ccbij(3,:,1),80));
+% ind41 = [1,4,6,10,12,15,21,22,23,24,29,46,52,56,74,77,78,82,83,102,111,113,114,121,124,125,...
+%   129,145,151,152,155,166,167,169,174,175,180,183,187]';
+% ind4123 = [1,12,15,46,56,77,102,114,125,129,155,180]';
+
+%%
+
 
 %% burst windows for stas 4/5/6/7 vs. 1/2/3
 %%%scatter of lag and CC 

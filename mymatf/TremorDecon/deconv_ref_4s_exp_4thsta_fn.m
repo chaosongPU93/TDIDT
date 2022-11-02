@@ -29,7 +29,7 @@ clc
 close all
 
 %% for easy testing
-defval('idxburst',25);   % the 250-s example 
+defval('idxburst',56);   % the 250-s example 
 defval('normflag',0);
 defval('pltflag',1);
 
@@ -446,6 +446,7 @@ off1ia = zeros(size(trange,1),nsta);  % single best alignment 'computed' between
 off1i = zeros(size(trange,1),3);  % single best alignment 'actually used' for entire win
 off14pred = zeros(size(trange,1),nsta-3); %empirical pred of off14 from plane fit given single best alignment
 ccali = zeros(size(trange,1),1);  % CC value using the best alignment
+ccaliwk = cell(size(trange,1),1); % CC value using the best alignment for all subwins and all burst wins 
 subwsec = zeros(size(trange,1),1);  % subwin length in sec used in practice
 subwseclfit = zeros(size(trange,1),1);  % subwin length from linear fitting, ie, time for 1-sample offset change
 
@@ -622,7 +623,8 @@ for iii = 1: length(idxburst)
       nwin =  size(windows,1);
       
       off1iw = zeros(nwin,3);  % the best alignment between sta2, sta3 wrt sta1 for each subwin
-      
+      ccaliw = zeros(nwin,1);  % CC value using the best alignment
+
       ircccat = [];   % concatenated indices of RCC
       irccran = zeros(nwin,2);  % start and end indices (range) of RCC of all subwins
       rcccat = [];  % average concatenated RCC
@@ -653,7 +655,7 @@ for iii = 1: length(idxburst)
         ccwlen = round(size(optcc,1)-2*(msftadd+1));  % minus ensures successful shifting of records
         ccmin = 0.01;  % depending on the length of trace, cc could be very low
         iup = 1;    % times of upsampling        
-        [off12con,off13con,ccali(k),iloopoff,loopoff] = constrained_cc_interp(optcc(:,1:3)',ccmid,...
+        [off12con,off13con,ccaliw(iwin),iloopoff,loopoff] = constrained_cc_interp(optcc(:,1:3)',ccmid,...
           ccwlen,msftadd,loffmax,ccmin,iup);        
         % if a better alignment cannot be achieved, use 0,0
         if off12con == msftadd+1 && off13con == msftadd+1
@@ -720,6 +722,7 @@ for iii = 1: length(idxburst)
         ccwpair = [ccwpair; ccw12 ccw13 ccw23];
       end
       off1iwk{k} = off1iw;
+      ccaliwk{k} = ccaliw;
 
       %if only use the mean RCC from the 2 pairs that have the highest overall CC
       [~,ind] = min(sum(ccwpair,1));
@@ -772,25 +775,28 @@ for iii = 1: length(idxburst)
       %%%be very different from the empirical prediction from 'empioffset4thsta002'
       mcoef = zeros(nsta-3, 3);
       mlag = zeros(nsta-3, 3);
+      envrat = zeros(nsta-3, 3);
       for ista = 4: nsta
-        [coef,lag] = xcorr(optcc(:,1), optcc(:,ista), msftadd, 'coeff');
+        [coef,lag] = xcorr(detrend(optcc(:,1)), detrend(optcc(:,ista)), msftadd, 'coeff');
         [mcoef(ista-3, 1), idx] = max(coef);   % max of master raw cc
         off1ia(k,ista) = lag(idx);   % offset in samples
         mlag(ista-3, 1) = lag(idx);
+        envrat(ista-3, 1) = median(envelope(optcc(:,ista)))./median(envelope(optcc(:,1)));
         %do an overall CC between 4th and 2nd/3rd stas, to see which one they are most coehrent with
         for jjj = 2:3
-          [coef,lag] = xcorr(optcc(:,jjj), optcc(:,ista), msftadd, 'coeff');
+          [coef,lag] = xcorr(detrend(optcc(:,jjj)), detrend(optcc(:,ista)), msftadd, 'coeff');
           [mcoef(ista-3, jjj), idx] = max(coef);
           mlag(ista-3, jjj) = lag(idx);
+          envrat(ista-3, jjj) = median(envelope(optcc(:,ista)))./median(envelope(optcc(:,jjj)));
         end
         %empirical prediction from plane fitting in 'empioffset4thsta002'
         off14pred(k,ista-3) = round(off14mod(ista-3,1).*off1ia(k,2) + off14mod(ista-3,2).*off1ia(k,3) + ...
           off14mod(ista-3,3));
         
-%         off1ia(k,ista) = 0;
+        off1ia(k,ista) = 0;
       end
       
-      off1ia(k,4:end) = off14pred(k,:);
+%       off1ia(k,4:end) = off14pred(k,:);
       
       %for real data, USE the best whole-win alignment before decon
       off1i(k,:) = off1ia(k,1:3);   
@@ -838,7 +844,11 @@ for iii = 1: length(idxburst)
       [~,rcc23] = RunningCC(sigsta(:,2), sigsta(:,3), mwlen);
       ircc = ircc-overshoot;
       rcc = (rcc12+rcc13+rcc23)/3;
-      sigsta = sigsta(overshoot+1:end-overshoot, :);  %excluding the overshoot
+      rcc1i = zeros(length(rcc),nsta-3);
+      for ista = 4:nsta
+        [~,rcc1i(:,ista-3)] = RunningCC(sigsta(:,1), sigsta(:,ista), mwlen);
+      end
+      sigsta = detrend(sigsta(overshoot+1:end-overshoot, :));  %excluding the overshoot
       
       %for ort. comp
       sigstaort = zeros(size(ortdat,1), nsta);
@@ -852,7 +862,7 @@ for iii = 1: length(idxburst)
       [~,rcc23] = RunningCC(sigstaort(:,2), sigstaort(:,3), mwlen);
       irccort = irccort-overshoot;
       rccort = (rcc12+rcc13+rcc23)/3;
-      sigstaort = sigstaort(overshoot+1:end-overshoot, :);  %excluding the overshoot
+      sigstaort = detrend(sigstaort(overshoot+1:end-overshoot, :));  %excluding the overshoot
       
 %       figure
 %       hold on
@@ -860,7 +870,11 @@ for iii = 1: length(idxburst)
 %       plot(ircc,rcc,'k-')
 %       plot(ircccat,rcccat,'r-');
 %       ylim([-1 1]);      
+      f1 = plt_traceindetail(sigsta,stas,25*sps);
+      title(f1.ax(1),'Signal');
       
+%       keyboard
+
       %%%Doing this here is mainly to note down the thresholds used in the real data 
       fixthresh = zeros(3,1);        
       for ista = 1:3
@@ -959,8 +973,8 @@ for iii = 1: length(idxburst)
       %note here 'impindepst' inherits the first 6 cols from 'impindep', but the last three cols 
       %are adjusted from arrival time difference to the true location offset accounting for the best
       %alignment upon each subwin that is also used in grouping!
+      impindep(:,7:8) = impindep(:,7:8)+repmat([off1i(k,2) off1i(k,3)],size(impindep,1),1); %account for prealignment
       impindepst = sortrows(impindep,1);
-      impindepst(:,7:8) = impindepst(:,7:8)+repmat([off1i(k,2) off1i(k,3)],size(impindepst,1),1); %account for prealignment
       nsrcraw(iii,1) = size(impindepst,1);  % number of sources before removing 2ndary 
 
       %%%plot the scatter of offsets, accounting for prealignment offset, == true offset
@@ -1091,7 +1105,6 @@ for iii = 1: length(idxburst)
       %remove the secondary sources from the grouped result
       impindep(indremove, :) = [];
       impindepst = sortrows(impindep,1);
-      impindepst(:,7:8) = impindepst(:,7:8)+repmat([off1i(k,2) off1i(k,3)],size(impindepst,1),1); %account for prealignment
 
       %% plot the scatter of sources in terms of offsets, accounting for prealignment offset
       span = max(range(off1iw(:,2))+2*loff_max, range(off1iw(:,3))+2*loff_max);
@@ -1138,21 +1151,47 @@ for iii = 1: length(idxburst)
 %       [f,tsep,pkist,indpk,indreverse] = plt_tsep_deconpk(pkindepsave,sps);
 
       %% 2ndary src removed, prediction of impulse tarvl at 4th sta given sources and empirical off14-src relation
-      %%%predict the tarvl and amp at 4th sta 
-      for ista = 4:nsta
-        impindepst(:,9+(ista-4)*2+1) = pred_tarvl_at4thsta(stas(ista,:),impindepst(:,7),...
-          impindepst(:,8),impindepst(:,1),off1ia(k,ista));
+%       %%%predict the tarvl and amp at 4th sta 
+%       for ista = 4:nsta
+%         impindepst(:,9+(ista-4)*2+1) = pred_tarvl_at4thsta(stas(ista,:),impindepst(:,7),...
+%           impindepst(:,8),impindepst(:,1),off1ia(k,ista));
 %         %%%there is decision making here about what impulse amp should be given to 4th sta
-%         %%%1st way is to use the amp SAME as of the sta that is most similar in waveform to 4th
 %         [~,ind] = max(mcoef(ista-3,:)); % which of the trio stas is most similar to 4th sta?
-%         impindepst(:,9+(ista-3)*2) = impindepst(:,ind*2); % assign to 4th sta the same amp from that sta
-        %%%2nd way is to use the mean amp from the trio station
-        impindepst(:,9+(ista-3)*2) = mean(impindepst(:,[2 4 6]),2);
+% 
+%         %1st way is to use the amp SAME as of the sta that is most similar in waveform to 4th
+% %         impindepst(:,9+(ista-3)*2) = impindepst(:,ind*2); %assign to 4th sta the same amp from that sta
+% %         impindepst(:,9+(ista-3)*2) = impindepst(:,9+(ista-3)*2)*envrat(ista-3,ind); %account for envelope ratio
+%         
+% %         %2nd way is to use the mean amp from the trio station
+%         impindepst(:,9+(ista-3)*2) = mean(impindepst(:,[2 4 6]),2);
+% %         impindepst(:,9+(ista-3)*2) = impindepst(:,9+(ista-3)*2)*envrat(ista-3,ind); %account for envelope ratio
+%       end
+
+      %%%carry out 'deconvolution' at 4th stations as well for the tarvl and amp
+      sigma2 = 2*[15; 15; 10; 7.5]; % this comes from the distribution of empirical off14
+      for ista = 4:nsta
+        wlet = greenf(:,ista);  %template here is best aligned, tapered, linear trend removed, filtered
+        lwlet = length(wlet);
+        sig = sigsta(:,ista); %best aligned, filtered, tapered
+        lsig = length(sig);
+        
+        dt = 1/sps;  % sampling interval
+        twlet = zcrosses(ista)*dt;
+        fpltit = 0;  % plot flag for each iteration
+        fpltend = 0;  % plot flag for the final iteration
+        fpltchk = 0; % plot flag for intermediate computations
+        [sigdecon(:,ista),pred,res,dresit,mfitit,ampit,fighdl] = iterdecon_4thsta(sig,wlet,...
+          rcc1i(:,ista-3),dt,twlet,impindep,stas(ista,:),off1ia(k,ista),sigma2(ista-3),...
+          fpltit,fpltend,fpltchk);
+%         imp(:,1) = find(sigdecon(:,ista)>0);
+%         imp(:,2) = sigdecon(sigdecon(:,ista)>0, ista);
+        impindep(:,9+(ista-4)*2+1) = ampit(:,1);
+        impindep(:,9+(ista-3)*2) = ampit(:,2);
       end
       
       %%%given zero-crossing indices, obtain corresponding positive and negative peak indices
-      ppkindep4th = impindepst(:,10:end);
-      npkindep4th = impindepst(:,10:end);
+      ppkindep4th = impindep(:,10:end);
+      npkindep4th = impindep(:,10:end);
       for ista = 4:nsta
         ppkindep4th(:,(ista-4)*2+1) = ppkindep4th(:,(ista-4)*2+1)+ppeaks(ista)-zcrosses(ista);
         npkindep4th(:,(ista-4)*2+1) = npkindep4th(:,(ista-4)*2+1)+npeaks(ista)-zcrosses(ista);
@@ -1160,13 +1199,13 @@ for iii = 1: length(idxburst)
          
       %%%plot the predicted tarvl and amp of decon impulses at 4th sta vs. waveform
       [f1] = plt_deconpk_sigpk_comp_4thsta(sigsta(:,4:nsta),stas(4:nsta,:),...
-        impindepst(:,10:end),ppkindep4th,npkindep4th,greenf(:,4:nsta)); 
+        impindep(:,10:end),ppkindep4th,npkindep4th,greenf(:,4:nsta)); 
       
       %%%final prediction via convolution between grouped impulses and template at each station 
-      [f2,predgrp,resgrp,predgrpl,resgrpl]=predsig_conv_imptemp(sigsta,optdat,impindepst,...
+      [f2,predgrp,resgrp,predgrpl,resgrpl]=predsig_conv_imptemp(sigsta,optdat,impindep,...
         greenf,zcrosses,overshoot,stas,1);
       
-      
+      keyboard
       %% plot amp ratio 12 and 13, and 23, without 2ndary sources
 %       if isempty(impindepst)
 %         continue
@@ -1588,23 +1627,25 @@ for iii = 1: length(idxburst)
         rccrcat = [rccrcat; rccr];
       end
 
-      %%% what about the orthogonal component? 
+      %%% what about the orthogonal component?
+      %CC between sig and wlet at opt
       nfft = lsig;
       coef = [];
       lag = [];
-      for ista = 1:nsta
+      for ista = 1:3
         [coef(:,ista), lag(:,ista)] = xcorr(sigsta(:,ista), greenf(:,ista), nfft, 'none'); % unnormalized master raw CC
       end
-      maxlag = 2*sps;
-      %%%for stas 1, 2, 3, between opt and ort
+      %CC between sig and wlet at ort
       coefort = [];
       lagort = [];
-      for ista = 1:nsta
+      for ista = 1:3
         [coefort(:,ista), lagort(:,ista)] = xcorr(sigstaort(:,ista), greenfort(:,ista), nfft, 'none');
       end
-      for ista = 1:nsta
+      %%%for stas 1, 2, 3, cc between opt and ort
+      maxlag = 2*sps;
+      for ista = 1:3
         %CC opt with ort
-        [cccoef, lagcoef] = xcorr(coef(:,ista), coefort(:,ista), maxlag, 'coeff');
+        [cccoef, lagcoef] = xcorr(detrend(coef(:,ista)), detrend(coefort(:,ista)), maxlag, 'coeff');
         [ccboo(k,ista), mind] = max(cccoef);
         lagboo(k,ista) = lagcoef(mind);
       end

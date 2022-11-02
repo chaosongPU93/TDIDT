@@ -28,7 +28,8 @@ for ista = 1: nsta
   if ista <= 3
     impfull(impindepst(:,(ista-1)*2+1), ista) = impindepst(:,ista*2); % the non-zero index has the amp
   else
-    impfull(impindepst(:,9+(ista-4)*2+1), ista) = impindepst(:,9+(ista-3)*2);
+    ind = find(impindepst(:,9+(ista-4)*2+1)>0); %in case there is any source' arrival is less than 0
+    impfull(impindepst(ind,9+(ista-4)*2+1), ista) = impindepst(ind,9+(ista-3)*2);
   end
   predtmp = conv(greenf(:,ista), impfull(:,ista), 'full');
   itwlet = zcrosses(ista);
@@ -120,7 +121,7 @@ if flagplt
   
 end
 
-keyboard
+% keyboard
 
 
 

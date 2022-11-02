@@ -213,10 +213,12 @@ for i = 1: nstasnew
   ax = f1.ax(4+i);
   hold(ax,'on'); grid(ax,'on');
   idx = find(mloff(:,end)~=0);  %only show non-zeros, ie., has duplicates
+%   idx = 1:size(mloff,1);
   scatter(ax,mloff(idx,1),mloff(idx,2),sybsz,mloff(idx,end),'filled','MarkerEdgeColor','none');
   c=colorbar(ax);
   c.Label.String = 'std of averaged offset diff.';
-  colormap(ax,flipud(colormap(ax,'gray')));
+%   colormap(ax,flipud(colormap(ax,'gray')));
+  colormap(ax,'jet');
   caxis(ax,[0 prctile(mloff(idx,end),95)]);
   axis(ax,'equal',ran);
   hold(ax,'off');
@@ -239,10 +241,12 @@ for i = 1: nstasnew
   ax = f2.ax(4+i);
   hold(ax,'on'); grid(ax,'on');
   idx = find(mloff(:,end)~=0);  %only show non-zeros, ie., has duplicates
+%   idx = 1:size(mloff,1);
   scatter(ax,mioff(idx,1),mioff(idx,2),sybsz,mioff(idx,end),'filled','MarkerEdgeColor','none');
   c=colorbar(ax);
   c.Label.String = 'std of weighted off14';
-  colormap(ax,flipud(colormap(ax,'gray')));
+%   colormap(ax,flipud(colormap(ax,'gray')));
+  colormap(ax,'jet');
   caxis(ax,[0 prctile(mioff(idx,end),95)]);
   axis(ax,'equal',ran);
   hold(ax,'off');
@@ -265,10 +269,12 @@ for i = 1: nstasnew
   ax = f3.ax(4+i);
   hold(ax,'on'); grid(ax,'on');
   idx = find(mloff(:,end)~=0);  %only show non-zeros, ie., has duplicates
+%   idx = 1:size(mloff,1);
   scatter(ax,mcc(idx,1),mcc(idx,2),sybsz,mcc(idx,end),'filled','MarkerEdgeColor','none');
   c=colorbar(ax);
   c.Label.String = 'std of averaged CC';
-  colormap(ax,flipud(colormap(ax,'gray')));
+%   colormap(ax,flipud(colormap(ax,'gray')));
+  colormap(ax,'jet');
   caxis(ax,[0 prctile(mcc(idx,end),95)]);
   axis(ax,'equal',ran);
   hold(ax,'off');
@@ -339,9 +345,15 @@ for i = 1: nstasnew
   %%%plane fit model
   ftplane = fittype( 'a*x+b*y+c', 'independent', {'x', 'y'}, 'dependent', 'z' );
   opts.StartPoint = [0.5 0.5 0.5];
-  [fitresult, gof] = fit( [xData, yData], zData, ftplane, opts );
+  [fitresult, gof,output] = fit( [xData, yData], zData, ftplane, opts );
   modparam(i,:) = [fitresult.a fitresult.b fitresult.c];
-  off14pred{i} = fitresult.a .* off12 + fitresult.b .* off13 + fitresult.c;
+  off14pred = fitresult.a .* off12 + fitresult.b .* off13 + fitresult.c;
+  
+  %test if the returned goodness-of-fit metrics are also weighted, answer is YES 
+  sseauto = gof.sse  %sum of squares due to error
+  ssecalc = sum((zData-off14pred).^2)  %assuming equal weights of 1
+  rmseauto = gof.rmse  %root mean squared error
+  rmsecalc = sqrt(sum((zData-off14pred).^2)./(length(zData)))  %assuming equal weights of 1
   
 %   %%%parabolic fit model
 %   ftpara = fittype( '(x-x0)^2/a^2+(y-y0)^2/b^2+z0', 'independent', {'x', 'y'}, 'dependent', 'z' );

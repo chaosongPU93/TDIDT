@@ -17,6 +17,10 @@ function [off12,off13,cc,iloff,loff] = constrained_cc_interp(trace,mid,wlen,mshi
 % Last modified date:   2021/06/17
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%in case it has non-zero mean
+% for i = 1:size(trace,1)
+%   trace(i,:) = detrend(trace(i,:));   
+% end
 stackauto = trace.*trace;
 templen = size(trace,2);
 lenx = templen-2*mshift;
