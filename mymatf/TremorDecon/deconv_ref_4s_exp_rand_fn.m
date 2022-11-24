@@ -1,4 +1,4 @@
-function rststruct = deconv_ref_4s_exp_rand_fn(idxburst,normflag,noiseflag,pltflag)
+function rststruct = deconv_ref_4s_exp_rand_fn(idxbst,normflag,noiseflag,pltflag)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Based on 'deconvbursts002_ref_4s_exp', but this script tries to simulate what 
 % the current deconvolution algorithm would behave if the records are 
@@ -25,9 +25,13 @@ function rststruct = deconv_ref_4s_exp_rand_fn(idxburst,normflag,noiseflag,pltfl
 % First created date:   2022/08/09
 % Last modified date:   2022/08/09
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+format short e   % Set the format to 5-digit floating point
+% clear
+% clc
+% close all
 
 %% for easy testing
-defval('idxburst',181);   % the 250-s example 
+defval('idxbst',82);   % the 250-s example 
 defval('normflag',0);
 defval('noiseflag',1);
 defval('pltflag',1);
@@ -36,10 +40,6 @@ defval('pltflag',1);
 %% Initialization
 %%% SAME if focusing on the same region (i.e. same PERMROTS and POLROTS)
 %%% AND if using the same family, same station trio
-format short e   % Set the format to 5-digit floating point
-% clear
-% clc
-% close all
 
 set(0,'DefaultFigureVisible','on');
 % set(0,'DefaultFigureVisible','off');   % switch to show the plots or not
@@ -211,7 +211,7 @@ for ista = 1: nsta
         num2str(templensec), 's_', 'BBCCS_', 'opt_Nof_Non_Chao_catnew');
     ccstack(:,ista) = load(fname);
 end
-STA = ccstack;
+STA = detrend(ccstack);
 
 ccstackort = [];
 for ista = 1: nsta
@@ -219,7 +219,7 @@ for ista = 1: nsta
         num2str(templensec), 's_', 'BBCCS_', 'ort_Nof_Non_Chao_catnew');
     ccstackort(:,ista) = load(fname);
 end
-STAort = ccstackort;
+STAort = detrend(ccstackort);
 
 %flag of normalization
 % normflag = 0;
@@ -228,14 +228,14 @@ STAort = ccstackort;
 % figure
 % subplot(211)
 % hold on
-% plot(STA(:,1),'r')
-% plot(STA(:,2),'b')
-% plot(STA(:,3),'k')
+% for ista = 1: nsta
+%   plot(STA(:,ista));
+% end
 % subplot(212)
 % hold on
-% plot(STAort(:,1),'r')
-% plot(STAort(:,2),'b')
-% plot(STAort(:,3),'k')
+% for ista = 1: nsta
+%   plot(STAort(:,ista));
+% end
 
 %%%The below aligns the templates by x-correlation
 ist = templensec*sps*4/10;  %not using whole window in case any station has very long-period energy
@@ -249,7 +249,7 @@ iminses = iminses+ist-1;
 %automatically find the zero-crossings
 zcrosses = zeros(nsta,1);
 for ista = 1:nsta
-    seg = STA(iminses(ista): imaxses(ista),ista);  % for zero-crossing timing, only use the main station
+    seg = detrend(STA(iminses(ista): imaxses(ista),ista));  % for zero-crossing timing, only use the main station
     [~,zcrosses(ista)] = min(abs(seg));
     zcrosses(ista) = zcrosses(ista)-1+iminses(ista);  % convert to global index
 end
@@ -259,20 +259,23 @@ sampaft=10*sps;
 is=zcrosses-sampbef;
 ie=zcrosses+sampaft;
 for ista=1:nsta
-    STAtmp(:,ista)=STA(is(ista):ie(ista),ista);  % this means templates are 'aligned' at zero-crossings
-    STAtmport(:,ista)=STAort(is(ista):ie(ista),ista); 
+    STAtmp(:,ista)=detrend(STA(is(ista):ie(ista),ista));  % this means templates are 'aligned' at zero-crossings
+    STAtmport(:,ista)=detrend(STAort(is(ista):ie(ista),ista)); 
 end
 %x-correlation independently between each station pair 
 mshiftadd=10*sps/40;
 tempxc(:,1)=xcorr(STAtmp(:,2),STAtmp(:,3),mshiftadd,'coeff');
 tempxc(:,2)=xcorr(STAtmp(:,1),STAtmp(:,2),mshiftadd,'coeff'); %shift STAtmp(3,:) to right for positive values
 tempxc(:,3)=xcorr(STAtmp(:,1),STAtmp(:,3),mshiftadd,'coeff'); %shift STAtmp(2,:) to right for positive values
+for ista = 4: nsta
+  tempxc(:,ista)=xcorr(STAtmp(:,1),STAtmp(:,ista),mshiftadd,'coeff'); %shift STAtmp(2,:) to right for positive values
+end
 [~,imax]=max(tempxc,[],1);
 imax=imax-(mshiftadd+1); %This would produce a slightly different shift, if filtered seisms were used.
 imax(2)-imax(3)+imax(1);   %enclosed if it equals to 0
 for ista=2:nsta
-    STAtmp(mshiftadd+1:end-(mshiftadd+1),ista)=STAtmp(mshiftadd+1-imax(ista):end-(mshiftadd+1)-imax(ista),ista);
-    STAtmport(mshiftadd+1:end-(mshiftadd+1),ista)=STAtmport(mshiftadd+1-imax(ista):end-(mshiftadd+1)-imax(ista),ista);
+    STAtmp(mshiftadd+1:end-(mshiftadd+1),ista)=detrend(STAtmp(mshiftadd+1-imax(ista):end-(mshiftadd+1)-imax(ista),ista));
+    STAtmport(mshiftadd+1:end-(mshiftadd+1),ista)=detrend(STAtmport(mshiftadd+1-imax(ista):end-(mshiftadd+1)-imax(ista),ista));
 end
 %normalization
 if normflag 
@@ -284,14 +287,14 @@ end
 % figure
 % subplot(211)
 % hold on
-% plot(STAtmp(:,1),'r')
-% plot(STAtmp(:,2),'b')
-% plot(STAtmp(:,3),'k')
+% for ista = 1: nsta
+%   plot(STAtmp(:,ista));
+% end
 % subplot(212)
 % hold on
-% plot(STAtmport(:,1),'r')
-% plot(STAtmport(:,2),'b')
-% plot(STAtmport(:,3),'k')
+% for ista = 1: nsta
+%   plot(STAtmport(:,ista));
+% end
 %%%The above aligns the templates by x-correlation
 
 %%%detrend, taper and bandpass templates
@@ -307,20 +310,20 @@ for ista = 1: nsta
   w = tukeywin(size(tmpwlet(:,ista),1),fractap);
   tmpwlet(:,ista) = w.* tmpwlet(:,ista);
   %detrend again for caution
-  tmpwlet(:,ista)=detrend(tmpwlet(:,ista));
+  tmpwlet(:,ista) = detrend(tmpwlet(:,ista));
   %filter the template
   hiwlet=18;
   lowlet=1.8;
   tmpwletf(:,ista) = Bandpass(tmpwlet(:,ista), sps, lowlet, hiwlet, 2, 2, 'butter');
   %detrend again for caution
-  tmpwletf(:,ista)=detrend(tmpwletf(:,ista));
+  tmpwletf(:,ista) = detrend(tmpwletf(:,ista));
   
   %same process for orthogonal
   tmpwletort(:,ista) = detrend(tmpwletort(:,ista));
   tmpwletort(:,ista) = w.* tmpwletort(:,ista);
-  tmpwletort(:,ista)=detrend(tmpwletort(:,ista));
+  tmpwletort(:,ista) = detrend(tmpwletort(:,ista));
   tmpwletfort(:,ista) = Bandpass(tmpwletort(:,ista), sps, lowlet, hiwlet, 2, 2, 'butter');
-  tmpwletfort(:,ista)=detrend(tmpwletfort(:,ista));
+  tmpwletfort(:,ista) = detrend(tmpwletfort(:,ista));
 end
 
 %%%constrained CC, so that only 2 offsets are independent
@@ -329,11 +332,17 @@ ccwlen = 10*sps;
 loffmax = 5*sps/40;
 ccmin = 0.01;  % depending on the length of trace, cc could be very low
 iup = 1;    % times of upsampling
-[off12con,off13con,cc,iloopoff,loopoff] = constrained_cc_interp(tmpwletf',ccmid,...
+[off12con,off13con,cc] = constrained_cc_interp(tmpwletf(:,1:3)',ccmid,...
   ccwlen,mshiftadd,loffmax,ccmin,iup);
 offwlet1i(1) = 0;
 offwlet1i(2) = round(off12con);
 offwlet1i(3) = round(off13con);
+
+for ista = 4: nsta
+  [coef,lag] = xcorr(tmpwletf(:,1), tmpwletf(:,ista), mshiftadd, 'coeff');
+  [mcoef, idx] = max(coef);   % max of master raw cc
+  offwlet1i(ista) = lag(idx);   % offset in samples  
+end
 
 %%%automatically find the rough zero-crossing time, whose abs. value is closest to 0, whether + or -
 [~,imin] = min(tmpwletf(:,1));
@@ -352,22 +361,22 @@ for ista = 1: nsta
   green(:,ista) = tmpwlet(zcsta1+8*sps-greenlen+1-offwlet1i(ista): zcsta1+8*sps-offwlet1i(ista), ista);
   greenf(:,ista) = tmpwletf(zcsta1+8*sps-greenlen+1-offwlet1i(ista): zcsta1+8*sps-offwlet1i(ista), ista);
   %detrend again for caution
-  green(:,ista)=detrend(green(:,ista));
-  greenf(:,ista)=detrend(greenf(:,ista));
+  green(:,ista) = detrend(green(:,ista));
+  greenf(:,ista) = detrend(greenf(:,ista));
   if normflag
     %normalize by max amp
-    green(:,ista)=green(:,ista)/max(abs(green(:,ista)));    % normalize
-    greenf(:,ista)=greenf(:,ista)/max(abs(green(:,ista)));    % normalize
+    green(:,ista) = green(:,ista)/max(abs(green(:,ista)));    % normalize
+    greenf(:,ista) = greenf(:,ista)/max(abs(green(:,ista)));    % normalize
   end
   
   %same process for orthogonal
   greenort(:,ista) = tmpwletort(zcsta1+8*sps-greenlen+1-offwlet1i(ista): zcsta1+8*sps-offwlet1i(ista), ista);
   greenfort(:,ista) = tmpwletfort(zcsta1+8*sps-greenlen+1-offwlet1i(ista): zcsta1+8*sps-offwlet1i(ista), ista);
-  greenort(:,ista)=detrend(greenort(:,ista));
-  greenfort(:,ista)=detrend(greenfort(:,ista));
+  greenort(:,ista) = detrend(greenort(:,ista));
+  greenfort(:,ista) = detrend(greenfort(:,ista));
   if normflag
-    greenort(:,ista)=greenort(:,ista)/max(abs(green(:,ista)));    % normalize
-    greenfort(:,ista)=greenfort(:,ista)/max(abs(green(:,ista)));    % normalize
+    greenort(:,ista) = greenort(:,ista)/max(abs(green(:,ista)));    % normalize
+    greenfort(:,ista) = greenfort(:,ista)/max(abs(green(:,ista)));    % normalize
   end
   
   %re-find the zero-crossing as the template length has changed
@@ -384,10 +393,17 @@ ccwlen = 4*sps;
 loffmax = 5*sps/40;
 ccmin = 0.01;  % depending on the length of trace, cc could be very low
 iup = 1;    % times of upsampling
-[off12con,off13con,cc,iloopoff,loopoff] = constrained_cc_interp(greenf',ccmid,...
+[off12con,off13con,cc] = constrained_cc_interp(greenf(:,1:3)',ccmid,...
   ccwlen,mshiftadd,loffmax,ccmin,iup);
 if ~(off12con==0 && off13con==0)
-  disp('Filtered templates are NOT best aligned');
+  disp('Filtered templates are NOT best aligned \n');
+end
+for ista = 4: nsta
+  [coef,lag] = xcorr(greenf(:,1), greenf(:,ista), mshiftadd, 'coeff');
+  [mcoef, idx] = max(coef);   % max of master raw cc
+  if lag(idx)~=0   % offset in samples
+    fprintf('Filtered templates are NOT best aligned at %s \n',stas(ista,:));
+  end
 end
 
 amprat(1,:) = minmax(greenf(:,1)')./minmax(greenf(:,2)');	% amp ratio between max at sta 3 and 2 or min
@@ -396,10 +412,10 @@ amprat(3,:) = minmax(greenf(:,2)')./minmax(greenf(:,3)');	% amp ratio between ma
 spread = range(greenf);   % range of the amp of template
 
 %%%plot the unfiltered and filtered templates
-% plt_templates(green,greenf,greenort,greenfort,lowlet,hiwlet,sps);
+% plt_templates(green,greenf,stas,greenort,greenfort,lowlet,hiwlet,sps);
 
 %just the filtered templates
-% plt_templates_bp(greenf,lowlet,hiwlet,sps);
+% plt_templates_bp(greenf,stas,lowlet,hiwlet,sps);%% prepare the signal and noise windows
 
 
 %% prepare the signal and noise windows
@@ -423,9 +439,10 @@ mwlen=sps/2;
 k = 0;  % counting the burst windows
 
 off1iwk = cell(size(trange,1),1);  % the best alignment between sta 2, 3 wrt 1 for all subwins and all burst wins
-off1ia = zeros(size(trange,1),3);  % single best alignment 'computed' between sta 2, 3 wrt 1 for entire win
-off1i = zeros(size(trange,1),3);  % single best alignment 'actually used' for entire win
+off1ic = zeros(size(trange,1),nsta);  % single best alignment 'computed' between sta 2, 3 wrt 1 for entire win
+off1i = zeros(size(trange,1),nsta);  % single best alignment 'actually used' for entire win
 ccali = zeros(size(trange,1),1);  % CC value using the best alignment
+ccaliwk = cell(size(trange,1),1); % CC value using the best alignment for all subwins and all burst wins 
 subwsec = zeros(size(trange,1),1);  % subwin length in sec used in practice
 subwseclfit = zeros(size(trange,1),1);  % subwin length from linear fitting, ie, time for 1-sample offset change
 
@@ -450,20 +467,21 @@ subwseclfit = zeros(size(trange,1),1);  % subwin length from linear fitting, ie,
 % 
 % indtest = [18,21,22,23];
 
-srcamprall = [];  %store all target windows
-lndevsrcamprall = [];
-lgdevsrcamprall = [];
-rcccatsrcall = [];
-rccpairsrcall = [];
-psrcampsall = [];
-nsrcampsall = [];
-psrcamprsall = [];
-nsrcamprsall = [];
-clppkhtwfall = [];
-clnpkhtwfall = [];
+%store all target windows
+srcamprall = [];  %src amp ratio 
+lndevsrcamprall = []; %linear deviation from median src amp ratio
+lgdevsrcamprall = []; %log deviation from median src amp ratio
+rcccatsrcall = [];  %mean concat RCC among trio and RCC14 at src arrival 
+rccpairsrcall = []; %concat RCC for trio sta pairs at src arrival 
+psrcampsall = []; %positive scaled src amp  
+nsrcampsall = []; %negative scaled src amp  
+psrcamprsall = [];  %positive scaled src amp ratio  
+nsrcamprsall = [];  %negative scaled src amp ratio  
+clppkhtwfall = [];  %closest pos peak height of waveform
+clnpkhtwfall = [];  %closest neg peak height of waveform
 
-for iii = 1: length(idxburst)
-  [iets,i,j] = indofburst(trange,idxburst(iii));
+for iii = 1: length(idxbst)
+  [iets,i,j] = indofburst(trange,idxbst(iii));
   
 % for iets = 3: nets
   % dates in each ets
@@ -507,7 +525,7 @@ for iii = 1: length(idxburst)
     MO=day2month(jday,year);     % EXTERNAL function, day2month, get the month of one particular date
     direc=[datapath, '/arch', yr,'/',MO,'/'];     % directory name
     prename=[direc,yr,'.',JDAY,'.00.00.00.0000.CN'];    %  path plus prefix of data file,
-    disp(prename);
+%     disp(prename);
     [STAopt,STAort,~,fileflag] = rd_daily_bpdata(year,jday,prename,stas,PERMSTA,POLSTA,...
       PERMROTS,POLROTS,sps,losig,hisig,npo,npa,[],[],[],[]);
 
@@ -603,7 +621,7 @@ for iii = 1: length(idxburst)
       nwin =  size(windows,1);
       
       off1iw = zeros(nwin,3);  % the best alignment between sta2, sta3 wrt sta1 for each subwin
-      
+      ccaliw = zeros(nwin,1);  % CC value using the best alignment, including 4th stas
       ircccat = [];   % concatenated indices of RCC
       irccran = zeros(nwin,2);  % start and end indices (range) of RCC of all subwins
       rcccat = [];  % average concatenated RCC
@@ -627,14 +645,14 @@ for iii = 1: length(idxburst)
 %         optcc(:,1) = STAopt(max(isubwst,1): min(isubwed,86400*sps), 2);
 %         optcc(:,2) = STAopt(max(isubwst*sps,1): min(isubwed*sps,86400*sps), 3);
 %         optcc(:,3) = STAopt(max(isubwst*sps,1): min(isubwed*sps,86400*sps), 4);
-        optcc = optseg(isubwst: isubwed, 2:end);
+        optcc = detrend(optseg(isubwst: isubwed, 2:end));
         msftadd = (round(max(abs([off12ran off13ran])))+1)*sps/40;  %+1 for safety
         loffmax = 4*sps/40;
         ccmid = ceil(size(optcc,1)/2);
         ccwlen = round(size(optcc,1)-2*(msftadd+1));  % minus ensures successful shifting of records
         ccmin = 0.01;  % depending on the length of trace, cc could be very low
         iup = 1;    % times of upsampling        
-        [off12con,off13con,ccali(k),iloopoff,loopoff] = constrained_cc_interp(optcc',ccmid,...
+        [off12con,off13con,ccaliw(iwin,1)] = constrained_cc_interp(optcc(:,1:3)',ccmid,...
           ccwlen,msftadd,loffmax,ccmin,iup);        
         % if a better alignment cannot be achieved, use 0,0
         if off12con == msftadd+1 && off13con == msftadd+1
@@ -649,13 +667,13 @@ for iii = 1: length(idxburst)
         %Align records
         optdat = [];  % win +/-3 s, segment of interest,first 1s will be tapered 
         ortdat = [];
-        optdat(:, 1:2) = optseg(isubwst: isubwed, 1:2); % sta 1
-        ortdat(:, 1:2) = ortseg(isubwst: isubwed, 1:2);      
-        optdat(:, 3) = optseg(isubwst-off1iw(iwin,2): isubwed-off1iw(iwin,2), 3); % sta 2
-        ortdat(:, 3) = ortseg(isubwst-off1iw(iwin,2): isubwed-off1iw(iwin,2), 3);
-        optdat(:, 4) = optseg(isubwst-off1iw(iwin,3): isubwed-off1iw(iwin,3), 4); % sta 3
-        ortdat(:, 4) = ortseg(isubwst-off1iw(iwin,3): isubwed-off1iw(iwin,3), 4);
-        
+        optdat(:, 1) = optseg(isubwst: isubwed, 1); % time column
+        ortdat(:, 1) = ortseg(isubwst: isubwed, 1);
+        for ista = 1: nsta
+          optdat(:, ista+1) = optseg(isubwst-off1iw(iwin,ista): isubwed-off1iw(iwin,ista), ista+1); 
+          ortdat(:, ista+1) = ortseg(isubwst-off1iw(iwin,ista): isubwed-off1iw(iwin,ista), ista+1);
+        end
+       
         subw = zeros(size(optdat,1), nsta);
         for ista = 1:nsta
           tmp = optdat(:,ista+1); %best aligned, filtered
@@ -674,8 +692,7 @@ for iii = 1: length(idxburst)
 %             w = coswinrh(ltmp,fractap);
 %             tmp = w.* tmp;
 %             tmp = detrend(tmp); %detrend again for caution
-%           end
-          
+%           end         
           subw(:,ista) = tmp;
         end
         %compute running CC between 3 stations
@@ -701,6 +718,7 @@ for iii = 1: length(idxburst)
         ccwpair = [ccwpair; ccw12 ccw13 ccw23];
       end
       off1iwk{k} = off1iw;
+      ccaliwk{k} = ccaliw;
 
       %if only use the mean RCC from the 2 pairs that have the highest overall CC
       [~,ind] = min(sum(ccwpair,1));
@@ -732,12 +750,12 @@ for iii = 1: length(idxburst)
       
       %%%obtain a single best alignment based on the entire win 
 %       optcc = optseg(:, 2:end);
-      optcc = optseg(1+msftaddm: end-msftaddm, 2:end);
+      optcc = detrend(optseg(1+msftaddm: end-msftaddm, 2:end));
       ccmid = ceil(size(optcc,1)/2);
       ccwlen = round(size(optcc,1)-2*(msftadd+1));
       ccmin = 0.01;  % depending on the length of trace, cc could be very low
       iup = 1;    % times of upsampling
-      [off12con,off13con,ccali(k),iloopoff,loopoff] = constrained_cc_interp(optcc',ccmid,...
+      [off12con,off13con,ccali(k)] = constrained_cc_interp(optcc(:,1:3)',ccmid,...
         ccwlen,msftadd,loffmax,ccmin,iup);
       % if a better alignment cannot be achieved, use 0,0
       if off12con == msftadd+1 && off13con == msftadd+1
@@ -745,24 +763,22 @@ for iii = 1: length(idxburst)
         off13con = 0;
         fprintf('Tremor burst %d cannot be properly aligned, double-check needed \n',k);
       end
-      off1ia(k,1) = 0;
-      off1ia(k,2) = round(off12con);
-      off1ia(k,3) = round(off13con);
+      off1ic(k,1) = 0;
+      off1ic(k,2) = round(off12con);
+      off1ic(k,3) = round(off13con);
       
       %for real data, use the best whole-win alignment before decon
-      off1i(k,:) = off1ia(k,:);   
+      off1i(k,:) = off1ic(k,:);   
       
       %%%Align and compute the RCC based on the entire win, and take that as the input signal!      
       optdat = [];  % win segment of interest
       ortdat = [];
-      optdat(:, 1:2) = optseg(1+msftaddm: end-msftaddm, 1:2); % sta 1
-      ortdat(:, 1:2) = ortseg(1+msftaddm: end-msftaddm, 1:2);
-      optdat(:, 3) = optseg(1+msftaddm-off1i(k,2): end-msftaddm-off1i(k,2), 3); % sta 2
-      ortdat(:, 3) = ortseg(1+msftaddm-off1i(k,2): end-msftaddm-off1i(k,2), 3);
-      optdat(:, 4) = optseg(1+msftaddm-off1i(k,3): end-msftaddm-off1i(k,3), 4); % sta 3
-      ortdat(:, 4) = ortseg(1+msftaddm-off1i(k,3): end-msftaddm-off1i(k,3), 4);
-%       optdat(:, 1:4) = optseg(1+msftaddm: end-msftaddm, 1:4); % sta 1
-%       ortdat(:, 1:4) = ortseg(1+msftaddm: end-msftaddm, 1:4);
+      optdat(:, 1) = optseg(1+msftaddm: end-msftaddm, 1); % time column
+      ortdat(:, 1) = ortseg(1+msftaddm: end-msftaddm, 1);
+      for ista = 1: nsta 
+        optdat(:, ista+1) = optseg(1+msftaddm-off1i(k,ista): end-msftaddm-off1i(k,ista), ista+1);
+        ortdat(:, ista+1) = ortseg(1+msftaddm-off1i(k,ista): end-msftaddm-off1i(k,ista), ista+1);
+      end
 
       %Align the noise using the same offset
       noidat = [];  % 4-s prior to signal win
@@ -793,7 +809,7 @@ for iii = 1: length(idxburst)
       [~,rcc23] = RunningCC(sigsta(:,2), sigsta(:,3), mwlen);
       ircc = ircc-overshoot;
       rcc = (rcc12+rcc13+rcc23)/3;
-      sigsta = sigsta(overshoot+1:end-overshoot, :);  %excluding the overshoot
+      sigsta = detrend(sigsta(overshoot+1:end-overshoot, :));  %excluding the overshoot
       
       %for ort. comp
       sigstaort = zeros(size(ortdat,1), nsta);
@@ -807,7 +823,7 @@ for iii = 1: length(idxburst)
       [~,rcc23] = RunningCC(sigstaort(:,2), sigstaort(:,3), mwlen);
       irccort = irccort-overshoot;
       rccort = (rcc12+rcc13+rcc23)/3;
-      sigstaort = sigstaort(overshoot+1:end-overshoot, :);  %excluding the overshoot
+      sigstaort = detrend(sigstaort(overshoot+1:end-overshoot, :));  %excluding the overshoot
       
 %       figure
 %       hold on
@@ -819,6 +835,7 @@ for iii = 1: length(idxburst)
       %%%Doing this here is mainly to obtain the thresholds used in the real data that is going to
       %%%inherited by the noise case
       fixthresh = zeros(nsta,1);        
+      mswccpksep = zeros(nsta,1); %Med sep of peaks in sig-wlet CC
       for ista = 1:nsta
         wlet = greenf(:,ista);  %template here is best aligned, tapered, linear trend removed, filtered
         lwlet = length(wlet);
@@ -838,10 +855,10 @@ for iii = 1: length(idxburst)
           lag+itwlet <= nfft-round(ldiff/2));
         %find all peaks in the effective master raw CC
         [pkhgt, pkind] = findpeaks(coefeff);
+        mswccpksep(ista) = round(median(diff(pkind)));
         %rcc serves the weight as the peak height, aka the master raw cc value at the peak
         wtcoef = rcccat(pkind).* pkhgt;
         fixthresh(ista) = median(wtcoef);  % median of the weighted master CC, could be percentile?
-
       end
 
 
@@ -870,11 +887,48 @@ for iii = 1: length(idxburst)
 %         histogram(pharand(:,2));
 %         subplot(133)
 %         histogram(pharand(:,3));
-
+% 
+%         xf2 = amp*nfft.*exp(1i*pha);
+%         opt2(:,2:4) = real(ifft(xf2,nfft));
+%         figure
+%         plot(optseg(:,2),'k','linew',1); hold on
+%         plot(opt2(:,2),'r','linew',0.5);
+%         xlabel('Samples at 160 sps');
+%         ylabel('Amplitude');
+%         xlim([0 lsig]);
+% 
+%         figure
+%         plot(optseg(:,2),'k','linew',1);
+%         xlabel('Samples at 160 sps');
+%         ylabel('Amplitude');
+%         xlim([0 lsig]);
+%         
+%         figure
+%         subplot(3,1,1); 
+%         plot(ft,amp(:,1));
+%         xlabel('Frequency (Hz)');
+%         ylabel('Amplitude');
+%         subplot(3,1,2)
+%         plot(ft,pha(:,1));
+%         xlabel('Frequency (Hz)');
+%         ylabel('Phase (rad)');
+%         subplot(3,1,3)
+%         plot(ft,pharand(:,1));
+%         xlabel('Frequency (Hz)');
+%         ylabel('Randomized phase (rad)');
+                
         %construct record with the same amplitude but random phase
-        xfrand = amp*nfft.*exp(1i*pharand);
+        xfrand = amp.*nfft.*exp(1i.*pharand);
         optseg(:,2:4) = real(ifft(xfrand,nfft));
 
+%         figure
+%         plot(optseg(:,2),'k','linew',1);
+%         xlabel('Samples at 160 sps');
+%         ylabel('Amplitude');
+%         xlim([0 lsig]);
+%         ylim([-0.3 0.3]);
+        
+        %%
 %         figure
 %         subplot(311)
 %         plot(optseg(:,2));
@@ -892,12 +946,13 @@ for iii = 1: length(idxburst)
 %         histogram(optseg(:,4)); [MUHAT,SIGMAHAT] = normfit(optseg(:,4))
         
         %%%for orthogonal components, with the same phase??
-        [xf,ft,amp,pha,power,psd] = fftspectrum(ortseg(:,2:4), nfft, sps,'twosided');
+        [xf,ft,amp,pha] = fftspectrum(ortseg(:,2:4), nfft, sps,'twosided');
 %         pharand = (rand(nfft,3)-0.5)*2*pi;
-        xfrand = amp*nfft.*exp(1i*pharand);
+        xfrand = amp.*nfft.*exp(1i.*pharand);
         ortseg(:,2:4) = real(ifft(xfrand,nfft));
              
         off1iw = zeros(nwin,3);  % the best alignment between sta2, sta3 wrt sta1 for each subwin      
+        ccaliw = zeros(nwin,1);  % CC value using the best alignment, including 4th stas
         ircccat = [];   % concatenated indices of RCC
         irccran = zeros(nwin,2);  % start and end indices (range) of RCC of all subwins
         rcccat = [];  % average concatenated RCC
@@ -918,10 +973,7 @@ for iii = 1: length(idxburst)
         
         %align records
 %         optcc = [];
-%         optcc(:,1) = STAopt(max(isubwst,1): min(isubwed,86400*sps), 2);
-%         optcc(:,2) = STAopt(max(isubwst*sps,1): min(isubwed*sps,86400*sps), 3);
-%         optcc(:,3) = STAopt(max(isubwst*sps,1): min(isubwed*sps,86400*sps), 4);
-          optcc = optseg(isubwst: isubwed, 2:end);
+          optcc = detrend(optseg(isubwst: isubwed, 2:end));
           %%%for each short win, allow the same shift for noise as for data
 %         if noiseflag
 %           msftadd = 50;
@@ -938,7 +990,7 @@ for iii = 1: length(idxburst)
           %%%For short win, do we align noise *exactly* the same way as data?
           %ask how well can you align the noise, does not matter if the location is
           %the most reliable, but the resulting CC is the highest possible
-          [off12con,off13con,ccali(k),iloopoff] = constrained_cc_loose(optcc',ccmid,...
+          [off12con,off13con,ccaliw(iwin,1)] = constrained_cc_loose(optcc',ccmid,...
             ccwlen,msftadd,ccmin,iup);
           % if a better alignment cannot be achieved, use 0,0
           if off12con == msftadd+1 && off13con == msftadd+1
@@ -952,12 +1004,12 @@ for iii = 1: length(idxburst)
           %Align records
           optdat = [];  % win +/-3 s, segment of interest,first 1s will be tapered 
           ortdat = [];
-          optdat(:, 1:2) = optseg(isubwst: isubwed, 1:2); % sta 1
-          ortdat(:, 1:2) = ortseg(isubwst: isubwed, 1:2);      
-          optdat(:, 3) = optseg(isubwst-off1iw(iwin,2): isubwed-off1iw(iwin,2), 3); % sta 2
-          ortdat(:, 3) = ortseg(isubwst-off1iw(iwin,2): isubwed-off1iw(iwin,2), 3);
-          optdat(:, 4) = optseg(isubwst-off1iw(iwin,3): isubwed-off1iw(iwin,3), 4); % sta 3
-          ortdat(:, 4) = ortseg(isubwst-off1iw(iwin,3): isubwed-off1iw(iwin,3), 4);
+          optdat(:, 1) = optseg(isubwst: isubwed, 1); % time column
+          ortdat(:, 1) = ortseg(isubwst: isubwed, 1);
+          for ista = 1: nsta
+            optdat(:, ista+1) = optseg(isubwst-off1iw(iwin,ista): isubwed-off1iw(iwin,ista), ista+1);
+            ortdat(:, ista+1) = ortseg(isubwst-off1iw(iwin,ista): isubwed-off1iw(iwin,ista), ista+1);
+          end
 
           subw = zeros(size(optdat,1), nsta);
           for ista = 1:nsta
@@ -978,7 +1030,6 @@ for iii = 1: length(idxburst)
 %             tmp = w.* tmp;
 %             tmp = detrend(tmp); %detrend again for caution
 %           end
-          
             subw(:,ista) = tmp;
           end
           %compute running CC between 3 stations
@@ -1004,6 +1055,7 @@ for iii = 1: length(idxburst)
           ccwpair = [ccwpair; ccw12 ccw13 ccw23];
         end
         off1iwk{k} = off1iw;
+        ccaliwk{k} = ccaliw;
         
         %if only use the mean RCC from the 2 pairs that have the highest overall CC
         [~,ind] = min(sum(ccwpair,1));
@@ -1035,7 +1087,7 @@ for iii = 1: length(idxburst)
 
         %%%obtain a single best alignment based on the entire win 
 %       optcc = optseg(:, 2:end);
-        optcc = optseg(1+msftaddm: end-msftaddm, 2:end);
+        optcc = detrend(optseg(1+msftaddm: end-msftaddm, 2:end));
         msftadd = 0.5*sps;
         ccmid = ceil(size(optcc,1)/2);
         ccwlen = round(size(optcc,1)-2*(msftadd+1));
@@ -1043,7 +1095,7 @@ for iii = 1: length(idxburst)
         iup = 1;    % times of upsampling
         %for the whole win, ask how well can you align the noise, does not matter if the location is
         %the most reliable, but the resulting CC is the highest possible
-        [off12con,off13con,ccali(k),iloopoff] = constrained_cc_loose(optcc',ccmid,...
+        [off12con,off13con,ccali(k)] = constrained_cc_loose(optcc',ccmid,...
           ccwlen,msftadd,ccmin,iup);
         % if a better alignment cannot be achieved, use 0,0
         if off12con == msftadd+1 && off13con == msftadd+1
@@ -1051,9 +1103,9 @@ for iii = 1: length(idxburst)
           off13con = 0;
           fprintf('Tremor burst %d cannot be properly aligned, double-check needed \n',k);
         end
-        off1ia(k,1) = 0;
-        off1ia(k,2) = round(off12con);
-        off1ia(k,3) = round(off13con);
+        off1ic(k,1) = 0;
+        off1ic(k,2) = round(off12con);
+        off1ic(k,3) = round(off13con);
         
         %for synthetic noise case, do NOT align traces
         off1i(k,:) = [0 0 0];  % technically unnecessary given it has been predefined 
@@ -1061,14 +1113,12 @@ for iii = 1: length(idxburst)
         %%%Align and compute the RCC based on the entire win, and take that as the input signal!      
         optdat = [];  % win segment of interest
         ortdat = [];
-        optdat(:, 1:2) = optseg(1+msftaddm: end-msftaddm, 1:2); % sta 1
-        ortdat(:, 1:2) = ortseg(1+msftaddm: end-msftaddm, 1:2);
-        optdat(:, 3) = optseg(1+msftaddm-off1i(k,2): end-msftaddm-off1i(k,2), 3); % sta 2
-        ortdat(:, 3) = ortseg(1+msftaddm-off1i(k,2): end-msftaddm-off1i(k,2), 3);
-        optdat(:, 4) = optseg(1+msftaddm-off1i(k,3): end-msftaddm-off1i(k,3), 4); % sta 3
-        ortdat(:, 4) = ortseg(1+msftaddm-off1i(k,3): end-msftaddm-off1i(k,3), 4);
-%         optdat(:, 1:4) = optseg(1+msftaddm: end-msftaddm, 1:4); % sta 1
-%         ortdat(:, 1:4) = ortseg(1+msftaddm: end-msftaddm, 1:4);
+        optdat(:, 1) = optseg(1+msftaddm: end-msftaddm, 1); % time column
+        ortdat(:, 1) = ortseg(1+msftaddm: end-msftaddm, 1);
+        for ista = 1: nsta 
+          optdat(:, ista+1) = optseg(1+msftaddm-off1i(k,ista): end-msftaddm-off1i(k,ista), ista+1);
+          ortdat(:, ista+1) = ortseg(1+msftaddm-off1i(k,ista): end-msftaddm-off1i(k,ista), ista+1);
+        end
 
         %%%taper the signal and obtain the new rcc between tapered signals
         %%%2022/06/06, do NOT taper whatsoever!!
@@ -1091,7 +1141,7 @@ for iii = 1: length(idxburst)
         [~,rcc23] = RunningCC(sigsta(:,2), sigsta(:,3), mwlen);
         ircc = ircc-overshoot;
         rcc = (rcc12+rcc13+rcc23)/3;
-        sigsta = sigsta(overshoot+1:end-overshoot, :);  %excluding the overshoot
+        sigsta = detrend(sigsta(overshoot+1:end-overshoot, :));  %excluding the overshoot
         
         %for ort. comp
         sigstaort = zeros(size(ortdat,1), nsta);
@@ -1105,7 +1155,7 @@ for iii = 1: length(idxburst)
         [~,rcc23] = RunningCC(sigstaort(:,2), sigstaort(:,3), mwlen);
         irccort = irccort-overshoot;
         rccort = (rcc12+rcc13+rcc23)/3;
-        sigstaort = sigstaort(overshoot+1:end-overshoot, :);  %excluding the overshoot
+        sigstaort = detrend(sigstaort(overshoot+1:end-overshoot, :));  %excluding the overshoot
         
 %       figure
 %       hold on
@@ -1161,11 +1211,11 @@ for iii = 1: length(idxburst)
 %             fixthresh = 8.5975e-02; % if use 2-pair rcc and do not normalize templates
 %           end
           [sigdecon(:,ista),pred(:,ista),res,dresit,mfitit,ampit{ista},nit,fighdl] = ...
-            iterdecon_fixthresh(sig,wlet,rcccat,noi,fixthresh(ista),dt,twlet,width,dres_min,...
+            iterdecon(sig,wlet,rcccat,noi,fixthresh(ista),dt,twlet,width,dres_min,...
             mfit_min,nit_max,nimp_max,fpltit,fpltend,fpltchk);
         else
           [sigdecon(:,ista),pred(:,ista),res,dresit,mfitit,ampit{ista},nit,fighdl] = ...
-            iterdecon(sig,wlet,rcccat,noi,dt,twlet,width,dres_min,mfit_min,nit_max,nimp_max,...
+            iterdecon(sig,wlet,rcccat,noi,[],dt,twlet,width,dres_min,mfit_min,nit_max,nimp_max,...
             fpltit,fpltend,fpltchk);
 %         [sigdecon(:,ista),pred(:,ista),res,dresit,mfitit,ampit,nit,fighdl] = ...
 %           iterdecon_rcc(sig,wlet,rcc,medrcc,dt,twlet,width,dres_min,mfit_min,nit_max,nimp_max,fpltit,fpltend,fcheck);
@@ -1210,22 +1260,22 @@ for iii = 1: length(idxburst)
       %note here 'impindepst' inherits the first 6 cols from 'impindep', but the last three cols 
       %are adjusted from arrival time difference to the true location offset accounting for the best
       %alignment upon each subwin that is also used in grouping!
+      impindep(:,7:8) = impindep(:,7:8)+repmat([off1i(k,2) off1i(k,3)],size(impindep,1),1); %account for prealignment
       impindepst = sortrows(impindep,1);
-      impindepst(:,7:8) = impindepst(:,7:8)+repmat([off1i(k,2) off1i(k,3)],size(impindepst,1),1); %account for prealignment
       nsrcraw(iii,1) = size(impindepst,1);  % number of sources before removing 2ndary 
 
-%       %%%plot the scatter of offsets, accounting for prealignment offset, == true offset
-%       span = max(range(off1iw(:,2))+2*loff_max, range(off1iw(:,3))+2*loff_max);
-%       xran = [round(mean(minmax(off1iw(:,2)'))-span/2)-1, round(mean(minmax(off1iw(:,2)'))+span/2)+1];
-%       yran = [round(mean(minmax(off1iw(:,3)'))-span/2)-1, round(mean(minmax(off1iw(:,3)'))+span/2)+1];
-%       cran = [0 lsig];
-%       f1.fig = figure;
-%       f1.fig.Renderer = 'painters';
-%       ax1=gca;
-%       [ax1,torispl,mamp] = plt_decon_imp_scatter_ref(ax1,impindepst,xran,yran,cran,off1iw,loff_max,...
-%         sps,50,'mean','tarvl','comb');
-%       scatter(ax1,off1ia(k,2),off1ia(k,3),20,'ks','filled','MarkerEdgeColor','k');
-%       title(ax1,'Independent, grouped');
+      %%%plot the scatter of offsets, accounting for prealignment offset, == true offset
+      span = max(range(off1iw(:,2))+2*loff_max, range(off1iw(:,3))+2*loff_max);
+      xran = [round(mean(minmax(off1iw(:,2)'))-span/2)-1, round(mean(minmax(off1iw(:,2)'))+span/2)+1];
+      yran = [round(mean(minmax(off1iw(:,3)'))-span/2)-1, round(mean(minmax(off1iw(:,3)'))+span/2)+1];
+      cran = [0 lsig];
+      f1.fig = figure;
+      f1.fig.Renderer = 'painters';
+      ax1=gca;
+      [ax1,torispl,mamp] = plt_decon_imp_scatter_ref(ax1,impindepst,xran,yran,cran,off1iw,loff_max,...
+        sps,50,'mean','tarvl','comb');
+      scatter(ax1,off1i(k,2),off1i(k,3),20,'ks','filled','MarkerEdgeColor','k');
+      title(ax1,'Independent, grouped');
 %       
 %       keyboard
       
@@ -1312,23 +1362,22 @@ for iii = 1: length(idxburst)
       %remove the secondary sources from the grouped result
       impindep(indremove, :) = [];
       impindepst = sortrows(impindep,1);
-      impindepst(:,7:8) = impindepst(:,7:8)+repmat([off1i(k,2) off1i(k,3)],size(impindepst,1),1); %account for prealignment
 
       %% plot the scatter of sources in terms of offsets, accounting for prealignment offset
-%       span = max(range(off1iw(:,2))+2*loff_max, range(off1iw(:,3))+2*loff_max);
-%       xran = [round(mean(minmax(off1iw(:,2)'))-span/2)-1, round(mean(minmax(off1iw(:,2)'))+span/2)+1];
-%       yran = [round(mean(minmax(off1iw(:,3)'))-span/2)-1, round(mean(minmax(off1iw(:,3)'))+span/2)+1];
-%       cran = [0 lsig];
-%       %%%plot the scatter of offsets, accounting for prealignment offset, == true offset
-%       f1.fig = figure;
-%       f1.fig.Renderer = 'painters';
-%       ax1=gca;
-%       [ax1,torispl,mamp,xbndcvhl,ybndcvhl] = plt_decon_imp_scatter_ref(ax1,impindepst,xran,yran,cran,off1iw,loff_max,...
-%         sps,50,'mean','tori','comb');
-%       scatter(ax1,off1i(k,2),off1i(k,3),20,'ks','filled','MarkerEdgeColor','k');
-%       title(ax1,'Independent, grouped, no secondary sources');
+      span = max(range(off1iw(:,2))+2*loff_max, range(off1iw(:,3))+2*loff_max);
+      xran = [round(mean(minmax(off1iw(:,2)'))-span/2)-1, round(mean(minmax(off1iw(:,2)'))+span/2)+1];
+      yran = [round(mean(minmax(off1iw(:,3)'))-span/2)-1, round(mean(minmax(off1iw(:,3)'))+span/2)+1];
+      cran = [0 lsig];
+      %%%plot the scatter of offsets, accounting for prealignment offset, == true offset
+      f1.fig = figure;
+      f1.fig.Renderer = 'painters';
+      ax1=gca;
+      [ax1,torispl,mamp,xbndcvhl,ybndcvhl] = plt_decon_imp_scatter_ref(ax1,impindepst,xran,yran,cran,off1iw,loff_max,...
+        sps,50,'mean','tori','comb');
+      scatter(ax1,off1i(k,2),off1i(k,3),20,'ks','filled','MarkerEdgeColor','k');
+      title(ax1,'Independent, grouped, no secondary sources');
       
-%     keyboard
+    keyboard
 
 %       %%%plot the scatter of offsets, shifted to the same origin, the best alignment
 %       xran = [-loff_max+off1i(k,2)-1 loff_max+off1i(k,2)+1];
@@ -1359,6 +1408,10 @@ for iii = 1: length(idxburst)
 %       [f,tsep,pkist,indpk,indreverse] = plt_tsep_deconpk(pkindepsave,sps);
       
       %% plot amp ratio 12 and 13, and 23, without 2ndary sources
+      %%ideally, when templates and data are not normalized, and there is no particular noise or any
+      %%other factors causing the amplitude scaling between temp and data and each station to be
+      %%vastly different, then for each deconvolved source, the direct impulse amp should be
+      %%~identical at all stations, ie., the ratio between station pairs should be ~1
       if isempty(impindepst)
         continue
       else
@@ -1401,37 +1454,37 @@ for iii = 1: length(idxburst)
 %       keyboard
 
       %% source amp ratio vs. RCC
-%       f.fig=figure;
-%       f.fig.Renderer='Painters';
-%       for jj = 1:3
-%         subplot(2,3,jj); hold on; box on; grid on;
-%         scatter(log10(srcampr(:,jj)),rccpairsrc(:,jj),50,'MarkerFaceColor','k','MarkerEdgeColor',...
-%           'none','MarkerFaceAlpha',.2);
-%         axis([-1 1 -1 1]);
-%         plot([log10(median(srcampr(:,jj))) log10(median(srcampr(:,jj)))], [-1 1], 'r--','linew',1);
-%         if jj == 1
-%           ylabel('RCC between the same pair');
-%         end
-%         longticks(gca,2);
-%       end
-%       for jj = 1:3
-%         subplot(2,3,3+jj); hold on; box on; grid on;
-%         scatter(log10(srcampr(:,jj)),rcccatsrc,50,'MarkerFaceColor','k','MarkerEdgeColor','none',...
-%           'MarkerFaceAlpha',.2);
-%         axis([-1 1 -1 1]);
-%         plot([log10(median(srcampr(:,jj))) log10(median(srcampr(:,jj)))], [-1 1], 'r--','linew',1);
-%         if jj == 1
-%           xlabel('log_{10}{Amp ratio 1/2}');
-%         elseif jj == 2
-%           xlabel('log_{10}{Amp ratio 1/3}');
-%         else
-%           xlabel('log_{10}{Amp ratio 2/3}');
-%         end
-%         if jj == 1
-%           ylabel('Mean RCC of the 2 best pairs');
-%         end
-%         longticks(gca,2);
-%       end      
+      f.fig=figure;
+      f.fig.Renderer='Painters';
+      for jj = 1:3
+        subplot(2,3,jj); hold on; box on; grid on;
+        scatter(log10(srcampr(:,jj)),rccpairsrc(:,jj),50,'MarkerFaceColor','k','MarkerEdgeColor',...
+          'none','MarkerFaceAlpha',.2);
+        axis([-1 1 -1 1]);
+        plot([log10(median(srcampr(:,jj))) log10(median(srcampr(:,jj)))], [-1 1], 'r--','linew',1);
+        if jj == 1
+          ylabel('RCC between the same pair');
+        end
+        longticks(gca,2);
+      end
+      for jj = 1:3
+        subplot(2,3,3+jj); hold on; box on; grid on;
+        scatter(log10(srcampr(:,jj)),rcccatsrc,50,'MarkerFaceColor','k','MarkerEdgeColor','none',...
+          'MarkerFaceAlpha',.2);
+        axis([-1 1 -1 1]);
+        plot([log10(median(srcampr(:,jj))) log10(median(srcampr(:,jj)))], [-1 1], 'r--','linew',1);
+        if jj == 1
+          xlabel('log_{10}{Amp ratio 1/2}');
+        elseif jj == 2
+          xlabel('log_{10}{Amp ratio 1/3}');
+        else
+          xlabel('log_{10}{Amp ratio 2/3}');
+        end
+        if jj == 1
+          ylabel('Mean RCC of the 2 best pairs');
+        end
+        longticks(gca,2);
+      end      
       
       %% deviation of source amp ratio from some median vs. RCC; shift the plot above to center
 %       f.fig=figure;
@@ -1523,11 +1576,9 @@ for iii = 1: length(idxburst)
 %       fpltremv = 1;   % plot or not the secondary sources that are removed as well
 %       [f,ppk,ppkhgt] = plt_deconpk_sigpk(sigsta,ppkindep,indremove,fpltremv);
         
-      %% Compare impulse amp with waveform peaks 
-      %%ideally, when templates and data are not normalized, and there is no particular noise or any
-      %%other factors causing the amplitude scaling between temp and data and each station to be
-      %%vastly different, then for each deconvolved source, the direct impulse amp should be
-      %%~identical at all stations, ie., the ratio between station pairs should be ~1
+      %% Compare impulse amp with waveform peaks
+      %%%compare the deconvolved positive peaks and negative peaks with the closest waveform peaks, 
+      %%%ideally they should very similar in amplitude 
       ppkisave = ppkindep;
       ppkisave(indremove,:) = []; %deconvolved pos peaks of saved sources
       ppkisave = sortrows(ppkisave,1);

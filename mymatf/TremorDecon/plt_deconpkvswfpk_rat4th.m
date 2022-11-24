@@ -1,21 +1,22 @@
-function f=plt_deconpkvswfpk_rat(f,clppkhtwfall,psrcampsall,clnpkhtwfall,nsrcampsall,color)
+function f=plt_deconpkvswfpk_rat4th(f,clppkhtwfall,psrcampsall,clnpkhtwfall,nsrcampsall,color)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % f=plt_deconpkvswfpk_rat(f,clppkhtwfrall,psrcamprsall,clnpkhtwfrall,nsrcamprsall,color)
 %
-% This function is to plot the histogram of ratio between the closest 
+% Similar to 'plt_deconpkvswfpk_rat',it is to plot the histogram of ratio between the closest 
 % (i.e. associated) deconvolved peak amp ratio and waveform peak amp 
-% ratio (both pos and neg) so see how they fit. The expectation is, 
+% ratio (both pos and neg) between all station pairs (12,13, and 23) 
+% including 14, so see how they fit. The expectation is, 
 % they are close to each other. Combine sources from all burst windows 
 % together.
 % 
 % 
 %
 % Chao Song, chaosong@princeton.edu
-% First created date:   2022/09/28
-% Last modified date:   2022/09/28 
+% First created date:   2022/11/21
+% Last modified date:   2022/11/21 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-for i = 1: 3
+for i = 1: 4
   ax=f.ax(i);
   hold(ax,'on');  
   grid(ax,'on');
@@ -31,12 +32,14 @@ for i = 1: 3
     ylabel('PDF');
   elseif i ==2
     xlabel(ax,'log_{10}{closest pos amp / pos waveform peak height at sta 2}');
-  else
+  elseif i ==3
     xlabel(ax,'log_{10}{closest pos amp / pos waveform peak height at sta 3}');
+  elseif i ==4
+    xlabel(ax,'log_{10}{closest pos amp / pos waveform peak height at sta 4}');
   end
   xlim(ax,[-1 1]);
 
-  ax=f.ax(3+i);
+  ax=f.ax(4+i);
   hold(ax,'on');  
   grid(ax,'on');
   temp = clnpkhtwfall(:,i)./nsrcampsall(:,i);
@@ -51,8 +54,10 @@ for i = 1: 3
     ylabel('PDF');
   elseif i ==2
     xlabel(ax,'log_{10}{closest neg amp / neg waveform peak height at sta 2}');
-  else
+  elseif i ==3
     xlabel(ax,'log_{10}{closest neg amp / neg waveform peak height at sta 3}');
+  elseif i ==4
+    xlabel(ax,'log_{10}{closest neg amp / neg waveform peak height at sta 4}');
   end
   xlim(ax,[-1 1]);
 

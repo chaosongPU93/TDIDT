@@ -134,7 +134,6 @@ rcccatsrcall = bstnoi.rcccatsrcall;
 plt_deconpk_ratdevvsrcc(f3,lgdevsrcamprall,rccpairsrcall,rcccatsrcall,'r');
 
 
-
 %%%scatter between closest pos amp ratio and pos waveform peak height ratio between diff station
 %%%pairs
 f4 = initfig(12,6,2,3); %initialize fig

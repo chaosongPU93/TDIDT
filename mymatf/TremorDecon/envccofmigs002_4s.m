@@ -204,14 +204,14 @@ lagb123 = zeros(nibst, 3); %lag of CC within sta 1,2,3 for bursts
 ccb45 = zeros(nibst, 6);  %coef of CC within sta 4,5,6,7 for bursts
 lagb45 = zeros(nibst, 6); %lag of CC within sta 4,5,6,7 for bursts
 
-envprct = zeros(nibst, 2, nsta);  % 10 and 90 percentiles of the envelope
+envprct = zeros(nibst, 3, nsta);  % 10 and 90 percentiles of the envelope
 
 %%%Flag to indicate if it is necessary to recalculate everything
 flagrecalc = 0;
 % flagrecalc = 1;
 
 if flagrecalc
-  for iii = 82: length(idxburst)
+  for iii = 1: length(idxburst)
     iii
     %   for i = 1: length(dates)  % dates in each ets
     i = idate(iii);
@@ -355,6 +355,8 @@ if flagrecalc
     %get some estimate of the amplitude range/variation, using envelope
     envprct(icount,1,:) = prctile(envseg,10);
     envprct(icount,2,:) = prctile(envseg,90);
+    envprct(icount,3,:) = prctile(envseg,50);
+
     
     maxlag = 2*sps;
     
@@ -389,9 +391,9 @@ if flagrecalc
       end
     end
     
-    f1 = plt_traceindetail(envseg,stas,25*sps);
-    title(f1.ax(1),'Envelope');
-    keyboard
+%     f1 = plt_traceindetail(envseg,stas,25*sps);
+%     title(f1.ax(1),'Envelope');
+%     keyboard
 
     %   end
     % end
@@ -409,7 +411,7 @@ else
   load(strcat(rstpath, '/MAPS/',savefile));
 end
 
-% keyboard
+keyboard
 
 %% target some high-correlation bursts
 % ind = find(ccboo(:,1)>=prctile(ccboo(:,1),75) & ccboo(:,2)>=prctile(ccboo(:,2),75) & ...
@@ -420,7 +422,7 @@ end
 %   ccb123(:,3)>=prctile(ccb123(:,3),75));
 % 
 
-%% envelope (amplitude) range
+%% envelope (amplitude) range VS. burst #
 widin = 12;
 htin = 9;
 nrow = 3;
@@ -439,26 +441,26 @@ for isub = 1: nrow*ncol
   ax.Box = 'on';
   grid(ax,'on');
   
-  %bar plot range bar
-  for ii = 1: nsta
-    for jj = 1: nibst
-      if jj == 1
-        p(ii)=plot(ax,[jj jj],[log10(envprct(jj,1,ii)) log10(envprct(jj,2,ii))],'-','Marker',sybl(ii,:),...
-          'markersize',4,'color',color(ii,:));
-      else
-        plot(ax,[jj jj],[log10(envprct(jj,1,ii)) log10(envprct(jj,2,ii))],'-','Marker',sybl(ii,:),'markersize',4,...
-          'color',color(ii,:));
-      end
-    end
-  end
+%   %bar plot range bar
+%   for ii = 1: nsta
+%     for jj = 1: nibst
+%       if jj == 1
+%         p(ii)=plot(ax,[jj jj],[log10(envprct(jj,1,ii)) log10(envprct(jj,2,ii))],'-','Marker',sybl(ii,:),...
+%           'markersize',4,'color',color(ii,:));
+%       else
+%         plot(ax,[jj jj],[log10(envprct(jj,1,ii)) log10(envprct(jj,2,ii))],'-','Marker',sybl(ii,:),'markersize',4,...
+%           'color',color(ii,:));
+%       end
+%     end
+%   end
   
-%   %line plot
-%   for ii = 1: nsta
-%     p(ii)=plot(ax,log10(envprct(:,2,ii)),'o-','Color',color(ii,:),'linew',1.5,'markersize',2.5);
-%   end
-%   for ii = 1: nsta
-%     plot(ax,log10(envprct(:,1,ii)),':','Color',color(ii,:),'linew',1);   
-%   end
+  %line plot
+  for ii = 1: nsta
+    p(ii)=plot(ax,log10(envprct(:,2,ii)),'o-','Color',color(ii,:),'linew',1.5,'markersize',2.5);
+  end
+  for ii = 1: nsta
+    plot(ax,log10(envprct(:,1,ii)),':','Color',color(ii,:),'linew',1);   
+  end
 
   xlim(ax,[itime(isub,1) itime(isub,2)]);
 %   ylim(ax,[0 0.8]);
@@ -472,7 +474,78 @@ for isub = 1: nrow*ncol
     ylabel(ax,'log_10{10--90 prctile of env}');
   end
 end
- 
+
+%% envelope (amplitude) range VS. med env.
+widin = 9;
+htin = 9;
+nrow = 3;
+ncol = 1;
+pltxran = [0.08 0.96]; pltyran = [0.08 0.96]; % optimal axis location
+pltxsep = 0.03; pltysep = 0.04;
+f = initfig(widin,htin,nrow,ncol);
+optaxpos(f,nrow,ncol,pltxran,pltyran,pltxsep,pltysep);
+color = jet(nsta);
+sybl = ['o';'^';'v';'s';'d';'p';'h'];
+
+%just scatter plot, env median vs 90-10 percentile
+ax = f.ax(1);
+hold(ax,'on');
+ax.Box = 'on';
+grid(ax,'on');
+for ii = 1: nsta
+  p(ii)=scatter(ax,log10(envprct(:,3,ii)),log10(envprct(:,2,ii))-log10(envprct(:,1,ii)),20,...
+    color(ii,:),sybl(ii,:),'filled');
+end
+%   text(ax,0.5,0.95,iyr(isub,:),'Units','normalized','FontSize',12);
+legend(ax,p,stas,'Location','northeast');
+xlabel(ax,'log_{10}{Median env}');
+ylabel(ax,'log_{10}{90th prctile}-log_{10}{10th prctile}');
+nolabels(ax,1);
+
+%bin according to median env, median + error bar
+ax = f.ax(2);
+hold(ax,'on');
+ax.Box = 'on';
+grid(ax,'on');
+nbin = 10;
+xcnt = zeros(nbin,nsta);
+ycnt = zeros(nbin,nsta);
+y1sig = zeros(nbin,nsta);
+x = reshape(log10(envprct(:,3,:)),[],1);
+binw = (max(x)-min(x))/nbin;
+binEdges = min(x): binw: min(x)+nbin*binw;
+for ii = 1: nsta
+  [xcnt(:,ii),ycnt(:,ii),y1sig(:,ii)] = ranybinx(log10(envprct(:,3,ii)),...
+    log10(envprct(:,2,ii))-log10(envprct(:,1,ii)),'median',[],[],binEdges);
+  p(ii)=errorbar(ax,xcnt(:,ii),ycnt(:,ii),-y1sig(:,ii),y1sig(:,ii),'vertical',sybl(ii,:),...
+    'markersize',5,'color','k','linewidth',0.8,'MarkerEdgeColor','none',...
+    'MarkerFaceColor',color(ii,:),'CapSize',4);
+end
+xlabel(ax,'Bin center');
+ylabel(ax,'Median of each bin');
+nolabels(ax,1);
+
+%bin according to median env, median, connect with line
+ax = f.ax(3);
+hold(ax,'on');
+ax.Box = 'on';
+grid(ax,'on');
+for ii = 1: nsta
+  plot(ax,xcnt(:,ii),ycnt(:,ii),'-','Color',color(ii,:),'linew',1.5);
+end
+xlabel(ax,'Bin center');
+ylabel(ax,'Median of each bin');
+
+for isub = 1:nrow*ncol
+  ax = f.ax(isub);
+  axis(ax,'equal');
+  xlim(ax,[-2.2 -0.2]);
+  ylim(ax,[0.4 1.2]);
+  xticks(ax,-2.2:0.1:-0.2);
+  yticks(ax,0.4:0.1:1.2);
+  longticks(ax,4);
+end
+
 keyboard
 %% burst windows for stas 4/5/6/7 vs. 1/2/3
 %%%scatter of lag and CC 

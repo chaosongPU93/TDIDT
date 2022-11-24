@@ -1,4 +1,4 @@
-function [f,predgrp,resgrp,predgrpl,resgrpl]=predsig_conv_imptemp(sigsta,optdat,impindepst,...
+function [f,predgrp,resgrp,predgrpl,resgrpl,l2normred]=predsig_conv_imptemp(sigsta,optdat,impindepst,...
   greenf,zcrosses,overshoot,stas,flagplt)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % This script obtains the predicted (modeled) waveform by carring out a 
@@ -55,9 +55,15 @@ for ista = 1: nsta
   
 end
 
-resgrp = sigsta - predgrp;  % the residual, different between signal and prediction
-resgrpa = sigsta - predgrpa;  % the residual, different between signal and prediction
-resgrpl = detrend(optdat(:,2:end)) - predgrpl;  % longer residual
+resgrp = sigsta - predgrp;  %residual, difference between signal and prediction
+resgrpa = sigsta - predgrpa;  %residual, difference between aligned signal and prediction
+resgrpl = detrend(optdat(:,2:end)) - predgrpl;  %longer residual including an overshoot on both sides for alignment
+
+l2normred = zeros(nsta, 3);  %residual reduction
+for i = 1: nsta
+  l2normred(i, :) = [norm(sigsta(:,i)) norm(resgrp(:,i)) ...
+    (norm(sigsta(:,i))-norm(resgrp(:,i)))/norm(sigsta(:,i))*100];  
+end
 
 if flagplt
 %   %%%comparison between the prediction and longer prediction, they'd have a phase shift of overshoot
@@ -81,8 +87,8 @@ if flagplt
   ym = max(abs(sigsta(:)));
   yran=1.2*[-ym ym];
   ylim(yran);
-  text(0.95,0.9,sprintf('%.2f; %.2f; %.2f',norm(sigsta(:,1)),norm(sigsta(:,2)),...
-    norm(sigsta(:,3))),'Units','normalized','HorizontalAlignment','right');
+  text(0.95,0.9,sprintf('%.2f; %.2f; %.2f',l2normred(1, 1),l2normred(2, 1),l2normred(3, 1)),...
+    'Units','normalized','HorizontalAlignment','right');
   text(0.95,0.1,sprintf('%s; %s; %s',strtrim(stas(1,:)),strtrim(stas(2,:)),...
     strtrim(stas(3,:))),'Units','normalized','HorizontalAlignment','right');
   
@@ -93,12 +99,9 @@ if flagplt
   plot(resgrp(:,2),'b');
   plot(resgrp(:,3),'k');
   ylim(yran);
-  text(0.95,0.9,sprintf('%.2f; %.2f; %.2f',norm(resgrp(:,1)),norm(resgrp(:,2)),...
-    norm(resgrp(:,3))),'Units','normalized','HorizontalAlignment','right');
-  text(0.95,0.8,sprintf('%.1f%%; %.1f%%; %.1f%%',...
-    (norm(sigsta(:,1))-norm(resgrp(:,1)))/norm(sigsta(:,1))*100,...
-    (norm(sigsta(:,2))-norm(resgrp(:,2)))/norm(sigsta(:,2))*100,...
-    (norm(sigsta(:,3))-norm(resgrp(:,3)))/norm(sigsta(:,3))*100),...
+  text(0.95,0.9,sprintf('%.2f; %.2f; %.2f',l2normred(1, 2),l2normred(2, 2),l2normred(3, 2)),...
+    'Units','normalized','HorizontalAlignment','right');
+  text(0.95,0.8,sprintf('%.1f%%; %.1f%%; %.1f%%',l2normred(1, 3),l2normred(2, 3),l2normred(3, 3)),...
     'Units','normalized','HorizontalAlignment','right');
   
   
@@ -108,10 +111,9 @@ if flagplt
       hold on
       box on; grid on
       plot(sigsta(:,ista),'k');
-      plot(resgrpa(:,ista),'r');
+      plot(resgrp(:,ista),'r');
       ylim(yran);
-      text(0.95,0.9,sprintf('%.2f; %.2f; %.1f%%',norm(sigsta(:,ista)),norm(resgrpa(:,ista)),...
-        (norm(sigsta(:,ista))-norm(resgrpa(:,ista)))/norm(sigsta(:,ista))*100),...
+      text(0.95,0.9,sprintf('%.2f; %.2f; %.1f%%',l2normred(ista, 1),l2normred(ista, 2),l2normred(ista, 3)),...
         'Units','normalized','HorizontalAlignment','right');
       text(0.95,0.1,sprintf('%s',strtrim(stas(ista,:))),...
         'Units','normalized','HorizontalAlignment','right');
@@ -119,6 +121,8 @@ if flagplt
     end
   end
   
+else
+  f = [];
 end
 
 % keyboard

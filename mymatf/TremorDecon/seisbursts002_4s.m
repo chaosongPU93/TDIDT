@@ -988,7 +988,7 @@ runall = data.runall;
 pctl = [2.28 50];
 for iets = 1: nets
   runtmp = runall{iets};
-  [xcnt(:,iets),ycnt(:,iets),y1sig(:,iets)] = ranybinx(runtmp(:,1),runtmp(:,3),'median',10);
+  [xcnt(:,iets),ycnt(:,iets),y1sig(:,iets)] = ranybinx(runtmp(:,1),runtmp(:,3),'median',10,[],[]);
   [spearets(iets),~] = corr(runtmp(:,1),runtmp(:,3),'Type','Spearman');
   [kenets(iets),~] = corr(runtmp(:,1),runtmp(:,3),'Type','Kendall');
   pctlv(1:2,iets) = prctile(runtmp(:,1),pctl);
@@ -1012,7 +1012,8 @@ ylabel(f.ax(1),'Running CC','FontSize',10);
 for iets = 1: nets
   ax = f.ax(iets); hold(ax,'on');
   runtmp = runall{iets};
-  scatter(ax,runtmp(:,1),runtmp(:,3),6,[.6 .6 .6],'filled'); hold on %,'MarkerEdgeColor','w'
+  scatter(ax,runtmp(:,1),runtmp(:,3),6,'MarkerFaceColor',[.2 .2 .2],'MarkerEdgeColor',...
+    'none','MarkerFaceAlpha',.2); hold on
   scatter(ax,median(runtmp(:,1)),median(runtmp(:,3)),20,'bo','filled');
   text(ax,median(runtmp(:,1))*1.05,median(runtmp(:,3))*1.05,sprintf('(%.3f, %.3f)',...
     median(runtmp(:,1)),median(runtmp(:,3))),'HorizontalAlignment',...

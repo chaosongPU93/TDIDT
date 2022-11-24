@@ -1,5 +1,5 @@
 function [sigdecon,pred,res,dresit,mfitit,ampit,nit,fighdl,rf] = ...
-  iterdecon(sig,wlet,rcc,noi,dt,twlet,width,dres_min,mfit_min,nit_max,nimp_max,fpltit,fpltend,fpltchk)
+  iterdecon(sig,wlet,rcc,noi,fixthr,dt,twlet,width,dres_min,mfit_min,nit_max,nimp_max,fpltit,fpltend,fpltchk)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % [sigdecon,pred,res,dresit,mfitit,nit,rf] = ...
 %   iterdecon(sig,wlet,dt,twlet,width,dres_min,mfit_min,nit_max,fpltit,fpltend)
@@ -48,7 +48,7 @@ function [sigdecon,pred,res,dresit,mfitit,ampit,nit,fighdl,rf] = ...
 %   than the signal; otherwise, the signal would be padded with zeros
 % --if the receiver function 'rf' is one of the outputs, wavelet and signal would be padded with 
 %   zeros to the same length of next power of 2 to ease the related FFT  
-% --Some math relations: norm(a,2) == sqrt(sum(a.^2)); rms(a) == sqrt(sum(a.^2)/length(a)), so norm
+% --Some MATH relations: norm(a,2) == sqrt(sum(a.^2)); rms(a) == sqrt(sum(a.^2)/length(a)), so norm
 %   is related to rms, norm(a,2) == rms(a)*sqrt(length(a)); Also, the sample std is the same as rms
 % --Not necessarily start from the max. CC (signal and wavelet) arrival; but could start with the
 %   one that has the max. CC among all stations. Basically, this means although you doing it at a
@@ -184,7 +184,8 @@ coefeff = coef(lag+itwlet >= 1+round(ldiff/2) & ...
 [pkhgt, pkind] = findpeaks(coefeff);
 %rcc serves the weight as the peak height, aka the master raw cc value at the peak
 wtcoef = rcc(pkind).* pkhgt;
-medwtcoef = median(wtcoef);  % median of the weighted master CC, could be percentile?
+if isempty(fixthr)
+  medwtcoef = median(wtcoef);  % median of the weighted master CC, could be percentile?
 % medwtcoef = prctile(wtcoef,25);
 % medwtcoef = 1.2352e-01; % for test purpose if the records are like noise, sta 1
 % medwtcoef = 7.3467e-02; % for test purpose if the records are like noise, sta 2
@@ -193,8 +194,11 @@ medwtcoef = median(wtcoef);  % median of the weighted master CC, could be percen
 % medwtcoef = 2.3910e-01; % for test purpose if the records are like noise, sta 1, concatenated case
 % medwtcoef = 1.4577e-01; % for test purpose if the records are like noise, sta 2
 % medwtcoef = 1.9032e-01; % for test purpose if the records are like noise, sta 3
-
+else
+  medwtcoef = fixthr;
+end
 medwtcoef
+
 mwtcoef = 100;  % intial amplitude of max master CC weighted by rcc, value doesn't really matter 
 medrccpeak = median(rcc(pkind));
 rccimp = 1;

@@ -1,4 +1,4 @@
-function [xcnt,ycnt,y1sig] = ranybinx(x,y,avgmethod,nbin,binw)
+function [xcnt,ycnt,y1sig] = ranybinx(x,y,avgmethod,nbin,binw,binEdges)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % [xcnt,ycnt,y1sig] = ranybinx(x,y,avgmethod,nbin,binw)
 %
@@ -11,46 +11,59 @@ function [xcnt,ycnt,y1sig] = ranybinx(x,y,avgmethod,nbin,binw)
 % 
 % --Note that you should specify either 'nbin' or 'binw', but not both of them,
 %   the other one is computed accordingly.
+% --previously bin center/edge is determined by actual range of x. Now you can
+%   specify binedge directly so that different data sets can be compared based
+%   on common bins.
 % 
 % 
 % By Chao Song, chaosong@princeton.edu
 % First created date:   2022/03/28
-% Last modified date:   2022/03/28
+% Last modified date:   2022/11/10
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 defval('avgmethod','median');
-defval('nbin',10);
-defval('binw',[]);
+% defval('nbin',10);
+% defval('binw',[]);
+% defval('binEdges',[]);
 
 %force to a column vector
 x = reshape(x,[],1);  
 y = reshape(y,[],1);
 
 %if 'binw' is specified
-if isempty(nbin) && ~isempty(binw)
+if isempty(nbin) && ~isempty(binw) && isempty(binEdges)
   nbin = ceil((max(x)-min(x))/binw);
-%if 'nbin' is specified
-elseif ~isempty(nbin) && isempty(binw)
+  binEdges = min(x): binw: min(x)+nbin*binw;
+%if 'nbin' is specified 
+elseif ~isempty(nbin) && isempty(binw) && isempty(binEdges)
   binw = (max(x)-min(x))/nbin;
-%otherwise return error 
+  binEdges = min(x): binw: min(x)+nbin*binw;
+%if 'binEdges' is specified 
+elseif isempty(nbin) && isempty(binw) && ~isempty(binEdges)
+  binw = binEdges(2)-binEdges(1);
+  nbin = length(binEdges)-1;
+%otherwise return error
 else
-  error("You can't specify both 'nbin' and 'binw' \n");
+  error("You can only specify 'nbin' or 'binw' or 'binEdges' \n");
 end
-
-binEdges = min(x): binw: min(x)+nbin*binw;
+    
 xcnt = zeros(nbin,1);
 ycnt = zeros(nbin,1);
 y1sig = zeros(nbin,1);
-
-for i = 1: length(binEdges)-1
+for i = 1: nbin
   ybin = y(x>=binEdges(i) & x<binEdges(i+1)); % y fall into the bin
   xcnt(i) = (binEdges(i)+binEdges(i+1))/2;
-  if isequal(avgmethod, 'median')
-    ycnt(i) = median(ybin);
-  elseif isequal(avgmethod, 'mean')
-    ycnt(i) = mean(ybin);
+  if ~isempty(ybin)
+    if isequal(avgmethod, 'median')
+      ycnt(i) = median(ybin);
+    elseif isequal(avgmethod, 'mean')
+      ycnt(i) = mean(ybin);
+    end
+    y1sig(i) = std(ybin);  
+  else
+    ycnt(i) = nan;
+    y1sig(i) = nan;
   end
-  y1sig(i) = std(ybin);  
 end
 
 % keyboard
