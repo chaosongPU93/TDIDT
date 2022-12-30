@@ -2,9 +2,9 @@ function f=plt_deconpkvswfpk_rat4th(f,clppkhtwfall,psrcampsall,clnpkhtwfall,nsrc
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % f=plt_deconpkvswfpk_rat(f,clppkhtwfrall,psrcamprsall,clnpkhtwfrall,nsrcamprsall,color)
 %
-% Similar to 'plt_deconpkvswfpk_rat',it is to plot the histogram of ratio between the closest 
-% (i.e. associated) deconvolved peak amp ratio and waveform peak amp 
-% ratio (both pos and neg) between all station pairs (12,13, and 23) 
+% Similar to 'plt_deconpkvswfpk_rat',it is to plot the HISTOGRAM of ratio between the closest 
+% (i.e. associated) deconvolved peak amp and waveform peak amp 
+% (both pos and neg) between all station pairs (12,13, and 23) 
 % including 14, so see how they fit. The expectation is, 
 % they are close to each other. Combine sources from all burst windows 
 % together.

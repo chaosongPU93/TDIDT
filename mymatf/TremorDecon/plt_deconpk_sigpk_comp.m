@@ -23,7 +23,8 @@ widin = 12;  % maximum width allowed is 8.5 inches
 htin = 6;   % maximum height allowed is 11 inches
 [scrsz, resol] = pixelperinch(1);
 set(f1.fig,'Position',[1*scrsz(3)/20 scrsz(4)/10 widin*resol htin*resol]);
-nrow = size(sigsta,2); 
+nsta = size(sigsta,2); 
+nrow = nsta;
 ncol = 1;
 for isub = 1:nrow*ncol
   f1.ax(isub) = subplot(nrow,ncol,isub);
@@ -33,17 +34,21 @@ pltxsep = 0.02; pltysep = 0.05;
 %get the locations for each axis
 optaxpos(f1,nrow,ncol,pltxran,pltyran,pltxsep,pltysep);
 
-color = ['r';'b';'k'];
+if nrow <=3
+  color = ['r';'b';'k';];
+else
+  color = jet(nsta);
+end
 
 ym = max(abs(sigsta(:)));
 yran=1.2*[-ym ym];
 
 lsig = size(sigsta,1); 
 
-ppkhtwf = cell(size(sigsta,2),1);  %positve peak height of the waveform
-ppkwf = cell(size(sigsta,2),1); %positive peak index of the waveform
-npkhtwf = cell(size(sigsta,2),1);  %negative peak height of the waveform
-npkwf = cell(size(sigsta,2),1); %negative peak index of the waveform
+ppkhtwf = cell(nsta,1);  %positve peak height of the waveform
+ppkwf = cell(nsta,1); %positive peak index of the waveform
+npkhtwf = cell(nsta,1);  %negative peak height of the waveform
+npkwf = cell(nsta,1); %negative peak index of the waveform
 for i = 1: nrow
   ax=f1.ax(i);
   hold(ax,'on');
@@ -74,8 +79,8 @@ for i = 1: nrow
   ax.Box='on'; 
 %   grid(ax,'on');
 end
-xlabel(f1.ax(3),'Samples');
-ylabel(f1.ax(3),'Amplitude');
+xlabel(f1.ax(nrow),'Samples');
+ylabel(f1.ax(nrow),'Amplitude');
 
 
 
@@ -99,7 +104,7 @@ hold(ax,'on');
 tmp = detrend(sigsta);
 envup = envelope(tmp);
 menv = median(envup,1);
-for j = 1: size(sigsta,2)
+for j = 1: nsta
   plot(ax, sigsta(:,j)./menv(j), '-','Color',color(j,:));
 end
 xlim(ax,[0,lsig/2]); %ylim(ax,yran);
@@ -113,12 +118,13 @@ ax.Box='on';
 
 ax=f2.ax(2);
 hold(ax,'on');
+for j = 1: nsta
+  scatter(ax,zcrssrc(:,(j-1)*2+1),zcrssrc(:,j*2),10,color(j,:),'filled');
+end
 for j = 1: size(zcrssrc,1)
   plot(ax,[zcrssrc(j,(2-1)*2+1) zcrssrc(j,(2-1)*2+1)], ax.YLim, '--','Color',[.7 .7 .7]);
 end
-for j = 1: size(sigsta,2)
-  scatter(ax,zcrssrc(:,(j-1)*2+1),zcrssrc(:,j*2),10,color(j,:),'filled');
-end
+
 ax.Box='on';
 %   grid(ax,'on');
 xlim(ax,[0,lsig/2]);
@@ -129,7 +135,7 @@ hold(ax,'on');
 tmp = detrend(sigsta);
 envup = envelope(tmp);
 menv = median(envup,1);
-for j = 1: size(sigsta,2)
+for j = 1: nsta
   plot(ax, sigsta(:,j)./menv(j), '-','Color',color(j,:));
 end
 xlim(ax,[lsig/2,lsig]); %ylim(ax,yran);
@@ -141,11 +147,11 @@ ylabel(ax,'Amplitude');
 
 ax=f2.ax(4);
 hold(ax,'on');
+for j = 1: nsta
+  scatter(ax,zcrssrc(:,(j-1)*2+1),zcrssrc(:,j*2),10,color(j,:),'filled');
+end
 for j = 1: size(zcrssrc,1)
   plot(ax,[zcrssrc(j,(2-1)*2+1) zcrssrc(j,(2-1)*2+1)], ax.YLim, '--','Color',[.7 .7 .7]);
-end
-for j = 1: size(sigsta,2)
-  scatter(ax,zcrssrc(:,(j-1)*2+1),zcrssrc(:,j*2),10,color(j,:),'filled');
 end
 ax.Box='on';
 %   grid(ax,'on');
@@ -156,17 +162,17 @@ xlim(ax,[lsig/2,lsig]);
 
 %%%beside the plot, we want to identify the nearest, ie, related pair of waveform pos&neg peaks and 
 %%%the deconvolved sources shown by the scaled templates that also have a pos&neg peaks
-mindisp = zeros(size(ppksrc,1), size(sigsta,2)); %min distance samples between src pos peaks and closest waveform pos peaks
-clppkwf = zeros(size(ppksrc,1), size(sigsta,2));  %closest waveform pos peak index
-clppkhtwf = zeros(size(ppksrc,1), size(sigsta,2));  %closest waveform pos peak height
-ppkhtsrc = zeros(size(ppksrc,1), size(sigsta,2));  %*SCALED* height of src pos peaks
-mindisn = zeros(size(ppksrc,1), size(sigsta,2)); %min distance samples between src neg peaks and closest waveform pos peaks
-clnpkwf = zeros(size(ppksrc,1), size(sigsta,2));  %closest waveform neg peak index
-clnpkhtwf = zeros(size(ppksrc,1), size(sigsta,2));  %closest waveform neg peak height
-npkhtsrc = zeros(size(ppksrc,1), size(sigsta,2));  %*SCALED* height of src neg peaks
+mindisp = zeros(size(ppksrc,1), nsta); %min distance samples between src pos peaks and closest waveform pos peaks
+clppkwf = zeros(size(ppksrc,1), nsta);  %closest waveform pos peak index
+clppkhtwf = zeros(size(ppksrc,1), nsta);  %closest waveform pos peak height
+ppkhtsrc = zeros(size(ppksrc,1), nsta);  %*SCALED* height of src pos peaks
+mindisn = zeros(size(ppksrc,1), nsta); %min distance samples between src neg peaks and closest waveform pos peaks
+clnpkwf = zeros(size(ppksrc,1), nsta);  %closest waveform neg peak index
+clnpkhtwf = zeros(size(ppksrc,1), nsta);  %closest waveform neg peak height
+npkhtsrc = zeros(size(ppksrc,1), nsta);  %*SCALED* height of src neg peaks
 
 %identify closest peaks
-for i = 1: size(sigsta,2) 
+for i = 1: nsta
   for j = 1: size(ppksrc,1)
     %for pos peaks
     pki = ppkwf{i};

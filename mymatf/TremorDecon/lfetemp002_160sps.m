@@ -2,11 +2,13 @@
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % In this script, this script just simply create the LFE templates at fam 
 % 002 under 160 sps.
-% 
+%
+% --2022/11/30, I recomputed the templates at all stas after several changes
+%   in 'mk_bbtemp_PGC.m', see that for details.
 %
 % Modified by Chao Song, chaosong@princeton.edu
 % First created date:   2022/04/14
-% Last modified date:   2022/04/14
+% Last modified date:   2022/11/30
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 clear

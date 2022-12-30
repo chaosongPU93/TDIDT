@@ -144,11 +144,11 @@ text(ax,0.98,0.95,num2str(size(imp,1)),'Units','normalized',...
   'HorizontalAlignment','right','FontSize',10);
 ax.YAxis.FontSize = 8;
 ax.XAxis.FontSize = 8;
-xlabel(ax,sprintf('PGC-SSIB offset (samples at %d Hz)',sps),'FontSize',10);
-ylabel(ax,sprintf('PGC-SILB offset (samples at %d Hz)',sps),'FontSize',10);
+xlabel(ax,sprintf('PGC-SSIB arrival offset (samples at %d Hz)',sps),'FontSize',10);
+ylabel(ax,sprintf('PGC-SILB arrival offset (samples at %d Hz)',sps),'FontSize',10);
 axis(ax, 'equal');
-xlim(ax,xran); xticks(ax,xran(1): max(0.5,2) : xran(2));
-ylim(ax,yran); yticks(ax,yran(1): max(0.5,2) : yran(2));
+xlim(ax,xran); xticks(ax,xran(1): max(2,4) : xran(2));
+ylim(ax,yran); yticks(ax,yran(1): max(2,4) : yran(2));
 % pos = ax.Position;
 % c.Position = [pos(1)+pos(3)+0.02, pos(2), 0.03, pos(4)];
 % c.Position(3) = 0.03;

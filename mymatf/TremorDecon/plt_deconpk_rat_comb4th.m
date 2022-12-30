@@ -16,8 +16,31 @@ function f=plt_deconpk_rat_comb4th(f,srcamprall,impindepstall,color)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 for i = 1: round(length(f.ax)/2)
+  %scatter of direct amp VS. amp ratios
+  ax = f.ax(i);
+  hold(ax,'on'); grid(ax, 'on');
+  if i ==1
+    scatter(ax,log10(impindepstall(:,2)),log10(impindepstall(:,4)),20,color); %log10(srcamprall(:,i))
+    xlabel(ax,'log_{10}{src amp at PGC}');
+    ylabel(ax,'log_{10}{src amp at SSIB}');
+  elseif i ==2
+    scatter(ax,log10(impindepstall(:,2)),log10(impindepstall(:,6)),20,color);
+    xlabel(ax,'log_{10}{src amp at PGC}');
+    ylabel(ax,'log_{10}{src amp at SILB}');
+  elseif i==3
+    scatter(ax,log10(impindepstall(:,4)),log10(impindepstall(:,6)),20,color);
+    xlabel(ax,'log_{10}{src amp at SSIB}');
+    ylabel(ax,'log_{10}{src amp at SILB}');
+  elseif i==4
+    scatter(ax,log10(impindepstall(:,2)),log10(impindepstall(:,end)),20,color);
+    xlabel(ax,'log_{10}{src amp at PGC}');
+    ylabel(ax,'log_{10}{src amp at KLNB}');
+  end
+  axis(ax,'equal');
+  
+  
   %hist of direct amp ratios
-  ax=f.ax(i);
+  ax=f.ax(4+i);
   hold(ax,'on');  
   grid(ax,'on');
   histogram(ax,log10(srcamprall(:,i)),'FaceColor',color,'Normalization','pdf','BinWidth',0.05);
@@ -31,36 +54,14 @@ for i = 1: round(length(f.ax)/2)
   if i==1
 %     ylabel(ax,'# of source');
     ylabel(ax,'PDF');
-    xlabel(ax,'log_{10}{src amp ratio 1/2}');
+    xlabel(ax,'log_{10}{src amp ratio PGC/SSIB}');
   elseif i==2
-    xlabel(ax,'log_{10}{src amp ratio 1/3}');
+    xlabel(ax,'log_{10}{src amp ratio PGC/SILB}');
   elseif i==3
-    xlabel(ax,'log_{10}{src amp ratio 2/3}');
+    xlabel(ax,'log_{10}{src amp ratio SSIB/SILB}');
   elseif i==4
-    xlabel(ax,'log_{10}{src amp ratio 1/4}');
+    xlabel(ax,'log_{10}{src amp ratio PGC/KLNB}');
   end
   xlim(ax,[-1 1]);
   
-  %scatter of direct amp VS. amp ratios
-  ax = f.ax(4+i);
-  hold(ax,'on'); grid(ax, 'on');
-  if i ==1
-    scatter(ax,log10(impindepstall(:,2)),log10(srcamprall(:,i)),20,color);
-    xlabel(ax,'log_{10}{src amp at 1}');
-    ylabel(ax,'log_{10}{src amp ratio 1/2}');
-  elseif i ==2
-    scatter(ax,log10(impindepstall(:,2)),log10(srcamprall(:,i)),20,color);
-    xlabel(ax,'log_{10}{src amp at 1}');
-    ylabel(ax,'log_{10}{src amp ratio 1/3}');
-  elseif i==3
-    scatter(ax,log10(impindepstall(:,4)),log10(srcamprall(:,i)),20,color);
-    xlabel(ax,'log_{10}{src amp at 2}');
-    ylabel(ax,'log_{10}{src amp ratio 2/3}');
-  elseif i==4
-    scatter(ax,log10(impindepstall(:,2)),log10(srcamprall(:,i)),20,color);
-    xlabel(ax,'log_{10}{src amp at 1}');
-    ylabel(ax,'log_{10}{src amp ratio 1/4}');
-  end
-  axis(ax,'equal');
-
 end

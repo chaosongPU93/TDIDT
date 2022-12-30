@@ -180,6 +180,8 @@ for ip = 1: npair
   %if we require the dependent offset 23 be close enough as well, 'offdiff(3)-offdiff(2)' looks a
   %bit counter-intuitive, but would be wrong otherwise 
   ind23 = find(abs(off23c - (offdiff(3)-offdiff(2)) ) <=loff_max);
+%   ind23 = find(abs(off23c - (offdiff(3)-offdiff(2)) ) <=inf); %set to infinity basically equals to no constraint on offset23, so that the actual grouping range is a rectangle 
+
   if isempty(ind23)
     continue
   else

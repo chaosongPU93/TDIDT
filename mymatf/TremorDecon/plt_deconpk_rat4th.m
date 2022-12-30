@@ -6,7 +6,8 @@ function f=plt_deconpk_rat4th(f,msrcampr,madsrcampr,nsrc,color)
 % peak ratios between all station pairs (12,13, and 23) and includes 14. 
 % Number of 14 depends on number of 4th stations that are actually useful.
 % Each burst win is represented by one dot, whose size is proportional to
-% the number of sources, along with an errorbar.
+% the number of sources, along with an errorbar. NOTE that as of 2022/12/22,
+% the median amp ratio and its std is in log scale!
 % 
 % 
 % 
@@ -33,13 +34,13 @@ for i = 1: length(f.ax)
   end
   if i==1
     ylabel(ax,'Burst win index');
-    xlabel(ax,'med src amp ratio 1/2');
+    xlabel(ax,'log_{10}{med src amp ratio 1/2}');
   elseif i==2
-    xlabel(ax,'med src amp ratio 1/3');
+    xlabel(ax,'log_{10}{med src amp ratio 1/3}');
   elseif i==3
-    xlabel(ax,'med src amp ratio 2/3');
+    xlabel(ax,'log_{10}{med src amp ratio 2/3}');
   elseif i==4
-    xlabel(ax,'med src amp ratio 1/4');
+    xlabel(ax,'log_{10}{med src amp ratio 1/4}');
   end
   
 end

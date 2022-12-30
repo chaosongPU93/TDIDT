@@ -3,7 +3,7 @@ function [dstack,ccstack,dstackort,ccstackort] = mk_bbtemp_PGC(fam,CATA,sps,temp
 %
 % This is the function to generate the broadband LFE family template from Bostock's
 % catalog, use the shear splitting and polarization parameters
-% (theoratically) either from Allan's (Yajun) calculations for PGC trio.
+%?scaleseisms?  (theoratically) either from Allan's (Yajun) calculations for PGC trio.
 % Saved for future use. 
 %
 % --Note the difference between 'mk_bbtemp_PGC' and 'mk_bbtemp_LZB' is only until 
@@ -14,6 +14,11 @@ function [dstack,ccstack,dstackort,ccstackort] = mk_bbtemp_PGC(fam,CATA,sps,temp
 % --Assume now you already have a catalog by hand, from others' LFE
 %   detections, or from your own rough detections, this script trys to make a
 %   template based on the catalog.
+% --2022/11/30, I changed data direc to 'arch????' (necessary); changed 'fact' 
+%   at KLNB to be 5e-3 in 2003, and 1.5e-3 after 2003 so that KLNB has a similar
+%   amp level as PGC (?); changed 'scaleseisms' to 1 for all stas (?)
+%   
+%   
 %
 % INPUT:
 %   fam: family string
@@ -34,7 +39,7 @@ function [dstack,ccstack,dstackort,ccstackort] = mk_bbtemp_PGC(fam,CATA,sps,temp
 %
 % By Chao Song, chaosong@princeton.edu
 % First created date:   2019/11/02
-% Last modified date:   2022/02/09
+% Last modified date:   2022/11/30
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% default value for easy debugging
@@ -154,13 +159,17 @@ nsta=size(stas,1);         %  number of stations
 % convert angles to rads
 PERMROTS(:,2:3)=pi*PERMROTS(:,2:3)/180.;     % convert 2-3 columns to rad
 POLROTS(:,2:3)=pi*POLROTS(:,2:3)/180.;
-if isequal(fam,'002') && (isequal(CATA,'fixed') || isequal(CATA,'old')) && nsta==3
-    scaleseisms=[1.0 0.76 0.95];       % scaleseisms scales seismograms
-elseif isequal(fam,'068') && nsta==3
-    scaleseisms=[1.0 0.6 0.6];
-elseif nsta >3
-    scaleseisms=[1.0 0.76 0.95 ones(1,nsta-3)];    
-end
+
+%%%2022/11/30, do we really need this to scale seismograms again after after 'rddata'??
+% if isequal(fam,'002') && (isequal(CATA,'fixed') || isequal(CATA,'old')) && nsta==3
+%     scaleseisms=[1.0 0.76 0.95];       % scaleseisms scales seismograms
+% elseif isequal(fam,'068') && nsta==3
+%     scaleseisms=[1.0 0.6 0.6];
+% elseif nsta >3
+%     scaleseisms=[1.0 0.76 0.95 ones(1,nsta-3)];    
+% end
+scaleseisms = ones(1,nsta);
+
 
 %% stack to templates
 %%% data parameters
@@ -280,10 +289,10 @@ for id = 1: nday
         JDAY=int2str(jday);
     end
     MO=day2month(jday,year);     % EXTERNAL function, day2month, get the month of one particular date
-    direc=[datapath, '/', YEAR,'/',MO,'/'];     % directory name
+    direc=[datapath, '/arch', YEAR,'/',MO,'/'];     % directory name
     fprintf('%s \n', direc);
     prename = [direc, YEAR,'.',JDAY,'.00.00.00.0000.CN'];
-    fprintf('Processing date: %s / %s \n',YEAR, JDAY);
+    fprintf('Processing date: %s-%s; %d/%d \n',YEAR, JDAY,id,nday);
     
     if year==2003   % in 2003, station KLNB is named KELB, so use KELB to replace KLNB in 2003
         POLSTA(3,:)='KELB ';
@@ -291,11 +300,24 @@ for id = 1: nday
         POLSTA(3,:)='KLNB ';  % remember to change it back
     end
     
+    %in case you mix-use the 'KLNB' or 'KELB' in the station name, this would correct it for you
+    if ismember('KLNB ',stas,'rows') || ismember('KELB ',stas,'rows')
+      [~,idx1]=ismember('KELB ',stas,'rows');
+      [~,idx2]=ismember('KLNB ',stas,'rows');
+      if year==2003   % in 2003, station KLNB is named KELB, so use KELB to replace KLNB in 2003
+        stas(idx1+idx2,:)='KELB ';
+      else
+        stas(idx1+idx2,:)='KLNB ';  % remember to change it back
+      end
+    end
+    
     fileflag = 1;   % 1 means all files exist, the file status is normal
     
     %%% loop for each station for reading data
     for ista = 1: nsta
         found = 0;
+        fname = [];
+        
         [LIA, idx] = ismember(stas(ista, :), PERMSTA, 'rows');
         
         %%% if station is a permanent one
@@ -326,8 +348,11 @@ for id = 1: nday
         [LIA, idx] = ismember(stas(ista, :), POLSTA, 'rows');
         if LIA
             found = found+ LIA;
-            if year == 2003 && jday < 213
+%             if year == 2003 && jday < 213   % should result from some criteria
+            if year==2003 && jday<213 && ~strcmp(POLSTA(idx,1:4),'KELB')    
                 fact = 7.5e-3;
+            elseif year==2003 && jday<213 && strcmp(POLSTA(idx,1:4),'KELB')      % should result from some criteria
+                fact = 5.0e-3;
             else
                 fact = 1.5e-3;
             end

@@ -418,9 +418,9 @@ keyboard
 %   ccboo(:,3)>=prctile(ccboo(:,3),75));
 % ind = [20,23,59,60,80,113,116,120,134,189,194];
 % 
-% ind = find(ccb123(:,1)>=prctile(ccb123(:,1),75) & ccb123(:,2)>=prctile(ccb123(:,2),75) & ...
-%   ccb123(:,3)>=prctile(ccb123(:,3),75));
-% 
+ind123 = find(ccb123(:,1)>=prctile(ccb123(:,1),75) & ccb123(:,2)>=prctile(ccb123(:,2),75) & ...
+  ccb123(:,3)>=prctile(ccb123(:,3),75));
+% ind123 = [1,3,8,10,31,67,78,81,82,91,102,108,114,116,121,129,146,153,167,175];
 
 %% envelope (amplitude) range VS. burst #
 widin = 12;

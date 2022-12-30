@@ -437,8 +437,8 @@ lagboo = zeros(nibst, 3);  %lag of CC the wlet-sig cc of opt comp. with that of 
 
 
 %%%Flag to indicate if it is necessary to recalculate everything
-% flagrecalc = 0;
-flagrecalc = 1;
+flagrecalc = 0;
+% flagrecalc = 1;
 
 if flagrecalc
   for iii = 82: nibst
@@ -660,8 +660,9 @@ ind4123 = find(ccbij(1,:,1)>=prctile(ccbij(1,:,1),80) & ccbij(2,:,1)>=prctile(cc
 %   129,145,151,152,155,166,167,169,174,175,180,183,187]';
 % ind4123 = [1,12,15,46,56,77,102,114,125,129,155,180]';
 
-%%
-
+ind123 = find(ccb123(:,1)>=prctile(ccb123(:,1),75) & ccb123(:,2)>=prctile(ccb123(:,2),75) & ...
+  ccb123(:,3)>=prctile(ccb123(:,3),75));
+% ind123 = [1,2,3,6,8,18,21,46,56,77,78,82,83,84,102,107,114,125,127,145,169];
 
 %% burst windows for stas 4/5/6/7 vs. 1/2/3
 %%%scatter of lag and CC 

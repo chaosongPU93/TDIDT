@@ -1,6 +1,6 @@
-function plt_templates(green,greenf,greenort,greenfort,lowlet,hiwlet,sps)
+function plt_templates(green,greenf,stas,greenort,greenfort,lowlet,hiwlet,sps)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% plt_templates(green,greenf,greenort,greenfort,lowlet,hiwlet)
+% plt_templates(green,greenf,stas,greenort,greenfort,lowlet,hiwlet,sps)
 %
 % this function simply plot the templates (or green's functions), in raw
 % waveform or bandpass filtered; both optimal component and orthogonal
@@ -13,7 +13,8 @@ function plt_templates(green,greenf,greenort,greenfort,lowlet,hiwlet,sps)
 % Last modified date:   2022/09/12 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-figure
+f.fig=figure;
+f.fig.Renderer = 'painters';
 subplot(2,2,1)
 hold on
 if size(green,2) == 3
@@ -21,8 +22,9 @@ if size(green,2) == 3
   plot(green(:,2),'b')
   plot(green(:,3),'k')
 else
+  color = jet(size(green,2));
   for ista = 1: size(green,2)
-    plot(green(:,ista));
+    plot(green(:,ista),'Color',color(ista,:));
   end
 end
 text(0.95,0.9,'Raw opt.','Units','normalized','HorizontalAlignment',...
@@ -42,7 +44,7 @@ if size(green,2) == 3
   plot(greenf(:,3),'k')
 else
   for ista = 1: size(green,2)
-    plot(greenf(:,ista));
+    plot(greenf(:,ista),'Color',color(ista,:));
   end
 end
 text(0.95,0.9,sprintf('%.1f-%.1f Hz opt.',lowlet,hiwlet),'Units','normalized','HorizontalAlignment',...
@@ -76,7 +78,7 @@ if size(green,2) == 3
   plot(greenort(:,3),'k')
 else
   for ista = 1: size(green,2)
-    plot(greenort(:,ista));
+    plot(greenort(:,ista),'Color',color(ista,:));
   end
 end  
 text(0.95,0.9,'Raw ort.','Units','normalized','HorizontalAlignment',...
@@ -94,7 +96,7 @@ if size(green,2) == 3
   plot(greenfort(:,3),'k')
 else
   for ista = 1: size(green,2)
-    plot(greenfort(:,ista));
+    plot(greenfort(:,ista),'Color',color(ista,:));
   end
 end
 text(0.95,0.9,sprintf('%.1f-%.1f Hz ort.',lowlet,hiwlet),'Units','normalized','HorizontalAlignment',...

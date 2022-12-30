@@ -1359,8 +1359,10 @@ for iii = 1: length(idxbst)
       [pkindepsave,indremove] = removesecondarysrc(ppkindep,sigsta);
 %       [pkindepsave,indremove] = removesecondarysrc(pkindep,sigsta,minsrcsep);
       
-      %remove the secondary sources from the grouped result
+      %REMOVE the secondary sources from the grouped result
       impindep(indremove, :) = [];
+      ppkindep(indremove, :) = [];
+      npkindep(indremove, :) = [];
       impindepst = sortrows(impindep,1);
 
       %% plot the scatter of sources in terms of offsets, accounting for prealignment offset
@@ -1579,12 +1581,11 @@ for iii = 1: length(idxbst)
       %% Compare impulse amp with waveform peaks
       %%%compare the deconvolved positive peaks and negative peaks with the closest waveform peaks, 
       %%%ideally they should very similar in amplitude 
-      ppkisave = ppkindep;
-      ppkisave(indremove,:) = []; %deconvolved pos peaks of saved sources
+      ppkisave = ppkindep;  %deconvolved pos peaks of saved sources
       ppkisave = sortrows(ppkisave,1);
-      npkisave = npkindep;
-      npkisave(indremove,:) = []; %deconvolved neg peaks of saved sources
+      npkisave = npkindep;  %deconvolved neg peaks of saved sources
       npkisave = sortrows(npkisave,1);
+      impindepst = sortrows(impindep,1);
       zcrsisave = impindepst;
       [f1,f2,clppk,clnpk] = plt_deconpk_sigpk_comp(sigsta,zcrsisave,ppkisave,npkisave,greenf);
       close(f1.fig);

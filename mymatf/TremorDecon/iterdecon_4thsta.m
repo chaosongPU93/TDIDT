@@ -409,8 +409,10 @@ dresit = dresit(:);
 mfitit = mfitit(:);
   
 %Disp information if some stopping criteria have been met 
-if idximp>=1 && idximp<=nfft   % notify if index is out of bounds
+if ~isempty(ampit)
   fprintf('%d of %d sources have been checked \n',sum(sum(ampit(:,1:6),2)~=0),nsrc);
+else
+  fprintf('%d of %d sources have been checked \n',nan,nan);
 end
 
 %% plot for the final iteration

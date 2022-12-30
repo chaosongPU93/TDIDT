@@ -219,7 +219,6 @@ ampnoin = ampnoi/sum(wlet.^2);   % normalized amp of CC between noise and wavele
 ampnoiwtn = ampnoi*median(rcc)/sum(wlet.^2); % normalized amp of CC between noise and wavelet weighted by median rcc
 ampnoiwt = ampnoi*median(rcc); % amp of CC between noise and wavelet weighted by median rcc
 
-
 %% iteration 
 % if ~isempty(noise)
 %   LOOPCON = rms(res) > rms(noise) && nit < nit_max;
@@ -237,14 +236,15 @@ ampnoiwt = ampnoi*median(rcc); % amp of CC between noise and wavelet weighted by
 % while rccimp>median(rcc) && nit<nit_max  
 % while rccimp>medrccpeak && nit<nit_max 
 while mwtcoef>medwtcoef && nit<nit_max
- 
+  
 % while max(abs(predchg))>mad(noi) && nimp<nimp_max
 % while (dres>dres_min || mfit>mfit_min) && nit<nit_max
 % while mad(res)>mad(noi) && nit<nit_max % compare the amp of residual with amp of noise 
 % while max(abs(predchg))>mad(noi) && nit<nit_max % compare the max. amp of change in prediction with amp of noise 
 % while mwtcoef>ampnoiwt && nit<nit_max % compare the newest max CC of res and wlet weighted by rcc, with median CC of noise and wlet, weighted bt median rcc 
 % while max(abs(predchg))>std(noi) && nit<nit_max % if you believe the noise is gaussian distributed
-  
+% while amp>ampnoin && mad(res)>mad(noi) && nit<nit_max
+
   nit = nit+1;
 
   %%%%%%%% segment of find max CC location and Amp. from reference %%%%%%%%%%%%
@@ -441,7 +441,7 @@ while mwtcoef>medwtcoef && nit<nit_max
       loc = getpos(ax);
       shrink(ax,lsig/lwlet,1);
       ax.Position(1)=loc(1);
-      nolabels(ax,1);
+%       nolabels(ax,1);
     end
 
     subplot(812); 
@@ -450,13 +450,13 @@ while mwtcoef>medwtcoef && nit<nit_max
     p2=plot((1+round(ldiff/2)): (nfft-round(ldiff/2)),rcc,'o','color',[.8 .8 .8],'markersize',2);
     ylim([-1 1]);
     legend([p1,p2],'Signal','3-sta RCC');
-    nolabels(gca,1);
+%     nolabels(gca,1);
     longticks(gca,2);
     
     subplot(813);
     p1=plot(res, 'c-'); box on; grid on; xlim([0,nfft]); ylim(yran);
     legend(p1,'Residual bf. current iter.'); 
-    nolabels(gca,1);
+%     nolabels(gca,1);
     longticks(gca,2);
     
     subplot(814);
@@ -471,7 +471,7 @@ while mwtcoef>medwtcoef && nit<nit_max
     p2=plot((1+round(ldiff/2)): (nfft-round(ldiff/2)),rcc,'o','color',[.8 .8 .8],'markersize',2);
     ylim([-1 1]);
     legend([p1,p2],'Res-temp CC','3-sta RCC');
-    nolabels(gca,1);
+%     nolabels(gca,1);
     longticks(gca,2); hold off
     
     subplot(815);
@@ -482,13 +482,13 @@ while mwtcoef>medwtcoef && nit<nit_max
     text(0.05,0.85,num2str(nimp),'FontSize',10,'Units','normalized');
     text(0.05,0.65,num2str(idximp),'FontSize',10,'Units','normalized');
     legend(p1,'Impulses'); 
-    nolabels(gca,1);
+%     nolabels(gca,1);
     longticks(gca,2);
     
     subplot(816);    
     p1=plot(pred, 'b-');  box on; grid on; xlim([0,nfft]); ylim(yran);
     legend(p1,'Prediction');
-    nolabels(gca,1);
+%     nolabels(gca,1);
     longticks(gca,2);
     
     subplot(817);   
@@ -632,8 +632,8 @@ if fpltend
   p2=plot(ax,pred, 'b-'); yran=1.2*[-max(abs([sig; pred])) max(abs([sig; pred]))]; 
   ylim(ax,yran); ax.Box='on'; grid(ax,'on');
   yyaxis(ax,'right');
-  mwlen = sps/2;
-  [irccsp, rccsp] = RunningCC(sig, pred, mwlen);
+  rccmwlen = sps/2;
+  [irccsp, rccsp] = RunningCC(sig, pred, rccmwlen);
   p3=plot(ax,irccsp,rccsp,'o','color',[.6 .6 .6],'markersize',2);
   ylim(ax,[-1 1]);
   legend(ax,[p1,p2,p3],'Signal','Prediction','Sig-pred RCC','location','southeast');

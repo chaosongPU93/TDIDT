@@ -1,7 +1,7 @@
 function G = gauss_time(N,sigma)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % function G = gauss_time(N,sigma)
-% Create a symmetric N-point gaussian window in time with 
+% Create a N-point gaussian window in time symmetric relative to 0 with 
 % a standard deviation of 'sigma', all in samples. See also 'gauss_zerophase' 
 %
 % INPUT:

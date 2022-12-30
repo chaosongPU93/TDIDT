@@ -2,7 +2,7 @@ function f=plt_deconpkvswfpk4th(f,clppkhtwfall,psrcampsall,clnpkhtwfall,nsrcamps
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % f=plt_deconpkvswfpk(f,clppkhtwfrall,psrcamprsall,clnpkhtwfrall,nsrcamprsall,color)
 %
-% This function is to plot the scatter between the closest (i.e. associated)
+% This function is to plot the SCATTER between the closest (i.e. associated)
 % deconvolved peak amp and waveform peak amp (both pos and neg) between all 
 % station pairs (12,13, and 23) including 14 so see how they fit. The 
 % expectation is, they are close to each other, ie., distribute along the 

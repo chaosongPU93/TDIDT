@@ -10,6 +10,9 @@ function [STAopt,STAort,STAnzeros,fileflag] = rd_daily_bpdata(year,jday,prename,
 % the PGC and LZB, and between Polaris stations before and after 2003213,
 % to make sure they would have a similar amplitude level.
 %
+% --2022/11/30, I changed the 'fact' at KLNB to be 1.5e-3 for ALL time. Note
+%   that the seismogram is only scaled by 'fact', no 'scaleseisms' used
+%
 %
 % Chao Song, chaosong@princeton.edu
 % First created date:   2021/11/08
@@ -27,7 +30,7 @@ end
 MO=day2month(jday,year);     % EXTERNAL function, day2month, get the month of one particular date
 % %   IDENTIF=[YEAR,'.',JDAY,'.',fam,'.lo',num2str(loopoffmax),'.cc',num2str(xcmaxAVEnmin),'.',...
 % %     int2str(npo),int2str(npa),'.ms', int2str(mshift)]
-% direc=[path, '/', YEAR,'/',MO,'/'];     % directory name
+% direc=[path, '/arch', YEAR,'/',MO,'/'];     % directory name
 % prename=[direc,YEAR,'.',JDAY,'.00.00.00.0000.CN'];    %  path plus prefix of data file,
 
 if year==2003   % in 2003, station KLNB is named KELB, so use KELB to replace KLNB in 2003
@@ -94,8 +97,11 @@ for ista=1:nsta
   [LIA,idx]=ismember(stas(ista,:),POLSTA,'rows');
   if LIA        % if are in POLSTA
     found=found+LIA; %better be 1
-    if year==2003 && jday<213        % should result from some criteria
+    if year==2003 && jday<213 && ~strcmp(POLSTA(idx,1:4),'KELB')      % should result from some criteria
+%     if year==2003 && jday<213     % should result from some criteria
       fact=7.5e-3;
+    elseif year==2003 && jday<213 && strcmp(POLSTA(idx,1:4),'KELB')      % should result from some criteria
+      fact=5.0e-3;
     else
       fact=1.5e-3;
     end

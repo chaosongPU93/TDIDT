@@ -1,6 +1,6 @@
-function [S_f,f,amp,pha,power,psd] = fftspectrum(s_t, nfft, fs, freqrange)
+function [S_f,f,amp,pha,power,psd] = fftspectrum(s_t, nfft, fs, freqopt)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% [S_f,f,amp,pha,power,psd] = fftspectrum(s_t, nfft, fs, freqrange)
+% [S_f,f,amp,pha,power,psd] = fftspectrum(s_t, nfft, fs, freqopt)
 %
 % This function would compute the discrete fast fourier transform, and return
 % the one-sided or two-sided signal in freq domain, and corresponding freq 
@@ -19,7 +19,7 @@ defval('freqrange','onesided');
 
 S_f = fft(s_t, nfft);
 
-if isequal(freqrange, 'onesided')
+if isequal(freqopt, 'onesided')
   S_f = S_f(1:nfft/2+1, :);  %discard half of points, needs to be calibrated later
   f = (0:nfft/2)*(fs/nfft); %frequency axis
   amp = abs(S_f)/nfft;   %magnitude spectrum
@@ -33,7 +33,7 @@ if isequal(freqrange, 'onesided')
   psd = abs(S_f).^2/nfft/fs;
   psd(2:end-1, :) = 2*psd(2:end-1, :);  %power spectral density
   
-elseif isequal(freqrange, 'twosided')
+elseif isequal(freqopt, 'twosided')
   f = (0:nfft-1)*(fs/nfft); %frequency axis
   amp = abs(S_f)/nfft;   %magnitude spectrum
   pha = angle(S_f);
