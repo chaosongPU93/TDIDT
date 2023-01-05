@@ -47,7 +47,6 @@ function [sigdecon,pred,res,dresit,mfitit,ampit,fighdl] = ...
 %
 %
 %
-%
 % Chao Song, chaosong@princeton.edu
 % First created date:   2022/11/01
 % Last modified date:   2022/11/02
@@ -282,8 +281,8 @@ for isrc = 1: size(impindep,1)
   ampit(isrc, 3:4) = [pkires(tempind) pkhres(tempind)];  %closest residual waveform positive peak
   [pkhres, pkires] = findpeaks(-res); 
   [~,tempind] = min(abs(pkires-idximp));
-  ampit(isrc, 5:6) = [pkires(tempind) -pkhres(tempind)];  %closest residual waveform negative peak  
-  ampit(isrc, 7) = idximp-idxpred;  %difference in samples between predicted arrival and found peak  
+  ampit(isrc, 5:6) = [pkires(tempind) pkhres(tempind)];  %closest residual waveform negative peak  
+  ampit(isrc, 7) = idximp-(idxpred-round(ldiff/2));  %difference in samples between predicted arrival and found peak  
   impchg = zeros(nfft,1);   % the change of impulse resulting from the current iteration
   impchg(idximp) = amp;
   %change in predicted signal by convolving the change of impulse with wavelet

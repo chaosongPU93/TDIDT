@@ -1,5 +1,5 @@
 % deconv_foragu2022.m
-function rststruct = deconv_foragu2022(idxbst,normflag,noiseflag,pltflag,rccmwlen)
+function rststruct = deconv_foragu2022(idxbst,normflag,noiseflag,pltflag,rccmwsec)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Special version of 'deconv_ref_4s_exp_4thsta_fn' for AGU 2022, contains lots
 % of minor modifications of plotting.
@@ -20,6 +20,7 @@ defval('idxbst',181);   % the 250-s example
 defval('normflag',0);
 defval('noiseflag',0);
 defval('pltflag',1);
+defval('rccmwsec',0.5); %moving win len in sec for computing RCC
 
 
 %% Initialization
@@ -429,6 +430,7 @@ losig=1.8;
 %%%moving window length in samples for running CC, envelope, etc.
 %standard window length is about 0.5s, this is about the visual duration of the filtered and unfiltered
 %template, although in fact to include as least one cycle of the main dipole of template
+rccmwlen=sps*rccmwsec;
 % rccmwlen=sps/2;  
 % rccmwlen=sps;
 
@@ -1555,9 +1557,9 @@ for iii = 1: length(idxbst)
       ax1=gca;
       [ax1,torispl,mamp,xbndcvhl,ybndcvhl] = plt_decon_imp_scatter_ref(ax1,impindepst,xran,yran,cran,off1iw,loff_max,...
         sps,50,'mean','tori','comb');
+      scatter(ax1,off1i(k,2),off1i(k,3),20,'ks','filled','MarkerEdgeColor','k');
+      title(ax1,'Independent, grouped, no secondary sources');
       close(f1.fig);
-%       scatter(ax1,off1i(k,2),off1i(k,3),20,'ks','filled','MarkerEdgeColor','k');
-%       title(ax1,'Independent, grouped, no secondary sources');
 %       print(f1.fig,'-dpdf','/home/chaosong/Pictures/remove2ndary.pdf');
       
       %% separation in arrival time between deconvolved positive peaks
@@ -2192,6 +2194,7 @@ for iii = 1: length(idxbst)
       else
       srcampr = [impindepst(:,2)./impindepst(:,4) impindepst(:,2)./impindepst(:,6) ...
                  impindepst(:,4)./impindepst(:,6) impindepst(:,2)./impindepst(:,17)];
+               
       psrcamprs = [impindepst(:,2)*max(greenf(:,1))./(impindepst(:,4)*max(greenf(:,2))) ...
                    impindepst(:,2)*max(greenf(:,1))./(impindepst(:,6)*max(greenf(:,3))) ...
                    impindepst(:,4)*max(greenf(:,2))./(impindepst(:,6)*max(greenf(:,3))) ...
@@ -2203,16 +2206,15 @@ for iii = 1: length(idxbst)
                    impindepst(:,2)*min(greenf(:,1))./(impindepst(:,6)*min(greenf(:,3))) ...
                    impindepst(:,4)*min(greenf(:,2))./(impindepst(:,6)*min(greenf(:,3))) ...
                    impindepst(:,2)*min(greenf(:,1))./(impindepst(:,17)*min(greenf(:,7)))];
-      
       nsrcamps = [impindepst(:,2)*min(greenf(:,1)) impindepst(:,4)*min(greenf(:,2))...
                   impindepst(:,6)*min(greenf(:,3)) impindepst(:,17)*min(greenf(:,7))];
       
-      msrcampr(iii,:) = median(srcampr, 1);
-      madsrcampr(iii,:) = mad(srcampr, 1, 1);
-      mpsrcamprs(iii,:) = median(psrcamprs, 1);
-      madpsrcamprs(iii,:) = mad(psrcamprs, 1, 1);
-      mnsrcamprs(iii,:) = median(nsrcamprs, 1);
-      madnsrcamprs(iii,:) = mad(nsrcamprs, 1, 1);
+      msrcampr(iii,:) = median(log10(srcampr), 1);
+      madsrcampr(iii,:) = mad(log10(srcampr), 1, 1);
+      mpsrcamprs(iii,:) = median(log10(psrcamprs), 1);
+      madpsrcamprs(iii,:) = mad(log10(psrcamprs), 1, 1);
+      mnsrcamprs(iii,:) = median(log10(nsrcamprs), 1);
+      madnsrcamprs(iii,:) = mad(log10(nsrcamprs), 1, 1);
       nsrc(iii,1) = size(srcampr,1);
       srcamprall = [srcamprall; srcampr];
       psrcampsall = [psrcampsall; psrcamps];
@@ -2222,7 +2224,7 @@ for iii = 1: length(idxbst)
 
       %what is the deviation of amp ratio from the median for each source?
       lndevsrcampr = srcampr-median(srcampr, 1); % in linear scale
-      lgdevsrcampr = log10(srcampr)-log10(median(srcampr, 1)); % in log scale, note that log2+log5=log10, so this means a ratio
+      lgdevsrcampr = log10(srcampr)-median(log10(srcampr), 1); % in log scale, note that log2+log5=log10, so this means a ratio
       lndevsrcamprall = [lndevsrcamprall; lndevsrcampr];
       lgdevsrcamprall = [lgdevsrcamprall; lgdevsrcampr];
       

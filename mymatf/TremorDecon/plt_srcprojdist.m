@@ -24,7 +24,8 @@ if size(implocst,1) <= 2
   return
 
 else
-angle = 0:5:355;
+dangle = 5; %increment of trial angles  
+angle = 0: dangle: 360-dangle;
 slope = zeros(length(angle),1);
 rmse = zeros(length(angle),1);
 fttpfree = fittype( @(a,b,x) a*x+b);
@@ -174,6 +175,8 @@ slopeprop = coefprop(1);
 intcptprop = coefprop(2);
 fitprop = feval(fitobjprop,tsplst/sps);
 plot(ax,tsplst/sps,fitprop,'-','linewidth',2,'color','k');
+text(ax,0.98,0.95,sprintf('speed: %.1f km / %.1f s',range(fitprop),range(tsplst/sps)),...
+  'HorizontalAlignment','right','Units','normalized','FontSize',9);
 % legend(ax,[p1,p2],'Along prop. direction', 'Orthogonal to prop. dir.','FontSize',9);
 if isequal(ttype,'tori')
   xlabel(ax,'Relative origin time (s)');

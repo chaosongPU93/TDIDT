@@ -29,7 +29,6 @@ else
 end
 text(0.95,0.9,'Raw opt.','Units','normalized','HorizontalAlignment',...
   'right');
-legend(stas,'Location','southeast');
 mx=max(max(abs(green(:,:))));
 greenlen = size(green,1);
 xlim([0 greenlen])
@@ -60,6 +59,7 @@ rcc = (rcc12+rcc13+rcc23)/3;
 %alln(alln<0)=-10^4*yma; %just so they don't plot.
 % plot(samples(cclen/2+1:greenlen-cclen/2),mx*alln,'co','markersize',2); % scale with data amp.
 plot(ircc,mx*rcc,'co','markersize',2); % scale with data amp.
+legend([stas; 'RCC  '],'Location','southeast');
 xlim([0 greenlen])
 ylim([-mx mx])
 box on

@@ -1,5 +1,5 @@
 % deconv_ref_4s_exp_4thsta_fn.m
-% function rststruct = deconv_ref_4s_exp_4thsta_fn(idxbst,normflag,noiseflag,pltflag,rccmwlen)
+% function rststruct = deconv_ref_4s_exp_4thsta_fn(idxbst,normflag,noiseflag,pltflag,rccmwsec)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Based on 'deconvbursts002_ref_4s_exp' and 'deconv_ref_4s_exp_rand_fn', but
 % this version tries to involve the 4th station to check the deconvolution
@@ -34,11 +34,20 @@ clc
 % close all
 
 %% for easy testing
-defval('idxbst',181);   % the 250-s example 
-defval('normflag',0);
-defval('noiseflag',0);
-defval('pltflag',1);
+defval('idxbst',181); %global indices of bursts to run 
+defval('normflag',0); %whether to normalize templates
+defval('noiseflag',0);  %whether to use synthetic noises
+defval('pltflag',1);  %whether to plot figs for each burst
+defval('rccmwsec',0.5); %moving win len in sec for computing RCC
 
+rccflag = 1; %1 means RCC weighting is used
+
+%Choice to make upon the actual-used alignment at 4th stations
+if noiseflag
+  align14flag = 0;  %do NOT align sta 4 wrt. 1 if using noise
+else
+  align14flag = 1; 
+end
 
 %% Initialization
 %%% SAME if focusing on the same region (i.e. same PERMROTS and POLROTS)
@@ -347,9 +356,7 @@ offwlet1i(2) = round(off12con);
 offwlet1i(3) = round(off13con);
 
 for ista = 4: nsta
-  [coef,lag] = xcorr(tmpwletf(:,1), tmpwletf(:,ista), mshiftadd, 'coeff');
-  [mcoef, idx] = max(coef);   % max of master raw cc
-  offwlet1i(ista) = lag(idx);   % offset in samples  
+  [mcoef,offwlet1i(ista)] = xcorrmax(tmpwletf(:,1), tmpwletf(:,ista), mshiftadd, 'coeff');
 end
 
 %%%automatically find the rough zero-crossing time, whose abs. value is closest to 0, whether + or -
@@ -407,9 +414,8 @@ if ~(off12con==0 && off13con==0)
   disp('Filtered templates are NOT best aligned \n');
 end
 for ista = 4: nsta
-  [coef,lag] = xcorr(greenf(:,1), greenf(:,ista), mshiftadd, 'coeff');
-  [mcoef, idx] = max(coef);   % max of master raw cc
-  if lag(idx)~=0   % offset in samples
+  [mcoef,mlag] = xcorrmax(greenf(:,1), greenf(:,ista), mshiftadd, 'coeff');
+  if mlag~=0   % offset in samples
     fprintf('Filtered templates are NOT best aligned at %s \n',stas(ista,:));
   end
 end
@@ -443,6 +449,7 @@ losig=1.8;
 %%%moving window length in samples for running CC, envelope, etc.
 %standard window length is about 0.5s, this is about the visual duration of the filtered and unfiltered
 %template, although in fact to include as least one cycle of the main dipole of template
+rccmwlen=rccmwsec*sps;
 % rccmwlen=sps/2;
 % rccmwlen=sps;
 
@@ -490,8 +497,56 @@ psrcamprsall = [];  %positive scaled src amp ratio
 nsrcamprsall = [];  %negative scaled src amp ratio  
 clppkhtwfall = [];  %closest pos peak height of waveform
 clnpkhtwfall = [];  %closest neg peak height of waveform
+clppkwfsepall = [];  %closest pos peak separation of waveform
+clnpkwfsepall = [];  %closest neg peak separation of waveform
+ppkwfsepmed = []; %median of the pos peak separation of waveform
+ppkwfsepmod = []; %mode of the pos peak separation of waveform
+npkwfsepmed = []; %median of the neg peak separation of waveform
+npkwfsepmod = []; %mode of the neg peak separation of waveform
 pred4offtrall = [];  %difference in arrival from prediction at 4th sta  
 impindepstall = [];  %all sources' arrivals and amplitudes
+
+%secondary arrivals removed, decon impulse tarvl separation, spatial distance, etc.
+tsepall = []; 
+dtorinn1all = [];
+distorinn1all = [];
+dtorinn2all = [];
+distorinn2all = [];
+dtorinn3all = [];
+distorinn3all = [];
+dtoripropall = [];
+distoripropall = [];
+distoriortall = [];
+dtarvlnn1all = [];
+distarvlnn1all = [];
+dtarvlnn2all = [];
+distarvlnn2all = [];
+dtarvlnn3all = [];
+distarvlnn3all = [];
+dtarvlpropall = [];
+distarvlpropall = [];
+distarvlortall = [];
+
+%4th station checked, decon impulse tarvl separation, spatial distance, etc.
+tsep4thall = []; 
+dtorinn14thall = [];
+distorinn14thall = [];
+dtorinn24thall = [];
+distorinn24thall = [];
+dtorinn34thall = [];
+distorinn34thall = [];
+dtoriprop4thall = [];
+distoriprop4thall = [];
+distoriort4thall = [];
+dtarvlnn14thall = [];
+distarvlnn14thall = [];
+dtarvlnn24thall = [];
+distarvlnn24thall = [];
+dtarvlnn34thall = [];
+distarvlnn34thall = [];
+dtarvlprop4thall = [];
+distarvlprop4thall = [];
+distarvlort4thall = [];
 
 for iii = 1: length(idxbst)
   [iets,i,j] = indofburst(trange,idxbst(iii));
@@ -680,9 +735,7 @@ for iii = 1: length(idxbst)
         off1iw(iwin,3) = round(off13con);
         
         for ista = 4: nsta
-          [coef,lag] = xcorr(optcc(:,1),optcc(:,ista), 1.5*msftadd, 'coeff');
-          [ccaliw(iwin,ista-2), idx] = max(coef);   % max of master raw cc
-          off1iw(iwin,ista) = lag(idx);
+          [ccaliw(iwin,ista-2),off1iw(iwin,ista)] = xcorrmax(optcc(:,1),optcc(:,ista), 1.5*msftadd, 'coeff');
         end
         
         %Align records
@@ -717,11 +770,8 @@ for iii = 1: length(idxbst)
           subw(:,ista) = tmp;
         end
         %compute running CC between 3 stations
-        [irccw,rccw12] = RunningCC(subw(:,1), subw(:,2), rccmwlen);
-        [~,rccw13] = RunningCC(subw(:,1), subw(:,3), rccmwlen);
-        [~,rccw23] = RunningCC(subw(:,2), subw(:,3), rccmwlen);
+        [irccw,rccw12,rccw13,rccw23] = RunningCC3sta(subw,rccmwlen);
         rccw = (rccw12+rccw13+rccw23)/3;
-             
         irccw = irccw + windows(iwin,1) - windows(1,1);   %convert to global index
         if iwin == 1
           irccw = irccw - overshoot;
@@ -755,6 +805,13 @@ for iii = 1: length(idxbst)
       %if only use the mean RCC from the 2 pairs that have the highest overall CC
       [~,ind] = min(sum(ccwpair,1));
       rcccat = sum(rccpaircat(:,setdiff(1:3,ind)), 2) / 2;
+      
+      %if choose not to use RCC weighting; for easier comparison
+      if ~rccflag
+        rcccat = ones(size(rcccat));
+        rcc1icat = ones(size(rcc1icat));
+      end
+
 
 %       figure
 %       subplot(231); hold on; ax=gca;
@@ -806,16 +863,12 @@ for iii = 1: length(idxbst)
       mlag = zeros(nsta-3, 3);
       envrat = zeros(nsta-3, 3);
       for ista = 4: nsta
-        [coef,lag] = xcorr(optcc(:,1), optcc(:,ista), msftadd, 'coeff');
-        [mcoef(ista-3, 1), idx] = max(coef);   % max of master raw cc
-        off1ic(k,ista) = lag(idx);   % offset in samples
-        mlag(ista-3, 1) = lag(idx);
+        [mcoef(ista-3, 1),off1ic(k,ista)] = xcorrmax(optcc(:,1), optcc(:,ista), msftadd, 'coeff');
+        mlag(ista-3, 1) = off1ic(k,ista);
         envrat(ista-3, 1) = median(envelope(optcc(:,ista)))./median(envelope(optcc(:,1)));
         %do an overall CC between 4th and 2nd/3rd stas, to see which one they are most coehrent with
         for jjj = 2:3
-          [coef,lag] = xcorr(optcc(:,jjj), optcc(:,ista), msftadd, 'coeff');
-          [mcoef(ista-3, jjj), idx] = max(coef);
-          mlag(ista-3, jjj) = lag(idx);
+          [mcoef(ista-3, jjj),mlag(ista-3, jjj)] = xcorrmax(optcc(:,1), optcc(:,ista), msftadd, 'coeff');
           envrat(ista-3, jjj) = median(envelope(optcc(:,ista)))./median(envelope(optcc(:,jjj)));
         end
         %empirical prediction from plane fitting in 'empioffset4thsta002'
@@ -827,10 +880,10 @@ for iii = 1: length(idxbst)
       %for real data, USE the best whole-win alignment before decon
       off1i(k,1:3) = off1ic(k,1:3); 
       
-      %Choice to make upon the actual-used alignment at 4th stations      
-      flgalign14 = 1;  %do you want to actually align them?
-%       flgalign14 = 0;
-      if flgalign14
+      %Choice to make upon the actual-used alignment at 4th stations
+      %for data case, DO align!
+%       align14flag = 1;  
+      if align14flag
         off1i(k,4:end) = off1ic(k,4:end); %if you trust overall alignment at 4th stations
       else
         off1i(k,4:end) = zeros(1,nsta-3); %if you don't 
@@ -870,9 +923,7 @@ for iii = 1: length(idxbst)
         sigsta(:,ista) = tmp;
       end
       %compute running CC between 3 stations
-      [ircc,rcc12] = RunningCC(sigsta(:,1), sigsta(:,2), rccmwlen);
-      [~,rcc13] = RunningCC(sigsta(:,1), sigsta(:,3), rccmwlen);
-      [~,rcc23] = RunningCC(sigsta(:,2), sigsta(:,3), rccmwlen);
+      [ircc,rcc12,rcc13,rcc23] = RunningCC3sta(sigsta,rccmwlen);
       ircc = ircc-overshoot;
       rcc = (rcc12+rcc13+rcc23)/3;
       rcc1i = zeros(length(rcc),nsta-3);
@@ -888,9 +939,7 @@ for iii = 1: length(idxbst)
         tmp = detrend(tmp);
         sigstaort(:,ista) = tmp;
       end
-      [irccort,rcc12] = RunningCC(sigstaort(:,1), sigstaort(:,2), rccmwlen);
-      [~,rcc13] = RunningCC(sigstaort(:,1), sigstaort(:,3), rccmwlen);
-      [~,rcc23] = RunningCC(sigstaort(:,2), sigstaort(:,3), rccmwlen);
+      [irccort,rcc12,rcc13,rcc23] = RunningCC3sta(sigstaort,rccmwlen);
       irccort = irccort-overshoot;
       rccort = (rcc12+rcc13+rcc23)/3;
       sigstaort = detrend(sigstaort(overshoot+1:end-overshoot, :));  %excluding the overshoot
@@ -939,6 +988,7 @@ for iii = 1: length(idxbst)
         fixthresh(ista) = median(wtcoef);  % median of the weighted master CC, could be percentile?
       end
       
+      %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
       %FLAG to simulate the behavior of noise
 %       noiseflag = 1;
 
@@ -1074,9 +1124,7 @@ for iii = 1: length(idxbst)
           off1iw(iwin,2) = round(off12con);
           off1iw(iwin,3) = round(off13con);
           for ista = 4: nsta
-            [coef,lag] = xcorr(optcc(:,1), optcc(:,ista), 1.5*msftadd, 'coeff');
-            [ccaliw(iwin,ista-2), idx] = max(coef);   % max of master raw cc
-            off1iw(iwin,ista) = lag(idx);
+            [ccaliw(iwin,ista-2),off1iw(iwin,ista)] = xcorrmax(optcc(:,1), optcc(:,ista), 1.5*msftadd, 'coeff');
           end
           %Align records
           optdat = [];  % win +/-3 s, segment of interest,first 1s will be tapered 
@@ -1110,11 +1158,8 @@ for iii = 1: length(idxbst)
             subw(:,ista) = tmp;
           end
           %compute running CC between 3 stations
-          [irccw,rccw12] = RunningCC(subw(:,1), subw(:,2), rccmwlen);
-          [~,rccw13] = RunningCC(subw(:,1), subw(:,3), rccmwlen);
-          [~,rccw23] = RunningCC(subw(:,2), subw(:,3), rccmwlen);
+          [irccw,rccw12,rccw13,rccw23] = RunningCC3sta(subw,rccmwlen);
           rccw = (rccw12+rccw13+rccw23)/3;
-
           irccw = irccw + windows(iwin,1) - windows(1,1);   %convert to global index
           if iwin == 1
             irccw = irccw - overshoot;
@@ -1148,6 +1193,12 @@ for iii = 1: length(idxbst)
         %if only use the mean RCC from the 2 pairs that have the highest overall CC
         [~,ind] = min(sum(ccwpair,1));
         rcccat = sum(rccpaircat(:,setdiff(1:3,ind)), 2) / 2;
+        
+        %if choose NOT to use RCC weighting; for easier comparison
+        if ~rccflag
+          rcccat = ones(size(rcccat));
+          rcc1icat = ones(size(rcc1icat));
+        end
 
 %         figure
 %         subplot(231); hold on; ax=gca;
@@ -1202,16 +1253,12 @@ for iii = 1: length(idxbst)
         mlag = zeros(nsta-3, 3);
         envrat = zeros(nsta-3, 3);
         for ista = 4: nsta
-          [coef,lag] = xcorr(optcc(:,1), optcc(:,ista), msftadd, 'coeff');
-          [mcoef(ista-3, 1), idx] = max(coef);   % max of master raw cc
-          off1ic(k,ista) = lag(idx);   % offset in samples
-          mlag(ista-3, 1) = lag(idx);
+          [mcoef(ista-3, 1),off1ic(k,ista)] = xcorrmax(optcc(:,1), optcc(:,ista), msftadd, 'coeff');
+          mlag(ista-3, 1) = off1ic(k,ista);
           envrat(ista-3, 1) = median(envelope(optcc(:,ista)))./median(envelope(optcc(:,1)));
           %do an overall CC between 4th and 2nd/3rd stas, to see which one they are most coehrent with
           for jjj = 2:3
-            [coef,lag] = xcorr(optcc(:,jjj), optcc(:,ista), msftadd, 'coeff');
-            [mcoef(ista-3, jjj), idx] = max(coef);
-            mlag(ista-3, jjj) = lag(idx);
+            [mcoef(ista-3, jjj),mlag(ista-3, jjj)] = xcorrmax(optcc(:,1), optcc(:,ista), msftadd, 'coeff');
             envrat(ista-3, jjj) = median(envelope(optcc(:,ista)))./median(envelope(optcc(:,jjj)));
           end
           %empirical prediction from plane fitting in 'empioffset4thsta002'
@@ -1225,9 +1272,8 @@ for iii = 1: length(idxbst)
         
         %for synthetic noise case, do NOT align traces
         %Choice to make upon the actual-used alignment at 4th stations
-%         flgalign14 = 1;  %do you want to actually align them?
-        flgalign14 = 0;
-        if flgalign14
+%         align14flag = 0;
+        if align14flag
           off1i(k,4:end) = off1ic(k,4:end); %if you trust overall alignment at 4th stations
         else
           off1i(k,4:end) = zeros(1,nsta-3); %if you don't
@@ -1259,9 +1305,7 @@ for iii = 1: length(idxbst)
           sigsta(:,ista) = tmp;
         end
         %compute running CC between 3 stations
-        [ircc,rcc12] = RunningCC(sigsta(:,1), sigsta(:,2), rccmwlen);
-        [~,rcc13] = RunningCC(sigsta(:,1), sigsta(:,3), rccmwlen);
-        [~,rcc23] = RunningCC(sigsta(:,2), sigsta(:,3), rccmwlen);
+        [ircc,rcc12,rcc13,rcc23] = RunningCC3sta(sigsta,rccmwlen);
         ircc = ircc-overshoot;
         rcc = (rcc12+rcc13+rcc23)/3;
         rcc1i = zeros(length(rcc),nsta-3);
@@ -1277,9 +1321,7 @@ for iii = 1: length(idxbst)
           tmp = detrend(tmp);
           sigstaort(:,ista) = tmp;
         end
-        [irccort,rcc12] = RunningCC(sigstaort(:,1), sigstaort(:,2), rccmwlen);
-        [~,rcc13] = RunningCC(sigstaort(:,1), sigstaort(:,3), rccmwlen);
-        [~,rcc23] = RunningCC(sigstaort(:,2), sigstaort(:,3), rccmwlen);
+        [irccort,rcc12,rcc13,rcc23] = RunningCC3sta(sigstaort,rccmwlen);
         irccort = irccort-overshoot;
         rccort = (rcc12+rcc13+rcc23)/3;
         sigstaort = detrend(sigstaort(overshoot+1:end-overshoot, :));  %excluding the overshoot
@@ -1389,7 +1431,6 @@ for iii = 1: length(idxbst)
       %alignment upon each subwin that is also used in grouping!
       impindep(:,7:8) = impindep(:,7:8)+repmat([off1i(k,2) off1i(k,3)],size(impindep,1),1); %account for prealignment
       impindepst = sortrows(impindep,1);
-      nsrcraw(iii,1) = size(impindepst,1);  % number of sources before removing 2ndary 
 
       %%
       %%%plot the scatter of offsets, accounting for prealignment offset, == true offset
@@ -1513,7 +1554,7 @@ for iii = 1: length(idxbst)
       %use function 'removesecondarysrc' to remove the smaller amplitude, secondary triplets that 
       %are too close in time to large triplets
       minsrcsep = 20;   % min allowed separation between deconvolved peaks
-      [pkindepsave,indremove] = removesecondarysrc(ppkindep,sigsta(:,1:3));
+      [ppkindepsave,indremove] = removesecondarysrc(ppkindep,sigsta(:,1:3));
 %       [pkindepsave,indremove] = removesecondarysrc(pkindep,sigsta(:,1:3),minsrcsep);
       
       %REMOVE the secondary sources from the grouped result
@@ -1521,10 +1562,9 @@ for iii = 1: length(idxbst)
       ppkindep(indremove, :) = [];
       npkindep(indremove, :) = [];
       impindepst = sortrows(impindep,1);
+      nsrcraw(iii,1) = size(impindepst,1);  % number of sources AFTER removing 2ndary 
 
-      if isempty(impindepst)
-        continue
-      else
+      if ~isempty(impindepst)
 
       %% plot the scatter of sources in terms of offsets, accounting for prealignment offset
       span = max(range(off1iw(:,2))+2*loff_max, range(off1iw(:,3))+2*loff_max);
@@ -1535,11 +1575,11 @@ for iii = 1: length(idxbst)
       f1.fig = figure;
       f1.fig.Renderer = 'painters';
       ax1=gca;
-      [ax1,torispl,mamp,xbndcvhl,ybndcvhl] = plt_decon_imp_scatter_ref(ax1,impindepst,xran,yran,cran,off1iw,loff_max,...
-        sps,50,'mean','tori','comb');
+      [ax1,torispl,mamp,xbndcvhl,ybndcvhl] = plt_decon_imp_scatter_ref(ax1,impindepst,xran,yran,...
+        cran,off1iw,loff_max,sps,50,'mean','tori','comb');
       scatter(ax1,off1i(k,2),off1i(k,3),20,'ks','filled','MarkerEdgeColor','k');
       title(ax1,'Independent, grouped, no secondary sources');
-      keyboard
+      keyboard      
 %       %%%plot the scatter of offsets, shifted to the same origin, the best alignment
 %       xran = [-loff_max+off1i(k,2)-1 loff_max+off1i(k,2)+1];
 %       yran = [-loff_max+off1i(k,3)-1 loff_max+off1i(k,3)+1];
@@ -1562,11 +1602,66 @@ for iii = 1: length(idxbst)
 %         sps,50,ftrans,'mean','tori','comb');
 %       plot(ax2,xcut,ycut,'k-','linew',2);
 %       title(ax2,'Independent, grouped, no secondary sources');
+            
+      %% separation in arrival time between deconvolved positive peaks
+      %%Plot the separation in time between these preserved positive peaks after removing the
+      %%secondary ones, to see if they can be too close to each other
+      if size(ppkindepsave,1) > 1
+        [f,tsep,pkist,indpk,indreverse] = plt_tsep_deconpk(ppkindepsave,sps);
+        tsepall = [tsepall; tsep];
+        close(f.fig);
+      end
+%       median(tsep)
+% keyboard
+
+      %% what is the distance for consecutive sourcces, but in terms of arrival time?
+      %note the 'tsep' obtained from the deconvolved positive peaks should be identical to that if
+      %obtained from the deconvolved impulses themselves, which represent the arrival indices of the
+      %zero-crossing
+      ista=1;
+      %convert time offset to relative loc
+      [imploc, indinput] = off2space002(impindepst(:,7:8),sps,ftrans,0); % 8 cols, format: dx,dy,lon,lat,dep,ttrvl,off12,off13
+      [impindepstst, indsort] = sortrows(impindepst, (ista-1)*2+1);
+      implocst = imploc(indsort, :);
+      tarvlsplst = impindepstst(:,(ista-1)*2+1);
       
-%       % separation in arrival time between deconvolved positive peaks
-%       %%Plot the separation in time between these preserved positive peaks after removing the
-%       %%secondary ones, to see if they can be too close to each other
-%       [f,tsep,pkist,indpk,indreverse] = plt_tsep_deconpk(pkindepsave,sps);
+      dtarvlnn1 = diffcustom(tarvlsplst, 1,'forward');
+      distnn1 = sqrt(diffcustom(implocst(:,1),1,'forward').^2 + ...
+        diffcustom(implocst(:,2),1,'forward').^2 );
+      dtarvlnn1all = [dtarvlnn1all; dtarvlnn1];
+      distarvlnn1all = [distarvlnn1all; distnn1];
+
+      dtarvlnn2 = diffcustom(tarvlsplst, 2,'forward');
+      distnn2 = sqrt(diffcustom(implocst(:,1),2,'forward').^2 + ...
+        diffcustom(implocst(:,2),2,'forward').^2 );
+      dtarvlnn2all = [dtarvlnn2all; dtarvlnn2];
+      distarvlnn2all = [distarvlnn2all; distnn2];
+
+      dtarvlnn3 = diffcustom(tarvlsplst, 3,'forward');
+      distnn3 = sqrt(diffcustom(implocst(:,1),3,'forward').^2 + ...
+        diffcustom(implocst(:,2),3,'forward').^2 );
+      dtarvlnn3all = [dtarvlnn3all; dtarvlnn3];
+      distarvlnn3all = [distarvlnn3all; distnn3];
+            
+      dift = dtarvlnn1;
+      dist = distnn1;      
+      nsep = 1;
+      ttype = 'tarvl';
+      %%%Projected distance along specific directions, eg., propagation and its orthogonal, in terms of arrival time
+      [f,distprop,distort] = plt_srcprojdist(implocst,nsep,sps,dist,dift,tarvlsplst,ttype);
+      if ~isempty(distprop) && ~isempty(distort)
+%         close(f.fig);
+        distarvlpropall = [distarvlpropall; distprop];
+        distarvlortall = [distarvlortall; distort];
+        dtarvlpropall = [dtarvlpropall; dift];
+      end
+%       orient(f.fig,'landscape');
+%       if noiseflag
+%         print(f.fig,'-dpdf',strcat('/home/chaosong/Pictures/',ttype,'nn1distnoi.pdf'));
+%       else
+%         print(f.fig,'-dpdf',strcat('/home/chaosong/Pictures/',ttype,'nn1dist.pdf'));
+%       end
+keyboard
 
       %% test a bunch of offset max to see residual reduction VS. # of sources left
 %       %%%According to the resulting plot, ~1.6* RMSE (12 samples at 160 sps) seems proper
@@ -1704,8 +1799,9 @@ for iii = 1: length(idxbst)
         ampiti = ampit{ista};
         impindep(:,9+(ista-4)*2+1) = ampiti(:,1);
         impindep(:,9+(ista-3)*2) = ampiti(:,2);
-        
-        pred4off(:,ista-3) = ampiti(:,end);  %difference between found peak and predicted arrival
+        if ista == nsta
+          pred4off(:,ista-3) = ampiti(:,end);  %difference between found peak and predicted arrival
+        end
       end
       
       %%%given zero-crossing indices, obtain corresponding positive and negative peak indices
@@ -1735,6 +1831,7 @@ for iii = 1: length(idxbst)
       impindepstall = [impindepstall; impindepst];
       pred4offtrall = [pred4offtrall; pred4offtr];
 
+      if ~isempty(impindepst)
       %%%plot the scatter of sources in terms of offsets, accounting for prealignment offset
       span = max(range(off1iw(:,2))+2*loff_max, range(off1iw(:,3))+2*loff_max);
       xran = [round(mean(minmax(off1iw(:,2)'))-span/2)-1, round(mean(minmax(off1iw(:,2)'))+span/2)+1];
@@ -1759,6 +1856,64 @@ for iii = 1: length(idxbst)
 %       pltsta = [1 2 3 7];
 %       f1 = plt_selsigpredres(sigsta,predgrp,resgrp,l2normred(iii,:,:),stas,pltsta);
       
+      %% recompute time separation and distance after 4th sta check  
+      %%%Plot the separation in time between these preserved positive peaks after removing the
+      %%secondary ones, to see if they can be too close to each other
+      %discard the sources that are determined to be too close and secondary compared to a major source
+      ppkindepsave = ppkindep;
+      if size(ppkindepsave,1) > 1
+        [f,tsep,pkist,indpk,indreverse] = plt_tsep_deconpk(ppkindepsave,sps);
+        tsep4thall = [tsep4thall; tsep];
+        close(f.fig);
+      end
+%       median(tsep)
+
+      %%%distance in terms of arrival time 
+      ista=1;
+      [impindepstst, indsort] = sortrows(impindepst, (ista-1)*2+1);
+      implocst = imploc(indsort, :);
+      tarvlsplst = impindepstst(:,(ista-1)*2+1);
+            
+      dtarvlnn1 = diffcustom(tarvlsplst, 1,'forward');
+      distnn1 = sqrt(diffcustom(implocst(:,1),1,'forward').^2 + ...
+        diffcustom(implocst(:,2),1,'forward').^2 );
+      dtarvlnn14thall = [dtarvlnn14thall; dtarvlnn1];
+      distarvlnn14thall = [distarvlnn14thall; distnn1];
+
+      dtarvlnn2 = diffcustom(tarvlsplst, 2,'forward');
+      distnn2 = sqrt(diffcustom(implocst(:,1),2,'forward').^2 + ...
+        diffcustom(implocst(:,2),2,'forward').^2 );
+      dtarvlnn24thall = [dtarvlnn24thall; dtarvlnn2];
+      distarvlnn24thall = [distarvlnn24thall; distnn2];
+
+      dtarvlnn3 = diffcustom(tarvlsplst, 3,'forward');
+      distnn3 = sqrt(diffcustom(implocst(:,1),3,'forward').^2 + ...
+        diffcustom(implocst(:,2),3,'forward').^2 );
+      dtarvlnn34thall = [dtarvlnn34thall; dtarvlnn3];
+      distarvlnn34thall = [distarvlnn34thall; distnn3];
+
+      dift = dtarvlnn1;
+      dist = distnn1;
+      nsep = 1;      
+      ttype = 'tarvl';
+      %%%Projected distance along specific directions, eg., propagation and its orthogonal, in terms of arrival time
+      [f,distprop,distort] = plt_srcprojdist(implocst,nsep,sps,dist,dift,tarvlsplst,ttype);
+      if ~isempty(distprop) && ~isempty(distort)
+%         close(f.fig);
+        distarvlprop4thall = [distarvlprop4thall; distprop];
+        distarvlort4thall = [distarvlort4thall; distort];
+        dtarvlprop4thall = [dtarvlprop4thall; dift];
+      end
+%       orient(f.fig,'landscape');
+%       if noiseflag
+%         print(f.fig,'-dpdf',strcat('/home/chaosong/Pictures/',ttype,'nn1dist4thnoi.pdf'));
+%       else
+%         print(f.fig,'-dpdf',strcat('/home/chaosong/Pictures/',ttype,'nn1dist4th.pdf'));
+%       end
+
+% keyboard
+
+      end
       end
       %% diff between predicted arrival and selected peak at 4th sta
 %       figure; 
@@ -1846,7 +2001,6 @@ for iii = 1: length(idxbst)
                    impindepst(:,2)*min(greenf(:,1))./(impindepst(:,6)*min(greenf(:,3))) ...
                    impindepst(:,4)*min(greenf(:,2))./(impindepst(:,6)*min(greenf(:,3))) ...
                    impindepst(:,2)*min(greenf(:,1))./(impindepst(:,17)*min(greenf(:,7)))];
-      
       nsrcamps = [impindepst(:,2)*min(greenf(:,1)) impindepst(:,4)*min(greenf(:,2))...
                   impindepst(:,6)*min(greenf(:,3)) impindepst(:,17)*min(greenf(:,7))];
       
@@ -2035,17 +2189,34 @@ for iii = 1: length(idxbst)
       [f1,f2,clppk,clnpk] = plt_deconpk_sigpk_comp(sigsta,zcrsisave,ppkisave,npkisave,greenf);
       close(f1.fig);
       close(f2.fig);
-      clppkhtwf = clppk.clppkhtwf;
+      clppkhtwf = clppk.clppkhtwf;  %waveform peak height
       clppkhtwf = [clppkhtwf(:,1:3) clppkhtwf(:,end)];  %I only want KLNB
 %       mclppkhtwf(iii, :) = median(clppkhtwf, 1);
 %       madclppkhtwf(iii, :) = mad(clppkhtwf,1, 1);
       clppkhtwfall = [clppkhtwfall; clppkhtwf];
+      clppkwf = clppk.clppkwf;  %also store the waveform peak separation
+      clppkwfsep = diff([clppkwf(:,1:3) clppkwf(:,end)]);  %I only want KLNB
+      clppkwfsepall = [clppkwfsepall; clppkwfsep];
       
       clnpkhtwf = clnpk.clnpkhtwf;
       clnpkhtwf = [clnpkhtwf(:,1:3) clnpkhtwf(:,end)];  %I only want KLNB
 %       mclnpkhtwf(iii, :) = median(clnpkhtwf, 1);
 %       madclnpkhtwf(iii, :) = mad(clnpkhtwf,1, 1);
       clnpkhtwfall = [clnpkhtwfall; clnpkhtwf];
+      clnpkwf = clnpk.clnpkwf;
+      clnpkwfsep = [clnpkwf(:,1:3) clnpkwf(:,end)];  %I only want KLNB
+      clnpkwfsepall = [clnpkwfsepall; clnpkwfsep];
+      
+      %also get the waveform peak separation for the full trace, since the number of peaks is not
+      %the same for each station, keep 
+      for ista = [1 2 3 nsta]
+        [~, pk] = findpeaks(sigsta(:,ista));
+        ppkwfsepmed(iii,ista) = median(diff(pk));
+        ppkwfsepmod(iii,ista) = mode(diff(pk));
+        [~, pk] = findpeaks(-sigsta(:,ista));
+        npkwfsepmed(iii,ista) = median(diff(pk));
+        npkwfsepmod(iii,ista) = mode(diff(pk));
+      end
       
 %       keyboard
       end
@@ -2383,8 +2554,37 @@ rststruct.psrcamprsall = psrcamprsall;
 rststruct.nsrcamprsall = nsrcamprsall;
 rststruct.clppkhtwfall = clppkhtwfall;
 rststruct.clnpkhtwfall = clnpkhtwfall;
+rststruct.clppkhtwfall = clppkwfsepall;
+rststruct.clnpkhtwfall = clnpkwfsepall;
+rststruct.ppkwfsepmed = ppkwfsepmed;
+rststruct.ppkwfsepmod = ppkwfsepmod;
+rststruct.npkwfsepmed = npkwfsepmed;
+rststruct.npkwfsepmod = npkwfsepmod;
+
 rststruct.pred4offtrall = pred4offtrall;
 rststruct.impindepstall = impindepstall;
+
+rststruct.tsepall = tsepall;
+rststruct.dtarvlnn1all = dtarvlnn1all;
+rststruct.distarvlnn1all = distarvlnn1all;
+rststruct.dtarvlnn2all = dtarvlnn2all;
+rststruct.distarvlnn2all = distarvlnn2all;
+rststruct.dtarvlnn3all = dtarvlnn3all;
+rststruct.distarvlnn3all = distarvlnn3all;
+rststruct.dtarvlpropall = dtarvlpropall;
+rststruct.distarvlpropall = distarvlpropall;
+rststruct.distarvlortall = distarvlortall;
+
+rststruct.tsep4thall = tsep4thall; 
+rststruct.dtarvlnn14thall = dtarvlnn14thall;
+rststruct.distarvlnn14thall = distarvlnn14thall;
+rststruct.dtarvlnn24thall = dtarvlnn24thall;
+rststruct.distarvlnn24thall = distarvlnn24thall;
+rststruct.dtarvlnn34thall = dtarvlnn34thall;
+rststruct.distarvlnn34thall = distarvlnn34thall;
+rststruct.dtarvlprop4thall = dtarvlprop4thall;
+rststruct.distarvlprop4thall = distarvlprop4thall;
+rststruct.distarvlort4thall = distarvlort4thall;
 
 if ~isempty(impindepst)
   rststruct.nsrcraw = nsrcraw;

@@ -390,7 +390,7 @@ while mwtcoef>medwtcoef && nit<nit_max
   ampit(nit, 3:4) = [pkires(tempind) pkhres(tempind)];  %closest residual waveform positive peak
   [pkhres, pkires] = findpeaks(-res); 
   [~,tempind] = min(abs(pkires-idximp));
-  ampit(nit, 5:6) = [pkires(tempind) -pkhres(tempind)];  %closest residual waveform negative peak  
+  ampit(nit, 5:6) = [pkires(tempind) pkhres(tempind)];  %closest residual waveform negative peak  
   impchg = zeros(nfft,1);   % the change of impulse resulting from the current iteration
   impchg(idximp) = amp;
   %change in predicted signal by convolving the change of impulse with wavelet
