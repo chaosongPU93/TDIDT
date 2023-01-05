@@ -1,6 +1,6 @@
 function [x, y] = ellipse_chao(xc,yc,semia,semib,dx,rotang,rotcnt)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% [x, y] = ellipse_chao(x0,y0,semia,semib,dx,angrot)
+% [x, y] = ellipse_chao(x0,y0,semia,semib,dx,rotang,rotcnt)
 %
 % This function is to obtain the points on the perimeter of a ellipse with a
 % semi-major axis of 'semia' and semi-minor axis of 'semib', centered at 
@@ -14,8 +14,7 @@ function [x, y] = ellipse_chao(xc,yc,semia,semib,dx,rotang,rotcnt)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 defval('rotang',0); %Set the default to no rotation
-defval('rotcnt',[0 0]); %Set the default to no rotation
-
+defval('rotcnt',[xc,yc]); %Set the default to rotation wrt the center
 
 %the positive half
 xup = -semia: dx: semia;

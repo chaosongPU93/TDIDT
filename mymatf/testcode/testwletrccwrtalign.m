@@ -1,4 +1,4 @@
-% testrccwrtalign.m
+% testwletrccwrtalign.m
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % This is to test how CC/RCC changes wrt. to different alignments between
 % templates at stations. Similarly, you can also ask how CC/RCC changes
@@ -318,6 +318,7 @@ for i = 1: npts
   [ircc,rcc12,rcc13,rcc23] = RunningCC3sta(greenf,rccmwlen);
   rccpair = [rcc12 rcc13 rcc23];
   medmeanrcc(i) = median(mean(rccpair,2));
+  maxmeanrcc(i) = max(mean(rccpair,2));
   
   cc12 = xcorr(greenf(:,1), greenf(:,2),0,'normalized');  %0-lag maximum cc based on current alignment
   cc13 = xcorr(greenf(:,1), greenf(:,3),0,'normalized');
@@ -329,7 +330,8 @@ for i = 1: npts
   
   cc(i) = mean(ccpair(:,setdiff(1:3,ind)), 2);
   medrcc(i) = median(mean(rccpair(:,setdiff(1:3,ind)), 2));
-  
+  maxrcc(i) = max(mean(rccpair(:,setdiff(1:3,ind)), 2));
+
   %%%plot the unfiltered and filtered templates
   % plt_templates(green,greenf,stas,greenort,greenfort,lowlet,hiwlet,sps);
   
@@ -339,7 +341,9 @@ for i = 1: npts
 end
 
 medmeanrcc = reshape(medmeanrcc,length(off13),length(off12));
+maxmeanrcc = reshape(maxmeanrcc,length(off13),length(off12));
 medrcc = reshape(medrcc,length(off13),length(off12));
+maxrcc = reshape(maxrcc,length(off13),length(off12));
 meancc = reshape(meancc,length(off13),length(off12));
 cc = reshape(cc,length(off13),length(off12));
 
@@ -355,12 +359,14 @@ xran = [0.1 0.95]; yran = [0.1 0.95];
 xsep = 0.05; ysep = 0.05;
 optaxpos(f1,nrow,ncol,xran,yran,xsep,ysep);
 
+matplt = medmeanrcc;
 ax=f1.ax(1);
 hold(ax,'on'); ax.Box = 'on'; 
-imagesc(ax,off12,off13,medmeanrcc);
-contour(ax,X1,X2,medmeanrcc,'k-','ShowText','on');
-ind = find(medmeanrcc==max(medmeanrcc,[],'all'));
-[sub13, sub12] = ind2sub(size(medmeanrcc),ind);
+imagesc(ax,off12,off13,matplt);
+contour(ax,X1,X2,matplt,'k-','ShowText','on');
+plot(ax,minmax(off12),minmax(off13),'--','Color',[.3 .3 .3],'linew',1);
+ind = find(matplt==max(matplt,[],'all'));
+[sub13, sub12] = ind2sub(size(matplt),ind);
 scatter(ax,off12(sub12),off13(sub13),30,'k^','linew',1.5);
 axis(ax,'equal','tight');
 xlim(ax,minmax(off12));
@@ -371,12 +377,14 @@ ylabel(ax,sprintf('PGC-SILB offset (samples at %d Hz)',sps),'FontSize',11);
 c=colorbar(ax);
 c.Label.String = 'median of mean RCC of 3 pairs';
 
+matplt = medrcc;
 ax=f1.ax(2);
 hold(ax,'on'); ax.Box = 'on'; 
-imagesc(ax,off12,off13,medrcc);
-contour(ax,X1,X2,medrcc,'k-','ShowText','on');
-ind = find(medrcc==max(medrcc,[],'all'));
-[sub13, sub12] = ind2sub(size(medrcc),ind);
+imagesc(ax,off12,off13,matplt);
+contour(ax,X1,X2,matplt,'k-','ShowText','on');
+plot(ax,minmax(off12),minmax(off13),'--','Color',[.3 .3 .3],'linew',1);
+ind = find(matplt==max(matplt,[],'all'));
+[sub13, sub12] = ind2sub(size(matplt),ind);
 scatter(ax,off12(sub12),off13(sub13),30,'k^','linew',1.5);
 axis(ax,'equal','tight');
 xlim(ax,minmax(off12));
@@ -387,12 +395,14 @@ ylabel(ax,sprintf('PGC-SILB offset (samples at %d Hz)',sps),'FontSize',11);
 c=colorbar(ax);
 c.Label.String = 'median of mean RCC of 2 best pairs';
 
+matplt = meancc;
 ax=f1.ax(3);
 hold(ax,'on'); ax.Box = 'on'; 
-imagesc(ax,off12,off13,meancc);
-conmat = contour(ax,X1,X2,meancc,'k-','ShowText','on');
-ind = find(meancc==max(meancc,[],'all'));
-[sub13, sub12] = ind2sub(size(meancc),ind);
+imagesc(ax,off12,off13,matplt);
+conmat = contour(ax,X1,X2,matplt,0.2:0.1:1,'k-','ShowText','on');
+plot(ax,minmax(off12),minmax(off13),'--','Color',[.3 .3 .3],'linew',1);
+ind = find(matplt==max(matplt,[],'all'));
+[sub13, sub12] = ind2sub(size(matplt),ind);
 scatter(ax,off12(sub12),off13(sub13),30,'k^','linew',1.5);
 axis(ax,'equal','tight');
 xlim(ax,minmax(off12));
@@ -401,14 +411,16 @@ colormap(ax,'jet');
 xlabel(ax,sprintf('PGC-SSIB offset (samples at %d Hz)',sps),'FontSize',11);
 ylabel(ax,sprintf('PGC-SILB offset (samples at %d Hz)',sps),'FontSize',11);
 c=colorbar(ax);
-c.Label.String = 'max of mean CC of 3 pairs';
+c.Label.String = 'mean overall CC of 3 pairs';
 
+matplt = cc;
 ax=f1.ax(4);
 hold(ax,'on'); ax.Box = 'on'; 
-imagesc(ax,off12,off13,cc);
-contour(ax,X1,X2,cc,'k-','ShowText','on');
-ind = find(cc==max(cc,[],'all'));
-[sub13, sub12] = ind2sub(size(cc),ind);
+imagesc(ax,off12,off13,matplt);
+contour(ax,X1,X2,matplt,0.2:0.1:1,'k-','ShowText','on');
+plot(ax,minmax(off12),minmax(off13),'--','Color',[.3 .3 .3],'linew',1);
+ind = find(matplt==max(matplt,[],'all'));
+[sub13, sub12] = ind2sub(size(matplt),ind);
 scatter(ax,off12(sub12),off13(sub13),30,'k^','linew',1.5);
 axis(ax,'equal','tight');
 xlim(ax,minmax(off12));
@@ -417,14 +429,136 @@ colormap(ax,'jet');
 xlabel(ax,sprintf('PGC-SSIB offset (samples at %d Hz)',sps),'FontSize',11);
 ylabel(ax,sprintf('PGC-SILB offset (samples at %d Hz)',sps),'FontSize',11);
 c=colorbar(ax);
-c.Label.String = 'max of mean CC of 2 best pairs';
+c.Label.String = 'mean overall CC of 2 best pairs';
 
 
 %% choose a set of offset12, 13 with equal CC/RCC
-conmat
+conmat;
+ccval = 0.7;
+indcol = find(conmat(1,:)==ccval);
+nind = length(indcol);
+for i = 1: nind
+  erroff = conmat(:,indcol(i)+1: indcol(i)+conmat(2,indcol(i)))';
+end
+%fit an ellipse to it
+ellfit = fit_ellipse(erroff(:,1),erroff(:,2));
+
+%%%add the indication of the error ellipse
+mmmax = 10;
+nnmax = 10;
+erroff1 = zeros((mmmax*2+1)^2,2);
+kk = 0;
+for mm = -mmmax:1:mmmax
+  for nn = -nnmax:1:nnmax
+    kk = kk+1;
+    erroff1(kk,:) = [mm nn];
+  end
+end
+ftrans = 'interpchao';
+[errloc1, ~] = off2space002(erroff1,sps,ftrans,0);
+
+F1 = scatteredInterpolant(erroff1(:,1),erroff1(:,2),errloc1(:,1),'linear');
+F2 = scatteredInterpolant(erroff1(:,1),erroff1(:,2),errloc1(:,2),'linear');
+
+errloc = [];
+errloc(:,1) = F1(erroff(:,1),erroff(:,2));
+errloc(:,2) = F2(erroff(:,1),erroff(:,2));
 
 
+widin = 8; htin = 4;
+nrow = 1; ncol = 2;
+[f2] = initfig(widin,htin,nrow,ncol);
+xran = [0.1 0.95]; yran = [0.1 0.95];
+xsep = 0.08; ysep = 0.05;
+optaxpos(f2,nrow,ncol,xran,yran,xsep,ysep);
 
+ax=f2.ax(1);
+hold(ax,'on'); ax.Box = 'on'; 
+plot(ax,[-mmmax mmmax],[-nnmax nnmax],'--','Color',[.3 .3 .3],'linew',1);
+plot(ax,erroff(:,1),erroff(:,2),'k','linew',1.5);
+x0 = ellfit.X0_in; 
+y0 = ellfit.Y0_in;
+semia = ellfit.a; 
+semib = ellfit.b;
+rotang = -rad2deg(ellfit.phi);
+rotcnt = [x0, y0];
+[xe, ye] = ellipse_chao(x0,y0,semia,semib,0.01,rotang,rotcnt);
+plot(ax,xe,ye,'r-');
+[xa,ya] = complex_rot(x0,y0+semib,rotang,rotcnt);
+plot(ax,[x0 xa],[y0 ya],'b--','linew',1);
+[xb,yb] = complex_rot(x0+semia,y0,rotang,rotcnt);
+plot(ax,[x0 xb],[y0 yb],'b--','linew',1);
+text(ax,0.95,0.1,strcat(sprintf('%.1f; %.1f; %.1f',semia,semib,rotang),' {\circ}'),'Units','normalized',...
+  'HorizontalAlignment','right','FontSize',10);
+xlabel(ax,sprintf('PGC-SSIB offset (samples at %d Hz)',sps),'FontSize',11);
+ylabel(ax,sprintf('PGC-SILB offset (samples at %d Hz)',sps),'FontSize',11);
+axis(ax,'equal','tight');
+axis(ax,[-mmmax mmmax -nnmax nnmax]);
+title(ax,sprintf('Contour of CC/RCC=%.1f',ccval));
+
+ax=f2.ax(2);
+hold(ax,'on'); ax.Box = 'on'; 
+plot(ax,errloc(:,1),errloc(:,2),'k','linew',1.5);
+plot(ax,[-1 1],[-1 1],'--','Color',[.3 .3 .3],'linew',1);
+xlabel(ax,'E (km)','FontSize',11);
+ylabel(ax,'N (km)','FontSize',11);
+axis(ax,'equal','tight');
+axis(ax,[-1 1 -1 1]);
+
+%% what is the shape like for sqrt(off12^2+off13^2+off23^2)==const
+const = 8;
+
+widin = 8; htin = 4;
+nrow = 1; ncol = 2;
+[f3] = initfig(widin,htin,nrow,ncol);
+xran = [0.1 0.95]; yran = [0.1 0.95];
+xsep = 0.08; ysep = 0.05;
+optaxpos(f3,nrow,ncol,xran,yran,xsep,ysep);
+
+ax=f3.ax(1);
+hold(ax,'on'); ax.Box = 'on'; 
+plot(ax,[-mmmax mmmax],[-nnmax nnmax],'--','Color',[.3 .3 .3],'linew',1);
+syms x y
+func1 = @(x,y) x.^2+y.^2-const^2;
+fimplicit(ax,func1,'color',[.3 .3 .3],'linew',1);
+func2 = @(x,y) x.^2+y.^2-x.*y-const^2/2;
+fp=fimplicit(ax,func2,'k','linew',1.5);
+%fit an ellipse to it
+erroff = [reshape(fp.XData,[],1) reshape(fp.YData,[],1)];
+ellfit = fit_ellipse(erroff(:,1),erroff(:,2));
+x0 = ellfit.X0_in; 
+y0 = ellfit.Y0_in;
+semia = ellfit.a; 
+semib = ellfit.b;
+rotang = -rad2deg(ellfit.phi);
+rotcnt = [x0, y0];
+[xe, ye] = ellipse_chao(x0,y0,semia,semib,0.01,rotang,rotcnt);
+plot(ax,xe,ye,'r-');
+[xa,ya] = complex_rot(x0,y0+semib,rotang,rotcnt);
+plot(ax,[x0 xa],[y0 ya],'b--','linew',1);
+[xb,yb] = complex_rot(x0+semia,y0,rotang,rotcnt);
+plot(ax,[x0 xb],[y0 yb],'b--','linew',1);
+text(ax,0.95,0.1,strcat(sprintf('%.1f; %.1f; %.1f',semia,semib,rotang),' {\circ}'),'Units','normalized',...
+  'HorizontalAlignment','right','FontSize',10);
+xlabel(ax,sprintf('PGC-SSIB offset (samples at %d Hz)',sps),'FontSize',11);
+ylabel(ax,sprintf('PGC-SILB offset (samples at %d Hz)',sps),'FontSize',11);
+axis(ax,'equal','tight');
+axis(ax,[-mmmax mmmax -nnmax nnmax]);
+xticks(ax,-mmmax: 2: mmmax);
+yticks(ax,-nnmax: 2: nnmax);
+title(ax,strcat('$\sqrt(x^2+y^2-(y-x)^2)=$',sprintf(' %d',const)),'Interpreter','latex');
+
+ax=f3.ax(2);
+hold(ax,'on'); ax.Box = 'on';
+errloc = [];
+errloc(:,1) = F1(erroff(:,1),erroff(:,2));
+errloc(:,2) = F2(erroff(:,1),erroff(:,2));
+plot(ax,errloc(:,1),errloc(:,2),'k','linew',1.5);
+plot(ax,[-1 1],[-1 1],'--','Color',[.3 .3 .3],'linew',1);
+xlabel(ax,'E (km)','FontSize',11);
+ylabel(ax,'N (km)','FontSize',11);
+axis(ax,'equal','tight');
+axis(ax,[-1 1 -1 1]);
 
 
 
