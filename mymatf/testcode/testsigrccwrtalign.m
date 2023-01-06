@@ -1,22 +1,27 @@
-% testwletrccwrtalign.m
+% testsigrccwrtalign.m
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% This is to test how CC/RCC changes wrt. to different alignments between
-% templates at stations. Similarly, you can also ask how CC/RCC changes
-% wrt. to different alignments between signals at stations, however, that
-% would be burst dependent, as data is changing. In contrast, if using
-% templates for similar analysis, result would be invariant.
+% Similar to 'testwletrccwrtalign.m', this is to test how CC/RCC changes wrt. 
+% to different alignments between
+% signals at stations. However, since this 
+% would be burst dependent, as data is changing, we choose specific bursts 
+% for a qualitative understanding.
 %
 %
 % Chao Song, chaosong@princeton.edu
-% First created date:   2023/01/04
-% Last modified date:   2023/01/04
+% First created date:   2023/01/05
+% Last modified date:   2023/01/05
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 format short e   % Set the format to 5-digit floating point
 clear
 clc
 close all
 
+%% for easy testing
+defval('idxbst',181); %global indices of bursts to run 
 defval('normflag',0); %whether to normalize templates
+defval('noiseflag',0);  %whether to use synthetic noises
+defval('pltflag',1);  %whether to plot figs for each burst
 defval('rccmwsec',0.5); %moving win len in sec for computing RCC
 
 %% Initialization
@@ -138,139 +143,122 @@ tlen = trange(:,3)-trange(:,2);
 %%%load the empirical model param of time offset 14 for each addtional stations
 off14mod = load(strcat(rstpath, '/MAPS/timeoff_planefitparam_4thsta_160sps'),'w+');
 
-%% prepare templates (Green's functions), from 'lfetemp002_160sps.m'
+%% prepare the signal and noise windows
+% dates and ets
+%%% NOTE: 'dates' is the dates that the tremor is active at the region of interest, so that the
+%%% waveform at the stations on these dates you are looking at mainly comes from the sources at the
+%%% region of interest. We want to see if there is a noticable change in spectra during the burst
+%%% windows on these dates
+dates = unique(trange(:,1));
+years = unique(floor(dates/1000));
+nets = length(years);
+
 sps = 160;
-templensec = 60;
 
-ccstack = [];
-for ista = 1: nsta
-    fname = strcat(temppath, fam, '_', strtrim(stas(ista, :)), '_', num2str(sps), 'sps_', ...
-        num2str(templensec), 's_', 'BBCCS_', 'opt_Nof_Non_Chao_catnew');
-    ccstack(:,ista) = load(fname);
-end
-STA = detrend(ccstack);
+%filtering passband for reading data, confirmed by 'spectrabursts002_4s.m'
+hisig=6.3; % this will give a similar spectral shape between template and signal
+losig=1.8;
 
-ccstackort = [];
-for ista = 1: nsta
-    fname = strcat(temppath, fam, '_', strtrim(stas(ista, :)), '_', num2str(sps), 'sps_', ...
-        num2str(templensec), 's_', 'BBCCS_', 'ort_Nof_Non_Chao_catnew');
-    ccstackort(:,ista) = load(fname);
-end
-STAort = detrend(ccstackort);
+%moving window length in samples for running CC, envelope, etc.
+%standard window length is about 0.5s, this is about the visual duration of the filtered and unfiltered
+%template, although in fact to include as least one cycle of the main dipole of template
+rccmwlen=rccmwsec*sps;
+% rccmwlen=sps/2;
+% rccmwlen=sps;
 
-%flag of normalization
-% normflg = 0;
+iii = 1;
+[iets,i,j] = indofburst(trange,idxbst(iii));
 
-% %plot the raw templates, not filtered, not best aligned
-% figure
-% subplot(211)
-% hold on
-% for ista = 1: nsta
-%   plot(STA(:,ista));
-% end
-% subplot(212)
-% hold on
-% for ista = 1: nsta
-%   plot(STAort(:,ista));
-% end
+year = years(iets);
+datesets = dates(floor(dates/1000)==year);
 
-%%%The below aligns the templates by x-correlation
-ist = templensec*sps*4/10;  %not using whole window in case any station has very long-period energy
-ied = templensec*sps*6/10;
-[maxses,imaxses]=max(STA(ist:ied,:),[],1);
-[minses,iminses]=min(STA(ist:ied,:),[],1);
-spread=maxses-minses;
-imaxses = imaxses+ist-1;  %convert to global indices
-iminses = iminses+ist-1;
-% zcrosses=round(0.5*(imaxses+iminses));  % rough, assuming symmetry, Chao 2021/07/16
-%automatically find the zero-crossings
-zcrosses = zeros(nsta,1);
-for ista = 1:nsta
-    seg = detrend(STA(iminses(ista): imaxses(ista),ista));  % for zero-crossing timing, only use the main station
-    [~,zcrosses(ista)] = min(abs(seg));
-    zcrosses(ista) = zcrosses(ista)-1+iminses(ista);  % convert to global index
+date = datesets(i);
+jday = floor(date-year*1000);
+a = jul2dat(year,jday);
+if a(1) == 9
+  mo = 'Sep.';
+elseif a(1) == 7
+  mo = 'Jul.';
+else
+  mo = 'Mar.';
 end
-%now we want to cut a segment around the zero-crossing at each station
-sampbef=6*sps;
-sampaft=10*sps;
-is=zcrosses-sampbef;
-ie=zcrosses+sampaft;
-for ista=1:nsta
-    STAtmp(:,ista)=detrend(STA(is(ista):ie(ista),ista));  % this means templates are 'aligned' at zero-crossings
-    STAtmport(:,ista)=detrend(STAort(is(ista):ie(ista),ista)); 
-end
-%x-correlation independently between each station pair 
-mshiftadd=10*sps/40;
-tempxc(:,1)=xcorr(STAtmp(:,2),STAtmp(:,3),mshiftadd,'coeff');
-tempxc(:,2)=xcorr(STAtmp(:,1),STAtmp(:,2),mshiftadd,'coeff'); %shift STAtmp(3,:) to right for positive values
-tempxc(:,3)=xcorr(STAtmp(:,1),STAtmp(:,3),mshiftadd,'coeff'); %shift STAtmp(2,:) to right for positive values
-[~,imax]=max(tempxc,[],1);
-imax=imax-(mshiftadd+1); %This would produce a slightly different shift, if filtered seisms were used.
-imax(2)-imax(3)+imax(1);   %enclosed if it equals to 0
-for ista=2:nsta
-    STAtmp(mshiftadd+1:end-(mshiftadd+1),ista)=detrend(STAtmp(mshiftadd+1-imax(ista):end-(mshiftadd+1)-imax(ista),ista));
-    STAtmport(mshiftadd+1:end-(mshiftadd+1),ista)=detrend(STAtmport(mshiftadd+1-imax(ista):end-(mshiftadd+1)-imax(ista),ista));
-end
-%normalization
-if normflag 
-  for ista=1:nsta
-      STAtmp(:,ista)=STAtmp(:,ista)/spread(ista); % now templates are 'aligned' indeoendently by x-corr wrt. sta 1
-      STAtmport(:,ista)=STAtmport(:,ista)/spread(ista);
-  end
-end
-% figure
-% subplot(211)
-% hold on
-% for ista = 1: nsta
-%   plot(STAtmp(:,ista));
-% end
-% subplot(212)
-% hold on
-% for ista = 1: nsta
-%   plot(STAtmport(:,ista));
-% end
-%%%The above aligns the templates by x-correlation
+dy = num2str(a(2));
+yr = num2str(a(3));
 
-%%%detrend, taper and bandpass templates
-tmpwlet = STAtmp; % no bandpass
-tmpwletf = STAtmp;  % bandpassed version
-fractap = sps/size(tmpwlet,1);
-tmpwletort = STAtmport; % no bandpass
-tmpwletfort = STAtmport;  % bandpassed version
-for ista = 1: nsta
-  %romve mean, linear trend of template
-  tmpwlet(:,ista) = detrend(tmpwlet(:,ista));
-  %and taper with tukeywin, which is actually a tapered cosine window
-  w = tukeywin(size(tmpwlet(:,ista),1),fractap);
-  tmpwlet(:,ista) = w.* tmpwlet(:,ista);
-  %detrend again for caution
-  tmpwlet(:,ista) = detrend(tmpwlet(:,ista));
-  %filter the template
-  hiwlet=18;
-  lowlet=1.8;
-  tmpwletf(:,ista) = Bandpass(tmpwlet(:,ista), sps, lowlet, hiwlet, 2, 2, 'butter');
-  %detrend again for caution
-  tmpwletf(:,ista) = detrend(tmpwletf(:,ista));
-  
-  %same process for orthogonal
-  tmpwletort(:,ista) = detrend(tmpwletort(:,ista));
-  tmpwletort(:,ista) = w.* tmpwletort(:,ista);
-  tmpwletort(:,ista) = detrend(tmpwletort(:,ista));
-  tmpwletfort(:,ista) = Bandpass(tmpwletort(:,ista), sps, lowlet, hiwlet, 2, 2, 'butter');
-  tmpwletfort(:,ista) = detrend(tmpwletfort(:,ista));
+%bursts and 4-s detections of the same day
+rangetemp = trange(trange(:,1)==datesets(i), :);
+hfdayi = hfbnd(hfbnd(:,daycol)==datesets(i), :);  % inside bound of the day
+hfdayo = hfout(hfout(:,daycol)==datesets(i), :);  % outside bound of the day
+
+%read horizontal optimal and orthogonal components
+JDAY = num2zeropadstr(jday,3);
+MO=day2month(jday,year);     % EXTERNAL function, day2month, get the month of one particular date
+direc=[datapath, '/arch', yr,'/',MO,'/'];     % directory name
+prename=[direc,yr,'.',JDAY,'.00.00.00.0000.CN'];    %  path plus prefix of data file,
+%     disp(prename);
+[STAopt,STAort,~,fileflag] = rd_daily_bpdata(year,jday,prename,stas,PERMSTA,POLSTA,...
+  PERMROTS,POLROTS,sps,losig,hisig,npo,npa,[],[],[],[]);
+
+if fileflag == 0    % means there are missing files
+  fprintf('Day %s / %s will be omitted because of missing files. \n', yr, JDAY);
 end
 
-%%%constrained CC, so that only 2 offsets are independent
-ccmid = round(size(tmpwletf,1)/2);
-ccwlen = 10*sps;
+tmaxi = hfdayi(:, seccol); % starting time of max power rate of half sec inside the ellipse
+tmaxo = hfdayo(:, seccol); % starting time of max power rate of half sec outside the ellipse
+tcnti = hfdayi(:, 15);  % the center of detecting win is the 15th col
+tcnto = hfdayo(:, 15);  % the center of detecting win is the 15th col
+
+tst = rangetemp(j,2); % start and end time of bursts
+ted = rangetemp(j,3);
+
+%how many 4-s detections fall into the burst range
+indtmaxi = find(tmaxi>=tst-0.1 & tmaxi<=ted+0.1);
+
+%       %%%%Use a fixed range of time before and after the 0.5-s strongest arrival
+%       tbuffer = 3;   % buffer time to include some coherent precursor or coda, first 1s will be tapered
+%       tstbuf = tst-tbuffer; % start and end time of bursts, buffer added
+%       tedbuf = ted+tbuffer;
+%%%%Use the start and end of the 4-s detecting window
+tstbuf = min(tcnti(indtmaxi)-2);
+tedbuf = max(tcnti(indtmaxi)+2);
+tlenbuf = tedbuf-tstbuf;
+
+%max allowable shift in best alignment
+%       msftaddm = (round(max(abs([off12ran off13ran])))+1)*sps/40;  %+1 for safety
+%       msftaddm = sps+1;  %+1 for safety
+msftaddm = 1.5*sps+1;  %+1 for safety
+%       msftaddm = round(sps/8);    % maximum allowed shift between 2 traces
+
+%have some overshoot, so that the resulted rcc would have the same length as the signal
+overshoot = rccmwlen/2;
+%       overshoot = 0;
+
+%%%%2022/09/26, obtain all information for data before decon, so that you know the threshold
+%%%%being used, although this was used mainly for noise experiment, we still use it here
+%chop a record segment
+optseg = STAopt(max(floor(tstbuf*sps+1-overshoot-msftaddm),1): ...
+  min(floor(tedbuf*sps+overshoot+msftaddm),86400*sps), :); % sta 1
+
+%%%obtain a single best alignment based on the entire win
+%       optcc = optseg(:, 2:end);
+optcc = detrend(optseg(1+msftaddm: end-msftaddm, 2:end));
+msftadd = (round(max(abs([off12ran off13ran])))+1)*sps/40;  %+1 for safety
+ccmid = ceil(size(optcc,1)/2);
+ccwlen = round(size(optcc,1)-2*(msftadd+1));
 loffmax = 5*sps/40;
 ccmin = 0.01;  % depending on the length of trace, cc could be very low
 iup = 1;    % times of upsampling
-[off12con,off13con,~] = constrained_cc_interp(tmpwletf(:,1:3)',ccmid,...
-  ccwlen,mshiftadd,loffmax,ccmin,iup);
-offwlet1i(1) = 0;
-offwlet1i(2) = round(off12con);
-offwlet1i(3) = round(off13con);
+[off12con,off13con,ccali] = constrained_cc_interp(optcc(:,1:3)',ccmid,...
+  ccwlen,msftadd,loffmax,ccmin,iup);
+% if a better alignment cannot be achieved, use 0,0
+if off12con == msftadd+1 && off13con == msftadd+1
+  off12con = 0;
+  off13con = 0;
+  fprintf('Tremor burst %d cannot be properly aligned, double-check needed \n',k);
+end
+off1ic(1) = 0;
+off1ic(2) = round(off12con);
+off1ic(3) = round(off13con);
 
 offmax = sps/10;
 off12 = -offmax: 1: offmax;
@@ -279,50 +267,30 @@ off13 = -offmax: 1: offmax;
 [X1,X2] = meshgrid(off12,off13);
 tmp = [X1(:) X2(:)];
 npts = length(tmp);
-offwlet = zeros(npts,3);
-offwlet(:,2) = tmp(:,1)+offwlet1i(2);
-offwlet(:,3) = tmp(:,2)+offwlet1i(3);
+off1i = zeros(npts,3);
+off1i(:,2) = tmp(:,1)+off1ic(2);
+off1i(:,3) = tmp(:,2)+off1ic(3);
 
 rccmwlen=rccmwsec*sps;
 
 for i = 1: npts
-  %%%automatically find the rough zero-crossing time, whose abs. value is closest to 0, whether + or -
-  [~,imin] = min(tmpwletf(:,1));
-  [~,imax] = max(tmpwletf(:,1));
-  [~,zcsta1] = min(abs(tmpwletf(imin:imax,1)));
-  zcsta1 = zcsta1+imin-1;
-  greenlen = pow2(9)*sps/40;
-  greenf = zeros(greenlen,nsta);  % bandpassed version
-  ppeaks = zeros(nsta,1); % positive peaks
-  npeaks = zeros(nsta,1); % negative peaks
+  sigsta = [];
   for ista = 1: nsta
     %cut according to the zero-crossing and the time shift from the constrained CC
-    greenf(:,ista) = tmpwletf(zcsta1+8*sps-greenlen+1-offwlet(i,ista): zcsta1+8*sps-offwlet(i,ista), ista);
+    sigsta(:, ista) = optseg(1+msftaddm-off1i(i,ista): end-msftaddm-off1i(i,ista), ista+1);
     %detrend again for caution
-    greenf(:,ista) = detrend(greenf(:,ista));
-    if normflag
-      %normalize by max amp
-      greenf(:,ista) = greenf(:,ista)/max(abs(green(:,ista)));    % normalize
-    end
-    
-    %re-find the zero-crossing as the template length has changed
-    [~,imin] = min(greenf(:,ista));
-    [~,imax] = max(greenf(:,ista));
-    [~,zcrosses(ista)] = min(abs(greenf(imin:imax,ista)));
-    zcrosses(ista) = zcrosses(ista)+imin-1;
-    ppeaks(ista) = imax;
-    npeaks(ista) = imin;
+    sigsta(:,ista) = detrend(sigsta(:,ista));
   end
   
   %compute running CC between 3 stations
-  [ircc,rcc12,rcc13,rcc23] = RunningCC3sta(greenf,rccmwlen);
+  [ircc,rcc12,rcc13,rcc23] = RunningCC3sta(sigsta,rccmwlen);
   rccpair = [rcc12 rcc13 rcc23];
   medmeanrcc(i) = median(mean(rccpair,2));
   maxmeanrcc(i) = max(mean(rccpair,2));
   
-  cc12 = xcorr(greenf(:,1), greenf(:,2),0,'normalized');  %0-lag maximum cc based on current alignment
-  cc13 = xcorr(greenf(:,1), greenf(:,3),0,'normalized');
-  cc23 = xcorr(greenf(:,2), greenf(:,3),0,'normalized');
+  cc12 = xcorr(sigsta(:,1), sigsta(:,2),0,'normalized');  %0-lag maximum cc based on current alignment
+  cc13 = xcorr(sigsta(:,1), sigsta(:,3),0,'normalized');
+  cc23 = xcorr(sigsta(:,2), sigsta(:,3),0,'normalized');
   ccpair = [cc12 cc13 cc23];
   meancc(i) = mean(ccpair,2);
   
@@ -331,12 +299,6 @@ for i = 1: npts
   cc(i) = mean(ccpair(:,setdiff(1:3,ind)), 2);
   medrcc(i) = median(mean(rccpair(:,setdiff(1:3,ind)), 2));
   maxrcc(i) = max(mean(rccpair(:,setdiff(1:3,ind)), 2));
-
-  %%%plot the unfiltered and filtered templates
-  % plt_templates(green,greenf,stas,greenort,greenfort,lowlet,hiwlet,sps);
-  
-  %%%just the filtered templates
-%   plt_templates_bp(greenf,stas,lowlet,hiwlet,sps);
   
 end
 
@@ -346,7 +308,6 @@ medrcc = reshape(medrcc,length(off13),length(off12));
 maxrcc = reshape(maxrcc,length(off13),length(off12));
 meancc = reshape(meancc,length(off13),length(off12));
 cc = reshape(cc,length(off13),length(off12));
-
 
 %%
 %%%plot to show how does the RCC/CC change wrt. the diff alignment between sta pairs 12 and 13
@@ -399,7 +360,7 @@ matplt = meancc;
 ax=f1.ax(3);
 hold(ax,'on'); ax.Box = 'on'; 
 imagesc(ax,off12,off13,matplt);
-conmat = contour(ax,X1,X2,matplt,0.2:0.1:1,'k-','ShowText','on');
+conmat = contour(ax,X1,X2,matplt,0.1:0.01:0.3,'k-','ShowText','on'); %
 plot(ax,minmax(off12),minmax(off13),'--','Color',[.3 .3 .3],'linew',1);
 ind = find(matplt==max(matplt,[],'all'));
 [sub13, sub12] = ind2sub(size(matplt),ind);
@@ -417,7 +378,7 @@ matplt = cc;
 ax=f1.ax(4);
 hold(ax,'on'); ax.Box = 'on'; 
 imagesc(ax,off12,off13,matplt);
-contour(ax,X1,X2,matplt,0.2:0.1:1,'k-','ShowText','on');
+contour(ax,X1,X2,matplt,'k-','ShowText','on');
 plot(ax,minmax(off12),minmax(off13),'--','Color',[.3 .3 .3],'linew',1);
 ind = find(matplt==max(matplt,[],'all'));
 [sub13, sub12] = ind2sub(size(matplt),ind);
@@ -433,8 +394,8 @@ c.Label.String = 'mean overall CC of 2 best pairs';
 
 
 %% choose a set of offset12, 13 with equal CC/RCC
-ccval = 0.7;
-indcol = find(conmat(1,:)==ccval);
+ccval = 0.23;
+[~,indcol] = min(abs(conmat(1,:)-ccval));
 nind = length(indcol);
 for i = 1: nind
   erroff = conmat(:,indcol(i)+1: indcol(i)+conmat(2,indcol(i)))';
@@ -493,7 +454,7 @@ xlabel(ax,sprintf('PGC-SSIB offset (samples at %d Hz)',sps),'FontSize',11);
 ylabel(ax,sprintf('PGC-SILB offset (samples at %d Hz)',sps),'FontSize',11);
 axis(ax,'equal','tight');
 axis(ax,[-mmmax mmmax -nnmax nnmax]);
-title(ax,sprintf('Contour of CC/RCC=%.1f',ccval));
+title(ax,sprintf('Contour of CC/RCC=%.2f',ccval));
 
 ax=f2.ax(2);
 hold(ax,'on'); ax.Box = 'on'; 
@@ -505,7 +466,7 @@ axis(ax,'equal','tight');
 axis(ax,[-1 1 -1 1]);
 
 %% what is the shape like for sqrt(off12^2+off13^2+off23^2)==const
-const = 8;
+const = 8.1;
 
 widin = 8; htin = 4;
 nrow = 1; ncol = 2;
@@ -545,7 +506,7 @@ axis(ax,'equal','tight');
 axis(ax,[-mmmax mmmax -nnmax nnmax]);
 xticks(ax,-mmmax: 2: mmmax);
 yticks(ax,-nnmax: 2: nnmax);
-title(ax,strcat('$\sqrt(x^2+y^2-(y-x)^2)=$',sprintf(' %d',const)),'Interpreter','latex');
+title(ax,strcat('$\sqrt(x^2+y^2-(y-x)^2)=$',sprintf(' %.1f',const)),'Interpreter','latex');
 
 ax=f3.ax(2);
 hold(ax,'on'); ax.Box = 'on';
@@ -558,6 +519,8 @@ xlabel(ax,'E (km)','FontSize',11);
 ylabel(ax,'N (km)','FontSize',11);
 axis(ax,'equal','tight');
 axis(ax,[-1 1 -1 1]);
+
+
 
 
 

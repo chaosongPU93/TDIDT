@@ -1,6 +1,7 @@
-function [f,distprop,distort] = plt_srcprojdist(implocst,nsep,sps,dist,dt,tsplst,ttype)
+function [f,distprop,distort,stats] = ...
+  plt_srcprojdist(implocst,nsep,sps,dist,dt,tsplst,ttype)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% [f,distprop,distort] = plt_srcprojdist(implocst,nsep,sps,dist,dt,tsplst,ttype)
+% [f,distprop,distort,angrmse,fitobjprop,gof,output] = plt_srcprojdist(implocst,nsep,sps,dist,dt,tsplst,ttype)
 %
 % Plot the projected distance between the source N and source N-nsep, in
 % the sequential order of origin time or arrival time (specified by 'ttype'),
@@ -167,7 +168,7 @@ end
 p2=scatter(ax,tsplst/sps,implocdum(:,2),15,[.6 1 1],'filled','o','MarkerEdgeColor','k');
 p1=scatter(ax,tsplst/sps,implocdum(:,1),15,[.5 .5 .5],'filled','o','MarkerEdgeColor','k');
 % linear robust least square
-[fitobjprop,gof,~] = fit(tsplst/sps, implocdum(:,1),fttpfree,'Robust','Bisquare',...
+[fitobjprop,gof,output] = fit(tsplst/sps, implocdum(:,1),fttpfree,'Robust','Bisquare',...
   'StartPoint',[1 1]);
 % output fit parameters
 coefprop = coeffvalues(fitobjprop);
@@ -225,6 +226,58 @@ legend(ax,[p1,p2],'Along prop. direction', 'Orthogonal to prop. dir.','FontSize'
   'location','east');
 longticks(ax,2);
 nolabels(ax,3);
+
+% compute the HF weights in robust linear regression, see NOTES above
+res = output.residuals;   % usual residuals
+x = tsplst/sps;
+hatmat = x/inv(x'*x)*x';
+h = zeros(size(hatmat,1),1);    % leverage of least square
+for jj = 1 : size(hatmat,1)
+  h(jj) = hatmat(jj,jj);
+end
+radj = res./sqrt(1-h);      % adjusted residuals
+K = 4.685;
+s = mad(res,1)/0.6745;
+u = radj/(K*s);
+wt = zeros(length(u),1);    % rubust weight of next iteration
+for jj = 1 : length(u)
+  if abs(u(jj)) < 1
+    wt(jj) = (1-(u(jj))^2)^2;
+  else
+    wt(jj) = 0;
+  end
+end
+
+% get the standard error of the estimated parameters, may indicate the compare the quality
+% of fitting cross different RTMs, NOTE that rmse, mse are definitely not a good measure
+% the obtained CI is comfirmed to be correct by comparing it with the 'fitobjhfprop'
+slopese = gof.rmse./sqrt(sum((x-mean(x)).^2));
+est = slopeprop;
+slopepropCI = confidence_interval_general(est,slopese,length(x)-2,95);
+interceptse = slopese.*sqrt(sum(x.^2)./length(x));
+est = intcptprop;
+intcptpropCI = confidence_interval_general(est,interceptse,length(x)-2,95);
+
+x = tsplst/sps;
+y = implocdum(:,1);
+x_bar = wt_mean(x,wt);
+y_bar = wt_mean(y,wt);
+x_var = sum(wt.*(x-x_bar).^2) / sum(wt);
+y_var = sum(wt.*(y-y_bar).^2) / sum(wt);
+xy_cov = sum(wt.*(x-x_bar).*(y-y_bar)) / sum(wt);
+pearwt = xy_cov / sqrt(x_var*y_var);
+
+stats.angrmse = angrmse;
+stats.slopeprop = slopeprop;
+stats.slopese = slopese;
+stats.slopepropCI = slopepropCI;
+stats.interceptse = interceptse;
+stats.intcptpropCI = intcptpropCI;
+stats.wt = wt;
+stats.pearwt = pearwt;
+stats.fitobjprop = fitobjprop;
+stats.gof = gof;
+stats.output = output;
 
 % subplot(3,3,7); hold on
 % %%% Actually used is the pre-determined best prop direc to do the fitting

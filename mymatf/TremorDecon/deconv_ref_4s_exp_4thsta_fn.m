@@ -526,6 +526,8 @@ distarvlnn3all = [];
 dtarvlpropall = [];
 distarvlpropall = [];
 distarvlortall = [];
+propang = [];
+proppear = [];
 
 %4th station checked, decon impulse tarvl separation, spatial distance, etc.
 tsep4thall = []; 
@@ -1648,12 +1650,14 @@ for iii = 1: length(idxbst)
       nsep = 1;
       ttype = 'tarvl';
       %%%Projected distance along specific directions, eg., propagation and its orthogonal, in terms of arrival time
-      [f,distprop,distort] = plt_srcprojdist(implocst,nsep,sps,dist,dift,tarvlsplst,ttype);
+      [f,distprop,distort,stats] = plt_srcprojdist(implocst,nsep,sps,dist,dift,tarvlsplst,ttype);
       if ~isempty(distprop) && ~isempty(distort)
 %         close(f.fig);
         distarvlpropall = [distarvlpropall; distprop];
         distarvlortall = [distarvlortall; distort];
         dtarvlpropall = [dtarvlpropall; dift];
+        propang(iii) = stats.angrmse;
+        proppear(iii) = stats.pearwt;
       end
 %       orient(f.fig,'landscape');
 %       if noiseflag
@@ -1903,6 +1907,7 @@ keyboard
         distarvlprop4thall = [distarvlprop4thall; distprop];
         distarvlort4thall = [distarvlort4thall; distort];
         dtarvlprop4thall = [dtarvlprop4thall; dift];
+        fit
       end
 %       orient(f.fig,'landscape');
 %       if noiseflag
