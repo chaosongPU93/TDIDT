@@ -1,4 +1,5 @@
-function [f] = plt_agu2022abstractv4(greenf,sigsta,impindepst,sps,xzoom,off1iw,loff_max,tstbuf,dy,mo,yr,ftrans)
+function [f] = plt_agu2022abstractv4(greenf,optdat,impindepst,sps,xzoom,off1iw,loff_max,...
+  rcccat,overshoot,tstbuf,dy,mo,yr,ftrans)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % [f] = plt_agu2022abstractv3(sigsta,resgrp,pkindepsave,impindepst,sps,tmaxi,tmaxo,...
 %   tbosti,tbosto,ircccat,rcccat,off1iw,off1i,loff_max,tstbuf,tedbuf,dy,mo,yr)
@@ -6,6 +7,10 @@ function [f] = plt_agu2022abstractv4(greenf,sigsta,impindepst,sps,xzoom,off1iw,l
 % Different from 'plt_agu2022abstractv3.m', this version plot the version for
 % synthetic noise. The way of plotting is exactly the same, I only changed 
 % a few to emphasize this is synthetic noise!
+% Note that for noise, the alignment of each 25-s win or the whole window should
+% be different from data. While the data requires the global BEST alignment that 
+% calls function 'constrained_cc_interp', noise just requires aligning to the 
+% best you can that calls 'constrained_cc_loose'.
 %
 %
 %
@@ -41,11 +46,17 @@ end
 
 color = ['r';'b';'k'];
 
+nsta = size(optdat,2); 
+sigsta = zeros(size(optdat,1), nsta);
+for ista = 1:nsta
+  sigsta(:,ista) = detrend(optdat(:,ista));
+end
+sigsta = detrend(sigsta(overshoot+1:end-overshoot, :));  %excluding the overshoot
+        
 ym = max(abs(sigsta(:)));
 yran=1.5*[-ym ym];
 
 lsig = size(sigsta,1); 
-nsta = size(sigsta,2); 
 lwlet = size(greenf,1);
 
 %%%seismograms of signal
@@ -122,32 +133,43 @@ hold(ax,'off');
 %%%seismograms of signal, zoom-in
 ax=f.ax(2);
 hold(ax,'on');
-%%%obtain a single best alignment based on the zoom-in segment
-msftadd = 20; 
-optcc = sigsta(xzoom(1)*sps+1: xzoom(2)*sps, :);
-ccmid = ceil(size(optcc,1)/2);
-ccwlen = round(size(optcc,1)-2*(msftadd+1));
-loffmax = 4*sps/40;
-ccmin = 0.01;  % depending on the length of trace, cc could be very low
-iup = 1;    % times of upsampling
-[off12con,off13con,ccali,iloopoff,loopoff] = constrained_cc_interp(optcc',ccmid,...
-  ccwlen,msftadd,loffmax,ccmin,iup);
-% if a better alignment cannot be achieved, use 0,0
-if off12con == msftadd+1 && off13con == msftadd+1
-  off12con = 0;
-  off13con = 0;
-  fprintf('This segment cannot be properly aligned, double-check needed \n');
-end
-sigseg(:, 1) = sigsta(xzoom(1)*sps+1: xzoom(2)*sps, 1);
-sigseg(:, 2) = sigsta(xzoom(1)*sps+1-off12con: xzoom(2)*sps-off12con, 2); % sta 2
-sigseg(:, 3) = sigsta(xzoom(1)*sps+1-off13con: xzoom(2)*sps-off13con, 3); % sta 3
+%%%%%%%%%%%%%%%%%%%%
+%%%For noise, don't align independently, use the pre-computed alignments of subwins, and cut from
+%%%concat RCC
+% %%%obtain a single best alignment based on the zoom-in segment
+% msftadd = 20; 
+% optcc = sigsta(xzoom(1)*sps+1: xzoom(2)*sps, :);
+% ccmid = ceil(size(optcc,1)/2);
+% ccwlen = round(size(optcc,1)-2*(msftadd+1));
+% loffmax = 4*sps/40;
+% ccmin = 0.01;  % depending on the length of trace, cc could be very low
+% iup = 1;    % times of upsampling
+% [off12con,off13con,ccali] = constrained_cc_loose(optcc(:,1:3)',ccmid,...
+%   ccwlen,msftadd,ccmin,iup);
+% % if a better alignment cannot be achieved, use 0,0
+% if off12con == msftadd+1 && off13con == msftadd+1
+%   off12con = 0;
+%   off13con = 0;
+%   fprintf('This segment cannot be properly aligned, double-check needed \n');
+% end
+% sigseg(:, 1) = sigsta(xzoom(1)*sps+1: xzoom(2)*sps, 1);
+% sigseg(:, 2) = sigsta(xzoom(1)*sps+1-off12con: xzoom(2)*sps-off12con, 2); % sta 2
+% sigseg(:, 3) = sigsta(xzoom(1)*sps+1-off13con: xzoom(2)*sps-off13con, 3); % sta 3
+%%%%%%%%%%%%%%%%%%%%%%
+
+off12con = off1iw(1,2);
+off13con = off1iw(1,3);
+sigseg(:, 1) = detrend(optdat(overshoot+xzoom(1)*sps+1: overshoot+xzoom(2)*sps, 1));
+sigseg(:, 2) = detrend(optdat(overshoot+xzoom(1)*sps+1-off12con: overshoot+xzoom(2)*sps-off12con, 2)); % sta 2
+sigseg(:, 3) = detrend(optdat(overshoot+xzoom(1)*sps+1-off13con: overshoot+xzoom(2)*sps-off13con, 3)); % sta 3
 
 mwlen = sps/2;
 [ircc,rcc12] = RunningCC(sigseg(:,1), sigseg(:,2), mwlen);
-[~,rcc13] = RunningCC(sigseg(:,1), sigseg(:,3), mwlen);
-[~,rcc23] = RunningCC(sigseg(:,2), sigseg(:,3), mwlen);
-% ircc = ircc+*sps;
-rcc = (rcc12+rcc13+rcc23)/3;
+% [~,rcc13] = RunningCC(sigseg(:,1), sigseg(:,3), mwlen);
+% [~,rcc23] = RunningCC(sigseg(:,2), sigseg(:,3), mwlen);
+% % ircc = ircc+*sps;
+% rcc = (rcc12+rcc13+rcc23)/3;
+rcc = rcccat(ircc); %mwlen/2+1:lsig
 
 lseg = size(sigseg,1);
 % yyaxis(ax,'left');

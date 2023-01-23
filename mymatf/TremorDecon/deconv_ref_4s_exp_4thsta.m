@@ -67,35 +67,45 @@ ind41 = [1,4,6,10,12,15,21,22,23,24,29,46,52,56,74,77,78,82,83,102,111,113,114,1
 %indices of bursts whose CC of sig-wlet cc between sta 14, 24, 34 are all high, above 80th percentile
 ind4123 = [1,12,15,46,56,77,102,114,125,129,155,180]';
 
-%% call function 'deconv_ref_4s_exp_rand_fn', high-correlation VS low-correlation bursts
-% normflag = 0; %do not normalize the templates
-% pltflag = 0;  %do not create summary plots for each choice of inputs
-% % rccmwlen = sps/4; %use 0.5s or 0.25s 
-% rccmwlen = sps/2; %use 0.5s or 0.25s
-% 
-% %%% quiet burst wins using real data
-% idxbst = ind41;
-% hi41 = deconv_ref_4s_exp_4thsta_fn(idxbst,normflag,pltflag,rccmwlen);
-% 
-% idxbst = setdiff(1:181,ind41)';
-% lo41 = deconv_ref_4s_exp_4thsta_fn(idxbst,normflag,pltflag,rccmwlen);
-% 
-% % rsthi = lo41;
+%indices of bursts whose CC of envelope between sta 1,2,3 are high, above 75th percentile
+indenv123 = [1,3,8,10,31,67,78,81,82,91,102,108,114,116,121,129,146,153,167,175];
 
-%% call function 'deconv_ref_4s_exp_rand_fn', high-correlation bursts, DATA VS NOISE
-% normflag = 0; %do not normalize the templates
-% pltflag = 0;  %do not create summary plots for each choice of inputs
-% 
-% %%%high-correlation bursts using real data
-% noiseflag = 0;
-% hibstsig = deconv_ref_4s_exp_4thsta_fn(ind41,normflag,noiseflag,pltflag);
-% 
-% %%%high-correlation bursts using synthetic noise
-% noiseflag = 1;
-% hibstnoi = deconv_ref_4s_exp_4thsta_fn(ind41,normflag,noiseflag,pltflag);
-% 
-% bstsig = hibstsig;
-% bstnoi = hibstnoi;
+%indices of bursts whose CC of sig-wlet cc between sta 1,2,3 are high, above 75th percentile
+indswcc123 = [1,2,3,6,8,18,21,46,56,77,78,82,83,84,102,107,114,125,127,145,169];
+
+%% call function 'deconv_ref_4s_exp_rand_fn', high-correlation VS low-correlation bursts, DATA VS NOISE
+flagrecalc = 0;
+% flagrecalc = 1;
+
+if flagrecalc
+  normflag = 0; %do not normalize the templates
+  pltflag = 0;  %do not create summary plots for each choice of inputs
+  % rccmwsec = 0.25; %use 0.5s or 0.25s 
+  rccmwsec = 0.5; %use 0.5s or 0.25s
+  
+  %%%high-correlation bursts using real data
+  noiseflag = 0;
+  hibstsig = deconv_ref_4s_exp_4thsta_fn(indenv123,normflag,noiseflag,pltflag,rccmwsec);
+  savefile = 'deconv_stats4th_hienvccbstsig.mat';
+  save(strcat(rstpath, '/MAPS/',savefile), 'hibstsig');
+  
+  %%%high-correlation bursts using synthetic noise
+  noiseflag = 1;
+  hibstnoi = deconv_ref_4s_exp_4thsta_fn(indenv123,normflag,noiseflag,pltflag,rccmwsec);
+  savefile = 'deconv_stats4th_hienvccbstnoi.mat';
+  save(strcat(rstpath, '/MAPS/',savefile), 'hibstnoi');
+
+else
+  savefile = 'deconv_stats4th_hienvccbstsig.mat';
+  load(strcat(rstpath, '/MAPS/',savefile));
+  savefile = 'deconv_stats4th_hienvccbstnoi.mat';
+  load(strcat(rstpath, '/MAPS/',savefile));
+end
+
+bstsig = hibstsig;
+bstnoi = hibstnoi;
+
+% keyboard
 
 %% call function 'deconv_ref_4s_exp_rand_fn', all bursts, DATA VS NOISE
 %%%Flag to indicate if it is necessary to recalculate everything
@@ -105,27 +115,30 @@ flagrecalc = 0;
 if flagrecalc
   normflag = 0; %do not normalize the templates
   pltflag = 0;  %do not create summary plots for each choice of inputs
-  % rccmwlen = sps/4; %use 0.5s or 0.25s 
-  rccmwlen = sps/2; %use 0.5s or 0.25s
-
+  % rccmwsec = 0.25; %use 0.5s or 0.25s 
+  rccmwsec = 0.5; %use 0.5s or 0.25s
+  
   %%%all bursts using real data
   noiseflag = 0;
-  allbstsig = deconv_ref_4s_exp_4thsta_fn(1:181,normflag,noiseflag,pltflag,rccmwlen);
+  allbstsig = deconv_ref_4s_exp_4thsta_fn(1:size(trange,1),normflag,noiseflag,pltflag,rccmwsec); %
+  savefile = 'deconv_stats4th_allbstsig.mat';
+%   save(strcat(rstpath, '/MAPS/',savefile), 'allbstsig');
   
   %%%all bursts using synthetic noise
   noiseflag = 1;
-  allbstnoi = deconv_ref_4s_exp_4thsta_fn(1:181,normflag,noiseflag,pltflag,rccmwlen);
-  
-  savefile = 'deconv_stats4th_allbst.mat';
-  save(strcat(rstpath, '/MAPS/',savefile), 'allbstsig','allbstnoi');
-
+  allbstnoi = deconv_ref_4s_exp_4thsta_fn(1:size(trange,1),normflag,noiseflag,pltflag,rccmwsec);  %
+  savefile = 'deconv_stats4th_allbstnoi.mat';
+%   save(strcat(rstpath, '/MAPS/',savefile), 'allbstnoi');
 else
-  savefile = 'deconv_stats4th_allbst.mat';
+  savefile = 'deconv_stats4th_allbstsig.mat';
+  load(strcat(rstpath, '/MAPS/',savefile));
+  savefile = 'deconv_stats4th_allbstnoi.mat';
   load(strcat(rstpath, '/MAPS/',savefile));
 end
 
 bstsig = allbstsig;
 bstnoi = allbstnoi;
+% keyboard
 
 %% comparison plots, syn noise vs data
 %%%the direct/scaled deconvolved pos/neg source peak ratio between all station pairs, for each

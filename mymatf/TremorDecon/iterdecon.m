@@ -32,7 +32,8 @@ function [sigdecon,pred,res,dresit,mfitit,ampit,nit,fighdl,rf] = ...
 %   sigdecon: deconvolved impulses, ie., the estimation of impulse responses
 %   pred: predicted signal
 %   res:  residual, aka signal misfit
-%   dresit: percentage of relative change in residual of each iteration
+%   dresit: percentage of relative change in residual of each iteration, in terms of variance
+%           reduction
 %   mfitit: norm of the residual/misfit of each iteration
 %   ampit:  amplitude of decolved impulse of each iteration
 %   nit:  actual number of iterations until algorithm converges/stops
@@ -49,7 +50,8 @@ function [sigdecon,pred,res,dresit,mfitit,ampit,nit,fighdl,rf] = ...
 % --if the receiver function 'rf' is one of the outputs, wavelet and signal would be padded with 
 %   zeros to the same length of next power of 2 to ease the related FFT  
 % --Some MATH relations: norm(a,2) == sqrt(sum(a.^2)); rms(a) == sqrt(sum(a.^2)/length(a)), so norm
-%   is related to rms, norm(a,2) == rms(a)*sqrt(length(a)); Also, the sample std is the same as rms
+%   is related to rms, norm(a,2) == rms(a)*sqrt(length(a)); Also, std is the same as rms if mean is
+%   0; var is the same as the square of L-2 norm / N or N-1, depending on reality
 % --Not necessarily start from the max. CC (signal and wavelet) arrival; but could start with the
 %   one that has the max. CC among all stations. Basically, this means although you doing it at a
 %   single station, you have an extra constraint from other stations
@@ -104,7 +106,7 @@ if isempty(width)
   width = 2.5;
 end
 if isempty(dres_min)
-  dres_min = 0.05;
+  dres_min = 0.5; % 0.5 percent
 end
 if isempty(mfit_min)
   mfit_min = norm(sig);
@@ -131,7 +133,6 @@ if isempty(fpltchk)
   fpltchk = 0;
 end
 
-dres_min = dres_min/100;  % from percent to decimal
 itwlet = round(twlet/dt); % time shift of main arrival of wavelet in samples
 sps = round(1/dt);
 
@@ -162,10 +163,10 @@ nit = 0;  % iteration number
 res = sig;  % residual
 pred = zeros(nfft,1);  % predefine the prediction array
 sigdecon = zeros(nfft,1);  % predefine the response array
-dres = 1;   % decrease of residual
+varred = 1;   % decrease of residual, in terms of variance reduction
 mfit = max(1, norm(sig));   % misfit between data and prediction
 ampit = [];   % amplitude of impulse relative to the max amp of the template
-dresit = [];  % relative change in residual for each iteration
+dresit = [];  % relative change in residual for each iteration, in terms of variance reduction
 mfitit = [];  % misfit for each iteration, norm of the residual 
 nimp = 0; % total number of impulses 
 predchg = sig;   % change in prediction 
@@ -336,7 +337,7 @@ while mwtcoef>medwtcoef && nit<nit_max
   idxcoef = idximp-itwlet+1+nfft;  % index of the raw CC that gives the amp
   lagsamp = lag(idxcoef); % offset in samples, in the context of raw CC
   amp = coef(idxcoef)/sum(wlet.^2); % convert max raw CC to amplitude
-  rccimp = rcc(pkind(mwtcoefidx)); % rcc value at the index of the selected impulse 
+  rccimp = rcc(pkind(mwtcoefidx)); % rcc value at the index of the selected impulse  
   %%% Scheme 2, END %%%
   %%%%%%%%%%%%%% Different weighting schemes of CC %%%%%%%%%%%%%%
   
@@ -398,13 +399,24 @@ while mwtcoef>medwtcoef && nit<nit_max
   predchg = predchg(itwlet:nfft+itwlet-1);  % cut accordingly
   pred = pred + predchg;  % update the prediction
   
+  %fit a parabola around the peak, to quantify the 'sharpness' of the found peak
+  nptsfit = 21;
+  x = (pkind(mwtcoefidx)-floor(nptsfit/2): pkind(mwtcoefidx)+floor(nptsfit/2))';
+  y = coefeff(x);
+  poly = polyfit(x,y,2);  %1st param is focal length that determines how flat or skinny parabola is
+  ampit(nit, 7) = poly(1);  %save 1st param to represent the sharpness    
+%   yfit = polyval(poly,x);
+%   figure; plot(x,y); hold on;
+%   scatter(x,yfit);
+
   res_new = sig-pred;   % residual
 %   dres = abs((sum(res.^2)-sum(res_new.^2))./sum(res.^2));  % target evaluation objective
-  dres = abs(norm(res).^2-norm(res_new).^2)./norm(res).^2;  % this is equivalent to the above
+%   dres = abs(norm(res).^2-norm(res_new).^2)./norm(res).^2;  % this is equivalent to the above
+  varred = abs(var(res)-var(res_new))./var(res);  % again equivalent to the above, but called variance reduction
 %   dres = sum((res-res_new).^2)./sum(res.^2);  % alternative evaluation objective
 %   mfit = sum(res_new.^2)./sum(sig.^2);  % misfit objective, we want the residual to decrease to 0
   mfit = norm(res_new);  % alternative misfit objective
-  dresit(nit) = dres*100;   % store them, make the relative change in percent
+  dresit(nit) = varred*100;   % store them, make the relative change in percent
   mfitit(nit) = mfit;
   
 %   %For benchmark, the following 3 values should be identical according to theory in the reference 
@@ -535,8 +547,8 @@ mfitit = mfitit(:);
   
 %Disp information if some stopping criteria have been met 
 if idximp>=1 && idximp<=nfft   % notify if index is out of bounds
-  if dres<=dres_min
-    fprintf('Relative change in L2-norm of residual has reached dres_min=%f%% \n',dres_min*100);
+  if varred*100<=dres_min
+    fprintf('Relative change in L2-norm of residual has reached dres_min=%f%% \n',dres_min);
   end
   if mfit<=mfit_min
     fprintf('L2-norm of residual has reached mfit_min=%e \n',mfit_min);
@@ -659,13 +671,13 @@ if fpltend
   p1=plot(ax,1:nit,dresit,'b-');
   scatter(ax,nit,dresit(end),20,'b','filled');
   text(ax,round(nit*4/5), dresit(end)+0.15, num2str(dresit(end)));
-  ylabel(ax,'Relative change (%)');
+  ylabel(ax,'Variance reduction (%)');
   yyaxis(ax,'right');
   p2=plot(ax,1:nit,mfitit,'r-');
   scatter(ax,nit,mfitit(end),20,'r','filled');
   text(ax,round(nit*4/5), mfitit(end)+0.15, num2str(mfitit(end)));
   ylabel(ax,'L2-norm');
-  legend(ax,[p1,p2],'Relative change in L2-norm of residual (dres)','L2-norm of residual, or data misfit (mfit)');
+  legend(ax,[p1,p2],'Variance reduction of residual (dres)','L2-norm of residual, or data misfit (mfit)');
   xlabel(ax,'Iteration number');
   hold(ax,'off');
   fighdl{3} = f3;

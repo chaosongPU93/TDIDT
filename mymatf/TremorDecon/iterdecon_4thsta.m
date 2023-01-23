@@ -292,11 +292,12 @@ for isrc = 1: size(impindep,1)
   
   res_new = sig-pred;   % residual
 %   dres = abs((sum(res.^2)-sum(res_new.^2))./sum(res.^2));  % target evaluation objective
-  dres = abs(norm(res).^2-norm(res_new).^2)./norm(res).^2;  % this is equivalent to the above
+%   dres = abs(norm(res).^2-norm(res_new).^2)./norm(res).^2;  % this is equivalent to the above
+  varred = abs(var(res)-var(res_new))./var(res);  % again equivalent to the above, but called variance reduction
 %   dres = sum((res-res_new).^2)./sum(res.^2);  % alternative evaluation objective
 %   mfit = sum(res_new.^2)./sum(sig.^2);  % misfit objective, we want the residual to decrease to 0
   mfit = norm(res_new);  % alternative misfit objective
-  dresit(isrc) = dres*100;   % store them, make the relative change in percent
+  dresit(isrc) = varred*100;   % store them, make the relative change in percent, in terms of variance reduction
   mfitit(isrc) = mfit;
   
   nimp = sum(sigdecon>0); % number of non-zero impulses
@@ -495,13 +496,13 @@ if fpltend
   p1=scatter(ax,ind,dresit(ind),20,'b');
   scatter(ax,ind(end),dresit(ind(end)),20,'b','filled');
   text(ax,round(ind(end)*4/5), dresit(ind(end))+0.15, num2str(dresit(ind(end))));
-  ylabel(ax,'Relative change (%)');
+  ylabel(ax,'Variance reduction (%)');
   yyaxis(ax,'right');
   p2=scatter(ax,ind,mfitit(ind),20,'r');
   scatter(ax,ind(end),mfitit(ind(end)),20,'r','filled');
   text(ax,round(ind(end)*4/5), mfitit(ind(end))+0.15, num2str(mfitit(ind(end))));
   ylabel(ax,'L2-norm');
-  legend(ax,[p1,p2],'Relative change in L2-norm of residual (dres)','L2-norm of residual, or data misfit (mfit)');
+  legend(ax,[p1,p2],'Variance reduction of residual (dres)','L2-norm of residual, or data misfit (mfit)');
   xlabel(ax,'Source number');
   hold(ax,'off');
   fighdl{3} = f3;

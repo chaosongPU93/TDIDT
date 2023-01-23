@@ -1,5 +1,5 @@
 % deconv_foragu2022.m
-function rststruct = deconv_foragu2022(idxbst,normflag,noiseflag,pltflag,rccmwsec)
+% function rststruct = deconv_foragu2022(idxbst,normflag,noiseflag,pltflag,rccmwsec)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Special version of 'deconv_ref_4s_exp_4thsta_fn' for AGU 2022, contains lots
 % of minor modifications of plotting.
@@ -1403,8 +1403,11 @@ for iii = 1: length(idxbst)
       refsta = 1;
 %       [impindep,imppairf,indpair] = groupimptriplets_ref(sigdecon,irccran,rcccat,...
 %         off1i(k,:),off1iw,loff_max,'wtamp',refsta);
-      [impindep,imppairf,indpair] = groupimptripdecon_ref(sigdecon,ampit,irccran,rcccat,...
+      [impindep,imppairf,indpair,sharp] = groupimptripdecon_ref(sigdecon,ampit,irccran,rcccat,...
         off1i(k,1:3),off1iw(:,1:3),loff_max,refsta);
+      
+      %plot the sharpness of grouped peaks in res-wlet CC 
+      f=plt_srcsharpness(sharp);
       
 %       nsrc(iii) = size(impindep,1);
 %       end
@@ -1415,7 +1418,7 @@ for iii = 1: length(idxbst)
 %     xlabel('number of sources');
 %     ylabel('counts');
 %     
-      
+
 %       %%%plot the individually deconvolved impulses and the grouping result
 %       [f] = plt_groupimptriplets(sigdecon,impindep,stas,ircccat,rcccat);
       
@@ -1541,10 +1544,14 @@ for iii = 1: length(idxbst)
       impindep(indremove, :) = [];
       ppkindep(indremove, :) = [];
       npkindep(indremove, :) = [];
+      sharp(indremove, :) = [];
       impindepst = sortrows(impindep,1);
       nsrcraw(iii,1) = size(impindepst,1);  % number of sources AFTER removing 2ndary 
 
       if ~isempty(impindepst)
+
+      %plot the sharpness of grouped peaks in res-wlet CC
+      f=plt_srcsharpness(sharp);
 
       %% plot the scatter of sources in terms of offsets, accounting for prealignment offset
       span = max(range(off1iw(:,2))+2*loff_max, range(off1iw(:,3))+2*loff_max);
@@ -1574,13 +1581,14 @@ for iii = 1: length(idxbst)
 % keyboard
 
       %% signal + zoom-in + map locations + some reference symbols 
-      xzoom = [5 30];
       if noiseflag
-        [f] = plt_agu2022abstractv4(greenf(:,1:3),sigsta(:,1:3),impindepst,sps,xzoom,off1iw,loff_max,...
-          tstbuf,dy,mo,yr,ftrans);
+        xzoom = [0 25];
+        [f] = plt_agu2022abstractv4(greenf(:,1:3),optdat(:,2:4),impindepst,sps,xzoom,off1iw,loff_max,...
+          rcccat,overshoot,tstbuf,dy,mo,yr,ftrans);
         text(f.ax(3),0.98,0.88,'Using synthetic noise','HorizontalAlignment','right',...
           'Units','normalized','FontSize',9,'FontWeight','bold');
       else        
+        xzoom = [5 30];
         [f] = plt_agu2022abstractv3(greenf(:,1:3),sigsta(:,1:3),impindepst,sps,xzoom,off1iw,loff_max,...
           tstbuf,dy,mo,yr,ftrans);
       end
@@ -1667,13 +1675,13 @@ for iii = 1: length(idxbst)
           'Units','normalized','FontSize',10,'interpreter','latex');
       end
       
-      if noiseflag
-%         print(f.fig,'-dpdf','/home/chaosong/Pictures/sig+map+rm2ndarynoi.pdf');
-        print(f.fig,'-dpdf','/home/chaosong/Pictures/sig+map+rm2ndarynoiv2.pdf');
-      else
-%         print(f.fig,'-dpdf','/home/chaosong/Pictures/sig+map+rm2ndary.pdf');
-        print(f.fig,'-dpdf','/home/chaosong/Pictures/sig+map+rm2ndaryv2.pdf');
-      end
+%       if noiseflag
+% %         print(f.fig,'-dpdf','/home/chaosong/Pictures/sig+map+rm2ndarynoi.pdf');
+%         print(f.fig,'-dpdf','/home/chaosong/Pictures/sig+map+rm2ndarynoiv2.pdf');
+%       else
+% %         print(f.fig,'-dpdf','/home/chaosong/Pictures/sig+map+rm2ndary.pdf');
+%         print(f.fig,'-dpdf','/home/chaosong/Pictures/sig+map+rm2ndaryv2.pdf');
+%       end
 
       keyboard
       %% what is the distance for consecutive soures, in terms of origin time?      
@@ -2092,21 +2100,22 @@ for iii = 1: length(idxbst)
 % keyboard
 
       %% replot the signal and maps after 4th sta check
-%       xzoom = [5 30];
-%       if noiseflag
-%         [f] = plt_agu2022abstractv4(greenf(:,1:3),sigsta(:,1:3),impindepst,sps,xzoom,off1iw,loff_max,...
-%           tstbuf,dy,mo,yr,ftrans);
-%         text(f.ax(3),0.98,0.88,'Using synthetic noise','HorizontalAlignment','right',...
-%           'Units','normalized','FontSize',9,'FontWeight','bold'); %,'FontName','Courier'
-%       else
-%         [f] = plt_agu2022abstractv3(greenf(:,1:3),sigsta(:,1:3),impindepst,sps,xzoom,off1iw,loff_max,...
-%           tstbuf,dy,mo,yr,ftrans);
-%       end
-%       text(f.ax(3),0.98,0.95,'Succefully checked at KLNB','HorizontalAlignment','right',...
-%         'Units','normalized','FontSize',10);
-%       text(f.ax(4),0.98,0.95,'Zoom-in','HorizontalAlignment','right',...
-%         'Units','normalized','FontSize',10);
-% 
+      if noiseflag
+        xzoom = [0 25];
+        [f] = plt_agu2022abstractv4(greenf(:,1:3),optdat(:,2:4),impindepst,sps,xzoom,off1iw,loff_max,...
+          rcccat,overshoot,tstbuf,dy,mo,yr,ftrans);
+        text(f.ax(3),0.98,0.88,'Using synthetic noise','HorizontalAlignment','right',...
+          'Units','normalized','FontSize',9,'FontWeight','bold'); %,'FontName','Courier'
+      else
+        xzoom = [5 30];
+        [f] = plt_agu2022abstractv3(greenf(:,1:3),sigsta(:,1:3),impindepst,sps,xzoom,off1iw,loff_max,...
+          tstbuf,dy,mo,yr,ftrans);
+      end
+      text(f.ax(3),0.98,0.95,'Succefully checked at KLNB','HorizontalAlignment','right',...
+        'Units','normalized','FontSize',10);
+      text(f.ax(4),0.98,0.95,'Zoom-in','HorizontalAlignment','right',...
+        'Units','normalized','FontSize',10);
+
 %       if noiseflag
 %         print(f.fig,'-dpdf','/home/chaosong/Pictures/sig+map+chkat4thnoi.pdf');
 %       else

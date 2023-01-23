@@ -1,4 +1,4 @@
-function [impindep,imptripf,indtrip] = groupimptripdecon_ref(sigdecon,ampit,irccran,rcccat,...
+function [impindep,imptripf,indtrip,sharp] = groupimptripdecon_ref(sigdecon,ampit,irccran,rcccat,...
   off1i,off1iw,loff_max,refsta)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % [impindep,imppairf,indpair] = groupimptriplets_ref(sigdecon,ampit,irccws,rcccat,off1i,off1iw,loff_max)
@@ -57,6 +57,8 @@ function [impindep,imptripf,indtrip] = groupimptripdecon_ref(sigdecon,ampit,ircc
 %
 % --2022/06/23, added the option of selecting different stations as the 
 %   reference, not necessarily the 1st in the station list, eg., PGC  
+% --2023/01/19, added the output of peak sharpness by fitting a parabola to
+%   the max of res-wlet CC in each iteration of deconvolution stored in 'ampit'
 %
 % 
 % By Chao Song, chaosong@princeton.edu
@@ -210,6 +212,19 @@ impindep = imptripf(:, [1 2 5 6 9 10]); % info of impulse index and amp
 impindep(:,7:9) = [impindep(:,1)-impindep(:,3) impindep(:,1)-impindep(:,5) ...
                    impindep(:,3)-impindep(:,5)];  % again, be consistent in sign!
 
+%output the sharpness of the grouped triplets
+sharp = zeros(size(impindep,1),3);
+for j = 1: 3
+  tmp = ampit{1,j};
+  for i = 1: size(impindep,1)
+    [~,~,ish] = intersect(impindep(i,(j-1)*2+1),tmp(:,1),'stable');
+    if length(ish)>1
+      sharp(i,j) = mean(tmp(ish,end));  %if there are multiples, use mean
+    else
+      sharp(i,j) = tmp(ish,end);
+    end
+  end
+end
 
 % keyboard                 
                  

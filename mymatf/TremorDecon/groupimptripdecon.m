@@ -1,4 +1,4 @@
-function [impindep,imptripf,indtrip] = groupimptripdecon(sigdecon,ampit,rcc,loff_max,refsta,refampr)
+function [impindep,imptripf,indtrip,sharp] = groupimptripdecon(sigdecon,ampit,rcc,loff_max,refsta,refampr)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % [impindep,imppairf,indpair] = groupimptripdecon(sigdecon,ampit,rcc,loff_max)
 %
@@ -47,6 +47,8 @@ function [impindep,imptripf,indtrip] = groupimptripdecon(sigdecon,ampit,rcc,loff
 %   c. now i am adding 'refampr' as the reference amp ratio which is a 3*1 vector
 %     of sensible amp ratios
 %
+% --2023/01/19, added the output of peak sharpness by fitting a parabola to
+%   the max of res-wlet CC in each iteration of deconvolution stored in 'ampit'
 % 
 % By Chao Song, chaosong@princeton.edu
 % First created date:   2022/06/20
@@ -186,6 +188,20 @@ impindep = imptripf(:, [1 2 5 6 9 10]); % info of impulse index and amp
 %adding the time offset 12, 13 and 23, indicating location, off23 == off13-off12 == tarvl2-tarvl3
 impindep(:,7:9) = [impindep(:,1)-impindep(:,3) impindep(:,1)-impindep(:,5) ...
                    impindep(:,3)-impindep(:,5)];  % again, be consistent in sign!
+
+%output the sharpness of the grouped triplets
+sharp = zeros(size(impindep,1),3);
+for j = 1: 3
+  tmp = ampit{1,j};
+  for i = 1: size(impindep,1)
+    [~,~,ish] = intersect(impindep(i,(j-1)*2+1),tmp(:,1),'stable');
+    if length(ish)>1
+      sharp(i,j) = mean(tmp(ish,end));  %if there are multiples, use mean
+    else
+      sharp(i,j) = tmp(ish,end);
+    end
+  end
+end
 
 % keyboard                 
                  

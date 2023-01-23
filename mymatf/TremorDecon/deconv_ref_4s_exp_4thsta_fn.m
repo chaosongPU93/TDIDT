@@ -1,5 +1,5 @@
 % deconv_ref_4s_exp_4thsta_fn.m
-% function rststruct = deconv_ref_4s_exp_4thsta_fn(idxbst,normflag,noiseflag,pltflag,rccmwsec)
+function rststruct = deconv_ref_4s_exp_4thsta_fn(idxbst,normflag,noiseflag,pltflag,rccmwsec)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Based on 'deconvbursts002_ref_4s_exp' and 'deconv_ref_4s_exp_rand_fn', but
 % this version tries to involve the 4th station to check the deconvolution
@@ -29,7 +29,7 @@
 % Last modified date:   2022/11/30
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 format short e   % Set the format to 5-digit floating point
-clear
+% clear
 clc
 % close all
 
@@ -526,8 +526,6 @@ distarvlnn3all = [];
 dtarvlpropall = [];
 distarvlpropall = [];
 distarvlortall = [];
-propang = [];
-proppear = [];
 
 %4th station checked, decon impulse tarvl separation, spatial distance, etc.
 tsep4thall = []; 
@@ -1353,7 +1351,7 @@ for iii = 1: length(idxbst)
         dt = 1/sps;  % sampling interval
         twlet = zcrosses(ista)*dt;
         width = 2.5;  % width for Gaussian filter
-        dres_min = 0.5;  % tolerance, percentage change in residual per iteration
+        dres_min = 0.5;  % tolerance, percentage change in residual per iteration, in terms of variance reduction
         mfit_min = 5e-1;  % tolerance, norm of the residual/misfit
         tdura = 0.5;  % estimate from the broadband template from fam 002
         nit_max = round(1.5*1/tdura*(tlenbuf));  % max numer of iterations
@@ -1412,9 +1410,12 @@ for iii = 1: length(idxbst)
       refsta = 1;
 %       [impindep,imppairf,indpair] = groupimptriplets_ref(sigdecon,irccran,rcccat,...
 %         off1i(k,:),off1iw,loff_max,'wtamp',refsta);
-      [impindep,imppairf,indpair] = groupimptripdecon_ref(sigdecon,ampit,irccran,rcccat,...
+      [impindep,imppairf,indpair,sharp] = groupimptripdecon_ref(sigdecon,ampit,irccran,rcccat,...
         off1i(k,1:3),off1iw(:,1:3),loff_max,refsta);
       
+%       %plot the sharpness of grouped peaks in res-wlet CC 
+%       f=plt_srcsharpness(sharp);
+%       
 %       nsrc(iii) = size(impindep,1);
 %       end
 %     
@@ -1563,10 +1564,14 @@ for iii = 1: length(idxbst)
       impindep(indremove, :) = [];
       ppkindep(indremove, :) = [];
       npkindep(indremove, :) = [];
+      sharp(indremove, :) = [];
       impindepst = sortrows(impindep,1);
       nsrcraw(iii,1) = size(impindepst,1);  % number of sources AFTER removing 2ndary 
 
       if ~isempty(impindepst)
+
+%       %plot the sharpness of grouped peaks in res-wlet CC
+%       f=plt_srcsharpness(sharp);
 
       %% plot the scatter of sources in terms of offsets, accounting for prealignment offset
       span = max(range(off1iw(:,2))+2*loff_max, range(off1iw(:,3))+2*loff_max);
@@ -1581,7 +1586,7 @@ for iii = 1: length(idxbst)
         cran,off1iw,loff_max,sps,50,'mean','tori','comb');
       scatter(ax1,off1i(k,2),off1i(k,3),20,'ks','filled','MarkerEdgeColor','k');
       title(ax1,'Independent, grouped, no secondary sources');
-      keyboard      
+%       keyboard      
 %       %%%plot the scatter of offsets, shifted to the same origin, the best alignment
 %       xran = [-loff_max+off1i(k,2)-1 loff_max+off1i(k,2)+1];
 %       yran = [-loff_max+off1i(k,3)-1 loff_max+off1i(k,3)+1];
@@ -1665,7 +1670,7 @@ for iii = 1: length(idxbst)
 %       else
 %         print(f.fig,'-dpdf',strcat('/home/chaosong/Pictures/',ttype,'nn1dist.pdf'));
 %       end
-keyboard
+% keyboard
 
       %% test a bunch of offset max to see residual reduction VS. # of sources left
 %       %%%According to the resulting plot, ~1.6* RMSE (12 samples at 160 sps) seems proper
@@ -1901,15 +1906,16 @@ keyboard
       nsep = 1;      
       ttype = 'tarvl';
       %%%Projected distance along specific directions, eg., propagation and its orthogonal, in terms of arrival time
-      [f,distprop,distort] = plt_srcprojdist(implocst,nsep,sps,dist,dift,tarvlsplst,ttype);
+      [f,distprop,distort,stats] = plt_srcprojdist(implocst,nsep,sps,dist,dift,tarvlsplst,ttype);
       if ~isempty(distprop) && ~isempty(distort)
 %         close(f.fig);
         distarvlprop4thall = [distarvlprop4thall; distprop];
         distarvlort4thall = [distarvlort4thall; distort];
         dtarvlprop4thall = [dtarvlprop4thall; dift];
-        fit
+        propang4th(iii) = stats.angrmse;
+        proppear4th(iii) = stats.pearwt;
       end
-%       orient(f.fig,'landscape');
+      %       orient(f.fig,'landscape');
 %       if noiseflag
 %         print(f.fig,'-dpdf',strcat('/home/chaosong/Pictures/',ttype,'nn1dist4thnoi.pdf'));
 %       else
@@ -2601,6 +2607,11 @@ if ~isempty(impindepst)
   rststruct.mnsrcamprs = mnsrcamprs;
   rststruct.madnsrcamprs = madnsrcamprs;
   rststruct.l2normred = l2normred;
+  rststruct.propang = propang;
+  rststruct.proppear = proppear;
+  rststruct.propang4th = propang4th;
+  rststruct.proppear4th = proppear4th;
+
 end
 
 %% if 'pltflag' is on, then summary plots for each choice of inputs would be made 
