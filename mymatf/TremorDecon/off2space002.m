@@ -76,6 +76,9 @@ if isequal(ftrans, 'directhypo')
     warning("The requested sps doesn't have a precomputed grid");
   end
   offgrid = load(fullfile(gridpath, gridfile));
+  if isempty(offset)
+    offset = offgrid(:,7:8);
+  end
   [~, induniq] = unique(offset(:,1:2),'rows','stable');
   [~,indmatch,~] = intersect(offset(:,1:2),offgrid(:,7:8),'rows','stable');
   if length(indmatch) < length(induniq)
@@ -206,6 +209,9 @@ else
   off12n = reshape(off12n,[],1);
   off13n = reshape(off13n,[],1);
   offgrid = [lonn latn depn ttrvln off12n off13n];
+  if isempty(offset)
+    offset = offgrid(:,5:6);
+  end
   [~, induniq] = unique(offset(:,1:2),'rows','stable');
   [~,indmatch,~] = intersect(offset(:,1:2),offgrid(:,5:6),'rows','stable');
   if length(indmatch) < length(induniq)

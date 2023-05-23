@@ -1,6 +1,9 @@
 %Reads nsta(=3) template stacks. 
 %Builds a synthetic seismogram for each from a user-defined window (ginput).
 %shifts 2 and 3 w.r.t. 1 over a pre-defined range.
+%This verison is very similar to 'synthshift.m' and 'synthshift2023.m', the main
+%difference is that 'chaosynth' uses 'plaw3b' for generating src arrivals, while 
+%'synthshift.m' uses 'plaw3c', and 'synthshift2023.m' uses 'plaw3d'
 clear
 % close all
 set(0,'DefaultFigureVisible','on');

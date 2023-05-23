@@ -1,19 +1,9 @@
-%One more column (mean of running average CC) added 7/6/21
-%
-%This one cleans up some glitches 2/22/22 - eliminates detections occuring w/in
-%offset of kept detections EVEN if they occur > offset from the first in a
-%series of overlapping detections. Keeps the last entry. Fixes a bug in
-%treating a sequence at the end of the daily catalog.
-%
-%Also keeps the largest CC detection, even one at the margins of a window.
-%For when locations are more important than statistics of the "arrival".
-%
  clear all
  close all
- scrsz=get(0,'ScreenSize');
- wid=scrsz(3);
- hite=scrsz(4);
- scrat=wid/hite; 
+scrsz=get(0,'ScreenSize');
+wid=scrsz(3);
+hite=scrsz(4);
+scrat=wid/hite; 
  rads=pi/180.;
  erad=6372.028;
  lat0=48.0+26.32/60.;
@@ -46,35 +36,121 @@
 % In p085p020, order is PGSS PISI.  PGSI changes more rapidly.
 % in output of wiggledaywig2, order is [timswin(n) xmaxPGSIntmp(n) xmaxPGSSntmp(n) ...
 
-offset=0.5;
-suff=num2str(offset);
 fam='002';
 if isequal(fam,'002')
-%    mapinputs='map2003.063.002.loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms18-4s';
-    mapinputs=['map2003.062.002.loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms18-4s';
-%                'map2003.063.002.loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms18-4s';
-%                'map2004.196.002.loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms18-4s';
-%                'map2004.197.002.loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms18-4s';
-%                'map2004.198.002.loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms18-4s';
-%                'map2004.199.002.loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms18-4s';
-%                'map2005.254.002.loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms18-4s';
-%                'map2005.255.002.loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms18-4s';
-%                'map2005.256.002.loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms18-4s'
-               ];
-    mapoutputs=mapinputs;
-    for n=1:size(mapoutputs,1)
-        mapoutputs(n,size(mapinputs,2)+1:size(mapinputs,2)+6+length(suff))=['.onepk',suff];
-    end
-%     mapoutputs='map2003.063.002.loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms18-4s.onepk.5'
-%     mapoutputs=['map2003.062.002.loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms18-4s.onepk.5';
-%                 'map2003.063.002.loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms18-4s.onepk.5';
-%                 'map2004.196.002.loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms18-4s.onepk.5';
-%                 'map2004.197.002.loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms18-4s.onepk.5';
-%                 'map2004.198.002.loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms18-4s.onepk.5';
-%                 'map2004.199.002.loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms18-4s.onepk.5';
-%                 'map2005.254.002.loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms18-4s.onepk.5';
-%                 'map2005.255.002.loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms18-4s.onepk.5';
-%                 'map2005.256.002.loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms18-4s.onepk.5'];
+%   mapinputs=['mapSTAS.UN.100sps.ell_1.5-1.else0.25nsat0.1.loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s';
+%              'mapSTAS.UN.100sps.ell_1.5-1.else0.25nsat0.4.loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s';
+%              'mapSTAS.UN.100sps.ell_1.5-1.else0.25nsat1...loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s';
+%              'mapSTAS.UN.100sps.ell_1.5-1.else0.25nsat2...loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s';
+%              'mapSTAS.UN.100sps.ell_1.5-1.else0.25nsat4...loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s';
+%              'mapSTAS.UN.100sps.ell_1.5-1.else0.25nsat10..loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s';
+%              'mapSTAS.UN.100sps.ell_1.5-1.else0.25nsat100.loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s'];
+%   mapoutputs=['mapSTAS.UN.100sps.ell_1.5-1.else0.25nsat0.1.loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s.onepk.5';
+%               'mapSTAS.UN.100sps.ell_1.5-1.else0.25nsat0.4.loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s.onepk.5';
+%               'mapSTAS.UN.100sps.ell_1.5-1.else0.25nsat1...loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s.onepk.5';
+%               'mapSTAS.UN.100sps.ell_1.5-1.else0.25nsat2...loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s.onepk.5';
+%               'mapSTAS.UN.100sps.ell_1.5-1.else0.25nsat4...loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s.onepk.5';
+%               'mapSTAS.UN.100sps.ell_1.5-1.else0.25nsat10..loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s.onepk.5';
+%               'mapSTAS.UN.100sps.ell_1.5-1.else0.25nsat100.loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s.onepk.5'];
+%   mapinputs=['mapSTAS.UN.100sps.rec_-52.2513.5.else0nsat0.1.loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s';
+%              'mapSTAS.UN.100sps.rec_-52.2513.5.else0nsat0.4.loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s';
+%              'mapSTAS.UN.100sps.rec_-52.2513.5.else0nsat1...loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s';
+%              'mapSTAS.UN.100sps.rec_-52.2513.5.else0nsat2...loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s';
+%              'mapSTAS.UN.100sps.rec_-52.2513.5.else0nsat4...loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s';
+%              'mapSTAS.UN.100sps.rec_-52.2513.5.else0nsat10..loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s';
+%              'mapSTAS.UN.100sps.rec_-52.2513.5.else0nsat100.loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s'];
+%   mapoutputs=['mapSTAS.UN.100sps.rec_-52.2513.5.else0nsat0.1.loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s.onepk.5';
+%               'mapSTAS.UN.100sps.rec_-52.2513.5.else0nsat0.4.loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s.onepk.5';
+%               'mapSTAS.UN.100sps.rec_-52.2513.5.else0nsat1...loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s.onepk.5';
+%               'mapSTAS.UN.100sps.rec_-52.2513.5.else0nsat2...loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s.onepk.5';
+%               'mapSTAS.UN.100sps.rec_-52.2513.5.else0nsat4...loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s.onepk.5';
+%               'mapSTAS.UN.100sps.rec_-52.2513.5.else0nsat10..loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s.onepk.5';
+%               'mapSTAS.UN.100sps.rec_-52.2513.5.else0nsat100.loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s.onepk.5'];
+%   mapinputs=['mapSTAS.UN.100sps.rec_-52.2513.5.else0.25nsat0.1.loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s';
+%              'mapSTAS.UN.100sps.rec_-52.2513.5.else0.25nsat0.4.loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s';
+%              'mapSTAS.UN.100sps.rec_-52.2513.5.else0.25nsat1...loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s';
+%              'mapSTAS.UN.100sps.rec_-52.2513.5.else0.25nsat2...loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s';
+%              'mapSTAS.UN.100sps.rec_-52.2513.5.else0.25nsat4...loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s';
+%              'mapSTAS.UN.100sps.rec_-52.2513.5.else0.25nsat10..loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s';
+%              'mapSTAS.UN.100sps.rec_-52.2513.5.else0.25nsat100.loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s';
+%              'mapSTAS.UN.100sps.rec_-52.2513.5.else0.25nsat500.loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s'];
+%   mapoutputs=['mapSTAS.UN.100sps.rec_-52.2513.5.else0.25nsat0.1.loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s.onepk.5';
+%               'mapSTAS.UN.100sps.rec_-52.2513.5.else0.25nsat0.4.loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s.onepk.5';
+%               'mapSTAS.UN.100sps.rec_-52.2513.5.else0.25nsat1...loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s.onepk.5';
+%               'mapSTAS.UN.100sps.rec_-52.2513.5.else0.25nsat2...loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s.onepk.5';
+%               'mapSTAS.UN.100sps.rec_-52.2513.5.else0.25nsat4...loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s.onepk.5';
+%               'mapSTAS.UN.100sps.rec_-52.2513.5.else0.25nsat10..loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s.onepk.5';
+%               'mapSTAS.UN.100sps.rec_-52.2513.5.else0.25nsat100.loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s.onepk.5';
+%               'mapSTAS.UN.100sps.rec_-52.2513.5.else0.25nsat500.loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s.onepk.5'];
+%   mapinputs=['mapSTAS.UN.100sps.rec_-52.2513.5.else0.5nsat0.1.loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s';
+%              'mapSTAS.UN.100sps.rec_-52.2513.5.else0.5nsat0.4.loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s';
+%              'mapSTAS.UN.100sps.rec_-52.2513.5.else0.5nsat1...loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s';
+%              'mapSTAS.UN.100sps.rec_-52.2513.5.else0.5nsat2...loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s';
+%              'mapSTAS.UN.100sps.rec_-52.2513.5.else0.5nsat4...loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s';
+%              'mapSTAS.UN.100sps.rec_-52.2513.5.else0.5nsat10..loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s';
+%              'mapSTAS.UN.100sps.rec_-52.2513.5.else0.5nsat100.loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s';
+%              'mapSTAS.UN.100sps.rec_-52.2513.5.else0.5nsat500.loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s'];
+%   mapoutputs=['mapSTAS.UN.100sps.rec_-52.2513.5.else0.5nsat0.1.loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s.onepk.5';
+%               'mapSTAS.UN.100sps.rec_-52.2513.5.else0.5nsat0.4.loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s.onepk.5';
+%               'mapSTAS.UN.100sps.rec_-52.2513.5.else0.5nsat1...loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s.onepk.5';
+%               'mapSTAS.UN.100sps.rec_-52.2513.5.else0.5nsat2...loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s.onepk.5';
+%               'mapSTAS.UN.100sps.rec_-52.2513.5.else0.5nsat4...loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s.onepk.5';
+%               'mapSTAS.UN.100sps.rec_-52.2513.5.else0.5nsat10..loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s.onepk.5';
+%               'mapSTAS.UN.100sps.rec_-52.2513.5.else0.5nsat100.loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s.onepk.5';
+%               'mapSTAS.UN.100sps.rec_-52.2513.5.else0.5nsat500.loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s.onepk.5'];
+    mapinputs=['mapSTAS.UN.100sps.ell_3-1.5.else0nsat0.1.loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s';
+               'mapSTAS.UN.100sps.ell_3-1.5.else0nsat0.4.loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s';
+               'mapSTAS.UN.100sps.ell_3-1.5.else0nsat1...loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s';
+               'mapSTAS.UN.100sps.ell_3-1.5.else0nsat2...loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s';
+               'mapSTAS.UN.100sps.ell_3-1.5.else0nsat4...loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s';
+               'mapSTAS.UN.100sps.ell_3-1.5.else0nsat10..loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s';
+               'mapSTAS.UN.100sps.ell_3-1.5.else0nsat100.loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s'];
+    mapoutputs=['mapSTAS.UN.100sps.ell_3-1.5.else0nsat0.1.loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s.onepk.5';
+               'mapSTAS.UN.100sps.ell_3-1.5.else0nsat0.4.loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s.onepk.5';
+               'mapSTAS.UN.100sps.ell_3-1.5.else0nsat1...loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s.onepk.5';
+               'mapSTAS.UN.100sps.ell_3-1.5.else0nsat2...loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s.onepk.5';
+               'mapSTAS.UN.100sps.ell_3-1.5.else0nsat4...loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s.onepk.5';
+               'mapSTAS.UN.100sps.ell_3-1.5.else0nsat10..loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s.onepk.5';
+               'mapSTAS.UN.100sps.ell_3-1.5.else0nsat100.loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s.onepk.5'];
+    mapinputs=['mapSTAS.UN.100sps.ell_2.75-1.else0nsat0.1.loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s';
+               'mapSTAS.UN.100sps.ell_2.75-1.else0nsat0.4.loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s';
+               'mapSTAS.UN.100sps.ell_2.75-1.else0nsat1...loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s';
+               'mapSTAS.UN.100sps.ell_2.75-1.else0nsat2...loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s';
+               'mapSTAS.UN.100sps.ell_2.75-1.else0nsat4...loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s';
+               'mapSTAS.UN.100sps.ell_2.75-1.else0nsat10..loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s'];
+    mapoutputs=['mapSTAS.UN.100sps.ell_2.75-1.else0nsat0.1.loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s.onepk.5';
+               'mapSTAS.UN.100sps.ell_2.75-1.else0nsat0.4.loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s.onepk.5';
+               'mapSTAS.UN.100sps.ell_2.75-1.else0nsat1...loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s.onepk.5';
+               'mapSTAS.UN.100sps.ell_2.75-1.else0nsat2...loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s.onepk.5';
+               'mapSTAS.UN.100sps.ell_2.75-1.else0nsat4...loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s.onepk.5';
+               'mapSTAS.UN.100sps.ell_2.75-1.else0nsat10..loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s.onepk.5'];
+    mapinputs=['mapSTAS.UN.100sps.ell_3-1.25.else0nsat0.1.loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s';
+               'mapSTAS.UN.100sps.ell_3-1.25.else0nsat0.4.loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s';
+               'mapSTAS.UN.100sps.ell_3-1.25.else0nsat1...loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s';
+               'mapSTAS.UN.100sps.ell_3-1.25.else0nsat2...loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s';
+               'mapSTAS.UN.100sps.ell_3-1.25.else0nsat4...loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s';
+               'mapSTAS.UN.100sps.ell_3-1.25.else0nsat10..loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s'];
+    mapoutputs=['mapSTAS.UN.100sps.ell_3-1.25.else0nsat0.1.loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s.onepk.5';
+               'mapSTAS.UN.100sps.ell_3-1.25.else0nsat0.4.loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s.onepk.5';
+               'mapSTAS.UN.100sps.ell_3-1.25.else0nsat1...loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s.onepk.5';
+               'mapSTAS.UN.100sps.ell_3-1.25.else0nsat2...loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s.onepk.5';
+               'mapSTAS.UN.100sps.ell_3-1.25.else0nsat4...loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s.onepk.5';
+               'mapSTAS.UN.100sps.ell_3-1.25.else0nsat10..loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s.onepk.5'];
+    mapinputs=['mapSTAS.UN.100sps.ell_3-1.25.diam0.3.else0nsat0.1.loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s';
+               'mapSTAS.UN.100sps.ell_3-1.25.diam0.3.else0nsat0.4.loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s';
+               'mapSTAS.UN.100sps.ell_3-1.25.diam0.3.else0nsat1...loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s';
+               'mapSTAS.UN.100sps.ell_3-1.25.diam0.3.else0nsat2...loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s';
+               'mapSTAS.UN.100sps.ell_3-1.25.diam0.3.else0nsat4...loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s';
+               'mapSTAS.UN.100sps.ell_3-1.25.diam0.3.else0nsat10..loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s';
+               'mapSTAS.UN.100sps.ell_3-1.25.diam0.3.else0nsat100.loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s'];
+    mapoutputs=['mapSTAS.UN.100sps.ell_3-1.25.diam0.3.else0nsat0.1.loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s.onepk.5';
+               'mapSTAS.UN.100sps.ell_3-1.25.diam0.3.else0nsat0.4.loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s.onepk.5';
+               'mapSTAS.UN.100sps.ell_3-1.25.diam0.3.else0nsat1...loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s.onepk.5';
+               'mapSTAS.UN.100sps.ell_3-1.25.diam0.3.else0nsat2...loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s.onepk.5';
+               'mapSTAS.UN.100sps.ell_3-1.25.diam0.3.else0nsat4...loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s.onepk.5';
+               'mapSTAS.UN.100sps.ell_3-1.25.diam0.3.else0nsat10..loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s.onepk.5';
+               'mapSTAS.UN.100sps.ell_3-1.25.diam0.3.else0nsat100.loff1.5.ccmin0.44.nponpa22_1.25-6.5-ms19-4s.onepk.5'];
+
     sta=['PGC ';
          'SSIB';
          'SILB'];
@@ -105,15 +181,13 @@ elseif isequal(fam,'068')
 end
 nfile=size(mapinputs,1);
 
-%offset=0.5;
+offset=0.5;
 ntotkept=0;
 for ifile=1:nfile
-    mapfilwin=load(mapinputs(ifile,:));
-    mapfil=sortrows(mapfilwin,8); %B.C. sometimes the strongest 1/2 sec is not chronological...
+    mapfil=load(mapinputs(ifile,:));
     ncol=size(mapfil,2);
     mapfil(:,16:19)=0;
-%   mapfil(:,13)=mapfil(:,15);  %(:,15) was optimal/orthogonal;  %obsolete; wdwSTA now writes this into columm 13.
-    PGSIs=mapfil(:,2);
+    PGSIs=mapfil(:,2); %KLUDGY MINUS SIGN! Deleted after changing the sign of the offset in the synthetic seismogram.
     PGSSs=mapfil(:,3);
     nevs=length(PGSIs);
     %nhits=zeros(nPGSI,mPGSS);
@@ -149,6 +223,10 @@ for ifile=1:nfile
 %   72.5  -0.75  -1.00    0.559   -1.07  2.572e-01  2.087e-01     71.200   0.478   0.490   0.399  1.427e-01  3.509e-01  2.357e-03  2.133e-03  -0.300  -0.097   0.583  0.65  0.87   0.556   0.565   0.555
 %   1      2      3       4        5     6          7             8        9       10      11     12         13         14         15          16      17      18     19    20
 %  9.1f    6.2f    6.2f    8.3f    7.2f    10.3e    8.3f          10.3f    7.3f    7.3f    7.3f    10.3e    10.3e        10.3e      10.3e      7.3f    7.3f    7.3f    5.2f 5.2f
+%   10.0  -2.25   0.25    0.758   -0.11  1.231e+01    0.865      9.075   0.861   0.449   0.640  6.276e-01  2.031e+00  6.058e-03  8.832e-01  0.309  0.785  0.252  0.77  1.19   0.694   0.794   0.786
+%   11.0  -2.25   0.25    0.753   -0.06  1.231e+01    0.865      9.075   0.899   0.449   0.640  6.276e-01  2.031e+00  6.058e-03  8.832e-01  0.309  0.785  0.252  0.69  1.12   0.703   0.789   0.766
+%   15.0  -1.50   0.50    0.929    0.22  8.302e+00    0.968     16.450   1.011   0.858   0.567  1.422e-01  7.920e+00  4.701e-03  1.822e-01 -0.031  0.123  0.618  1.02  1.16   0.932   0.925   0.929
+
     end
 %   mapfil(:,2:3)=2*mapfil(:,2:3);
     ntot=size(mapfil,1); %I think this must be the same as nevs
@@ -158,56 +236,49 @@ for ifile=1:nfile
     tim=mapfil(:,1);
     timpk=mapfil(:,8);
     xc=mapfil(:,4);
-    while j < ntot%-1  %Changed 2/21/22
+    while j < ntot-1
         i=i+1; %i is incremented
         j=i+1; %j is one more than i
-        while abs(timpk(j)-timpk(i)) < offset && j < ntot %keep incrementing j until it is more than offset after i. IT IS POSSIBLE FOR timpk(j) < timpk(i)!!!
+        while timpk(j)-timpk(i) < offset && j < ntot %keep incrementing j until it is more than offset after i.
             j=j+1;
         end
-        if j-i==1 && (tim(i)-timpk(i) > 1.97 || tim(i)-timpk(i) < -1.49) %I think this just counts isolated detections at the margins of a window; increments l if so. 
+        if j-i==1 && (tim(i)-timpk(i) > 5.97 || tim(i)-timpk(i) < -4.49) %I think this just counts isolated detections at the margins of a window; increments l if so. Now for 12s window.
             l=l+1;
         end
-        if j-i==1 && abs(timpk(j)-timpk(i)) > offset  %If isolated, write it.  The second half guards against the first being true b.c. j=ntot
-            fprintf(mapfid,'%9.1f %6.2f %6.2f %8.3f %7.2f %10.3e %8.3f %10.3f %7.3f %7.3f %7.3f %10.3e %10.3e %10.3e %10.3e %7.3f %7.3f %5i %5i %10.3e %6.3f %6.3f %6.3f %7.3f\n',mapfil(i,:));
+        if j-i==1 && tim(i)-timpk(i) < 5.97 && tim(i)-timpk(i) > -4.49  %If isolated and not at the margins, write it.
+            fprintf(mapfid,'%9.1f %6.2f %6.2f %8.3f %7.2f %10.3e %8.3f %10.3f %7.3f %7.3f %7.3f %10.3e %10.3e %10.3e %10.3e %7.3f %7.3f %7.3f %5.2f %5.2f %8.3f %7.3f %7.3f\n',mapfil(i,:));
             kept=kept+1; 
             mapfilkeep(kept,:)=mapfil(i,:);
         else 
             ndupes=ndupes+1;
             xcmax=0.;
-            if abs(timpk(j)-timpk(i)) < offset  %if this is true, j=ntot
-                jlast=j
-                tim(j)
-            else
-                jlast=j-1;
-            end
-            for n=i:jlast
-                %Use the first below if doing statistics on arrival.  Use the second
-                %if you just want the maxx cc value of a string of detections.
-                %if xc(n)> xcmax && tim(n)-timpk(n) < 1.97 && tim(n)-timpk(n) > -1.49 %search for the largest cc value that isn't at the margins.
-                if xc(n)> xcmax %search for the largest cc value.
+            for n=i:j-1
+                if xc(n)> xcmax && tim(n)-timpk(n) < 5.97 && tim(n)-timpk(n) > -4.49 %search for the largest cc value that isn't at the margins.
                     xcmax=xc(n);
                     nkeep=n;
-%                     searchformaxcc=n
-%                     searchformaxcc=tim(n)
                 end
             end
             if xcmax > 1.e-6 %if larger than the zero initial value, write it
-                fprintf(mapfid,'%9.1f %6.2f %6.2f %8.3f %7.2f %10.3e %8.3f %10.3f %7.3f %7.3f %7.3f %10.3e %10.3e %10.3e %10.3e %7.3f %7.3f %5i %5i %10.3e %6.3f %6.3f %6.3f %7.3f\n',mapfil(nkeep,:)');
+                fprintf(mapfid,'%9.1f %6.2f %6.2f %8.3f %7.2f %10.3e %8.3f %10.3f %7.3f %7.3f %7.3f %10.3e %10.3e %10.3e %10.3e %7.3f %7.3f %7.3f %5.2f %5.2f %8.3f %7.3f %7.3f\n',mapfil(nkeep,:)');
                 kept=kept+1;
                 mapfilkeep(kept,:)=mapfil(nkeep,:);
             end
         end
-        i=j-1; %if the detection was a singleton, i is now that event; if it was part of a cluster, i is now 
-               %the last of that cluster. It will be incremented by one at the start of the loop above.
-        while abs(timpk(i+1)-mapfilkeep(kept,8)) < offset && i < ntot-1 %keep incrementing j until it is more than offset after i. IT IS POSSIBLE FOR timpk(j) < timpk(i)!!!
-            i=i+1;
-        end
-        if j==ntot %check to see if the last entry is a singleton.  Could be more efficient to do this after the next "end".
-            if abs(timpk(j)-timpk(j-1)) > offset
-                fprintf(mapfid,'%9.1f %6.2f %6.2f %8.3f %7.2f %10.3e %8.3f %10.3f %7.3f %7.3f %7.3f %10.3e %10.3e %10.3e %10.3e %7.3f %7.3f %5i %5i %10.3e %6.3f %6.3f %6.3f %7.3f\n',mapfil(j,:));
-                kept=kept+1; 
-                mapfilkeep(kept,:)=mapfil(j,:);
+        if j < ntot
+            i=j-1;
+        else
+%         If last entries are a string of duplicates, they might appear twice.
+%         check and take the highest x-correlation value.
+            xcmax=0.;
+            for n=i:j
+                if xc(n) > xcmax && tim(n)-timpk(n) < 5.97 && tim(n)-timpk(n) > -4.49
+                xcmax=xc(n);
+                nkeep=n;
+                end
             end
+            fprintf(mapfid,'%9.1f %6.2f %6.2f %8.3f %7.2f %10.3e %8.3f %10.3f %7.3f %7.3f %7.3f %10.3e %10.3e %10.3e %10.3e %7.3f %7.3f %7.3f %5.2f %5.2f %8.3f %7.3f %7.3f\n',mapfil(nkeep,:));
+            kept=kept+1;
+            mapfilkeep(kept,:)=mapfil(nkeep,:);
         end
     end
     ntot

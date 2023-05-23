@@ -1,7 +1,8 @@
-function [f] = plt_agu2022abstractv3(greenf,sigsta,impindepst,sps,xzoom,off1iw,loff_max,tstbuf,dy,mo,yr,ftrans)
+function [f,ind,tori] = plt_agu2022abstractv3(greenf,sigsta,impindepst,sps,xzoom,off1iw,loff_max,...
+  tstbuf,dy,mo,yr,ftrans,maptype)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% [f] = plt_agu2022abstractv3(sigsta,resgrp,pkindepsave,impindepst,sps,tmaxi,tmaxo,...
-%   tbosti,tbosto,ircccat,rcccat,off1iw,off1i,loff_max,tstbuf,tedbuf,dy,mo,yr)
+% [f] = plt_agu2022abstractv3(greenf,sigsta,impindepst,sps,xzoom,off1iw,loff_max,...
+%   tstbuf,dy,mo,yr,ftrans,maptype)
 %
 % Different from 'plt_agu2022abstractv2.m', this version drops the template
 % waveform, as it will be redundant if templates are present in the motivation
@@ -14,7 +15,8 @@ function [f] = plt_agu2022abstractv3(greenf,sigsta,impindepst,sps,xzoom,off1iw,l
 % First created date:   2022/12/06
 % Last modified date:   2022/12/06
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    
+defval('maptype','km');
+
 %%%compose a summary figure for each data win and save it, so that we will have a feeling for
 %%%all migrations
 f.fig = figure;
@@ -82,43 +84,90 @@ legend(ax,p,'PGC','SSIB','SILB','Location','north','NumColumns',3,'fontsize',8);
 longticks(ax,3); 
 hold(ax,'off');
 
-%%%plot the scatter of sources in terms of rela locations
-ax=f.ax(4);
-xran = [-4 4];
-yran = [-4 4];
-% cran = [0 lsig/sps];
-cran = xzoom;
-[ax,tori] = plt_decon_imp_scatter_space_ref(ax,impindepst(ind,:),xran,yran,cran,off1iw,loff_max,...
-  sps,35,ftrans,'mean','tori','none');
-% text(ax,0.02,0.96,'d','FontSize',11,'unit','normalized','HorizontalAlignment','left');
-% pos = ax.Position;
-% c.Position = [pos(1)+pos(3)+0.085, pos(2), 0.02, pos(3)];
-% plot(ax,xcut,ycut,'k-','linew',2);
-xticks(ax,xran(1): 1 : xran(2));
-yticks(ax,yran(1): 1 : yran(2));
-hold(ax,'off');
+if strcmp(maptype,'km')
+  %%%plot the scatter of sources in terms of rela locations
+  ax=f.ax(4);
+  xran = [-4 4];
+  yran = [-4 4];
+  % cran = [0 lsig/sps];
+  cran = xzoom;
+  if size(off1iw,1)>1
+    [ax,tori] = plt_decon_imp_scatter_space_ref(ax,impindepst(ind,:),xran,yran,cran,off1iw,loff_max,...
+      sps,35,ftrans,'mean','tori','none');
+  else
+    offxran = [-loff_max+off1iw(2) loff_max+off1iw(2)];
+    offyran = [-loff_max+off1iw(3) loff_max+off1iw(3)];
+    [ax,tori] = plt_decon_imp_scatter_space(ax,impindepst(ind,:),xran,yran,cran,offxran,...
+      offyran,sps,35,ftrans,'mean','tori','none');
+  end  
+  % text(ax,0.02,0.96,'d','FontSize',11,'unit','normalized','HorizontalAlignment','left');
+  % pos = ax.Position;
+  % c.Position = [pos(1)+pos(3)+0.085, pos(2), 0.02, pos(3)];
+  % plot(ax,xcut,ycut,'k-','linew',2);
+  xticks(ax,xran(1): 1 : xran(2));
+  yticks(ax,yran(1): 1 : yran(2));
+  hold(ax,'off');
 
-%%%plot the scatter of sources in terms of rela locations
-ax=f.ax(3);
-cran = [0 lsig/sps];
-ax = plt_decon_imp_scatter_space_ref(ax,impindepst,xran,yran,cran,off1iw,loff_max,...
-  sps,35,ftrans,'mean','tori','none');
-% text(ax,0.02,0.96,'e','FontSize',11,'unit','normalized','HorizontalAlignment','left');
-% pos = ax.Position;
-% c.Position = [pos(1)+pos(3)+0.085, pos(2), 0.02, pos(3)];
-% plot(ax,xcut,ycut,'k-','linew',2);
-xticks(ax,xran(1): 1 : xran(2));
-yticks(ax,yran(1): 1 : yran(2));
-% angrmse = 140;
-% [rotx, roty] = complex_rot(0,1,-angrmse);
-% xvect = [0.5-rotx 0.5+rotx];
-% yvect = [-2.5-roty -2.5+roty];
-% drawArrow(ax,xvect,yvect,xran,yran,'linewidth',1);
-% % text(ax,0.63,0.2,strcat(num2str(angrmse),'^{\circ}'),'FontSize',9,...
-% %   'unit','normalized','horizontalalignment','left');
-% text(ax,0.62,0.18,strcat(num2str(angrmse),'$^{\circ}$'),'FontSize',9,...
-%   'unit','normalized','interpreter','latex');
-hold(ax,'off');
+  %%%plot the scatter of sources in terms of rela locations
+  ax=f.ax(3);
+  cran = [0 lsig/sps];
+  if size(off1iw,1)>1
+    ax = plt_decon_imp_scatter_space_ref(ax,impindepst,xran,yran,cran,off1iw,loff_max,...
+      sps,35,ftrans,'mean','tori','none');
+  else
+    ax = plt_decon_imp_scatter_space(ax,impindepst,xran,yran,cran,offxran,...
+      offyran,sps,35,ftrans,'mean','tori','none');
+  end
+  % text(ax,0.02,0.96,'e','FontSize',11,'unit','normalized','HorizontalAlignment','left');
+  % pos = ax.Position;
+  % c.Position = [pos(1)+pos(3)+0.085, pos(2), 0.02, pos(3)];
+  % plot(ax,xcut,ycut,'k-','linew',2);
+  xticks(ax,xran(1): 1 : xran(2));
+  yticks(ax,yran(1): 1 : yran(2));
+  % angrmse = 140;
+  % [rotx, roty] = complex_rot(0,1,-angrmse);
+  % xvect = [0.5-rotx 0.5+rotx];
+  % yvect = [-2.5-roty -2.5+roty];
+  % drawArrow(ax,xvect,yvect,xran,yran,'linewidth',1);
+  % % text(ax,0.63,0.2,strcat(num2str(angrmse),'^{\circ}'),'FontSize',9,...
+  % %   'unit','normalized','horizontalalignment','left');
+  % text(ax,0.62,0.18,strcat(num2str(angrmse),'$^{\circ}$'),'FontSize',9,...
+  %   'unit','normalized','interpreter','latex');
+  hold(ax,'off');
+  
+elseif strcmp(maptype,'spl')
+  %%%plot the scatter of sources in terms of offsets
+  ax=f.ax(4);
+  span = max(range(off1iw(:,2))+2*loff_max, range(off1iw(:,3))+2*loff_max);
+  xran = [round(mean(minmax(off1iw(:,2)'))-span/2)-1, round(mean(minmax(off1iw(:,2)'))+span/2)+1];
+  yran = [round(mean(minmax(off1iw(:,3)'))-span/2)-1, round(mean(minmax(off1iw(:,3)'))+span/2)+1];
+  cran = xzoom*sps;
+  if size(off1iw,1)>1
+    [ax,tori] = plt_decon_imp_scatter_ref(ax,impindepst(ind,:),xran,yran,cran,off1iw,loff_max,...
+      sps,35,'mean','tori','none');
+  else
+    xran = [-loff_max+off1iw(2)-1 loff_max+off1iw(2)+1];
+    yran = [-loff_max+off1iw(3)-1 loff_max+off1iw(3)+1];
+    offxran = [-loff_max+off1iw(2) loff_max+off1iw(2)];
+    offyran = [-loff_max+off1iw(3) loff_max+off1iw(3)];
+    [ax,tori] = plt_decon_imp_scatter(ax,impindepst,xran,yran,cran,offxran,offyran,...
+      sps,35,'mean','tori','none');
+  end
+  hold(ax,'off');
+
+  %%%plot the scatter of sources in terms of offsets
+  ax=f.ax(3);
+  cran = [0 lsig];
+  if size(off1iw,1)>1
+    ax = plt_decon_imp_scatter_ref(ax,impindepst,xran,yran,cran,off1iw,loff_max,...
+      sps,35,'mean','tori','none');
+  else
+    ax = plt_decon_imp_scatter(ax,impindepst,xran,yran,cran,offxran,offyran,...
+      sps,35,'mean','tori','none');
+  end
+  hold(ax,'off');
+
+end
 
 %%%seismograms of signal, zoom-in
 ax=f.ax(2);
@@ -170,7 +219,7 @@ plot(ax,ircc/sps,yran(2)*rcc,'o','markersize',1,'Color',[.5 .5 .5]); % scale wit
 ax.Box='on'; grid(ax,'on');
 %plot the deconvolved sources
 yloc = (yran(1)+range(yran)*0.05);
-ind = find(impindepst(:,1)/sps >= xzoom(1) & impindepst(:,1)/sps <= xzoom(2));
+% ind = find(impindepst(:,1)/sps >= xzoom(1) & impindepst(:,1)/sps <= xzoom(2));
 % scatter(ax,impindepst(ind,1)/sps-xzoom(1),yloc*ones(size(impindepst(ind,1))),8,'r','filled');
 scatter(ax,impindepst(ind,1)/sps-xzoom(1),yloc*ones(size(impindepst(ind,1))),10,tori,'filled',...
   'MarkerEdgeColor',[.5 .5 .5]);

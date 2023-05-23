@@ -246,26 +246,27 @@ for isrc = 1: size(impindep,1)
     hold(ax,'on');
     ax.Box='on'; grid(ax,'on');
     yyaxis(ax,'right');
-    p2=plot(ax,(1+round(ldiff/2)): (nfft-round(ldiff/2)),rcc,'-','color',[.7 .7 .7],'markersize',2);  % rcc
+    p2=plot(ax,((1+round(ldiff/2)): (nfft-round(ldiff/2)))/sps,rcc,'-','color',[.7 .7 .7],'markersize',2);  % rcc
 %     scatter(ax,pkind+round(ldiff/2),rcc(pkind),20,'r');  % rcc value at peaks
     ylim(ax,[-1 1]);
-    ylabel('RCC','FontSize',12);
+    ylabel(ax,'RCC','FontSize',12);
     
     yyaxis(ax,'left');
-    p1=plot(ax,(1+round(ldiff/2)): (nfft-round(ldiff/2)),coefeff,'-','color',[.3 .3 .3]); hold on % master cc
-    scatter(ax,pkind+round(ldiff/2),pkhgt,20,'r'); % peaks
+    p1=plot(ax,((1+round(ldiff/2)): (nfft-round(ldiff/2)))/sps,coefeff,'-','color',[.3 .3 .3]); hold on % master cc
+    scatter(ax,(pkind+round(ldiff/2))/sps,pkhgt,20,'r'); % peaks
 %     scatter(idximp,pkhgt(mwtcoefidx),10,'b','filled');  % chosen peak
 %     scatter(idximp,rcc(pkind(mwtcoefidx)),10,'b','filled'); % chosen peak
-    p3=scatter(ax,wtcoef(:,1)+round(ldiff/2),wtcoef(:,2),20,'b');  % peak heights weighted by rcc
-    scatter(ax,idximp,wtcoef(indclose(imax),2),20,'b','filled'); % chosen peak
+    p3=scatter(ax,(wtcoef(:,1)+round(ldiff/2))/sps,wtcoef(:,2),20,'b');  % peak heights weighted by rcc
+    scatter(ax,idximp/sps,wtcoef(indclose(imax),2),20,'b','filled'); % chosen peak
     axsym(ax,2);
-    p4=plot(ax,[idxpred idxpred],ax.YLim,'k-.','linew',1); % arrival prediction
+    p4=plot(ax,[idxpred idxpred]/sps,ax.YLim,'k-.','linew',1); % arrival prediction
     p5=plot(ax,ax.XLim, [medwtcoef medwtcoef],'k--'); % stopping threshold, subject to actual practice
 %     p4=plot(ax,ax.XLim, [ampnoiwt ampnoiwt],'k--'); % noise level
 %     p4=plot(ax.XLim, [ampnoi ampnoi],'k--'); % noise level
 %     plot(ax.XLim,[mwtcoef mwtcoef],'b--');  % indeed the max?
-    ylabel('Amplitude','FontSize',12);
-    xlabel(ax,sprintf('Samples at %d Hz',sps),'FontSize',12);
+    ylabel(ax,'Amplitude','FontSize',12);
+%     xlabel(ax,sprintf('Samples at %d Hz',sps),'FontSize',12);
+    xlabel(ax,'Time (s)','FontSize',12);
     title(sprintf('Source: %d',isrc));
 %     xlim(ax,[1.5e4 2e4]);
     legend(ax,[p1,p2,p3,p4,p5],'Res-temp CC','RCC14','Wgted peaks above thresh','Arrival pred',...

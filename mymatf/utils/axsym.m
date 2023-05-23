@@ -1,4 +1,4 @@
-function varargout=axsym(ax,w)
+function varargout=axsym(ax,w,perc)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % ax = axsym(ax,w)
 %
@@ -16,6 +16,7 @@ function varargout=axsym(ax,w)
 %  w      1 for x-axes
 %         2 for y-axes (default)
 %         3 for x and y-axes
+%  perc   expansion in percentage (default: 10)
 %         
 %
 % Chao Song, chaosong@princeton.edu
@@ -25,20 +26,21 @@ function varargout=axsym(ax,w)
 
 defval('ax',gca);
 defval('w',2);
+defval('perc',10);
 
 for i = 1: length(ax)
   
   switch w
     case 1
-      xran = (1+10/100)*[-max(abs(ax(i).XLim)) max(abs(ax(i).XLim))];
+      xran = (1+perc/100)*[-max(abs(ax(i).XLim)) max(abs(ax(i).XLim))];
       ax(i).XLim = xran;
     case 2
-      yran = (1+10/100)*[-max(abs(ax(i).YLim)) max(abs(ax(i).YLim))];
+      yran = (1+perc/100)*[-max(abs(ax(i).YLim)) max(abs(ax(i).YLim))];
       ax(i).YLim = yran;
     case 3
-      xran = (1+10/100)*[-max(abs(ax(i).XLim)) max(abs(ax(i).XLim))];
+      xran = (1+perc/100)*[-max(abs(ax(i).XLim)) max(abs(ax(i).XLim))];
       ax(i).XLim = xran;
-      yran = (1+10/100)*[-max(abs(ax(i).YLim)) max(abs(ax(i).YLim))];
+      yran = (1+perc/100)*[-max(abs(ax(i).YLim)) max(abs(ax(i).YLim))];
       ax(i).YLim = yran;
   end
   

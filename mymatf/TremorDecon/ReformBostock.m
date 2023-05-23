@@ -1,4 +1,4 @@
-function [newcat,newcatfull] = ReformBostock(lon0,lat0,remake)
+function [newcat,newcatfull] = ReformBostock(lon0,lat0,remake,bostname)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % 
 % This is a function with default input to rearrange the LFE catalog from
@@ -15,12 +15,14 @@ function [newcat,newcatfull] = ReformBostock(lon0,lat0,remake)
 defval('lon0',-123.585000);   % default value for loc of fam 002 is from direct Hypoinverse
 defval('lat0',48.436667);
 defval('remake',0); % if read the original catalog and compile it again
+defval('bostname', '/BOSTOCK/total_mag_detect_0000_cull_NEW.txt');
 
 workpath = getenv('ALLAN');
 
 if remake
 
-  bostname = ('/BOSTOCK/total_mag_detect_0000_cull_NEW.txt');
+%   bostname = ('/BOSTOCK/total_mag_detect_0000_cull_NEW.txt');
+  
   %%% 6 cols: 
   %%%     family ID, date (ymmdd), hour, sec, magnitude, number of stations that include that event
   %%%     in their template or magnitude determination or something
@@ -74,13 +76,13 @@ if remake
   ind = setdiff(1:size(temp,1), indnan);
   newcat = newcatfull(ind,:);
 
-  %save to file
-  fid = fopen(strcat(workpath,'/BOSTOCK/total_mag_detect_0000_cull_NEW_compiled.txt'),'w+');
-  fprintf(fid,'%d %d %d %d %e %f %f %f %f %f %f %d \n', newcat'); 
-  fclose(fid);
-  fid = fopen(strcat(workpath,'/BOSTOCK/total_mag_detect_0000_cull_NEW_compiledfull.txt'),'w+');
-  fprintf(fid,'%d %d %d %d %e %f %f %f %f %f %f %d \n', newcatfull'); 
-  fclose(fid);
+%   %save to file
+%   fid = fopen(strcat(workpath,'/BOSTOCK/total_mag_detect_0000_cull_NEW_compiled.txt'),'w+');
+%   fprintf(fid,'%d %d %d %d %e %f %f %f %f %f %f %d \n', newcat'); 
+%   fclose(fid);
+%   fid = fopen(strcat(workpath,'/BOSTOCK/total_mag_detect_0000_cull_NEW_compiledfull.txt'),'w+');
+%   fprintf(fid,'%d %d %d %d %e %f %f %f %f %f %f %d \n', newcatfull'); 
+%   fclose(fid);
   
 else
   newcat = load(strcat(workpath,'/BOSTOCK/total_mag_detect_0000_cull_NEW_compiled.txt'));

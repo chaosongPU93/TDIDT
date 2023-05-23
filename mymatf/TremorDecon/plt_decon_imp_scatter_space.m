@@ -94,7 +94,7 @@ colormap(ax,newc);
 c=colorbar(ax);
 if isequal(ftime,'tarvl')
 %   c.Label.String = sprintf('Index of impulse at PGC at %d Hz', sps);
-  c.Label.String = 'Relative arrival time (s) of the impulse at PGC';
+  c.Label.String = 'Arrival time at PGC (s)';
 elseif isequal(ftime,'tori')
 %   c.Label.String = sprintf('Traveltime corrected index of impulse at PGC at %d Hz', sps);
 %   c.Label.String = 'Traveltime corrected time (s) of impulse at PGC since the start';
@@ -104,12 +104,10 @@ end
 c.Label.FontSize = 9;
 caxis(ax,cran);
 ax.Box = 'on'; grid(ax, 'on');
-scatter(ax,xran(1)+0.05*range(xran),yran(2)-0.05*range(yran),maxsybsz,'w','filled',...
-  'MarkerEdgeColor',[.5 .5 .5]);
-% scatter(ax,xran(1)+0.25,yran(2)-0.25,maxsybsz,'w','filled','MarkerEdgeColor',[.5 .5 .5]);
-% scatter(ax,xran(1)+0.25,yran(2)-0.25,maxsybsz,[.5 .5 .5],'filled');
-text(ax,0.02,0.9,strcat({'Amp. \geq '},sprintf('%.1f',wtmax)),'Units','normalized',...
-  'HorizontalAlignment','left','FontSize',8);
+% scatter(ax,xran(1)+0.05*range(xran),yran(2)-0.05*range(yran),maxsybsz,'w','filled',...
+%   'MarkerEdgeColor',[.5 .5 .5]);
+% text(ax,0.02,0.9,strcat({'Amp. \geq '},sprintf('%.1f',wtmax)),'Units','normalized',...
+%   'HorizontalAlignment','left','FontSize',8);
 % text(ax,0.98,0.15,sprintf('med. of abs.: %.2f km, %.2f km',median(abs(imploc(:,1))),...
 %   median(abs(imploc(:,2)))),'Units','normalized','HorizontalAlignment','right');
 % text(ax,0.98,0.1,sprintf('wgt. med. of abs.: %.2f km, %.2f km',...
@@ -120,8 +118,8 @@ text(ax,0.02,0.9,strcat({'Amp. \geq '},sprintf('%.1f',wtmax)),'Units','normalize
 %   wt_mean(abs(imploc(:,1)),wt),...
 %   wt_mean(abs(imploc(:,2)),wt)),'Units','normalized',...
 %   'HorizontalAlignment','right');
-text(ax,0.98,0.95,num2str(size(imploc,1)),'Units','normalized',...
-  'HorizontalAlignment','right','FontSize',10);
+text(ax,0.98,0.05,sprintf('%d events',size(imploc,1)),'Units','normalized',...
+  'HorizontalAlignment','right','FontSize',9);
 ax.YAxis.FontSize = 8;
 ax.XAxis.FontSize = 8;
 xlabel(ax,'E (km)','FontSize',11);

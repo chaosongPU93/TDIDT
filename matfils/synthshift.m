@@ -1,6 +1,9 @@
 %Reads nsta(=3) template stacks. 
 %Builds a synthetic seismogram for each from a user-defined window (ginput).
 %shifts 2 and 3 w.r.t. 1 over a pre-defined range.
+%This verison is very similar to 'chaosynth.m' and 'synthshift2023.m', the main
+%difference is that 'chaosynth' uses 'plaw3b' for generating src arrivals, while 
+%'synthshift.m' uses 'plaw3c', and 'synthshift2023.m' uses 'plaw3d'
 clear
 % close all
 set(0,'DefaultFigureVisible','on');
@@ -176,7 +179,7 @@ satn=2.5*Twin %a single peak is ~20 samples wide; maybe a little less (at 100 sp
 mjig=0; %5; %max number of samples to jigger 2 and 3 w.r.t. 1.  AT 100 SPS! OBSOLETE? But in file name still
 fracelsew=0.5; %0.25 %0.5; %0.6; %The ratio of elsewhere events to local events.  Zero for Discrete Ide.
 %writes=[1e7]; %Just a single entry for Discrete Ide.  Value not relevant.
-nsat=[0.1 0.4 1 2 4 10 100 500];
+nsat=[0.1 0.4 1 2 4 10 100];
 writes=round(nsat*satn) %in degree of saturation
 rng('default');
 %synth=2.e-7*(rand(nsta,winlen+greenlen+2*mjig)-0.5); %+2*mjig a little extra, for jiggering 2nd & 3rd stations.
@@ -219,7 +222,7 @@ if strcmp(distr,'PL') || strcmp(distr,'UN') %b>150 for uniform
     fprintf(fid,'%8.3f %8.3f %7.2f %7.2f %8.3f %8.3f\n',xygrid');
     fclose(fid);
     size(xygrid)
-    [synths,mommax,sources]=plaw3c(writes,winlen,skiplen,synth,green,b,xygrid,fracelsew,seed); 
+    [synths,mommax,sources]=plaw3c(writes,winlen,skiplen,synth,green,b,xygrid,sps,fracelsew,seed); 
 end
 if strcmp(distr,'LN')
     sig=1.;

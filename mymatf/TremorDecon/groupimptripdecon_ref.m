@@ -214,14 +214,17 @@ impindep(:,7:9) = [impindep(:,1)-impindep(:,3) impindep(:,1)-impindep(:,5) ...
 
 %output the sharpness of the grouped triplets
 sharp = zeros(size(impindep,1),3);
-for j = 1: 3
-  tmp = ampit{1,j};
-  for i = 1: size(impindep,1)
-    [~,~,ish] = intersect(impindep(i,(j-1)*2+1),tmp(:,1),'stable');
-    if length(ish)>1
-      sharp(i,j) = mean(tmp(ish,end));  %if there are multiples, use mean
-    else
-      sharp(i,j) = tmp(ish,end);
+tmp = ampit{1,1};
+if size(tmp,2) > 6
+  for j = 1: 3
+    tmp = ampit{1,j};
+    for i = 1: size(impindep,1)
+      [~,~,ish] = intersect(impindep(i,(j-1)*2+1),tmp(:,1),'stable');
+      if length(ish)>1
+        sharp(i,j) = mean(tmp(ish,7));  %if there are multiples, use mean
+      else
+        sharp(i,j) = tmp(ish,7);
+      end
     end
   end
 end

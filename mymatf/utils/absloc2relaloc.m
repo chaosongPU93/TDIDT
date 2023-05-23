@@ -14,3 +14,5 @@ erad=6372.028;
 srad=erad*cos(lat0*rads);
 dy=rads*(lat-lat0)*erad;    % N--S
 dx=rads*(lon-lon0)*srad;   % W--E
+
+% keyboard

@@ -1,7 +1,8 @@
 function [synths,mommax,sources,greensts]=synthgen(writes,winlen,skiplen,synth,Greens,b,xgrid,...
-  ygrid,pdfgrid,sps,fracelsew,seed)
+  ygrid,pdfgrid,sps,fracelsew,seed,ftrans)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% [data2dpad,xmesh,ymesh] = mat2dzeropad(xvec,yvec,data2d)
+% [synths,mommax,sources,greensts]=synthgen(writes,winlen,skiplen,synth,Greens,b,xgrid,...
+%   ygrid,pdfgrid,sps,fracelsew,seed,ftrans)
 %
 % This function takes in the templates (or green's function) 'green' and the
 % a pre-noised time series 'synth' and output the syhthetic seimograms 
@@ -43,6 +44,12 @@ function [synths,mommax,sources,greensts]=synthgen(writes,winlen,skiplen,synth,G
 % the detections inside the boundary are changed, maybe the resulted tremor 
 % burst windows, and of course the seismograms to plot.
 % 
+% Return:
+%   synths: synthetics, signal length * nsta * n sat level
+%   mommax: max moment of sources
+%   sources: source info, [indtori indttrvl indtarvl rnoff12 rnoff13 moment];
+%   greensts: start indices of added greens in context of full before truncating
+%             the start and end for 'synths', useful for convolution later
 %
 %
 %
@@ -50,6 +57,8 @@ function [synths,mommax,sources,greensts]=synthgen(writes,winlen,skiplen,synth,G
 % First created date:   2022/04/13
 % Last modified date:   2022/04/14
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+defval('ftrans','interpchao');
 
 %% below contain some params the same as in 'plaw3c.m' from Allan
 beta = 1.+b/1.5;
@@ -76,7 +85,7 @@ for i = 1: writes(end)
 end
 
 %use 'off2space002' to interpolate for the travel time to sta 1
-[locuse, ~] = off2space002(rnoff,sps,'interpArmbreloc',0);
+[locuse, ~] = off2space002(rnoff,sps,ftrans,0);
 ttrvl = locuse(:,6);
 indttrvl = round(ttrvl*sps);  % in samples
 

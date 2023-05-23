@@ -24,6 +24,9 @@ defval('noiseflag',0);  %whether to use synthetic noises
 defval('pltflag',1);  %whether to plot figs for each burst
 defval('rccmwsec',0.5); %moving win len in sec for computing RCC
 
+alignflg = 'wholewin';
+% alignflg = 'subwin';
+
 %% Initialization
 %%% SAME if focusing on the same region (i.e. same PERMROTS and POLROTS)
 %%% AND if using the same family, same station trio
@@ -239,75 +242,232 @@ overshoot = rccmwlen/2;
 optseg = STAopt(max(floor(tstbuf*sps+1-overshoot-msftaddm),1): ...
   min(floor(tedbuf*sps+overshoot+msftaddm),86400*sps), :); % sta 1
 
-%%%obtain a single best alignment based on the entire win
-%       optcc = optseg(:, 2:end);
-optcc = detrend(optseg(1+msftaddm: end-msftaddm, 2:end));
-msftadd = (round(max(abs([off12ran off13ran])))+1)*sps/40;  %+1 for safety
-ccmid = ceil(size(optcc,1)/2);
-ccwlen = round(size(optcc,1)-2*(msftadd+1));
-loffmax = 5*sps/40;
-ccmin = 0.01;  % depending on the length of trace, cc could be very low
-iup = 1;    % times of upsampling
-[off12con,off13con,ccali] = constrained_cc_interp(optcc(:,1:3)',ccmid,...
-  ccwlen,msftadd,loffmax,ccmin,iup);
-% if a better alignment cannot be achieved, use 0,0
-if off12con == msftadd+1 && off13con == msftadd+1
-  off12con = 0;
-  off13con = 0;
-  fprintf('Tremor burst %d cannot be properly aligned, double-check needed \n',k);
-end
-off1ic(1) = 0;
-off1ic(2) = round(off12con);
-off1ic(3) = round(off13con);
-
-offmax = sps/10;
+offmax = 28;
 off12 = -offmax: 1: offmax;
 off13 = -offmax: 1: offmax;
 
 [X1,X2] = meshgrid(off12,off13);
 tmp = [X1(:) X2(:)];
 npts = length(tmp);
-off1i = zeros(npts,3);
-off1i(:,2) = tmp(:,1)+off1ic(2);
-off1i(:,3) = tmp(:,2)+off1ic(3);
+  
+if strcmp(alignflg,'wholewin')
+  %%%obtain a single best alignment based on the entire win
+  %       optcc = optseg(:, 2:end);
+  optcc = detrend(optseg(1+msftaddm: end-msftaddm, 2:end));
+  msftadd = (round(max(abs([off12ran off13ran])))+1)*sps/40;  %+1 for safety
+  ccmid = ceil(size(optcc,1)/2);
+  ccwlen = round(size(optcc,1)-2*(msftadd+1));
+  loffmax = 5*sps/40;
+  ccmin = 0.01;  % depending on the length of trace, cc could be very low
+  iup = 1;    % times of upsampling
+  [off12con,off13con,ccali] = constrained_cc_interp(optcc(:,1:3)',ccmid,...
+    ccwlen,msftadd,loffmax,ccmin,iup);
+  % if a better alignment cannot be achieved, use 0,0
+  if off12con == msftadd+1 && off13con == msftadd+1
+    off12con = 0;
+    off13con = 0;
+    fprintf('Tremor burst %d cannot be properly aligned, double-check needed \n',k);
+  end
+  off1ic(1) = 0;
+  off1ic(2) = round(off12con);
+  off1ic(3) = round(off13con);
 
-rccmwlen=rccmwsec*sps;
+  off1i = zeros(npts,3);
+  off1i(:,2) = tmp(:,1)+off1ic(2);
+  off1i(:,3) = tmp(:,2)+off1ic(3);
 
-for i = 1: npts
-  sigsta = [];
-  for ista = 1: nsta
-    %cut according to the zero-crossing and the time shift from the constrained CC
-    sigsta(:, ista) = optseg(1+msftaddm-off1i(i,ista): end-msftaddm-off1i(i,ista), ista+1);
-    %detrend again for caution
-    sigsta(:,ista) = detrend(sigsta(:,ista));
+  rccmwlen=rccmwsec*sps;
+
+  for ipt = 1: npts
+    ipt
+    sigsta = [];
+    for ista = 1: nsta
+      %cut according to the zero-crossing and the time shift from the constrained CC
+      sigsta(:, ista) = optseg(1+msftaddm-off1i(ipt,ista): end-msftaddm-off1i(ipt,ista), ista+1);
+      %detrend again for caution
+      sigsta(:,ista) = detrend(sigsta(:,ista));
+    end
+
+    %compute running CC between 3 stations
+    [ircc,rcc12,rcc13,rcc23] = RunningCC3sta(sigsta,rccmwlen);
+    rccpair = [rcc12 rcc13 rcc23];
+    meanmedrcc(ipt) = mean(median(rccpair,1));
+    meanmeanrcc(ipt) = mean(mean(rccpair,1));
+
+    cc12 = xcorr(sigsta(:,1), sigsta(:,2),0,'normalized');  %0-lag maximum cc based on current alignment
+    cc13 = xcorr(sigsta(:,1), sigsta(:,3),0,'normalized');
+    cc23 = xcorr(sigsta(:,2), sigsta(:,3),0,'normalized');
+    ccpair = [cc12 cc13 cc23];
+    meancc(ipt) = mean(ccpair);
+
+    [~,ind] = min(ccpair);
+    cc(ipt) = mean(ccpair(:,setdiff(1:3,ind)));
+    medrcc(ipt) = mean(median(rccpair(:,setdiff(1:3,ind)),1)); 
+    meanrcc(ipt) = mean(mean(rccpair(:,setdiff(1:3,ind)),1));
+
+    cc(ipt) = mean(ccpair(:,[1 2]));
+    medrcc(ipt) = mean(median(rccpair(:,[1 2]),1)); 
+    meanrcc(ipt) = mean(mean(rccpair(:,[1 2]),1));
+  
   end
   
-  %compute running CC between 3 stations
-  [ircc,rcc12,rcc13,rcc23] = RunningCC3sta(sigsta,rccmwlen);
-  rccpair = [rcc12 rcc13 rcc23];
-  medmeanrcc(i) = median(mean(rccpair,2));
-  maxmeanrcc(i) = max(mean(rccpair,2));
+elseif strcmp(alignflg,'subwin')
+  %%%according the linear fitting result of off12 and off13 VS. origin time, we sort of know how
+  %%%much it needs to change the overall offset to change by 1 sample
+  %generate overlapping windows of the same length
+  indst = floor(tstbuf*sps+1);
+  inded = floor(tedbuf*sps);
+
+  subwsec = 25;   % determined from fitting
+
+  subwlen = subwsec*sps;
+  %since the rcc would lose rccmwlen/2 at both ends, this results in overlapping of 'rccmwlen' in rcc
+  %across consecutive windows; if use 'ovlplen' of rccmwlen, then rcc has no overlapping at all
+  %       ovlplen = rccmwlen*2;
+  ovlplen = rccmwlen;
+  [windows] = movingwins(indst,inded,subwlen,ovlplen,0);
+  %if some portions are not included
+  if windows(end,2) < inded
+    %make it an separate window if its length is at least half of that of the others
+    if inded-(windows(end,1)+(subwlen-ovlplen))+1 >= subwlen/2
+      windows = [windows; [windows(end,1)+(subwlen-ovlplen) inded]];
+      %otherwise just combine the portion to the last window
+    else
+      windows(end,2) = inded;
+    end
+  end
+  nwin =  size(windows,1);
   
-  cc12 = xcorr(sigsta(:,1), sigsta(:,2),0,'normalized');  %0-lag maximum cc based on current alignment
-  cc13 = xcorr(sigsta(:,1), sigsta(:,3),0,'normalized');
-  cc23 = xcorr(sigsta(:,2), sigsta(:,3),0,'normalized');
-  ccpair = [cc12 cc13 cc23];
-  meancc(i) = mean(ccpair,2);
+  off1iw = zeros(nwin,3);  % the best alignment between sta2, sta3 wrt sta1 for each subwin
+  ccaliw = zeros(nwin,1);  % CC value using the best alignment, including 4th stas
+  for iwin = 1: nwin
+    isubwst = windows(iwin,1)-max(floor(tstbuf*sps+1-overshoot-msftaddm),1);
+    isubwed = windows(iwin,2)-max(floor(tstbuf*sps+1-overshoot-msftaddm),1);
+    if iwin == 1
+      isubwst = isubwst-overshoot;
+    end
+    if iwin == nwin
+      isubwed = isubwed+overshoot;
+    end
+    
+    %align records
+    optcc = detrend(optseg(isubwst: isubwed, 2:end));
+    msftadd = (round(max(abs([off12ran off13ran])))+1)*sps/40;  %+1 for safety
+    loffmax = 4*sps/40;
+    ccmid = ceil(size(optcc,1)/2);
+    ccwlen = round(size(optcc,1)-2*(msftadd+1));  % minus ensures successful shifting of records
+    ccmin = 0.01;  % depending on the length of trace, cc could be very low
+    iup = 1;    % times of upsampling
+    [off12con,off13con,ccaliw(iwin,1)] = constrained_cc_interp(optcc(:,1:3)',ccmid,...
+      ccwlen,msftadd,loffmax,ccmin,iup);
+    % if a better alignment cannot be achieved, use 0,0
+    if off12con == msftadd+1 && off13con == msftadd+1
+      off12con = 0;
+      off13con = 0;
+      fprintf('Tremor burst %d cannot be properly aligned, double-check needed \n',k);
+    end
+    off1iw(iwin,1) = 0;
+    off1iw(iwin,2) = round(off12con);
+    off1iw(iwin,3) = round(off13con);
+    
+  end
   
-  [~,ind] = min(ccpair);
-  
-  cc(i) = mean(ccpair(:,setdiff(1:3,ind)), 2);
-  medrcc(i) = median(mean(rccpair(:,setdiff(1:3,ind)), 2));
-  maxrcc(i) = max(mean(rccpair(:,setdiff(1:3,ind)), 2));
-  
+  off1i = zeros(npts,3);
+  off1i(:,2) = tmp(:,1);
+  off1i(:,3) = tmp(:,2);
+
+  for ipt = 1: npts
+    ipt
+    
+    rcccat = [];  % average concatenated RCC
+    rccpair = [];  % concatenated RCC between each station pair, order is 12, 13, 23
+    ccpair = []; % 0-lag overall cc of each subwin, between each station pair, order is 12, 13, 23
+    
+    for iwin = 1: nwin
+%       iwin
+      isubwst = windows(iwin,1)-max(floor(tstbuf*sps+1-overshoot-msftaddm),1);
+      isubwed = windows(iwin,2)-max(floor(tstbuf*sps+1-overshoot-msftaddm),1);
+      if iwin == 1
+        isubwst = isubwst-overshoot;
+      end
+      if iwin == nwin
+        isubwed = isubwed+overshoot;
+      end
+      
+      %Align records
+      subw = [];  % win +/-3 s, segment of interest,first 1s will be tapered
+      for ista = 1: 3
+        subw(:, ista) = optseg(isubwst-(off1i(ipt,ista)+off1iw(iwin,ista)): ...
+          isubwed-(off1i(ipt,ista)+off1iw(iwin,ista)), ista+1);
+        subw(:, ista) = detrend(subw(:, ista));
+      end
+      
+      %compute running CC between 3 stations
+      [irccw,rccw12,rccw13,rccw23] = RunningCC3sta(subw,rccmwlen);
+      rccw = (rccw12+rccw13+rccw23)/3;
+      rcccat = [rcccat; rccw];
+      rccpair = [rccpair; rccw12 rccw13 rccw23];
+        
+      ccw12 = xcorr(subw(:,1), subw(:,2),0,'normalized');  %0-lag maximum cc based on current alignment
+      ccw13 = xcorr(subw(:,1), subw(:,3),0,'normalized');
+      ccw23 = xcorr(subw(:,2), subw(:,3),0,'normalized');
+      ccpair = [ccpair; ccw12 ccw13 ccw23];
+      
+    end
+    meanmedrcc(ipt) = mean(median(rccpair,1));
+    meanmeanrcc(ipt) = mean(mean(rccpair,1));
+    meancc(ipt) = mean(mean(ccpair,1));
+
+%     [~,ind] = min(mean(ccpair,1));
+%     cc(ipt) = mean(mean(ccpair(:,setdiff(1:3,ind)), 1));
+%     medrcc(ipt) = mean(median(rccpair(:,setdiff(1:3,ind)),1)); 
+%     meanrcc(ipt) = mean(mean(rccpair(:,setdiff(1:3,ind)),1)); 
+    
+    cc(ipt) = mean(mean(ccpair(:,[1 2]), 1));
+    medrcc(ipt) = mean(median(rccpair(:,[1 2]),1));
+    meanrcc(ipt) = mean(mean(rccpair(:,[1 2]),1));
+
+  end
+
 end
 
-medmeanrcc = reshape(medmeanrcc,length(off13),length(off12));
-maxmeanrcc = reshape(maxmeanrcc,length(off13),length(off12));
+meanmedrcc = reshape(meanmedrcc,length(off13),length(off12));
+meanmeanrcc = reshape(meanmeanrcc,length(off13),length(off12));
 medrcc = reshape(medrcc,length(off13),length(off12));
-maxrcc = reshape(maxrcc,length(off13),length(off12));
+meanrcc = reshape(meanrcc,length(off13),length(off12));
 meancc = reshape(meancc,length(off13),length(off12));
 cc = reshape(cc,length(off13),length(off12));
+
+%% load the LFE catalog, whole-win
+if strcmp(alignflg,'wholewin')
+  savefile = 'deconv1win_stats4th_allbstsig.mat';
+elseif strcmp(alignflg,'subwin')
+  savefile = 'deconv_stats4th_allbstsig.mat';
+end
+allsig= load(strcat(rstpath, '/MAPS/',savefile));
+imp = allsig.allbstsig.impindepall;
+%convert time offset to relative loc
+ftrans = 'interpchao';
+[imploc, ~] = off2space002(imp(:,7:8),sps,ftrans,0); % 8 cols, format: dx,dy,lon,lat,dep,ttrvl,off12,off13
+
+nsrcraw = allsig.allbstsig.nsrcraw;
+% propang = allsig.allbstsig.propang;
+% proppear = allsig.allbstsig.proppear;
+if strcmp(alignflg,'wholewin')
+  rccsrc = allsig.allbstsig.rccsrcall;
+elseif strcmp(alignflg,'subwin') 
+  rccsrc = allsig.allbstsig.rcccatsrcall;
+end
+
+%time and loc of LFE of that burst, from 25-win detection
+ist = sum(nsrcraw(1:(idxbst(iii)-1)))+1;
+ied = ist+nsrcraw(idxbst(iii))-1;
+lfe = imp(ist:ied, :);
+off1ibst = allsig.allbstsig.off1i;
+lfe(:,7:8) = lfe(:,7:8)-repmat([off1ibst(idxbst(iii),2) off1ibst(idxbst(iii),3)],size(lfe,1),1);
+
+lfeloc = imploc(ist:ied, :);
+rcc = rccsrc(ist:ied, 1); %cat RCC at the average src arrival of 3 stas
 
 %%
 %%%plot to show how does the RCC/CC change wrt. the diff alignment between sta pairs 12 and 13
@@ -320,7 +480,7 @@ xran = [0.1 0.95]; yran = [0.1 0.95];
 xsep = 0.05; ysep = 0.05;
 optaxpos(f1,nrow,ncol,xran,yran,xsep,ysep);
 
-matplt = medmeanrcc;
+matplt = meanmedrcc;
 ax=f1.ax(1);
 hold(ax,'on'); ax.Box = 'on'; 
 imagesc(ax,off12,off13,matplt);
@@ -343,6 +503,7 @@ ax=f1.ax(2);
 hold(ax,'on'); ax.Box = 'on'; 
 imagesc(ax,off12,off13,matplt);
 contour(ax,X1,X2,matplt,'k-','ShowText','on');
+scatter(ax,lfe(:,7),lfe(:,8),15,[.7 .7 .7],'filled','MarkerEdgeColor','k');
 plot(ax,minmax(off12),minmax(off13),'--','Color',[.3 .3 .3],'linew',1);
 ind = find(matplt==max(matplt,[],'all'));
 [sub13, sub12] = ind2sub(size(matplt),ind);
@@ -354,13 +515,14 @@ colormap(ax,'jet');
 xlabel(ax,sprintf('PGC-SSIB offset (samples at %d Hz)',sps),'FontSize',11);
 ylabel(ax,sprintf('PGC-SILB offset (samples at %d Hz)',sps),'FontSize',11);
 c=colorbar(ax);
-c.Label.String = 'median of mean RCC of 2 best pairs';
+c.Label.String = 'median of mean RCC of pairs 12 and 13';
 
 matplt = meancc;
 ax=f1.ax(3);
 hold(ax,'on'); ax.Box = 'on'; 
 imagesc(ax,off12,off13,matplt);
-conmat = contour(ax,X1,X2,matplt,0.1:0.01:0.3,'k-','ShowText','on'); %
+contour(ax,X1,X2,matplt,'k-','ShowText','on');
+% conmat = contour(ax,X1,X2,matplt,-0.15:0.01:0.3,'k-','ShowText','on'); %
 plot(ax,minmax(off12),minmax(off13),'--','Color',[.3 .3 .3],'linew',1);
 ind = find(matplt==max(matplt,[],'all'));
 [sub13, sub12] = ind2sub(size(matplt),ind);
@@ -378,7 +540,8 @@ matplt = cc;
 ax=f1.ax(4);
 hold(ax,'on'); ax.Box = 'on'; 
 imagesc(ax,off12,off13,matplt);
-contour(ax,X1,X2,matplt,'k-','ShowText','on');
+conmat = contour(ax,X1,X2,matplt,'k-','ShowText','on');
+scatter(ax,lfe(:,7),lfe(:,8),15,[.7 .7 .7],'filled','MarkerEdgeColor','k');
 plot(ax,minmax(off12),minmax(off13),'--','Color',[.3 .3 .3],'linew',1);
 ind = find(matplt==max(matplt,[],'all'));
 [sub13, sub12] = ind2sub(size(matplt),ind);
@@ -390,12 +553,12 @@ colormap(ax,'jet');
 xlabel(ax,sprintf('PGC-SSIB offset (samples at %d Hz)',sps),'FontSize',11);
 ylabel(ax,sprintf('PGC-SILB offset (samples at %d Hz)',sps),'FontSize',11);
 c=colorbar(ax);
-c.Label.String = 'mean overall CC of 2 best pairs';
+c.Label.String = 'mean overall CC of pairs 12 and 13';
 
-
+keyboard
 %% choose a set of offset12, 13 with equal CC/RCC
-ccval = 0.23;
-[~,indcol] = min(abs(conmat(1,:)-ccval));
+ccval = 0.1;
+[~,indcol] = find(abs(conmat(1,:)-ccval)<=1e-6);
 nind = length(indcol);
 for i = 1: nind
   erroff = conmat(:,indcol(i)+1: indcol(i)+conmat(2,indcol(i)))';
@@ -404,8 +567,8 @@ end
 ellfit = fit_ellipse(erroff(:,1),erroff(:,2));
 
 %%%add the indication of the error ellipse
-mmmax = 10;
-nnmax = 10;
+mmmax = offmax+1;
+nnmax = offmax+1;
 erroff1 = zeros((mmmax*2+1)^2,2);
 kk = 0;
 for mm = -mmmax:1:mmmax
@@ -414,7 +577,6 @@ for mm = -mmmax:1:mmmax
     erroff1(kk,:) = [mm nn];
   end
 end
-ftrans = 'interpchao';
 [errloc1, ~] = off2space002(erroff1,sps,ftrans,0);
 
 F1 = scatteredInterpolant(erroff1(:,1),erroff1(:,2),errloc1(:,1),'linear');
@@ -454,17 +616,18 @@ xlabel(ax,sprintf('PGC-SSIB offset (samples at %d Hz)',sps),'FontSize',11);
 ylabel(ax,sprintf('PGC-SILB offset (samples at %d Hz)',sps),'FontSize',11);
 axis(ax,'equal','tight');
 axis(ax,[-mmmax mmmax -nnmax nnmax]);
-title(ax,sprintf('Contour of CC/RCC=%.2f',ccval));
+title(ax,sprintf('Contour of CC=%.2f',ccval));
 
 ax=f2.ax(2);
 hold(ax,'on'); ax.Box = 'on'; 
 plot(ax,errloc(:,1),errloc(:,2),'k','linew',1.5);
-plot(ax,[-1 1],[-1 1],'--','Color',[.3 .3 .3],'linew',1);
 xlabel(ax,'E (km)','FontSize',11);
 ylabel(ax,'N (km)','FontSize',11);
 axis(ax,'equal','tight');
-axis(ax,[-1 1 -1 1]);
+% plot(ax,[-1 1],[-1 1],'--','Color',[.3 .3 .3],'linew',1);
+% axis(ax,[-1 1 -1 1]);
 
+keyboard
 %% what is the shape like for sqrt(off12^2+off13^2+off23^2)==const
 const = 8.1;
 

@@ -14,13 +14,14 @@ function plt_templates_bp(greenf,stas,lowlet,hiwlet,sps)
 
 figure
 hold on
+lwlet = size(greenf,1);
 if size(greenf,2) == 3
-  plot(greenf(:,1),'r')
-  plot(greenf(:,2),'b')
-  plot(greenf(:,3),'k')
+  plot((1:lwlet)/sps,greenf(:,1),'r');
+  plot((1:lwlet)/sps,greenf(:,2),'b');
+  plot((1:lwlet)/sps,greenf(:,3),'k');
 else
   for ista = 1: size(greenf,2)
-    plot(greenf(:,ista));
+    plot((1:lwlet)/sps,greenf(:,ista));
   end
 end  
 text(0.95,0.9,sprintf('%.1f-%.1f Hz opt.',lowlet,hiwlet),'Units','normalized','HorizontalAlignment',...
@@ -34,10 +35,11 @@ mwlen=sps/2;
 rcc = (rcc12+rcc13+rcc23)/3;
 %alln(alln<0)=-10^4*yma; %just so they don't plot.
 % plot(samples(cclen/2+1:greenlen-cclen/2),mx*alln,'co','markersize',2); % scale with data amp.
-plot(ircc,mx*rcc,'co','markersize',2); % scale with data amp.
+plot(ircc/sps,mx*rcc,'co','markersize',2); % scale with data amp.
 legend([stas; 'RCC  '],'Location','southeast');
 greenlen = size(greenf,1);
-xlim([0 greenlen])
+xlim([0 greenlen]/sps)
 ylim([-mx mx])
 box on
+xlabel('Time (s)');
 

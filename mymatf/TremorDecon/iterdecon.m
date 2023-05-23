@@ -200,7 +200,7 @@ else
 end
 medwtcoef
 
-mwtcoef = 100;  % intial amplitude of max master CC weighted by rcc, value doesn't really matter 
+mwtcoef = medwtcoef*1.1;  % intial amplitude of max master CC weighted by rcc, value doesn't really matter 
 medrccpeak = median(rcc(pkind));
 rccimp = 1;
 %%%%%%%%%%%%%%%%%
@@ -236,7 +236,8 @@ ampnoiwt = ampnoi*median(rcc); % amp of CC between noise and wavelet weighted by
 % while rccimp>prctile(rcc,100-68) && nit<nit_max
 % while rccimp>median(rcc) && nit<nit_max  
 % while rccimp>medrccpeak && nit<nit_max 
-while mwtcoef>medwtcoef && nit<nit_max
+% while mwtcoef>medwtcoef && nit<nit_max
+while mwtcoef>medwtcoef   %if discard hard limit on max num of iters
   
 % while max(abs(predchg))>mad(noi) && nimp<nimp_max
 % while (dres>dres_min || mfit>mfit_min) && nit<nit_max
@@ -246,7 +247,7 @@ while mwtcoef>medwtcoef && nit<nit_max
 % while max(abs(predchg))>std(noi) && nit<nit_max % if you believe the noise is gaussian distributed
 % while amp>ampnoin && mad(res)>mad(noi) && nit<nit_max
 
-  nit = nit+1;
+  nit = nit+1
 
   %%%%%%%% segment of find max CC location and Amp. from reference %%%%%%%%%%%%
 %   %find cross-correlation
@@ -367,7 +368,7 @@ while mwtcoef>medwtcoef && nit<nit_max
     ylabel('Amplitude','FontSize',12);
     xlabel(ax,sprintf('Samples at %d Hz',sps),'FontSize',12);
     title(sprintf('Iteration: %d',nit));
-%     xlim(ax,[1.5e4 2e4]);
+    xlim(ax,[idximp-5*sps idximp+5*sps]);
     legend(ax,[p1,p2,p3,p4],'Residual-template CC','3-station RCC','Weighted peaks','Stopping threshold');
     hold(ax,'on');
   end
@@ -399,15 +400,15 @@ while mwtcoef>medwtcoef && nit<nit_max
   predchg = predchg(itwlet:nfft+itwlet-1);  % cut accordingly
   pred = pred + predchg;  % update the prediction
   
-  %fit a parabola around the peak, to quantify the 'sharpness' of the found peak
-  nptsfit = 21;
-  x = (pkind(mwtcoefidx)-floor(nptsfit/2): pkind(mwtcoefidx)+floor(nptsfit/2))';
-  y = coefeff(x);
-  poly = polyfit(x,y,2);  %1st param is focal length that determines how flat or skinny parabola is
-  ampit(nit, 7) = poly(1);  %save 1st param to represent the sharpness    
-%   yfit = polyval(poly,x);
-%   figure; plot(x,y); hold on;
-%   scatter(x,yfit);
+%   %fit a parabola around the peak, to quantify the 'sharpness' of the found peak
+%   nptsfit = 5;
+%   x = (pkind(mwtcoefidx)-floor(nptsfit/2): pkind(mwtcoefidx)+floor(nptsfit/2))';
+% %   autoccres = xcorr(res); %unnormalized autocorrelation
+%   normlizer = sqrt(max(xcorr(res))*max(xcorr(wlet))); %use unnormalized autocorrelations as normlizer
+%   y = coefeff(x)/normlizer; %normlization in order for a fair comparison if wavefrom amp is diff.
+%   poly = polyfit(x,y,2);  %1st param is focal length that determines how flat or skinny parabola is
+%   ampit(nit, 7) = poly(1);  %save 1st param to represent the sharpness    
+% %   yfit = polyval(poly,x);
 
   res_new = sig-pred;   % residual
 %   dres = abs((sum(res.^2)-sum(res_new.^2))./sum(res.^2));  % target evaluation objective

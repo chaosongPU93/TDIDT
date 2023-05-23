@@ -104,6 +104,7 @@ elseif isequal(ftime,'tori')
 %   imptime = imptime - min(imptime);
 %   cran = [0 ceil(max(imptime))];
 end
+imptime = imptime/sps;
 
 [imptimest, indsort] = sortrows(imptime,1);  % sort based on the time (no matter origin or arrival)
 scatter(ax,imp(indsort,7),imp(indsort,8),maxsybsz*refscl,imptimest,'filled',...
@@ -114,13 +115,15 @@ oldc = colormap(ax, 'kelicol');
 newc = flipud(oldc);
 colormap(ax, newc);
 c=colorbar(ax);
-caxis(ax, cran);
+caxis(ax, cran/sps);
 if isequal(ftime,'tarvl')
-  c.Label.String = sprintf('Index of impulse at PGC at %d Hz', sps);
+%   c.Label.String = sprintf('Index of impulse at PGC at %d Hz', sps);
+  c.Label.String = sprintf('Arrival time at PGC (s)');
 elseif isequal(ftime,'tori')
 %   c.Label.String = sprintf('Traveltime corrected index of impulse at PGC at %d Hz', sps);
 %   c.Label.String = sprintf('Relative origin time (samples) of the impulse at %d Hz', sps);
-  c.Label.String = sprintf('Relative origin time (samples)');
+%   c.Label.String = sprintf('Relative origin time (samples)');
+  c.Label.String = sprintf('Relative origin time (s)');
 end
 c.Label.FontSize = 9;
 % pos = ax.Position;
@@ -128,7 +131,6 @@ c.Label.FontSize = 9;
 ax.Box = 'on'; grid(ax, 'on');
 scatter(ax,xran(1)+0.05*range(xran),yran(2)-0.05*range(yran),maxsybsz,'w','filled',...
   'MarkerEdgeColor',[.5 .5 .5]);
-% scatter(ax,xran(1)+0.05*range(xran),yran(2)-0.05*range(yran),maxsybsz,[.5 .5 .5],'filled');
 text(ax,0.02,0.9,strcat({'Amp. \geq '},sprintf('%.1f',wtmax)),'Units','normalized',...
   'HorizontalAlignment','left','FontSize',8);
 % text(ax,0.98,0.15,sprintf('med. of abs.: %.2f, %.2f, %.2f',median(abs(imp(:,7))),...
@@ -140,8 +142,8 @@ text(ax,0.02,0.9,strcat({'Amp. \geq '},sprintf('%.1f',wtmax)),'Units','normalize
 % text(ax,0.98,0.05,sprintf('wgt. mean of abs.: %.2f, %.2f, %.2f',wt_mean(abs(imp(:,7)),wt),...
 %   wt_mean(abs(imp(:,8)),wt),wt_mean(abs(imp(:,9)),wt)),'Units','normalized',...
 %   'HorizontalAlignment','right');
-text(ax,0.98,0.95,num2str(size(imp,1)),'Units','normalized',...
-  'HorizontalAlignment','right','FontSize',10);
+text(ax,0.98,0.05,sprintf('%d events',size(imp,1)),'Units','normalized',...
+  'HorizontalAlignment','right','FontSize',9);
 ax.YAxis.FontSize = 8;
 ax.XAxis.FontSize = 8;
 xlabel(ax,sprintf('PGC-SSIB arrival offset (samples at %d Hz)',sps),'FontSize',10);

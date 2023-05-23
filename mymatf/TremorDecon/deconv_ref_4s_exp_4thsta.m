@@ -73,37 +73,39 @@ indenv123 = [1,3,8,10,31,67,78,81,82,91,102,108,114,116,121,129,146,153,167,175]
 %indices of bursts whose CC of sig-wlet cc between sta 1,2,3 are high, above 75th percentile
 indswcc123 = [1,2,3,6,8,18,21,46,56,77,78,82,83,84,102,107,114,125,127,145,169];
 
+sps = 160;
+
 %% call function 'deconv_ref_4s_exp_rand_fn', high-correlation VS low-correlation bursts, DATA VS NOISE
-flagrecalc = 0;
-% flagrecalc = 1;
-
-if flagrecalc
-  normflag = 0; %do not normalize the templates
-  pltflag = 0;  %do not create summary plots for each choice of inputs
-  % rccmwsec = 0.25; %use 0.5s or 0.25s 
-  rccmwsec = 0.5; %use 0.5s or 0.25s
-  
-  %%%high-correlation bursts using real data
-  noiseflag = 0;
-  hibstsig = deconv_ref_4s_exp_4thsta_fn(indenv123,normflag,noiseflag,pltflag,rccmwsec);
-  savefile = 'deconv_stats4th_hienvccbstsig.mat';
-  save(strcat(rstpath, '/MAPS/',savefile), 'hibstsig');
-  
-  %%%high-correlation bursts using synthetic noise
-  noiseflag = 1;
-  hibstnoi = deconv_ref_4s_exp_4thsta_fn(indenv123,normflag,noiseflag,pltflag,rccmwsec);
-  savefile = 'deconv_stats4th_hienvccbstnoi.mat';
-  save(strcat(rstpath, '/MAPS/',savefile), 'hibstnoi');
-
-else
-  savefile = 'deconv_stats4th_hienvccbstsig.mat';
-  load(strcat(rstpath, '/MAPS/',savefile));
-  savefile = 'deconv_stats4th_hienvccbstnoi.mat';
-  load(strcat(rstpath, '/MAPS/',savefile));
-end
-
-bstsig = hibstsig;
-bstnoi = hibstnoi;
+% flagrecalc = 0;
+% % flagrecalc = 1;
+% 
+% if flagrecalc
+%   normflag = 0; %do not normalize the templates
+%   pltflag = 0;  %do not create summary plots for each choice of inputs
+%   % rccmwsec = 0.25; %use 0.5s or 0.25s 
+%   rccmwsec = 0.5; %use 0.5s or 0.25s
+%   
+%   %%%high-correlation bursts using real data
+%   noiseflag = 0;
+%   hibstsig = deconv_ref_4s_exp_4thsta_fn(indenv123,normflag,noiseflag,pltflag,rccmwsec);
+%   savefile = 'deconv_stats4th_hienvccbstsig.mat';
+%   save(strcat(rstpath, '/MAPS/',savefile), 'hibstsig');
+%   
+%   %%%high-correlation bursts using synthetic noise
+%   noiseflag = 1;
+%   hibstnoi = deconv_ref_4s_exp_4thsta_fn(indenv123,normflag,noiseflag,pltflag,rccmwsec);
+%   savefile = 'deconv_stats4th_hienvccbstnoi.mat';
+%   save(strcat(rstpath, '/MAPS/',savefile), 'hibstnoi');
+% 
+% else
+%   savefile = 'deconv_stats4th_hienvccbstsig.mat';
+%   load(strcat(rstpath, '/MAPS/',savefile));
+%   savefile = 'deconv_stats4th_hienvccbstnoi.mat';
+%   load(strcat(rstpath, '/MAPS/',savefile));
+% end
+% 
+% bstsig = hibstsig;
+% bstnoi = hibstnoi;
 
 % keyboard
 
@@ -118,17 +120,17 @@ if flagrecalc
   % rccmwsec = 0.25; %use 0.5s or 0.25s 
   rccmwsec = 0.5; %use 0.5s or 0.25s
   
-  %%%all bursts using real data
+  %%all bursts using real data
   noiseflag = 0;
   allbstsig = deconv_ref_4s_exp_4thsta_fn(1:size(trange,1),normflag,noiseflag,pltflag,rccmwsec); %
   savefile = 'deconv_stats4th_allbstsig.mat';
-%   save(strcat(rstpath, '/MAPS/',savefile), 'allbstsig');
+  save(strcat(rstpath, '/MAPS/',savefile), 'allbstsig');
   
   %%%all bursts using synthetic noise
   noiseflag = 1;
   allbstnoi = deconv_ref_4s_exp_4thsta_fn(1:size(trange,1),normflag,noiseflag,pltflag,rccmwsec);  %
   savefile = 'deconv_stats4th_allbstnoi.mat';
-%   save(strcat(rstpath, '/MAPS/',savefile), 'allbstnoi');
+  save(strcat(rstpath, '/MAPS/',savefile), 'allbstnoi');
 else
   savefile = 'deconv_stats4th_allbstsig.mat';
   load(strcat(rstpath, '/MAPS/',savefile));
@@ -136,75 +138,770 @@ else
   load(strcat(rstpath, '/MAPS/',savefile));
 end
 
-bstsig = allbstsig;
-bstnoi = allbstnoi;
-% keyboard
+keyboard
 
-%% comparison plots, syn noise vs data
+% bstsig = allbstsig;
+% bstnoi = allbstnoi;
+
+%% call function 'deconv_ref_4s_exp_rand_fn', all bursts, DATA VS NOISE, use 0.25-s win for RCC
+%%%Flag to indicate if it is necessary to recalculate everything
+% flagrecalc = 0;
+% % flagrecalc = 1;
+% 
+% if flagrecalc
+%   normflag = 0; %do not normalize the templates
+%   pltflag = 0;  %do not create summary plots for each choice of inputs
+%   rccmwsec = 0.25; %use 0.5s or 0.25s 
+% %   rccmwsec = 0.5; %use 0.5s or 0.25s
+%   
+%   %%%all bursts using real data
+%   noiseflag = 0;
+%   allbstsig = deconv_ref_4s_exp_4thsta_fn(1:size(trange,1),normflag,noiseflag,pltflag,rccmwsec); %
+%   savefile = 'deconv_stats4th_allbstsig0.25s.mat';
+%   save(strcat(rstpath, '/MAPS/',savefile), 'allbstsig');
+%   
+%   %%%all bursts using synthetic noise
+%   noiseflag = 1;
+%   allbstnoi = deconv_ref_4s_exp_4thsta_fn(1:size(trange,1),normflag,noiseflag,pltflag,rccmwsec);  %
+%   savefile = 'deconv_stats4th_allbstnoi0.25s.mat';
+%   save(strcat(rstpath, '/MAPS/',savefile), 'allbstnoi');
+% else
+%   savefile = 'deconv_stats4th_allbstsig0.25s.mat';
+%   load(strcat(rstpath, '/MAPS/',savefile));
+%   savefile = 'deconv_stats4th_allbstnoi0.25s.mat';
+%   load(strcat(rstpath, '/MAPS/',savefile));
+% end
+% 
+% bstsig = allbstsig;
+% bstnoi = allbstnoi;
+% keyboard
+ 
+%% a specific plot for Allan's presentation, similar to last fig of AGU2022 poster
+widin = 11;  % maximum width allowed is 8.5 inches
+htin = 5;   % maximum height allowed is 11 inches
+nrow = 1;
+ncol = 2;
+f = initfig(widin,htin,nrow,ncol); %initialize fig
+
+%%%param for secondary sources removed
+% dist2all = allbstsig.dist2allbst;
+locxyprojall = allbstsig.locxyprojall;
+tarvlsplstall = allbstsig.impindepall(:,1);
+nsrc = allbstsig.nsrcraw;
+dtarvlnn1 = allbstsig.dtarvlnn1all;
+% dist2alln = allbstnoi.dist2allbst;
+locxyprojalln = allbstnoi.locxyprojall;
+tarvlsplstalln = allbstnoi.impindepall(:,1);
+nsrcn = allbstnoi.nsrcraw;
+dtarvlnn1n = allbstnoi.dtarvlnn1all;
+
+% %%%param for further checked at KLNB
+% locxyprojall = allbstsig.locxyproj4thall;
+% tarvlsplstall = allbstsig.impindep4thall(:,1);
+% nsrc = allbstsig.nsrc;
+% dtarvlnn1 = allbstsig.dtarvlnn14thall;
+% locxyprojalln = allbstnoi.locxyproj4thall;
+% tarvlsplstalln = allbstnoi.impindep4thall(:,1);
+% nsrcn = allbstnoi.nsrc;
+% dtarvlnn1n = allbstnoi.dtarvlnn14thall;
+
+%%%abs distance along min-rmse direction between each source and all others whose arrival 
+%%%separation is <=2 s
+ax=f.ax(1);
+hold(ax,'on'); ax.Box = 'on'; grid(ax,'on');
+binwdist = 0.1;
+binedge = (0: binwdist: 50*binwdist)';
+%if looking at distance in map view, use plain count or normalize by area
+%%%projection along the min-rmse direction
+%%%for data
+nsrcprop = nsrc;
+nsrcprop(nsrcprop<=2)=0;
+dlocproj2allbst = [];
+dlocprojnn1bst = [];
+for i = 1: size(trange,1)
+  ist = sum(nsrc(1:i-1))+1;
+  ied = ist+nsrc(i)-1;
+  tarvlsplst = tarvlsplstall(ist:ied);
+  ist = sum(nsrcprop(1:i-1))+1;
+  ied = ist+nsrcprop(i)-1;
+  locxyproj = locxyprojall(ist:ied, :);
+  if ~isempty(tarvlsplst) && ~isempty(locxyproj) 
+    [~,dlocproj2all] = srcdistall(tarvlsplst,locxyproj,[0 2*sps]);
+    dlocproj2allbst = [dlocproj2allbst; dlocproj2all];
+    [~,dlocproj] = srcdistNtoNm(tarvlsplst,locxyproj,1);
+    dlocprojnn1bst = [dlocprojnn1bst; dlocproj{1}];
+  end
+end
+dist2all = abs(dlocproj2allbst(:,1));
+[bincnt,binhgt,count,normalizer] = histbinbyarea(dist2all,binedge,'countdensity');
+% binhgt = binhgt./length(dist2all);
+binhgt = count./length(dist2all);
+p1=bar(ax,bincnt,binhgt,1,'stacked','b','facea',0.6);
+% stairs(ax,binedge,[binhgt; binhgt(end)],'k','LineWidth',1);
+plot(ax,[median(dist2all) median(dist2all)],ax.YLim,'b--','linew',1.5);
+text(ax,median(dist2all)+0.1,ax.YLim(2)-0.1*range(ax.YLim),...
+  sprintf('%.2f',median(dist2all)),'HorizontalAlignment','left');
+%%%for noise
+nsrcpropn = nsrcn;
+nsrcpropn(nsrcpropn<=2)=0;
+dlocproj2allbstn = [];
+for i = 1: size(trange,1)
+%   i
+  ist = sum(nsrcn(1:i-1))+1;
+  ied = ist+nsrcn(i)-1;
+  tarvlsplst = tarvlsplstalln(ist:ied);
+  ist = sum(nsrcpropn(1:i-1))+1;
+  ied = ist+nsrcpropn(i)-1;
+  locxyproj = locxyprojalln(ist:ied, :);
+  if ~isempty(tarvlsplst) && ~isempty(locxyproj) 
+    [~,dlocproj2all] = srcdistall(tarvlsplst,locxyproj,[0 2*sps]);
+    dlocproj2allbstn = [dlocproj2allbstn; dlocproj2all];
+  end
+end
+dist2alln = abs(dlocproj2allbstn(:,1));
+[bincnt,binhgt,count,normalizer] = histbinbyarea(dist2alln,binedge,'countdensity');
+% binhgt = binhgt./length(dist2all);
+binhgt = count./length(dist2all);
+p2=bar(ax,bincnt,binhgt,1,'stacked','r','facea',0.6);
+% stairs(ax,binedge,[binhgt; binhgt(end)],'k','LineWidth',1);
+plot(ax,[median(dist2alln) median(dist2alln)],ax.YLim,'r--','linew',1.5);
+text(ax,median(dist2alln)+0.1,ax.YLim(2)-0.2*range(ax.YLim),...
+  sprintf('%.2f',median(dist2alln)),'HorizontalAlignment','left');
+xlabel(ax,'Dist. (km) along min-scatter direc. between each source and all others with diff. arrival time \leq 2 s');
+ylabel(ax,'Normalized count');
+legend(ax,[p1,p2],'Data','Synthetic noise','location','east');
+xlim(ax,[0 4]);
+longticks(ax,2);
+hold(ax,'off');
+
+ax=f.ax(2);
+hold(ax,'on'); ax.Box = 'on'; grid(ax,'on');
+binwdt = 0.025;
+[N,edges]=histcounts(dtarvlnn1/sps,'binwidth',binwdt,'normalization','count');
+N = N./length(dtarvlnn1);
+bincnt = (edges(1:end-1)+edges(2:end))/2;
+p1=bar(ax,bincnt,N,1,'stacked','b','facea',0.6,'edgecolor','k');
+% p1=histogram(ax,dtarvlnn1/sps,'binwidth',binwdt,'normalization','count',...
+%   'facecolor','b','EdgeColor','k','facea',0.6);
+% p1.Values = p1.Values ./ length(dtarvlnn1);
+plot(ax,[median(dtarvlnn1/sps) median(dtarvlnn1/sps)],ax.YLim, '--', ...
+  'Color', 'b', 'linew', 1.5);
+text(ax,median(dtarvlnn1/sps)+0.02,ax.YLim(2)-0.1*range(ax.YLim),...
+  sprintf('%.2f',median(dtarvlnn1/sps)),'HorizontalAlignment','left');
+
+[N,edges]=histcounts(dtarvlnn1n/sps,'binwidth',binwdt,'normalization','count');
+N = N./length(dtarvlnn1);
+bincnt = (edges(1:end-1)+edges(2:end))/2;
+p2=bar(ax,bincnt,N,1,'stacked','r','facea',0.6,'edgecolor','k');
+plot(ax,[median(dtarvlnn1n/sps) median(dtarvlnn1n/sps)],ax.YLim, '--', ...
+  'Color', 'r', 'linew', 1.5);
+text(ax,median(dtarvlnn1n/sps)+0.02,ax.YLim(2)-0.2*range(ax.YLim),...
+  sprintf('%.2f',median(dtarvlnn1n/sps)),'HorizontalAlignment','left');
+ylabel(ax,'Normalized count');
+xlabel(ax,sprintf('Diff. arrival time between sources N and N-%d (s)',1));
+legend(ax,[p1,p2],'Data','Synthetic noise','location','east');
+xlim(ax,[0 1.5]);
+% ylim(ax,[0 3.5]);
+longticks(ax,2);
+hold(ax,'off');
+tit=supertit(f.ax,'Secondary sources removed');
+% tit=supertit(f.ax,'Secondary sources removed & further checked at KLNB');
+movev(tit,0.2);
+
+keyboard
+
+%% 
+%%%first bin source by amp, then plot diff arrival time for N and N-1 for each amp bin
+%%%param for secondary sources removed
+imp = allbstsig.impindepall;
+impn = allbstnoi.impindepall;
+
+% %%%param for further checked at KLNB
+% imp = allbstsig.impindep4thall;
+% impn = allbstnoi.impindep4thall;
+
+ampafdt = [];
+ampbfdt = [];
+for i = 1: size(trange,1)
+  ist = sum(nsrc(1:i-1))+1;
+  ied = ist+nsrc(i)-1;
+  impi = imp(ist:ied,:);
+  impaf = impi(2:end,:);
+  ampaf = mean(impaf(:,[2 4 6]),2);
+  ampafdt = [ampafdt; ampaf];
+  impbf = impi(1:end-1,:);
+  ampbf = mean(impbf(:,[2 4 6]),2);
+  ampbfdt = [ampbfdt; ampbf];
+end
+ampdt = mean([ampbfdt ampafdt],2);
+
+ampafdtn = [];
+ampbfdtn = [];
+for i = 1: size(trange,1)
+  ist = sum(nsrcn(1:i-1))+1;
+  ied = ist+nsrcn(i)-1;
+  impi = impn(ist:ied,:);
+  impaf = impi(2:end,:);
+  ampaf = mean(impaf(:,[2 4 6]),2);
+  ampafdtn = [ampafdtn; ampaf];
+  impbf = impi(1:end-1,:);
+  ampbf = mean(impbf(:,[2 4 6]),2);
+  ampbfdtn = [ampbfdtn; ampbf];
+end
+ampdtn = mean([ampbfdtn ampafdtn],2);
+
+figure
+subplot(311)
+h=histogram(log10(ampbfdt),'BinWidth',0.1); hold on;
+ax=gca;
+plot(ax,ax.XLim,[200 200],'k--');
+xlabel('log_{10}{Amp}');
+ylabel('Count');
+xlim([-1.5 1]);
+subplot(312)
+h=histogram(log10(ampafdt),'BinWidth',0.1); hold on;
+ax=gca;
+plot(ax,ax.XLim,[200 200],'k--');
+xlim([-1.5 1]);
+subplot(313)
+h=histogram(log10(ampdt),'BinWidth',0.1); hold on;
+ax=gca;
+plot(ax,ax.XLim,[200 200],'k--');
+xlim([-1.5 1]);
+
+%%
+figure
+subplot(121)
+eucdistnn1 = allbstsig.distarvlnn1all(:,1);
+dtarvlnn1 = allbstsig.dtarvlnn1all;
+ax = gca;
+hold(ax,'on'); ax.Box = 'on'; grid(ax,'on');
+tmp = [dtarvlnn1/sps eucdistnn1 log10(ampdt)];
+tmp = sortrows(tmp,3,'descend');
+scatter(ax,tmp(:,1),tmp(:,2),15,tmp(:,3),'o','filled');
+oldc = colormap(ax,'kelicol');
+newc = flipud(oldc);
+colormap(ax,newc);
+c=colorbar(ax,'SouthOutside');
+c.Label.String = strcat({'log_{10}(amp)'});
+ylabel(ax,'Distance (km)');
+xlabel(ax,'Diff arrival time N and N-1 (s)');
+xlim(ax,[0 1.5]);
+ylim(ax,[0 8]);
+hold(ax,'off');
+
+subplot(122)
+ax = gca;
+hold(ax,'on'); ax.Box = 'on'; grid(ax,'on');
+tmp = [dtarvlnn1/sps abs(dlocprojnn1bst(:,1)) log10(ampdt)];
+tmp = sortrows(tmp,3,'descend');
+scatter(ax,tmp(:,1),tmp(:,2),15,tmp(:,3),'o','filled');
+oldc = colormap(ax,'kelicol');
+newc = flipud(oldc);
+colormap(ax,newc);
+c=colorbar(ax,'SouthOutside');
+c.Label.String = strcat({'log_{10}(amp)'});
+ylabel(ax,'Distance along min-rmse (km)');
+xlabel(ax,'Diff arrival time N and N-1 (s)');
+xlim(ax,[0 1.5]);
+ylim(ax,[0 4]);
+hold(ax,'off');
+
+%%
+ampplt = ampafdt;
+amppltn = ampafdtn;
+
+figure
+subplot(121)
+ax = gca;
+hold(ax,'on'); ax.Box = 'on'; grid(ax,'on');
+color = jet(h.NumBins-1);
+iplt = 0;
+for i = 1: h.NumBins-1 
+  ind = find(log10(ampplt)>=h.BinEdges(i) & log10(ampplt)<h.BinEdges(i+1));
+  dtarvlnn1i = dtarvlnn1(ind);
+  
+  if length(dtarvlnn1i)>=200
+    iplt = iplt+1;
+    binwdt = 0.025;
+    [N,edges]=histcounts(dtarvlnn1i/sps,'binwidth',binwdt,'normalization','count');
+    edges = edges-binwdt/2;
+  %   edges = -binwdt/2: binwdt: 2+binwdt/2;
+    [N,edges]=histcounts(dtarvlnn1i/sps,edges,'normalization','count');
+    Nn = N./length(dtarvlnn1i);
+    p(iplt)=stairs(ax,edges,[Nn Nn(end)],'color',color(iplt,:),'LineWidth',1);
+    label{iplt} = sprintf('%.2f',(h.BinEdges(i)+h.BinEdges(i+1))/2);
+  end
+  
+end
+legend(ax,p,label);
+ylabel(ax,'Normalized count');
+xlabel(ax,sprintf('Diff. arrival time between sources N and N-%d (s)',1));
+xlim(ax,[0 1.5]);
+ylim(ax,[0 0.16]);
+longticks(ax,2);
+hold(ax,'off');
+title(ax,'Data');
+
+subplot(122)
+ax = gca;
+hold(ax,'on'); ax.Box = 'on'; grid(ax,'on');
+iplt = 0;
+for i = 1: h.NumBins-1 
+  ind = find(log10(amppltn)>=h.BinEdges(i) & log10(amppltn)<h.BinEdges(i+1));
+  dtarvlnn1in = dtarvlnn1n(ind);
+  
+  if length(dtarvlnn1in)>=40
+    iplt = iplt+1;
+    binwdt = 0.025;
+    [N,edges]=histcounts(dtarvlnn1in/sps,'binwidth',binwdt,'normalization','count');
+    edges = edges-binwdt/2;
+  %   edges = -binwdt/2: binwdt: 2+binwdt/2;
+    [N,edges]=histcounts(dtarvlnn1in/sps,edges,'normalization','count');
+    Nn = N./length(dtarvlnn1in);
+    p(iplt)=stairs(ax,edges,[Nn Nn(end)],'color',color(iplt,:),'LineWidth',1);
+    label{iplt} = sprintf('%.2f',(h.BinEdges(i)+h.BinEdges(i+1))/2);
+  end
+  
+end
+legend(ax,p,label);
+ylabel(ax,'Normalized count');
+xlabel(ax,sprintf('Diff. arrival time between sources N and N-%d (s)',1));
+xlim(ax,[0 1.5]);
+ylim(ax,[0 0.16]);
+longticks(ax,2);
+hold(ax,'off');
+title(ax,'Synthetic noise');
+
+keyboard
+
+%% in sample sapce, 2ndary sources removed
+% allbstsig = allbstnoi;
+dt2all = allbstsig.dt2allbst;
+dist2allsp = allbstsig.dist2allspbst;
+dloc2allsp = allbstsig.dloc2allspbst;
+imp = allbstsig.impindepall;
+f=plt_srcdlocinmap(dt2all,dloc2allsp,sps,'spl');
+
+nsrc = allbstsig.nsrcraw;
+dto2allbst=[];  %diff. origin time between event pairs
+dloco2allbst=[];  
+disto2allbst=[];
+impstall = [];
+tcorall = [];
+for i = 1: size(trange,1)
+  ist = sum(nsrc(1:i-1))+1;
+  ied = ist+nsrc(i)-1;
+  impi = imp(ist:ied,:);
+  if ~isempty(impi)
+    %convert time offset to relative loc
+    ftrans = 'interpchao';
+    [imploc, indinput] = off2space002(impi(:,7:8),sps,ftrans,0); % 8 cols, format: dx,dy,lon,lat,dep,ttrvl,off12,off13
+    [imploc0, ~] = off2space002([0 0],sps,ftrans,0);  % a ref source at 0,0
+    tcor = round((imploc(:,6)-imploc0(6))*sps);   % travel time difference between each source and a ref source at 0,0
+    torispl = impi(:,1)-tcor;
+    [torisplst, indsort] = sortrows(torispl,1); %note, sort by origin time now
+    implocst = imploc(indsort, :);
+    impst = impi(indsort, :);
+    %I suspect the diff loc and distance between pairs should be the same as using tarvl, but correspondance with time
+    %should be different
+    [dto2all,dloco2all,disto2all] = srcdistall(torisplst,impst(:,7:8),[0 2*sps]);
+    
+  else
+    dto2all = [];
+    dloco2all = [];
+    disto2all = [];
+    impst = [];
+    dto2all = [];
+    indsort = [];
+    tcor = [];
+  end
+  dto2allbst = [dto2allbst; dto2all];
+  dloco2allbst = [dloco2allbst; dloco2all] ;
+  disto2allbst = [disto2allbst; disto2all];
+  impstall = [impstall; impst];
+  tcorall = [tcorall; tcor(indsort)];
+end
+f=plt_srcdlocinmap(dto2allbst,dloco2allbst,sps,'spl','tori');
+
+%plot the diff time and euclidean distance between each LFE source to all others
+tlensec = 14981;  %total length of time in secs for all bursts combined
+f = plt_srcdistall(dt2all,dist2allsp,sps,40/sps,tlensec,1,'spl');
+f = plt_srcdistall(dto2allbst,disto2allbst,sps,40/sps,tlensec,1,'spl','tori');
+
+%plot the loc diff between each LFE source to all others
+f = plt_srcdlocall(dloc2allsp,1,'spl');
+
+doffset{1,1} = allbstsig.distarvlspnn1all(:,2:3);
+doffset{2,1} = allbstsig.distarvlspnn2all(:,2:3);
+doffset{3,1} = allbstsig.distarvlspnn3all(:,2:3);
+doffset{4,1} = allbstsig.distarvlspnn4all(:,2:3);
+doffset{5,1} = allbstsig.distarvlspnn5all(:,2:3);
+eucdistsp{1,1} = allbstsig.distarvlspnn1all(:,1);
+eucdistsp{2,1} = allbstsig.distarvlspnn2all(:,1);
+eucdistsp{3,1} = allbstsig.distarvlspnn3all(:,1);
+eucdistsp{4,1} = allbstsig.distarvlspnn4all(:,1);
+eucdistsp{5,1} = allbstsig.distarvlspnn5all(:,1);
+dtarvl{1,1} = allbstsig.dtarvlnn1all;
+dtarvl{2,1} = allbstsig.dtarvlnn2all;
+dtarvl{3,1} = allbstsig.dtarvlnn3all;
+dtarvl{4,1} = allbstsig.dtarvlnn4all;
+dtarvl{5,1} = allbstsig.dtarvlnn5all;
+%plot the diff time and euclidean distance between above source pairs
+f = plt_srcdistNtoNm(dtarvl,eucdistsp,sps,40/sps,tlensec,1,'spl');
+%plot the loc diff between above source pairs
+f = plt_srcdlocNtoNm(doffset,1,'spl');
+
+%%%if you want to copy several figs to a new summary to put everything into 
+% f1 = initfig(10,9,2,3);
+% for i = 1:3
+%   axchild=f.ax(i).Children;
+%   copyobj(axchild, f1.ax(i));
+% end
+
+%% in sample sapce, further checked by the 4th station KLNB
+dt2all = allbstsig.dt2all4thbst;
+dist2allsp = allbstsig.dist2allsp4thbst;
+dloc2allsp = allbstsig.dloc2allsp4thbst;
+imp = allbstsig.impindep4thall;
+f=plt_srcdlocinmap(dt2all,dloc2allsp,sps,'spl');
+
+nsrc = allbstsig.nsrc;
+dto2allbst=[];  %diff. origin time between event pairs
+dloco2allbst=[];  
+disto2allbst=[];
+impstall = [];
+tcorall = [];
+for i = 1: size(trange,1)
+  ist = sum(nsrc(1:i-1))+1;
+  ied = ist+nsrc(i)-1;
+  impi = imp(ist:ied,:);
+  if ~isempty(impi)
+    %convert time offset to relative loc
+    ftrans = 'interpchao';
+    [imploc, indinput] = off2space002(impi(:,7:8),sps,ftrans,0); % 8 cols, format: dx,dy,lon,lat,dep,ttrvl,off12,off13
+    [imploc0, ~] = off2space002([0 0],sps,ftrans,0);  % a ref source at 0,0
+    tcor = round((imploc(:,6)-imploc0(6))*sps);   % travel time difference between each source and a ref source at 0,0
+    torispl = impi(:,1)-tcor;
+    [torisplst, indsort] = sortrows(torispl,1); %note, sort by origin time now
+    implocst = imploc(indsort, :);
+    impst = impi(indsort, :);
+    %I suspect the diff loc and distance between pairs should be the same as using tarvl, but correspondance with time
+    %should be different
+    [dto2all,dloco2all,disto2all] = srcdistall(torisplst,impst(:,7:8),[0 2*sps]);
+    
+  else
+    dto2all = [];
+    dloco2all = [];
+    disto2all = [];
+    impst = [];
+    dto2all = [];
+    indsort = [];
+    tcor = [];
+  end
+  dto2allbst = [dto2allbst; dto2all];
+  dloco2allbst = [dloco2allbst; dloco2all] ;
+  disto2allbst = [disto2allbst; disto2all];
+  impstall = [impstall; impst];
+  tcorall = [tcorall; tcor(indsort)];
+end
+f=plt_srcdlocinmap(dto2allbst,dloco2allbst,sps,'spl','tori');
+
+%plot euclidean distance between each LFE source to all others
+f = plt_srcdistall(dt2all,dist2allsp,sps,40/sps,tlensec,1,'spl');
+f = plt_srcdistall(dto2allbst,disto2allbst,sps,40/sps,tlensec,1,'spl','tori');
+
+%plot the loc diff between each LFE source to all others
+f = plt_srcdlocall(dloc2allsp,1,'spl');
+
+doffset{1,1} = allbstsig.distarvlspnn14thall(:,2:3);
+doffset{2,1} = allbstsig.distarvlspnn24thall(:,2:3);
+doffset{3,1} = allbstsig.distarvlspnn34thall(:,2:3);
+doffset{4,1} = allbstsig.distarvlspnn44thall(:,2:3);
+doffset{5,1} = allbstsig.distarvlspnn54thall(:,2:3);
+eucdistsp{1,1} = allbstsig.distarvlspnn14thall(:,1);
+eucdistsp{2,1} = allbstsig.distarvlspnn24thall(:,1);
+eucdistsp{3,1} = allbstsig.distarvlspnn34thall(:,1);
+eucdistsp{4,1} = allbstsig.distarvlspnn44thall(:,1);
+eucdistsp{5,1} = allbstsig.distarvlspnn54thall(:,1);
+dtarvl{1,1} = allbstsig.dtarvlnn14thall;
+dtarvl{2,1} = allbstsig.dtarvlnn24thall;
+dtarvl{3,1} = allbstsig.dtarvlnn34thall;
+dtarvl{4,1} = allbstsig.dtarvlnn44thall;
+dtarvl{5,1} = allbstsig.dtarvlnn54thall;
+%plot the loc diff between above source pairs
+f = plt_srcdlocNtoNm(doffset,1,'spl');
+%plot the diff time and distance between above source pairs
+f = plt_srcdistNtoNm(dtarvl,eucdistsp,sps,40/sps,tlensec,1,'spl');
+
+
+%% in map view, 2ndary sources removed
+dt2all = allbstsig.dt2allbst;
+dist2all = allbstsig.dist2allbst;
+dloc2all = allbstsig.dloc2allbst;
+imp = allbstsig.impindepall;
+f=plt_srcdlocinmap(dt2all,dloc2all,sps,'km');
+
+nsrc = allbstsig.nsrcraw;
+dto2allbst=[];  %diff. origin time between event pairs
+dloco2allbst=[];  
+disto2allbst=[];
+impstall = [];
+tcorall = [];
+for i = 1: size(trange,1)
+  ist = sum(nsrc(1:i-1))+1;
+  ied = ist+nsrc(i)-1;
+  impi = imp(ist:ied,:);
+  %convert time offset to relative loc
+  ftrans = 'interpchao';
+  [imploc, indinput] = off2space002(impi(:,7:8),sps,ftrans,0); % 8 cols, format: dx,dy,lon,lat,dep,ttrvl,off12,off13
+  [imploc0, ~] = off2space002([0 0],sps,ftrans,0);  % a ref source at 0,0
+  tcor = round((imploc(:,6)-imploc0(6))*sps);   % travel time difference between each source and a ref source at 0,0
+  torispl = impi(:,1)-tcor;    
+  [torisplst, indsort] = sortrows(torispl,1); %note, sort by origin time now
+  implocst = imploc(indsort, :);
+  impst = impi(indsort, :);
+  %I suspect the diff loc and distance between pairs should be the same as using tarvl, but correspondance with time 
+  %should be different
+  [dto2all,dloco2all,disto2all] = srcdistall(torisplst,implocst,[0 2*sps]);
+  dto2allbst = [dto2allbst; dto2all];
+  dloco2allbst = [dloco2allbst; dloco2all] ;
+  disto2allbst = [disto2allbst; disto2all];
+  impstall = [impstall; impst];
+  tcorall = [tcorall; tcor(indsort)];
+end
+f=plt_srcdlocinmap(dto2allbst,dloco2allbst,sps,'km','tori');
+
+%plot euclidean distance between each LFE source to all others
+tlensec = 14981;
+f = plt_srcdistall(dt2all,dist2all,sps,40/sps,tlensec,0.1,'km');
+%plot the loc diff between each LFE source to all others
+f = plt_srcdlocall(dloc2all,0.1,'km');
+
+dneloc{1,1} = allbstsig.distarvlnn1all(:,2:3);
+dneloc{2,1} = allbstsig.distarvlnn2all(:,2:3);
+dneloc{3,1} = allbstsig.distarvlnn3all(:,2:3);
+dneloc{4,1} = allbstsig.distarvlnn4all(:,2:3);
+dneloc{5,1} = allbstsig.distarvlnn5all(:,2:3);
+eucdist{1,1} = allbstsig.distarvlnn1all(:,1);
+eucdist{2,1} = allbstsig.distarvlnn2all(:,1);
+eucdist{3,1} = allbstsig.distarvlnn3all(:,1);
+eucdist{4,1} = allbstsig.distarvlnn4all(:,1);
+eucdist{5,1} = allbstsig.distarvlnn5all(:,1);
+dtarvl{1,1} = allbstsig.dtarvlnn1all;
+dtarvl{2,1} = allbstsig.dtarvlnn2all;
+dtarvl{3,1} = allbstsig.dtarvlnn3all;
+dtarvl{4,1} = allbstsig.dtarvlnn4all;
+dtarvl{5,1} = allbstsig.dtarvlnn5all;
+%plot the loc diff between above source pairs
+f = plt_srcdlocNtoNm(dneloc,0.1,'km');
+%plot the diff time and distance between above source pairs
+f = plt_srcdistNtoNm(dtarvl,eucdist,sps,40/sps,tlensec,0.1,'km');
+
+%%
+%%%projection along the min-rmse direction
+locxyprojall = allbstsig.locxyprojall;
+tarvlsplstall = allbstsig.impindepall(:,1);
+nsrc = allbstsig.nsrcraw;
+dlocproj2allbst = [];
+% dt2allchkbst = [];
+m = 5;
+tmp1=[];
+tmp2=[];
+tmp3=[];
+tmp4=[];
+tmp5=[];
+for i = 1: size(trange,1)
+  ist = sum(nsrc(1:i-1))+1;
+  ied = ist+nsrc(i)-1;
+  tarvlsplst = tarvlsplstall(ist:ied);
+  locxyproj = locxyprojall(ist:ied, :);
+  [~,dlocproj2all] = srcdistall(tarvlsplst,locxyproj,[0 2*sps]);
+%   dt2allchkbst = [dt2allchkbst; dt2allchk];
+  dlocproj2allbst = [dlocproj2allbst; dlocproj2all];
+  
+  [~,dlocproj] = srcdistNtoNm(tarvlsplst,locxyproj,m);
+  tmp1 = [tmp1; dlocproj{1}];
+  tmp2 = [tmp2; dlocproj{2}];
+  tmp3 = [tmp3; dlocproj{3}];
+  tmp4 = [tmp4; dlocproj{4}];
+  tmp5 = [tmp5; dlocproj{5}];
+end
+dlocprojbst{1,1} = tmp1;
+dlocprojbst{2,1} = tmp2;
+dlocprojbst{3,1} = tmp3;
+dlocprojbst{4,1} = tmp4;
+dlocprojbst{5,1} = tmp5;
+
+% f=plt_srcdlocinmap(dt2all,dlocproj2allbst,sps,'km');
+
+%plot the projected loc diff between each LFE source to all others
+f = plt_srcdlocall(dlocproj2allbst,0.1,'km');
+xlabel(f.ax(1),'Diff loc along min-rmse direc.');
+xlabel(f.ax(2),'Abs diff loc along min-rmse direc.');
+xlabel(f.ax(3),'Diff loc along ort direc. to min-rmse');
+xlabel(f.ax(4),'Abs diff loc along ort direc. to min-rmse');
+xlim(f.ax([1 3]),[-5 5]);
+xlim(f.ax([2 4]),[0 5]);
+
+%plot the projected loc diff between above source pairs
+f = plt_srcdlocNtoNm(dlocprojbst,0.1,'km');
+xlabel(f.ax(1),'Diff loc along min-rmse direc.');
+xlabel(f.ax(2),'Abs diff loc along min-rmse direc.');
+xlabel(f.ax(3),'Diff loc along ort direc. to min-rmse');
+xlabel(f.ax(4),'Abs diff loc along ort direc. to min-rmse');
+xlim(f.ax([1 3]),[-5 5]);
+xlim(f.ax([2 4]),[0 5]);
+
+%% in map view, further checked by the 4th station KLNB
+dt2all = allbstsig.dt2all4thbst;
+dist2all = allbstsig.dist2all4thbst;
+dloc2all = allbstsig.dloc2all4thbst;
+%plot euclidean distance between each LFE source to all others
+f = plt_srcdistall(dt2all,dist2all,sps,40/sps,tlensec,0.1,'km');
+%plot the loc diff between each LFE source to all others
+f = plt_srcdlocall(dloc2all,0.1,'km');
+
+dneloc{1,1} = allbstsig.distarvlnn14thall(:,2:3);
+dneloc{2,1} = allbstsig.distarvlnn24thall(:,2:3);
+dneloc{3,1} = allbstsig.distarvlnn34thall(:,2:3);
+dneloc{4,1} = allbstsig.distarvlnn44thall(:,2:3);
+dneloc{5,1} = allbstsig.distarvlnn54thall(:,2:3);
+eucdist{1,1} = allbstsig.distarvlnn14thall(:,1);
+eucdist{2,1} = allbstsig.distarvlnn24thall(:,1);
+eucdist{3,1} = allbstsig.distarvlnn34thall(:,1);
+eucdist{4,1} = allbstsig.distarvlnn44thall(:,1);
+eucdist{5,1} = allbstsig.distarvlnn54thall(:,1);
+dtarvl{1,1} = allbstsig.dtarvlnn14thall;
+dtarvl{2,1} = allbstsig.dtarvlnn24thall;
+dtarvl{3,1} = allbstsig.dtarvlnn34thall;
+dtarvl{4,1} = allbstsig.dtarvlnn44thall;
+dtarvl{5,1} = allbstsig.dtarvlnn54thall;
+%plot the loc diff between above source pairs
+f = plt_srcdlocNtoNm(dneloc,0.1,'km');
+%plot the diff time and distance between above source pairs
+f = plt_srcdistNtoNm(dtarvl,eucdist,sps,40/sps,tlensec,0.1,'km');
+
+%%%projection along the min-rmse direction
+locxyprojall = allbstsig.locxyproj4thall;
+tarvlsplstall = allbstsig.impindep4thall(:,1);
+nsrc = allbstsig.nsrc;
+dlocproj2allbst = [];
+% dt2allchkbst = [];
+m = 5;
+tmp1=[];
+tmp2=[];
+tmp3=[];
+tmp4=[];
+tmp5=[];
+for i = 1: size(trange,1)
+  ist = sum(nsrc(1:i-1))+1;
+  ied = ist+nsrc(i)-1;
+  tarvlsplst = tarvlsplstall(ist:ied);
+  locxyproj = locxyprojall(ist:ied, :);
+  [~,dlocproj2all] = srcdistall(tarvlsplst,locxyproj,[0 2*sps]);
+%   dt2allchkbst = [dt2allchkbst; dt2allchk];
+  dlocproj2allbst = [dlocproj2allbst; dlocproj2all];
+  
+  [~,dlocproj] = srcdistNtoNm(tarvlsplst,locxyproj,m);
+  tmp1 = [tmp1; dlocproj{1}];
+  tmp2 = [tmp2; dlocproj{2}];
+  tmp3 = [tmp3; dlocproj{3}];
+  tmp4 = [tmp4; dlocproj{4}];
+  tmp5 = [tmp5; dlocproj{5}];
+end
+dlocprojbst{1,1} = tmp1;
+dlocprojbst{2,1} = tmp2;
+dlocprojbst{3,1} = tmp3;
+dlocprojbst{4,1} = tmp4;
+dlocprojbst{5,1} = tmp5;
+
+%plot the projected loc diff between each LFE source to all others
+f = plt_srcdlocall(dlocproj2allbst,0.1,'km');
+xlabel(f.ax(1),'Diff loc along min-rmse direc.');
+xlabel(f.ax(2),'Abs diff loc along min-rmse direc.');
+xlabel(f.ax(3),'Diff loc along ort direc. to min-rmse');
+xlabel(f.ax(4),'Abs diff loc along ort direc. to min-rmse');
+xlim(f.ax([1 3]),[-5 5]);
+xlim(f.ax([2 4]),[0 5]);
+
+%plot the projected loc diff between above source pairs
+f = plt_srcdlocNtoNm(dlocprojbst,0.1,'km');
+xlabel(f.ax(1),'Diff loc along min-rmse direc.');
+xlabel(f.ax(2),'Abs diff loc along min-rmse direc.');
+xlabel(f.ax(3),'Diff loc along ort direc. to min-rmse');
+xlabel(f.ax(4),'Abs diff loc along ort direc. to min-rmse');
+xlim(f.ax([1 3]),[-5 5]);
+xlim(f.ax([2 4]),[0 5]);
+
+
+
+
+%%
 %%%the direct/scaled deconvolved pos/neg source peak ratio between all station pairs, for each
 %%%burst win separately
-nsrc = bstsig.nsrc;
-msrcampr = bstsig.msrcampr;
-madsrcampr = bstsig.madsrcampr;
+nsrc = allbstsig.nsrc;
+msrcampr = allbstsig.msrcampr;
+madsrcampr = allbstsig.madsrcampr;
 f1 = initfig(16,5,1,size(msrcampr,2));
 f1 = plt_deconpk_rat4th(f1,msrcampr,madsrcampr,nsrc,'b');
 
-nsrc = bstnoi.nsrc;
-msrcampr = bstnoi.msrcampr;
-madsrcampr = bstnoi.madsrcampr;
+nsrc = allallallallbstnoi.nsrc;
+msrcampr = allallallallbstnoi.msrcampr;
+madsrcampr = allallallallbstnoi.madsrcampr;
 f1 = plt_deconpk_rat4th(f1,msrcampr,madsrcampr,nsrc,'r');
 
 %%
 %%%combine the direct/scaled deconvolved pos/neg source peak ratio between all station pairs of
 %%%all burst wins, and summarize into one histogram
-srcamprall = bstsig.srcamprall;
-impindepstall = bstsig.impindepstall;
+srcamprall = allbstsig.srcamprall;
+impindep4thall = allbstsig.impindep4thall;
 f2 = initfig(16,9,2,size(srcamprall,2));
-f2 = plt_deconpk_rat_comb4th(f2,srcamprall,impindepstall,'b');
+f2 = plt_deconpk_rat_comb4th(f2,srcamprall,impindep4thall,'b');
 
-srcamprall = bstnoi.srcamprall;
-impindepstall = bstnoi.impindepstall;
-f2 = plt_deconpk_rat_comb4th(f2,srcamprall,impindepstall,'r');
+srcamprall = allallallallbstnoi.srcamprall;
+impindep4thall = allallallallbstnoi.impindep4thall;
+f2 = plt_deconpk_rat_comb4th(f2,srcamprall,impindep4thall,'r');
 
 %%
 %%%deviation of source amp ratio from some median vs. RCC
-lgdevsrcamprall = bstsig.lgdevsrcamprall;
-rccpairsrcall = bstsig.rccpairsrcall;
-rcccatsrcall = bstsig.rcccatsrcall;
+lgdevsrcamprall = allbstsig.lgdevsrcamprall;
+rccpairsrcall = allbstsig.rccpairsrcall;
+rcccatsrcall = allbstsig.rcccatsrcall;
 f3 = initfig(15,7,2,size(lgdevsrcamprall,2)); %initialize fig
 f3 = plt_deconpk_ratdevvsrcc4th(f3,lgdevsrcamprall,rccpairsrcall,rcccatsrcall,'b');
 
-lgdevsrcamprall = bstnoi.lgdevsrcamprall;
-rccpairsrcall = bstnoi.rccpairsrcall;
-rcccatsrcall = bstnoi.rcccatsrcall;
+lgdevsrcamprall = allallallallbstnoi.lgdevsrcamprall;
+rccpairsrcall = allallallallbstnoi.rccpairsrcall;
+rcccatsrcall = allallallallbstnoi.rcccatsrcall;
 f3 = plt_deconpk_ratdevvsrcc4th(f3,lgdevsrcamprall,rccpairsrcall,rcccatsrcall,'r');
 
 %%
 %%%diff between predicted arrival and selected peak at 4th sta
-pred4offtrall = bstsig.pred4offtrall;
+pred4offtrall = allbstsig.pred4offtrall;
 f4 = initfig(5,5,1,size(pred4offtrall,2)); %initialize fig
 f4 = plt_errorof4thtarvlpred(f4,pred4offtrall,offmax,'b');
 
-pred4offtrall = bstnoi.pred4offtrall;
+pred4offtrall = allallallallbstnoi.pred4offtrall;
 f4 = plt_errorof4thtarvlpred(f4,pred4offtrall,offmax,'r');
 
 %%
 %%%preserved sources' amp ratio between 4th and 1st stas
-srcamprall = bstsig.srcamprall;
-impindepstall = bstsig.impindepstall;
+srcamprall = allbstsig.srcamprall;
+impindep4thall = allbstsig.impindep4thall;
 f5 = initfig(12,5,1,3); %initialize fig
-f5 = plt_deconpk_rat14(f5,impindepstall,srcamprall,'b');
+f5 = plt_deconpk_rat14(f5,impindep4thall,srcamprall,'b');
 
-srcamprall = bstnoi.srcamprall;
-impindepstall = bstnoi.impindepstall;
-f5 = plt_deconpk_rat14(f5,impindepstall,srcamprall,'r');
+srcamprall = allallallallbstnoi.srcamprall;
+impindep4thall = allallallallbstnoi.impindep4thall;
+f5 = plt_deconpk_rat14(f5,impindep4thall,srcamprall,'r');
 
 %%
 %%%cloest waveform peak ratio between sta pairs VS. decon src amp ratio between same pairs
-clppkhtwfall = bstsig.clppkhtwfall;
-psrcampsall = bstsig.psrcampsall;
-clnpkhtwfall = bstsig.clnpkhtwfall;
-nsrcampsall = bstsig.nsrcampsall;
+clppkhtwfall = allbstsig.clppkhtwfall;
+psrcampsall = allbstsig.psrcampsall;
+clnpkhtwfall = allbstsig.clnpkhtwfall;
+nsrcampsall = allbstsig.nsrcampsall;
 f6 = initfig(15,7,2,size(clppkhtwfall,2)); %initialize fig
 f6 = plt_deconpkratvswfpkrat4th(f6,clppkhtwfall,psrcampsall,clnpkhtwfall,nsrcampsall);
 % f6 = initfig(15,7,2,4); %initialize fig
@@ -212,28 +909,28 @@ f6 = plt_deconpkratvswfpkrat4th(f6,clppkhtwfall,psrcampsall,clnpkhtwfall,nsrcamp
 % clnpkhtwfall = [clnpkhtwfall(:,1:3) clnpkhtwfall(:,end)];  %I only want KLNB
 % f6 = plt_deconpkratvswfpkrat4th(f6,clppkhtwfall,psrcampsall,clnpkhtwfall,nsrcampsall);
 
-clppkhtwfall = bstnoi.clppkhtwfall;
-psrcampsall = bstnoi.psrcampsall;
-clnpkhtwfall = bstnoi.clnpkhtwfall;
-nsrcampsall = bstnoi.nsrcampsall;
+clppkhtwfall = allallallallbstnoi.clppkhtwfall;
+psrcampsall = allallallallbstnoi.psrcampsall;
+clnpkhtwfall = allallallallbstnoi.clnpkhtwfall;
+nsrcampsall = allallallallbstnoi.nsrcampsall;
 f7 = initfig(15,7,2,size(clppkhtwfall,2)); %initialize fig
 f7 = plt_deconpkratvswfpkrat4th(f7,clppkhtwfall,psrcampsall,clnpkhtwfall,nsrcampsall);
 
 %%
 %%%cloest waveform peak ratio between sta pairs VS. decon src amp ratio between same pairs
-clppkhtwfall = bstsig.clppkhtwfall;
-clnpkhtwfall = bstsig.clnpkhtwfall;
+clppkhtwfall = allbstsig.clppkhtwfall;
+clnpkhtwfall = allbstsig.clnpkhtwfall;
 clpkspanwfall = clppkhtwfall-clnpkhtwfall;
-psrcampsall = bstsig.psrcampsall;
-nsrcampsall = bstsig.nsrcampsall;
+psrcampsall = allbstsig.psrcampsall;
+nsrcampsall = allbstsig.nsrcampsall;
 srcampsspanall = psrcampsall-nsrcampsall;
 f7 = initfig(15,4,1,size(clppkhtwfall,2)); %initialize fig
 f7 = plt_deconpkratvswfpkrat4th(f7,clpkspanwfall,srcampsspanall);
 
 
 %% how many sources from noise compared to data, after checked at 4th stations
-nsrcs = bstsig.nsrc;  %number of sources from signal
-nsrcn = bstnoi.nsrc;  %number of sources from synthetic noise
+nsrcs = allbstsig.nsrc;  %number of sources from signal
+nsrcn = allallallallbstnoi.nsrc;  %number of sources from synthetic noise
 
 frac = nsrcn./nsrcs; %fraction during day (noisy) times
 
@@ -249,5 +946,142 @@ xlabel(ax,'Fraction');
 title(ax,'All burst wins');
 
 keyboard
+
+%% what is the propagation direction and how good is the estimate
+propflag = 'map';
+% propflag = 'spl';
+
+checkflag = 0;  %whether using the result after 4th-sta check
+% checkflag = 1;
+
+if strcmp(propflag,'map')
+  if checkflag == 0
+    propang = allbstsig.propang;
+    proppear = allbstsig.proppear;
+  else
+    propang = allbstsig.propang4th;
+    proppear = allbstsig.proppear4th;
+  end
+  pearmin = 0.5;
+elseif strcmp(propflag,'spl')
+  if checkflag == 0
+    propang = allbstsig.propspang;
+    proppear = allbstsig.propsppear;
+  else
+    propang = allbstsig.propspang4th;
+    proppear = allbstsig.propsppear4th;
+  end
+  pearmin = 0.5;
+end
+
+widin = 12; htin = 5;
+nrow = 1; ncol = 3;
+f9 = initfig(widin,htin,nrow,ncol);
+xran = [0.1 0.95]; yran = [0.1 0.95];
+xsep = 0.05; ysep = 0.05;
+optaxpos(f9,nrow,ncol,xran,yran,xsep,ysep);
+
+ax=f9.ax(1); 
+hold(ax,'on'); ax.Box = 'on'; grid(ax,'on');
+scatter(ax,propang,proppear,20,'k','filled');
+plot(ax,ax.XLim,[pearmin pearmin],'r--');
+xlabel(ax,'Propagation direction');
+ylabel(ax,'Weighted Pearson coeff');
+
+ax=f9.ax(2);
+polaraxes(ax);
+theta = propang;
+theta = deg2rad(theta);
+binedge = deg2rad(2.5: 5: (270+92.5));
+polarhistogram(theta,'binedges',binedge,'normalization','count',...
+               'facec','k','facea',0.8); 
+ax = gca; hold(ax,'on');
+ax.RTickLabelRotation = 45;
+ax.ThetaMinorTick = 'on';
+ax.TickLength = [0.02 0];
+ax.ThetaZeroLocation = 'top';
+ax.ThetaDir = 'clockwise';
+ax.FontSize = 10;
+% ax.RTick = 0:1:5;
+% ax.LineWidth = 1.5;
+ax.Box = 'on';
+ax.GridAlpha = 0.3;
+text(ax,0,0.9*ax.RLim(2),'N','HorizontalAlignment',"center",'FontSize',14);
+text(ax,deg2rad(90),0.9*ax.RLim(2),'E','HorizontalAlignment',"center",'FontSize',14);
+text(ax,deg2rad(180),0.9*ax.RLim(2),'S','HorizontalAlignment',"center",'FontSize',14);
+text(ax,deg2rad(270),0.9*ax.RLim(2),'W','HorizontalAlignment',"center",'FontSize',14);
+
+
+ax=f9.ax(3);
+polaraxes(ax);
+propang = propang(proppear>=pearmin);
+proppear = proppear(proppear>=pearmin);
+theta = propang;
+theta = deg2rad(theta);
+binedge = deg2rad(2.5: 5: 92.5);
+polarhistogram(theta(propang>0 & propang<=90),'binedges',binedge,'normalization','count',...
+               'facec',[0 1 1],'facea',0.8);
+ax = gca; hold(ax,'on');
+binedge = deg2rad(2.5: 5: 92.5 + 90);           
+polarhistogram(theta(propang>90 & propang<=180),'binedges',binedge,'normalization','count',...
+               'facec','k','facea',0.8);
+binedge = deg2rad(2.5: 5: 92.5 + 180);           
+polarhistogram(theta(propang>180 & propang<=270),'binedges',binedge,'normalization','count',...
+               'facec',[1 96/255 0],'facea',0.8);
+binedge = deg2rad(2.5: 5: 92.5 + 270);           
+polarhistogram(theta(propang>270 & propang<=360),'binedges',binedge,'normalization','count',...
+               'facec','k','facea',0.2);
+ax.RTickLabelRotation = 45;
+ax.ThetaMinorTick = 'on';
+ax.TickLength = [0.02 0];
+ax.ThetaZeroLocation = 'top';
+ax.ThetaDir = 'clockwise';
+ax.FontSize = 10;
+% ax.RTick = 0:1:5;
+% ax.LineWidth = 1.5;
+ax.Box = 'on';
+ax.GridAlpha = 0.3;
+text(ax,deg2rad(60),0.8*ax.RLim(2),num2str(sum(propang>0 & propang<=90)),'HorizontalAlignment','center',...
+     'FontSize',11);           
+text(ax,deg2rad(130),0.8*ax.RLim(2),num2str(sum(propang>90 & propang<=180)),'HorizontalAlignment','center',...
+     'FontSize',11);           
+text(ax,deg2rad(225),0.8*ax.RLim(2),num2str(sum(propang>180 & propang<=270)),'HorizontalAlignment','center',...
+     'FontSize',11);
+text(ax,deg2rad(315),0.8*ax.RLim(2),num2str(sum(propang>270 & propang<=360)),'HorizontalAlignment','center',...
+     'FontSize',11); 
+
+%%
+%%%the separation in arrival time vs. distance between sources N--N-1, N--N-2, and N--N-3,
+%%%for data and noise
+widin = 7;  % maximum width allowed is 8.5 inches
+htin = 3.5;   % maximum height allowed is 11 inches
+nrow = 1;
+ncol = 2;
+f1 = initfig(widin,htin,nrow,ncol); %initialize fig
+xran = [0.1 0.94]; yran = [0.12 0.96];
+xsep = 0.08; ysep = 0.05;
+optaxpos(f1,nrow,ncol,xran,yran,xsep,ysep);
+
+dtarvlnn1all = allbstsig.dtarvlnn1all;
+distarvlnn1all = allbstsig.distarvlnn1all;
+f1 = plt_absdistvsdt(f1,[dtarvlnn1all,distarvlnn1all],1,sps,'tarvl','b');
+% median(distarvlnn1all(dtarvlnn1all/sps<=1))
+% median(distarvlnn1all(dtarvlnn1all/sps<=0.5))
+% median(distarvlnn1all)
+% median(dtarvlnn1all/sps)
+% legend(f1.ax(3),'Data','location','east');
+
+dtarvlnn1all = allallallallbstnoi.dtarvlnn1all;
+distarvlnn1all = allallallallbstnoi.distarvlnn1all;
+f1 = plt_absdistvsdt(f1,[dtarvlnn1all,distarvlnn1all],1,sps,'tarvl','r');
+ylim(f1.ax(1),[0 0.6]);
+ylim(f1.ax(2),[0 3]);
+
+
+
+
+
+
+
 
 

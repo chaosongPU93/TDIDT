@@ -1,6 +1,6 @@
-function [f] = plt_cumulative_density(hfplt,lfplt,xran,yran,binmethod,msizehf,dxhf,dyhf)
+function [f] = plt_cumulative_density(hfplt,lfplt,xran,yran,binmethod,msizehf,msizelf,dxhf,dyhf,contourflag)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% function [f] = plt_cumulative_density(hfplt,lfplt,xran,yran)
+% function [f] = plt_cumulative_density(hfplt,lfplt,xran,yran,binmethod,msizehf,dxhf,dyhf)
 % This function is to plot the cumulative density map of the hf and lf 
 % catalog to see the activated region of the catalogs
 % 
@@ -18,11 +18,14 @@ defval('yran',[-20 20]);
 defval('binmethod','grid');
 defval('dxhf',0.2);
 defval('dyhf',0.2);
+defval('contourflag',0);
+
 if isequal(binmethod,'grid')
   defval('msizehf',10);
 elseif isequal(binmethod,'pixel')
   defval('msizehf',6);
 end
+defval('msizelf',2.5*msizehf);
 
 [scrsz, res] = pixelperinch(1);
 
@@ -66,34 +69,51 @@ if ~isempty(hfplt)
       xran,yran,dxhf,dyhf);
     marker = 'o';
 %     msizehf = 500*dxhf*dyhf;
-    msizelf = 2.5*msizehf;
+%     msizelf = 2.5*msizehf;
   %bin based upon pixel   
   elseif isequal(binmethod,'pixel') 
     density1d = density_pixel(hfplt(:,1),hfplt(:,2));
     marker = 'o';
 %     msizehf = 6;
-    msizelf = 2.5*msizehf;
+%     msizelf = 2.5*msizehf;
   end
   dumhf = density1d(density1d(:,3)>0, :);
+  normalizer = max(dumhf(:,3));
   dumhf(dumhf(:,3)>1, :) = [];
   scatter(ax,dumhf(:,1),dumhf(:,2), msizehf, log10(dumhf(:,3)),marker,'linew',0.2);  %, 'MarkerEdgeColor', 'w')
+%   scatter(ax,dumhf(:,1),dumhf(:,2), msizehf, dumhf(:,3)/normalizer,marker,'linew',0.2);  %, 'MarkerEdgeColor', 'w')
   dumhf = sortrows(density1d(density1d(:,3)>0, :), 3);
   dumhf(dumhf(:,3)==1, :) = [];
   scatter(ax,dumhf(:,1),dumhf(:,2), msizehf, log10(dumhf(:,3)),marker,'filled','MarkerEdgeColor','none');  %, 
+%   scatter(ax,dumhf(:,1),dumhf(:,2), msizehf, dumhf(:,3)/normalizer,marker,'filled','MarkerEdgeColor','none');  %, 
   % imagesc(ax,[xran(1)+0.5*dx xran(end)-0.5*dx], [yran(1)+0.5*dy yran(end)-0.5*dy], density2d');
-  oldcmap = colormap(ax,'jet');
+  oldc = colormap(ax,'kelicol');
+  newc = flipud(oldc);
+  colormap(ax,newc);
   % colormap(ax, flipud(oldcmap) );
   c=colorbar(ax,'SouthOutside');
   pos = ax.Position;
   c.Position = [pos(1), pos(2)-0.03, pos(3), 0.02];
-  c.Label.String = strcat({'log_{10}(# tremor detections / '},binmethod,')');
+  c.Label.String = strcat({'log_{10}(# detections / '},binmethod,')');
+%   c.Label.String = strcat({'normalized # tremor detections / '},binmethod,')');
   c.Label.FontSize = 10;
+  caxis(ax,[0 1.7]);
 % text(ax, 0.85, 0.93, '2004','FontSize',12,'unit','normalized','horizontalalignment','center',...
 %      'EdgeColor','k','Margin',2);
 % text(ax,0.85,0.8,'HF','FontSize',12,'unit','normalized','horizontalalignment','center');
-  text(ax,0.04,0.93,'a','FontSize',11,'unit','normalized','EdgeColor','k','Margin',2);
-  text(ax,0.5,0.93,strcat(num2str(length(hfplt(:,1))),{' detections'}),'FontSize',10,'unit','normalized',...
+%   text(ax,0.04,0.93,'a','FontSize',11,'unit','normalized','EdgeColor','k','Margin',2);
+  text(ax,0.5,0.05,strcat(num2str(length(hfplt(:,1))),{' detections'}),'FontSize',10,'unit','normalized',...
       'horizontalalignment','center');
+  %%%Add contour lines if needed  
+  if contourflag
+    [xyzgridpad,xgrid,ygrid,zgrid,ind2] = zeropadmat2d(density1d,xran(1):1:xran(2),yran(1):1:yran(2));
+    zgridgf = imgaussfilt(zgrid, 1);  %smooth it a bit
+    perc = 50:10:90;
+    conplt = prctile(log10(dumhf(:,3)),perc);
+    conmat = contour(ax,xgrid,ygrid,log10(zgridgf),conplt,'-','color',[.3 .3 .3]); %,'ShowText','on'
+%     conplt = prctile(dumhf(:,3)/normalizer,perc);
+%     conmat = contour(ax,xgrid,ygrid,zgridgf/normalizer,conplt,'-','color',[.3 .3 .3]); %,'ShowText','on'
+  end
 end
 ax.Box = 'on';
 grid(ax, 'on');
@@ -127,29 +147,41 @@ if ~isempty(lfplt)
   end
   
   dumhf = density1d(density1d(:,3)>0, :);
+  normalizer = max(dumhf(:,3));
   dumhf(dumhf(:,3)>1, :) = [];
   scatter(ax,dumhf(:,1),dumhf(:,2), msizelf, log10(dumhf(:,3)),marker,'linew',0.2);  %, 'MarkerEdgeColor', 'w')
+%   scatter(ax,dumhf(:,1),dumhf(:,2), msizelf, dumhf(:,3)/normalizer,marker,'linew',0.2);  %, 'MarkerEdgeColor', 'w')
   dumhf = sortrows(density1d(density1d(:,3)>0, :), 3);
   dumhf(dumhf(:,3)==1, :) = [];
   scatter(ax,dumhf(:,1),dumhf(:,2), msizelf, log10(dumhf(:,3)),marker,'filled');  %, 'MarkerEdgeColor', 'w')
+%   scatter(ax,dumhf(:,1),dumhf(:,2), msizelf, dumhf(:,3)/normalizer,marker,'filled');  %, 'MarkerEdgeColor', 'w')
   % imagesc(ax,[xran(1)+0.5*dx xran(end)-0.5*dx], [yran(1)+0.5*dy yran(end)-0.5*dy], density2d');
-  oldcmap = colormap(ax,'jet');
-  % colormap(ax, flipud(oldcmap) );
+  oldc = colormap(ax,'kelicol');
+  newc = flipud(oldc);
+  colormap(ax,newc);
   c=colorbar(ax,'SouthOutside');
   pos = ax.Position;
   c.Position = [pos(1), pos(2)-0.03, pos(3), 0.02];
-%   if isequal(binmethod,'grid') 
-    c.Label.String = strcat({'log_{10}(# tremor detections / '},binmethod,')');
-%   elseif isequal(binmethod,'pixel')
-%     
-%   end
+  caxis(ax,[0 1.7]);
+  c.Label.String = strcat({'log_{10}(# detections / '},binmethod,')');
+%   c.Label.String = strcat('normalized # detections / ',binmethod,'by',num2str(normalizer),')');
   c.Label.FontSize = 10;
 % text(ax, 0.85, 0.93, '2004','FontSize',12,'unit','normalized','horizontalalignment','center',...
 %      'EdgeColor','k','Margin',2);
 % text(ax,0.85,0.8,'LF','FontSize',12,'unit','normalized','horizontalalignment','center');
-  text(ax,0.04,0.93,'b','FontSize',11,'unit','normalized','EdgeColor','k','Margin',2);
-  text(ax,0.5,0.93,strcat(num2str(length(lfplt(:,1))),{' detections'}),'FontSize',10,'unit','normalized',...
+%   text(ax,0.04,0.93,'b','FontSize',11,'unit','normalized','EdgeColor','k','Margin',2);
+  text(ax,0.5,0.05,strcat(num2str(length(lfplt(:,1))),{' detections'}),'FontSize',10,'unit','normalized',...
       'horizontalalignment','center');
+    %%%Add contour lines if needed  
+  if contourflag
+    [xyzgridpad,xgrid,ygrid,zgrid,ind2] = zeropadmat2d(density1d,xran(1):1:xran(2),yran(1):1:yran(2));
+    zgridgf = imgaussfilt(zgrid, 1);  %smooth it a bit
+    perc = 50:10:90;
+    conplt = prctile(log10(dumhf(:,3)),perc);
+    conmat = contour(ax,xgrid,ygrid,log10(zgridgf),conplt,'-','color',[.3 .3 .3]); %
+%     conplt = prctile(dumhf(:,3)/normalizer,perc);
+%     conmat = contour(ax,xgrid,ygrid,zgridgf/normalizer,conplt,'-','color',[.3 .3 .3]); %
+  end
   ax.Box = 'on';
   grid(ax, 'on');
   axis(ax, 'equal');

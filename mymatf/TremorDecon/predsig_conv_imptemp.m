@@ -1,5 +1,5 @@
 function [f,predgrp,resgrp,predgrpl,resgrpl,l2normred]=predsig_conv_imptemp(sigsta,optdat,impindepst,...
-  greenf,zcrosses,overshoot,stas,flagplt)
+  greenf,zcrosses,overshoot,stas,flagplt,sps)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % This script obtains the predicted (modeled) waveform by carring out a 
 % convolution between the arrival time of deconvolved impulses (usually 
@@ -16,6 +16,7 @@ function [f,predgrp,resgrp,predgrpl,resgrpl,l2normred]=predsig_conv_imptemp(sigs
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 defval('flagplt',1)
+defval('sps',160);
 
 [lsig,nsta] = size(sigsta);
 predgrp = zeros(lsig,nsta);  % predefine the prediction array
@@ -81,9 +82,9 @@ if flagplt
   subplot(3,2,1)
   hold on
   box on; grid on
-  plot(sigsta(:,1),'r');
-  plot(sigsta(:,2),'b');
-  plot(sigsta(:,3),'k');
+  plot((1:lsig)/sps,sigsta(:,1),'r');
+  plot((1:lsig)/sps,sigsta(:,2),'b');
+  plot((1:lsig)/sps,sigsta(:,3),'k');
   ym = max(abs(sigsta(:)));
   yran=1.2*[-ym ym];
   ylim(yran);
@@ -95,9 +96,9 @@ if flagplt
   subplot(3,2,2)
   hold on
   box on; grid on
-  plot(resgrp(:,1),'r');
-  plot(resgrp(:,2),'b');
-  plot(resgrp(:,3),'k');
+  plot((1:lsig)/sps,resgrp(:,1),'r');
+  plot((1:lsig)/sps,resgrp(:,2),'b');
+  plot((1:lsig)/sps,resgrp(:,3),'k');
   ylim(yran);
   text(0.95,0.9,sprintf('%.2f; %.2f; %.2f',l2normred(1, 2),l2normred(2, 2),l2normred(3, 2)),...
     'Units','normalized','HorizontalAlignment','right');
@@ -110,8 +111,8 @@ if flagplt
       subplot(3,2,2+ista-3)
       hold on
       box on; grid on
-      plot(sigsta(:,ista),'k');
-      plot(resgrp(:,ista),'r');
+      plot((1:lsig)/sps,sigsta(:,ista),'k');
+      plot((1:lsig)/sps,resgrp(:,ista),'r');
       ylim(yran);
       text(0.95,0.9,sprintf('%.2f; %.2f; %.1f%%',l2normred(ista, 1),l2normred(ista, 2),l2normred(ista, 3)),...
         'Units','normalized','HorizontalAlignment','right');
