@@ -1,4 +1,4 @@
-% seisbursts002_4s.m
+% seisofbursts002_4s.m
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % The next script to run after 'tremorbursts002_4s.m', although technically
 % 'tremorbursts002_4s.m' is the end of finding the target windows containing
