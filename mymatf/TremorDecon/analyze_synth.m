@@ -541,25 +541,20 @@ for ista = 1: nsta
   tmp = sortrows(tmp,1,'ascend');
   synsrcgtsta{ista} = tmp; %ideally for each station this should be the same, but coincidence is possible  
 end
-% %notify if sources are the same at diff stations
-% if ~isequaln(synsrcgtsta{1,1},synsrcgtsta{2,1}) || ~isequaln(synsrcgtsta{1,1},synsrcgtsta{3,1})
-%   disp('Extracted sources at different stations are not the same, re-check!');
-% else
-  ista = 1;
-  synsrcgt = synsrcgtsta{ista};
-  %store the info of synthetic impulses, same format as in paired deconvolution,
-  %9 cols, [ind1 amp1 ind2 amp2 ind3 amp3 off12 off13 off23]
-  impgt = zeros(size(synsrcgt,1), 9);
-  impgt(:,1) = synsrcgt(:,1)-msftaddm-overshoot;  % cut out the buffer
-  impgt(:,[2 4 6]) = repmat(synsrcgt(:,6),1,3);
-  %the indices of synthetic impulses need to be shifted too
-  impgt(:,3) = impgt(:,1)-synsrcgt(:,2)-off1i(2); % note the sign is consistent!
-  impgt(:,5) = impgt(:,1)-synsrcgt(:,3)-off1i(3);
-  impgt(:,7) = synsrcgt(:,2);  % no need to shift offset, because they are 'true' offset
-  impgt(:,8) = synsrcgt(:,3);
-  impgt(:,9) = impgt(:,8)-impgt(:,7);  % off23, == off13 - off12 == tarvl2 - tarvl3
-  
-% end
+ista = 1;
+synsrcgt = synsrcgtsta{ista};
+
+%store the info of synthetic impulses, same format as in paired deconvolution,
+%9 cols, [ind1 amp1 ind2 amp2 ind3 amp3 off12 off13 off23]
+impgt = zeros(size(synsrcgt,1), 9);
+impgt(:,1) = synsrcgt(:,1)-msftaddm-overshoot;  % cut out the buffer
+impgt(:,[2 4 6]) = repmat(synsrcgt(:,6),1,3);
+%the indices of synthetic impulses need to be shifted too
+impgt(:,3) = impgt(:,1)-synsrcgt(:,2)-off1i(2); % note the sign is consistent!
+impgt(:,5) = impgt(:,1)-synsrcgt(:,3)-off1i(3);
+impgt(:,7) = synsrcgt(:,2);  % no need to shift offset, because they are 'true' offset
+impgt(:,8) = synsrcgt(:,3);
+impgt(:,9) = impgt(:,8)-impgt(:,7);  % off23, == off13 - off12 == tarvl2 - tarvl3
 
 %%%plot the ground truth source offset
 spsscale = sps/40;
