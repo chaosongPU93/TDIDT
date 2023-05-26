@@ -112,8 +112,8 @@ ymax = 1.2*max([ttol2; ttol1]);
 %% group the tremor bursts 
 % ttol = 1e-3*ones(3,1); 
 % ntol = 10;
-ttol = 35/86400*ones(3,1);  % this is about 4*median
-ntol = 3;
+ttol = 100/86400*ones(3,1);  % this is about 4*median
+ntol = 1;
 [bursthf03, n03] = group_tremor_burst_indep(hfinter03,ttol(1),ntol);
 [bursthf04, n04] = group_tremor_burst_indep(hfinter04,ttol(2),ntol);
 [bursthf05, n05] = group_tremor_burst_indep(hfinter05,ttol(3),ntol);
@@ -265,12 +265,15 @@ keyboard
 %%%   27:sumsSTA32n(n,iSTA32bang) 28:sigma(nin) 29:sigma12(nin) 30:sigma13(nin)
 %%%   in(1:nstanew) loff(1:nstanew) ioff(1:nstanew) ccmaxave(1:nstanew)
 
-fid = fopen(strcat(rstpath, '/MAPS/eloc.pgc.tdec.bst',num2str(round(ttol(1)*86400)),'s_',PREFIX,'_',...
-  num2str(lo),'-',num2str(hi),'_',num2str(winlen/sps),'s',num2str(sps),'sps4add_',cutout(1:4)),'w+');
-fprintf(fid,'%.4f %.4f %.4f %.4f %.4f %.4f %d %d %6.2f %6.2f %.4f %.4f %d %d %9.1f %10.3f %8.3f %7.2f %10.3e %7.3f %10.3e %10.3e %10.3e %10.3e %10.3e %10.3e %10.3e %10.3e %10.3e %7.3f %7.3f %7.3f %7.3f %7.3f %5.2f %5.2f %7.3f %7.3f %7.3f %6.2f %6.2f %6.2f %d %d %d %d %.4f %.4f %.4f %.4f %d %d %d %d %.3f %.3f %.3f %.3f \n',...
-        hfnew');
+% fid = fopen(strcat(rstpath, '/MAPS/eloc.pgc.tdec.bst',num2str(round(ttol(1)*86400)),'s_',PREFIX,'_',...
+%   num2str(lo),'-',num2str(hi),'_',num2str(winlen/sps),'s',num2str(sps),'sps4add_',cutout(1:4)),'w+');
+% fprintf(fid,'%.4f %.4f %.4f %.4f %.4f %.4f %d %d %6.2f %6.2f %.4f %.4f %d %d %9.1f %10.3f %8.3f %7.2f %10.3e %7.3f %10.3e %10.3e %10.3e %10.3e %10.3e %10.3e %10.3e %10.3e %10.3e %7.3f %7.3f %7.3f %7.3f %7.3f %5.2f %5.2f %7.3f %7.3f %7.3f %6.2f %6.2f %6.2f %d %d %d %d %.4f %.4f %.4f %.4f %d %d %d %d %.3f %.3f %.3f %.3f \n',...
+%         hfnew');
   
-fid = fopen(strcat(rstpath, '/MAPS/tdec.bstran',num2str(round(ttol(1)*86400)),'s.pgc002.',cutout(1:4)),'w+');
+fid = fopen(strcat(rstpath, '/MAPS/tdec.bstran',num2str(round(ttol(1)*86400)),'s.',...
+  num2str(ntol),'.pgc002.',cutout(1:4)),'w+');
+% fid = fopen(strcat(rstpath, '/MAPS/tdec.bstran',num2str(round(ttol(1)*86400)),'s.pgc002.',cutout(1:4)),'w+');
+
 fprintf(fid,'%d %9.2f %9.2f \n',trange');
 fclose(fid);
 

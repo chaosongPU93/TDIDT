@@ -97,7 +97,7 @@ if ~isempty(hfplt)
   c.Label.String = strcat({'log_{10}(# detections / '},binmethod,')');
 %   c.Label.String = strcat({'normalized # tremor detections / '},binmethod,')');
   c.Label.FontSize = 10;
-  caxis(ax,[0 1.7]);
+%   caxis(ax,[0 1.7]);
 % text(ax, 0.85, 0.93, '2004','FontSize',12,'unit','normalized','horizontalalignment','center',...
 %      'EdgeColor','k','Margin',2);
 % text(ax,0.85,0.8,'HF','FontSize',12,'unit','normalized','horizontalalignment','center');
@@ -162,7 +162,7 @@ if ~isempty(lfplt)
   c=colorbar(ax,'SouthOutside');
   pos = ax.Position;
   c.Position = [pos(1), pos(2)-0.03, pos(3), 0.02];
-  caxis(ax,[0 1.7]);
+%   caxis(ax,[0 1.7]);
   c.Label.String = strcat({'log_{10}(# detections / '},binmethod,')');
 %   c.Label.String = strcat('normalized # detections / ',binmethod,'by',num2str(normalizer),')');
   c.Label.FontSize = 10;

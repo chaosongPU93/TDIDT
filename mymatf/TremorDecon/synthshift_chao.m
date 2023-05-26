@@ -592,7 +592,7 @@ elseif strcmp(distrloc,'uniform')
 
 
   %save the source location grid
-  fid = fopen([workpath,'/synthetics/synsrcloc.grd'],'w');
+  fid = fopen([workpath,'/synthetics/synsrcloc.',srcregion(1:3),'.grd'],'w');
   tmpgrid = xygrid;
   tmpgrid(:,1:2)=round(sps/40*tmpgrid(:,1:2)); % *4 to get to 160 sps from 40.
   fprintf(fid,'%8.3f %8.3f %7.2f %7.2f %8.3f %8.3f\n',tmpgrid');
@@ -708,6 +708,8 @@ axranexp(gca,6,20);
 end
 xlabel(sprintf('Samples at %d Hz',sps),'FontSize',12);
 
+keyboard
+
 %%
 %what is the peak-to-peak separation in time for synthetics
 figure
@@ -751,8 +753,6 @@ for i = 1: length(writes)
   histogram(aa,'binw',2);
   xlim([0 80]);
 end
-
-keyboard
 
 %%%Is the median median. abs amplitude proportional to the square root of number of templates?
 %%%The abs amp is similar to envelope

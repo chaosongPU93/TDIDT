@@ -348,9 +348,9 @@ physicalsize = 1;
 diam=0.3;% 0.5; %0.6; %
 
 %%%specify shape of the source region
-% srcregion='ellipse';
+srcregion='ellipse';
 % srcregion='rectangle';
-srcregion='circle';
+% srcregion='circle';
 
 %params of limited source region
 if strcmp(srcregion,'ellipse')
@@ -382,8 +382,8 @@ testsrcflag = 0;
 testfreqflag = 0;
 
 %times of saturation 
-% nsat=[0.1 0.4 1 2 4 10 100];  
-nsat=[0.4 2 10];
+nsat=[0.1 0.4 1 2 4 10 100];  
+% nsat=[0.4 2 10];
 nnsat = length(nsat);
 
 insat = 3;
@@ -415,7 +415,7 @@ STAopt = load(strcat(workpath,fname,num2str(nsat(insat))));
 synsrc = load(strcat(workpath,fname,num2str(nsat(insat)),'_sources'));
 
 if strcmp(distrloc, 'uniform') 
-  xygrid = load([workpath,'/synthetics/synsrcloc.grd']);  
+  xygrid = load([workpath,'/synthetics/synsrcloc.',srcregion(1:3),'.grd']);  
   tmp = xygrid(synsrc(:,2),:);
   synsrc = [synsrc(:,1) tmp(:,1:4) ones(length(tmp),1)];  %[indtarvl, off12, off13, loce, locn, amp]
 elseif strcmp(distrloc, 'custompdf') 
@@ -608,6 +608,7 @@ mcc = (cc12+cc13+cc23)/3;
 
 %if only use the mean RCC from pair 12 and 13
 rcc = mean(rccpair(:,[1 2]), 2);
+rccsat(:,insat) = rcc;
 
 %a qucik look of the data
 figure
@@ -702,6 +703,13 @@ ax2=gca;
   offyran,sps,30,ftrans,'mean','tarvl');
 plot(ax2,xcut,ycut,'k-','linew',2);
 title(ax2,'Ground truth');
+
+%%%plot the cumulative density of detections
+[impgtloc, ~] = off2space002(impgt(:,7:8),sps,ftrans,0); % 8 cols, format: dx,dy,lon,lat,dep,ttrvl,off12,off13
+[f] = plt_cumulative_density(impgtloc,[],xran,yran,'pixel',20,10);
+hold(f.ax(1),'on');
+plot(f.ax(1),xcut,ycut,'k-','linew',2);
+title(f.ax(1),'Ground truth');
 
 %%%plot the ground truth source map locations from grid
 f.fig = figure;
@@ -813,6 +821,12 @@ ax2=gca;
 plot(ax2,xcut,ycut,'k-','linew',2);
 title(ax2,'Grouped Total');
 
+%%%plot the cumulative density of detections
+[imploc, ~] = off2space002(impindepst(:,7:8),sps,ftrans,0); % 8 cols, format: dx,dy,lon,lat,dep,ttrvl,off12,off13
+[f] = plt_cumulative_density(imploc,[],xran,yran,'pixel',20,10);
+hold(f.ax(1),'on');
+plot(f.ax(1),xcut,ycut,'k-','linew',2);
+title(f.ax(1),'Grouped Total');
 
 %% distance, diff time for source pairs right after grouping 
 %note the 'tsep' obtained from the deconvolved positive peaks should be identical to that if
@@ -892,6 +906,13 @@ ax2=gca;
   offyran,sps,50,ftrans,'mean','tarvl');
 plot(ax2,xcut,ycut,'k-','linew',2);
 title(ax2,'Secondary sources removed');
+
+%%%plot the cumulative density of detections
+[imploc, ~] = off2space002(impindepst(:,7:8),sps,ftrans,0); % 8 cols, format: dx,dy,lon,lat,dep,ttrvl,off12,off13
+[f] = plt_cumulative_density(imploc,[],xran,yran,'pixel',20,10);
+hold(f.ax(1),'on');
+plot(f.ax(1),xcut,ycut,'k-','linew',2);
+title(f.ax(1),'Secondary sources removed');
 
 % keyboard
 

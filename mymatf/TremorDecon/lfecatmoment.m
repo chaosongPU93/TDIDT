@@ -142,8 +142,11 @@ hfout = sortrows(hfout, [daycol, seccol]);
 %%%   27:sumsSTA32n(n,iSTA32bang) 28:sigma(nin) 29:sigma12(nin) 30:sigma13(nin)
 %%%   in(1:nstanew) loff(1:nstanew) ioff(1:nstanew) ccmaxave(1:nstanew)
 
-ttol = 35;
-trange = load(strcat(rstpath, '/MAPS/tdec.bstran',num2str(ttol),'s.pgc002.',cutout(1:4)));
+ttol = 100;
+ntol = 1;
+% trange = load(strcat(rstpath, '/MAPS/tdec.bstran',num2str(ttol),'s.pgc002.',cutout(1:4)));
+trange = load(strcat(rstpath, '/MAPS/tdec.bstran',num2str(ttol),'s.',num2str(ntol),'.pgc002.',...
+  cutout(1:4)));
 tlen = trange(:,3)-trange(:,2);
 nbst = size(trange,1);
 
@@ -529,13 +532,13 @@ for iii = 1: length(idxbst)
   %plot the bostock's LFE catalog inside rectangle
   indbi = find(tbosti>=tstbuf & tbosti<=tedbuf);
 
-  %my lfes
-  ist = sum(nsrcuse(1:idxbst(iii)-1))+1;
-  ied = ist+nsrcuse(idxbst(iii))-1;
-  impii = impuse(ist:ied,:);  %LFEs of the same time win
-  timp = impii(:,1)+ppkmzc(1);
-  
-  rcci = rccuse{k}; %rcc, 1st col is 25-s-win, 2nd col is whole-win
+%   %my lfes
+%   ist = sum(nsrcuse(1:idxbst(iii)-1))+1;
+%   ied = ist+nsrcuse(idxbst(iii))-1;
+%   impii = impuse(ist:ied,:);  %LFEs of the same time win
+%   timp = impii(:,1)+ppkmzc(1);
+%   
+%   rcci = rccuse{k}; %rcc, 1st col is 25-s-win, 2nd col is whole-win
   
   if pltflag
     %read horizontal optimal and orthogonal components
@@ -771,48 +774,34 @@ for iii = 1: length(idxbst)
   
   %which bostock's LFEs are within my time burst window? Fraction? Moment?
   bost{iii} = bostdayi(indbi,:); %all bostocks's lfes inside burst wins (and inside region)
-  impi{iii} = impuse(ist:ied,:); %all my own lfes 
-
-  temp1 = [];
-  temp2 = [];
-  temp3 = [];
-  for j = 1: length(indbi)
-    [toff,ind] = min(abs(timp/sps-(tbosti(indbi(j))-tstbuf))); %which my LFE is closest to Bostock's?
-    if toff<= 0.25/2  %if the difference is small enough, then there is a correspondance
-      temp1 = [temp1; bostdayi(indbi(j),:)];
-      temp2 = [temp2; impii(ind,:)];
-    else
-      temp3 = [temp3; bostdayi(indbi(j),:)];
-    end
-  end
-  bostcomm{iii} = temp1;  %bostock's lfes that correspond to one of my lfes, inside burst wins (and inside region)
-  impcomm{iii} = temp2;   %my corresponding lfes
-  bostmiss{iii} = temp3;	%bostock's lfes that i missed, inside burst wins (and inside region) 
-  ncomm(iii) = size(temp1,1); %num of commons
-  ratcomm(iii) = size(temp1,1)/length(indbi);  %ratio of commons  
-  
-%   %which bostock's LFEs are within my time burst window? Fraction? Moment?
-%   ind = find(tbosti>=tstbuf & tbosti<=tedbuf);
-%   bost{iii} = bostdayi(ind,:); %which LFEs 
-%   nbosti(iii) = length(ind); %num 
-%   ratbosti(iii) = nbosti(iii)/ length(tbosti);  %ratio wrt. his cat of same day
-%   bostmsum(iii) = sum(bostdayi(ind,end)); %sum of moment
-%   
-%   bostday = [bostday; bostdayi];  %which LFEs in the same dates, unfair to count ones on different days etc. 
-%   
-%   %which LFEs from my catalog?
-%   ist = sum(nsrcuse(1:idxbst(iii)-1))+1;
-%   ied = ist+nsrcuse(idxbst(iii))-1;
-%   impi{iii} = impuse(ist:ied,:);  %LFEs of the same time win
-%   impasum(iii) = sum(mean(impuse(ist:ied,[2 4 6]),2));
-  
+%   impi{iii} = impuse(ist:ied,:); %all my own lfes 
+% 
+%   temp1 = [];
+%   temp2 = [];
+%   temp3 = [];
+%   for j = 1: length(indbi)
+%     [toff,ind] = min(abs(timp/sps-(tbosti(indbi(j))-tstbuf))); %which my LFE is closest to Bostock's?
+%     if toff<= 0.25/2  %if the difference is small enough, then there is a correspondance
+%       temp1 = [temp1; bostdayi(indbi(j),:)];
+%       temp2 = [temp2; impii(ind,:)];
+%     else
+%       temp3 = [temp3; bostdayi(indbi(j),:)];
+%     end
+%   end
+%   bostcomm{iii} = temp1;  %bostock's lfes that correspond to one of my lfes, inside burst wins (and inside region)
+%   impcomm{iii} = temp2;   %my corresponding lfes
+%   bostmiss{iii} = temp3;	%bostock's lfes that i missed, inside burst wins (and inside region) 
+%   ncomm(iii) = size(temp1,1); %num of commons
+%   ratcomm(iii) = size(temp1,1)/length(indbi);  %ratio of commons  
+    
 end
 
 %lump all bursts
-bostcomma = cat(1,bostcomm{:});
-impcomma = cat(1,impcomm{:});
-bostmissa = cat(1,bostmiss{:});
+% bostcomma = cat(1,bostcomm{:});
+% impcomma = cat(1,impcomm{:});
+% bostmissa = cat(1,bostmiss{:});
 bosta = cat(1,bost{:});
+length(bosta)/length(bostdayia)
 
 %% Is there any systematic bias in amp/mag of different set of LFEs?
 %%%distribution of mag of common and missed LFEs
