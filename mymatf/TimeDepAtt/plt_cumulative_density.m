@@ -1,4 +1,4 @@
-function [f] = plt_cumulative_density(hfplt,lfplt,xran,yran,binmethod,msizehf,msizelf,dxhf,dyhf,contourflag)
+function [f] = plt_cumulative_density(hfplt,lfplt,xran,yran,binmethod,msizehf,msizelf,dxhf,dyhf,contourflag,scale)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % function [f] = plt_cumulative_density(hfplt,lfplt,xran,yran,binmethod,msizehf,dxhf,dyhf)
 % This function is to plot the cumulative density map of the hf and lf 
@@ -19,6 +19,7 @@ defval('binmethod','grid');
 defval('dxhf',0.2);
 defval('dyhf',0.2);
 defval('contourflag',0);
+defval('scale','log');
 
 if isequal(binmethod,'grid')
   defval('msizehf',10);
@@ -77,15 +78,21 @@ if ~isempty(hfplt)
 %     msizehf = 6;
 %     msizelf = 2.5*msizehf;
   end
-  dumhf = density1d(density1d(:,3)>0, :);
-  normalizer = max(dumhf(:,3));
-  dumhf(dumhf(:,3)>1, :) = [];
-  scatter(ax,dumhf(:,1),dumhf(:,2), msizehf, log10(dumhf(:,3)),marker,'linew',0.2);  %, 'MarkerEdgeColor', 'w')
-%   scatter(ax,dumhf(:,1),dumhf(:,2), msizehf, dumhf(:,3)/normalizer,marker,'linew',0.2);  %, 'MarkerEdgeColor', 'w')
-  dumhf = sortrows(density1d(density1d(:,3)>0, :), 3);
-  dumhf(dumhf(:,3)==1, :) = [];
-  scatter(ax,dumhf(:,1),dumhf(:,2), msizehf, log10(dumhf(:,3)),marker,'filled','MarkerEdgeColor','none');  %, 
-%   scatter(ax,dumhf(:,1),dumhf(:,2), msizehf, dumhf(:,3)/normalizer,marker,'filled','MarkerEdgeColor','none');  %, 
+  dum = density1d(density1d(:,3)>0, :);
+  normalizer = max(dum(:,3));
+  dum(dum(:,3)>1, :) = [];
+  if strcmp(scale,'log')
+    dum(:,3) = log10(dum(:,3));
+  end
+  scatter(ax,dum(:,1),dum(:,2),msizehf,dum(:,3),marker,'linew',0.2);  %, 'MarkerEdgeColor', 'w')
+%   scatter(ax,dum(:,1),dum(:,2), msizehf, dum(:,3)/normalizer,marker,'linew',0.2);  %, 'MarkerEdgeColor', 'w')
+  dum = sortrows(density1d(density1d(:,3)>0, :), 3);
+  dum(dum(:,3)==1, :) = [];
+  if strcmp(scale,'log')
+    dum(:,3) = log10(dum(:,3));
+  end
+  scatter(ax,dum(:,1),dum(:,2),msizehf,dum(:,3),marker,'filled','MarkerEdgeColor','none');  %, 
+%   scatter(ax,dum(:,1),dum(:,2), msizehf, dum(:,3)/normalizer,marker,'filled','MarkerEdgeColor','none');  %, 
   % imagesc(ax,[xran(1)+0.5*dx xran(end)-0.5*dx], [yran(1)+0.5*dy yran(end)-0.5*dy], density2d');
   oldc = colormap(ax,'kelicol');
   newc = flipud(oldc);
@@ -94,7 +101,12 @@ if ~isempty(hfplt)
   c=colorbar(ax,'SouthOutside');
   pos = ax.Position;
   c.Position = [pos(1), pos(2)-0.03, pos(3), 0.02];
-  c.Label.String = strcat({'log_{10}(# detections / '},binmethod,')');
+  if strcmp(scale,'log')
+    cstr = strcat({'log_{10}(# detections / '},binmethod,')');
+  elseif strcmp(scale,'linear')
+    cstr = strcat({'# detections / '},binmethod);  
+  end
+  c.Label.String = cstr;
 %   c.Label.String = strcat({'normalized # tremor detections / '},binmethod,')');
   c.Label.FontSize = 10;
 %   caxis(ax,[0 1.7]);
@@ -109,9 +121,12 @@ if ~isempty(hfplt)
     [xyzgridpad,xgrid,ygrid,zgrid,ind2] = zeropadmat2d(density1d,xran(1):1:xran(2),yran(1):1:yran(2));
     zgridgf = imgaussfilt(zgrid, 1);  %smooth it a bit
     perc = 50:10:90;
-    conplt = prctile(log10(dumhf(:,3)),perc);
-    conmat = contour(ax,xgrid,ygrid,log10(zgridgf),conplt,'-','color',[.3 .3 .3]); %,'ShowText','on'
-%     conplt = prctile(dumhf(:,3)/normalizer,perc);
+    conplt = prctile(dum(:,3),perc);
+    if strcmp(scale,'log')
+      zgridgf = log10(zgridgf);
+    end
+    conmat = contour(ax,xgrid,ygrid,zgridgf,conplt,'-','color',[.3 .3 .3]); %,'ShowText','on'
+%     conplt = prctile(dum(:,3)/normalizer,perc);
 %     conmat = contour(ax,xgrid,ygrid,zgridgf/normalizer,conplt,'-','color',[.3 .3 .3]); %,'ShowText','on'
   end
 end
@@ -146,15 +161,21 @@ if ~isempty(lfplt)
     density1d = density_pixel(lfplt(:,1),lfplt(:,2));
   end
   
-  dumhf = density1d(density1d(:,3)>0, :);
-  normalizer = max(dumhf(:,3));
-  dumhf(dumhf(:,3)>1, :) = [];
-  scatter(ax,dumhf(:,1),dumhf(:,2), msizelf, log10(dumhf(:,3)),marker,'linew',0.2);  %, 'MarkerEdgeColor', 'w')
-%   scatter(ax,dumhf(:,1),dumhf(:,2), msizelf, dumhf(:,3)/normalizer,marker,'linew',0.2);  %, 'MarkerEdgeColor', 'w')
-  dumhf = sortrows(density1d(density1d(:,3)>0, :), 3);
-  dumhf(dumhf(:,3)==1, :) = [];
-  scatter(ax,dumhf(:,1),dumhf(:,2), msizelf, log10(dumhf(:,3)),marker,'filled');  %, 'MarkerEdgeColor', 'w')
-%   scatter(ax,dumhf(:,1),dumhf(:,2), msizelf, dumhf(:,3)/normalizer,marker,'filled');  %, 'MarkerEdgeColor', 'w')
+  dum = density1d(density1d(:,3)>0, :);
+  normalizer = max(dum(:,3));
+  dum(dum(:,3)>1, :) = [];
+  if strcmp(scale,'log')
+    dum(:,3) = log10(dum(:,3));
+  end
+  scatter(ax,dum(:,1),dum(:,2),msizelf,dum(:,3),marker,'linew',0.2);  %, 'MarkerEdgeColor', 'w')
+%   scatter(ax,dum(:,1),dum(:,2), msizelf, dum(:,3)/normalizer,marker,'linew',0.2);  %, 'MarkerEdgeColor', 'w')
+  dum = sortrows(density1d(density1d(:,3)>0, :), 3);
+  dum(dum(:,3)==1, :) = [];
+  if strcmp(scale,'log')
+    dum(:,3) = log10(dum(:,3));
+  end
+  scatter(ax,dum(:,1),dum(:,2),msizelf,dum(:,3),marker,'filled');  %, 'MarkerEdgeColor', 'w')
+%   scatter(ax,dum(:,1),dum(:,2), msizelf, dum(:,3)/normalizer,marker,'filled');  %, 'MarkerEdgeColor', 'w')
   % imagesc(ax,[xran(1)+0.5*dx xran(end)-0.5*dx], [yran(1)+0.5*dy yran(end)-0.5*dy], density2d');
   oldc = colormap(ax,'kelicol');
   newc = flipud(oldc);
@@ -163,7 +184,7 @@ if ~isempty(lfplt)
   pos = ax.Position;
   c.Position = [pos(1), pos(2)-0.03, pos(3), 0.02];
 %   caxis(ax,[0 1.7]);
-  c.Label.String = strcat({'log_{10}(# detections / '},binmethod,')');
+  c.Label.String = cstr;
 %   c.Label.String = strcat('normalized # detections / ',binmethod,'by',num2str(normalizer),')');
   c.Label.FontSize = 10;
 % text(ax, 0.85, 0.93, '2004','FontSize',12,'unit','normalized','horizontalalignment','center',...
@@ -177,9 +198,12 @@ if ~isempty(lfplt)
     [xyzgridpad,xgrid,ygrid,zgrid,ind2] = zeropadmat2d(density1d,xran(1):1:xran(2),yran(1):1:yran(2));
     zgridgf = imgaussfilt(zgrid, 1);  %smooth it a bit
     perc = 50:10:90;
-    conplt = prctile(log10(dumhf(:,3)),perc);
-    conmat = contour(ax,xgrid,ygrid,log10(zgridgf),conplt,'-','color',[.3 .3 .3]); %
-%     conplt = prctile(dumhf(:,3)/normalizer,perc);
+    conplt = prctile(dum(:,3),perc);
+    if strcmp(scale,'log')
+      zgridgf = log10(zgridgf);
+    end
+    conmat = contour(ax,xgrid,ygrid,zgridgf,conplt,'-','color',[.3 .3 .3]); %
+%     conplt = prctile(dum(:,3)/normalizer,perc);
 %     conmat = contour(ax,xgrid,ygrid,zgridgf/normalizer,conplt,'-','color',[.3 .3 .3]); %
   end
   ax.Box = 'on';

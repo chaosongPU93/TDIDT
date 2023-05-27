@@ -704,12 +704,18 @@ ax2=gca;
 plot(ax2,xcut,ycut,'k-','linew',2);
 title(ax2,'Ground truth');
 
-%%%plot the cumulative density of detections
-[impgtloc, ~] = off2space002(impgt(:,7:8),sps,ftrans,0); % 8 cols, format: dx,dy,lon,lat,dep,ttrvl,off12,off13
-[f] = plt_cumulative_density(impgtloc,[],xran,yran,'pixel',20,10);
+%%%plot the cumulative density and summed amp of detections
+ampgt = mean(impgt(:,[2 4 6]),2); %amp for all LFE catalog
+density1d = density_pixel(impgt(:,7),impgt(:,8));
+ampgtsum = sum_pixel(impgt(:,7),impgt(:,8),ampgt);
+[impgtloc, ~] = off2space002(density1d(:,1:2),sps,ftrans,0); % 8 cols, format: dx,dy,lon,lat,dep,ttrvl,off12,off13
+ampgtsum1d = sortrows([impgtloc(:,1:2) ampgtsum(:,3)], 3);
+[f] = plt_sum_pixel(density1d,ampgtsum1d,[-4 4],[-4 4],20,'amp','linear');
 hold(f.ax(1),'on');
 plot(f.ax(1),xcut,ycut,'k-','linew',2);
-title(f.ax(1),'Ground truth');
+hold(f.ax(2),'on');
+plot(f.ax(2),xcut,ycut,'k-','linew',2);
+supertit(f.ax,'Ground truth');
 
 %%%plot the ground truth source map locations from grid
 f.fig = figure;

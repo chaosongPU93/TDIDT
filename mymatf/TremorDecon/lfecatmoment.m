@@ -915,51 +915,10 @@ fity = feval(fitobj,fitx);  %use correlation above to infer the log10 of moment
 lfemoall = 10.^(fity);
 mosumall = sum(lfemoall);  %total moment for my catalog
 
-[density1d,indices] = density_pixel(impuse(:,7),impuse(:,8));
-for i = 1: size(indices,1)
-  mosumi(i,1) = sum(lfemoall(indices{i}));
-end
-widin = 12;  % maximum width allowed is 8.5 inches
-htin = 6;   % maximum height allowed is 11 inches
-nrow = 1;
-ncol = 2;
-f = initfig(widin,htin,nrow,ncol); %initialize fig
-ax=f.ax(1);
-hold(ax,'on'); ax.Box = 'on'; grid(ax, 'on');
-mosum1d = [density1d(:,1:2) mosumi];
-mosum1d = sortrows(mosum1d,3);
-scatter(ax,mosum1d(:,1),mosum1d(:,2),20,log10(mosum1d(:,3)),'o','filled','MarkerEdgeColor','none');
-oldc = colormap(ax,'kelicol');
-newc = flipud(oldc);
-colormap(ax,newc);
-c=colorbar(ax,'SouthOutside');
-c.Label.String = strcat({'log_{10}(moment / pixel)'});
-axis(ax, 'equal');
-ax.GridLineStyle = '--';
-ax.XAxisLocation = 'top';
-xlim(ax,[-40 40]);
-ylim(ax,[-40 40]);
-
-ax=f.ax(2);
-hold(ax,'on'); ax.Box = 'on'; grid(ax, 'on');
-dum = density1d;
-dum(dum(:,3)>1, :) = [];
-scatter(ax,dum(:,1),dum(:,2),20,log10(dum(:,3)),'o','linew',0.2);  %, 'MarkerEdgeColor', 'w')
-dum = sortrows(density1d,3);
-dum(dum(:,3)==1, :) = [];
-scatter(ax,dum(:,1),dum(:,2),20,log10(dum(:,3)),'o','filled','MarkerEdgeColor','none');
-oldc = colormap(ax,'kelicol');
-newc = flipud(oldc);
-colormap(ax,newc);
-c=colorbar(ax,'SouthOutside');
-c.Label.String = strcat({'log_{10}(# detections / pixel)'});
-axis(ax, 'equal');
-ax.GridLineStyle = '--';
-ax.XAxisLocation = 'top';
-xlim(ax,[-40 40]);
-ylim(ax,[-40 40]);
-
-
+%% plot implied cumulative moment
+density1d = density_pixel(impuse(:,7),impuse(:,8));
+mosum1d = sum_pixel(impuse(:,7),impuse(:,8),lfemoall);
+[f] = plt_sum_pixel(density1d,mosum1d,[-40 40],[-40 40],20,'moment');
 
 %%%Estimated my moment for common LFEs between bostock and mine
 lfeamp = mean(impcomma(:,[2 4 6]),2); %amp for commons
