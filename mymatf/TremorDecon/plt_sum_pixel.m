@@ -1,4 +1,4 @@
-function [f] = plt_sum_pixel(density1d,sumz1d,xran,yran,msize,cstr,scale)
+function [f] = plt_sum_pixel(density1d,sumz1d,xran,yran,msize,cstr,symbol,scale)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % [sumz1d,indices] = sum_pixel(x,y,z)
 %
@@ -12,12 +12,18 @@ function [f] = plt_sum_pixel(density1d,sumz1d,xran,yran,msize,cstr,scale)
 % First created date:   2023/05/27
 % Last modified date:   2023/05/27
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+defval('symbol','o');
 defval('scale','log');
 
-widin = 12;  % maximum width allowed is 8.5 inches
-htin = 6;   % maximum height allowed is 11 inches
+htin = 5;   % maximum height allowed is 11 inches
 nrow = 1;
-ncol = 2;
+if ~isempty(sumz1d)
+  widin = 10;  % maximum width allowed is 8.5 inches
+  ncol = 2;
+else
+  widin = 5;  % maximum width allowed is 8.5 inches
+  ncol = 1;
+end
 f = initfig(widin,htin,nrow,ncol); %initialize fig
 
 %cumulative density
@@ -28,45 +34,49 @@ dum(dum(:,3)>1, :) = [];
 if strcmp(scale,'log')
   dum(:,3) = log10(dum(:,3));
 end
-scatter(ax,dum(:,1),dum(:,2),msize,dum(:,3),'o','linew',0.2);  %, 'MarkerEdgeColor', 'w')
+scatter(ax,dum(:,1),dum(:,2),msize,dum(:,3),symbol,'linew',0.2);  %, 'MarkerEdgeColor', 'w')
 dum = sortrows(density1d,3);
 dum(dum(:,3)==1, :) = [];
 if strcmp(scale,'log')
   dum(:,3) = log10(dum(:,3));
 end
-scatter(ax,dum(:,1),dum(:,2),msize,dum(:,3),'o','filled','MarkerEdgeColor','none');
+scatter(ax,dum(:,1),dum(:,2),msize,dum(:,3),symbol,'filled','MarkerEdgeColor','none');
 oldc = colormap(ax,'kelicol');
 newc = flipud(oldc);
 colormap(ax,newc);
 c=colorbar(ax,'SouthOutside');
+ax.CLim(2) = prctile(dum(:,3),99);
 if strcmp(scale,'log')
-  c.Label.String = strcat('log_{10}(# detections / pixel)');
+  c.Label.String = strcat('log_{10}(',cstr{1},')');
 elseif strcmp(scale,'linear')
-  c.Label.String = strcat('# detections / pixel');  
+  c.Label.String = cstr{1};  
 end
 axis(ax,[xran yran],'equal');
 ax.GridLineStyle = '--';
 ax.XAxisLocation = 'top';
 
-%sum of some quantity
-ax=f.ax(2);
-hold(ax,'on'); ax.Box = 'on'; grid(ax, 'on');
-sumz1d = sortrows(sumz1d,3);
-if strcmp(scale,'log')
-  sumz1d(:,3) = log10(sumz1d(:,3));
+if ~isempty(sumz1d)
+  %sum of some quantity
+  ax=f.ax(2);
+  hold(ax,'on'); ax.Box = 'on'; grid(ax, 'on');
+  sumz1d = sortrows(sumz1d,3);
+  if strcmp(scale,'log')
+    sumz1d(:,3) = log10(sumz1d(:,3));
+  end
+  scatter(ax,sumz1d(:,1),sumz1d(:,2),msize,sumz1d(:,3),symbol,'filled','MarkerEdgeColor','none');
+  oldc = colormap(ax,'kelicol');
+  newc = flipud(oldc);
+  colormap(ax,newc);
+  c=colorbar(ax,'SouthOutside');
+%   ax.CLim(2) = prctile(sumz1d(:,3),99);
+  caxis(ax,[prctile(sumz1d(:,3),1) prctile(sumz1d(:,3),99)]);
+  if strcmp(scale,'log')
+    c.Label.String = strcat('log_{10}(',cstr{2},')');
+  elseif strcmp(scale,'linear')
+    c.Label.String = cstr{2};  
+  end
+  axis(ax,[xran yran],'equal');
+  ax.GridLineStyle = '--';
+  ax.XAxisLocation = 'top';
 end
-scatter(ax,sumz1d(:,1),sumz1d(:,2),msize,sumz1d(:,3),'o','filled','MarkerEdgeColor','none');
-oldc = colormap(ax,'kelicol');
-newc = flipud(oldc);
-colormap(ax,newc);
-c=colorbar(ax,'SouthOutside');
-if strcmp(scale,'log')
-  c.Label.String = strcat({'log_{10}('},cstr,' / pixel)');
-elseif strcmp(scale,'linear')
-  c.Label.String = strcat(cstr,' / pixel'); 
-end
-axis(ax,[xran yran],'equal');
-ax.GridLineStyle = '--';
-ax.XAxisLocation = 'top';
-
 

@@ -1,10 +1,10 @@
-function [sumz1d,indices] = sum_pixel(x,y,z)
+function sumz = sum_at_indices(z,indices)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% [sumz1d,indices] = sum_pixel(x,y,z)
+% sumz = sum_at_indices(z,indices)
 %
 % Beyond 'density_pixel', sometimes you not only want the cumulative count
-% of data (x,y) at each pixel, but also you want the sum of z at those 
-% unique points. The sum of z and indices of unique pixels are returned.
+% of data z at each pixel, but also you want the sum of z at those 
+% unique points. The sum of z is returned.
 %
 %
 %
@@ -13,9 +13,8 @@ function [sumz1d,indices] = sum_pixel(x,y,z)
 % Last modified date:   2023/05/27
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-[density1d,indices] = density_pixel(x,y);
-npts = size(density1d,1);
-sumz1d = density1d;
+npts = size(indices,1);
+sumz = zeros(npts,1);
 for i = 1: npts
-  sumz1d(i,3) = sum(z(indices{i}));
+  sumz(i,1) = sum(z(indices{i}));
 end

@@ -16,11 +16,14 @@
 % --The way to generate a custom shape of 2D Gaussian (normal) PDF can be found
 % in 'testmvnpdf.m' and 'testrand_custompdf_p1.m'.
 %
+% --If you instead use a uniform random distribution for sources, then you 
+% should use code 'analyze_synth'. 
+%
 %
 %
 % Chao Song, chaosong@princeton.edu
 % First created date:   2022/05/05
-% Last modified date:   2022/05/05
+% Last modified date:   2023/09/07
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% Initialization

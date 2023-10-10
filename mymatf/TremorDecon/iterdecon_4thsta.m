@@ -224,7 +224,7 @@ for isrc = 1: size(impindep,1)
   indclose = find(abs(wtcoef(:,1)-(idxpred-round(ldiff/2)))<=offmax & pkhgt(indabvthr)>=0); %context of indices of 'coefeff'
   if isempty(indclose)
     ampit(isrc, 1:6) = zeros(1,6);
-    ampit(isrc, 7) = 0.5; %otherwise difference should be integer samples 
+    ampit(isrc, 7:8) = [0.5 0.5]; %otherwise difference should be integer samples 
     dresit(isrc) = -1;
     mfitit(isrc) = -1;
     continue
@@ -284,6 +284,8 @@ for isrc = 1: size(impindep,1)
   [~,tempind] = min(abs(pkires-idximp));
   ampit(isrc, 5:6) = [pkires(tempind) pkhres(tempind)];  %closest residual waveform negative peak  
   ampit(isrc, 7) = idximp-(idxpred-round(ldiff/2));  %difference in samples between predicted arrival and found peak  
+  [~,ampit(isrc, 8)] = pred_tarvl_at4thsta(stas,impindep(isrc,7),impindep(isrc,8),...
+    impindep(isrc,1),offdiff);  %predicted off14
   impchg = zeros(nfft,1);   % the change of impulse resulting from the current iteration
   impchg(idximp) = amp;
   %change in predicted signal by convolving the change of impulse with wavelet

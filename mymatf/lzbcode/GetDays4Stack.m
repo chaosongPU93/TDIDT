@@ -362,6 +362,15 @@ elseif isequal(fam, '065')
     
     tempoffs=[1260 1304 1331 1234 1226 1216 1230]; %these are the zero crossings
 
+elseif isequal(fam, '246')
+    
+    % generate unique dates matrix that in that family
+    timoffrot = Readbostock(fam);
+    ind=[];
+    timoffrot(ind, :)=[];
+    
+    tempoffs=[1260 1346 1280 1270 1258 1238 1256]; %these are the zero crossings
+    
 else
     
     % generate unique dates matrix that in that family

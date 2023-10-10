@@ -318,9 +318,8 @@ for id = 1: nday
         found = 0;
         fname = [];
         
-        [LIA, idx] = ismember(stas(ista, :), PERMSTA, 'rows');
-        
         %%% if station is a permanent one
+        [LIA, idx] = ismember(stas(ista, :), PERMSTA, 'rows');
         if LIA
             found = found+ LIA;
             if strcmp(PERMSTA(idx, 1:3),'PGC')
@@ -457,7 +456,6 @@ tmp = detrend(dstack');
 dstack = tmp';
 tmp2 = detrend(dstackort');
 dstackort = tmp2';
-
 
 %%% normalization
 mid = templen/2;

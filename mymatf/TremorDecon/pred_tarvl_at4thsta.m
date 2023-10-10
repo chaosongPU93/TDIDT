@@ -1,11 +1,12 @@
-function tarvl4=pred_tarvl_at4thsta(stanm,off12,off13,tarvl1,off1i)
+function [tarvl4,off14]=pred_tarvl_at4thsta(stanm,off12,off13,tarvl1,off1i)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % This script tries to ease the predication of arrival times at the 4th sta
 % of the same sources based on the source locations and arrival time at 
 % the 1st station (or the aligned 2nd or 3rd stas). The idea is, we get the
 % empirical time off14 caused by the deviation of source location (off12,
 % off13) from (0,0), then 'tarvl4' is simply 'tarvl1' subtracted by
-% 'off14'.
+% 'off14'. 'off1i' is the prealignment between 4th sta and 1st sta to the 
+% entire window that needs to corrected as well.
 %
 %
 %
@@ -14,7 +15,7 @@ function tarvl4=pred_tarvl_at4thsta(stanm,off12,off13,tarvl1,off1i)
 % Last modified date:   2022/10/04
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-defval('off1ia',0);
+defval('off1i',0);
 
 %load the plane fitting model 
 workpath = getenv('ALLAN');
@@ -36,6 +37,7 @@ stasnew=['LZB  '
 %find which 4th sta is being requested
 [~,idx]=ismember(stanm,stasnew,'rows');
 
+% keyboard
 %the simple plane fitting model is:  z = a.*x + b.*y + c 
 off14 = round(off14mod(idx,1).*off12 + off14mod(idx,2).*off13 + off14mod(idx,3));
 % off14 = round(off14mod(idx,:)*[off12; off13; 1]);

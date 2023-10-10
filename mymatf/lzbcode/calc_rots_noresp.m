@@ -1,4 +1,4 @@
-% function [ROTS]=calc_rots_noresp(fam,lo,hi,sps,bef,aft,splitoff,staoff,mainsta)
+function [ROTS]=calc_rots_noresp(fam,lo,hi,sps,bef,aft,splitoff,staoff,mainsta)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
 % This is the script to get the shear-splitting parameter and rotation
@@ -91,7 +91,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% default value for easy debugging
-defval('fam', '043');
+defval('fam', '002');
 defval('lo', 0.5);
 defval('hi', 6.5);
 defval('sps', 40);
@@ -248,7 +248,7 @@ for id = 1: nday
     end
     %     MO = 'SEP';
     MO=day2month(jday,year);     % EXTERNAL function, day2month, get the month of one particular date
-    direc=[datapath, '/', YEAR,'/',MO,'/'];     % directory name
+    direc=[datapath, '/arch', YEAR,'/',MO,'/'];     % directory name
     fprintf('%s \n',direc);
     datafnm = [direc, YEAR,'.',JDAY,'.00.00.00.0000.CN'];
     fprintf('Processing date: %s / %s \n',YEAR, JDAY);
@@ -631,7 +631,6 @@ for ista = 1: nsta
     ROTS(ista,4) = STAoptlagmat(ista)+tempoffs(ista)-tempoffs(mainsta);
 end
 
-% keyboard
 
 figure      % fig11, plot normalized shifted final optimal results
 for ista = 1: nsta
@@ -640,6 +639,7 @@ for ista = 1: nsta
     text(2/3*size(STAoptnorm,2),ista,stas(ista,:));
 end
 vertical_cursors
+keyboard
 
 % check if the alignment can be improved, lag should approach to 0
 for ista = 1: nsta

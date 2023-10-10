@@ -71,30 +71,45 @@ PREFIX = strcat(fam,'.up.lo',num2str(loopoffmax),'.cc',num2str(xcmaxAVEnmin),'.'
                         int2str(npo),int2str(npa),'.ms', int2str(mshift));
 hfbnd = load(strcat(rstpath, '/MAPS/eloc.pgc.tdec_',PREFIX,'_',num2str(lo),'-',num2str(hi),'_',...
             num2str(winlen/sps),'s',num2str(sps),'sps4add_',cutout(1:4)));
-          
+daycol = 14;
+seccol = 16;  % 2 choices here, one is the center of detecting window, other is the start of strongest .5 s 
+hfbnd = sortrows(hfbnd, [daycol, seccol]);
+
+%load all detections, an output of 'locinterp002_4s.m'
+hfall = load(strcat(rstpath, '/MAPS/eloc.pgc.tdec_',PREFIX,'_',num2str(lo),'-',num2str(hi),'_',...
+            num2str(winlen/sps),'s',num2str(sps),'sps4add_'));
+hfall = sortrows(hfall, [daycol, seccol]);
+%get ones outside your boundary
+hfout = setdiff(hfall,hfbnd,'rows');           
+hfout = sortrows(hfout, [daycol, seccol]);
+
+%%
+% hfanalyse = hfbnd;
+hfanalyse = hfout;
+
 %% compute relative time in days
 %sort according to day, sec of the strongest arrival of the window
 daycol = 14;
 seccol = 16;
-hfbnd = sortrows(hfbnd, [daycol, seccol]);
-ncol = size(hfbnd,2);
+hfanalyse = sortrows(hfanalyse, [daycol, seccol]);
+ncol = size(hfanalyse,2);
 
 %obtain the relative time in days
-i03 = find(hfbnd(:,daycol) < 2004*1000);
-hfbnd(i03,ncol+1) = (hfbnd(i03,daycol)-2003060)+hfbnd(i03,seccol)./(3600.*24);
-i04 = find(hfbnd(:,daycol) < 2005*1000 & hfbnd(:,daycol) > 2004*1000);
-hfbnd(i04,ncol+1) = (hfbnd(i04,daycol)-2004194)+hfbnd(i04,seccol)./(3600.*24);
-i05 = find(hfbnd(:,daycol) > 2005*1000);
-hfbnd(i05,ncol+1) = (hfbnd(i05,daycol)-2005254)+hfbnd(i05,seccol)./(3600.*24);
+i03 = find(hfanalyse(:,daycol) < 2004*1000);
+hfanalyse(i03,ncol+1) = (hfanalyse(i03,daycol)-2003060)+hfanalyse(i03,seccol)./(3600.*24);
+i04 = find(hfanalyse(:,daycol) < 2005*1000 & hfanalyse(:,daycol) > 2004*1000);
+hfanalyse(i04,ncol+1) = (hfanalyse(i04,daycol)-2004194)+hfanalyse(i04,seccol)./(3600.*24);
+i05 = find(hfanalyse(:,daycol) > 2005*1000);
+hfanalyse(i05,ncol+1) = (hfanalyse(i05,daycol)-2005254)+hfanalyse(i05,seccol)./(3600.*24);
           
 %% separation in time between itself and its preceding detection
 %for the detections, obtain the separation in time between itself and its preceding
 %detection for the catalog of each ETS.
 %1st col: occurence time
 %2nd col: inter-detection time to its preceding detection
-hfinter03 = interevt_time(hfbnd(i03,end));
-hfinter04 = interevt_time(hfbnd(i04,end));
-hfinter05 = interevt_time(hfbnd(i05,end));
+hfinter03 = interevt_time(hfanalyse(i03,end));
+hfinter04 = interevt_time(hfanalyse(i04,end));
+hfinter05 = interevt_time(hfanalyse(i05,end));
 hfinter = [hfinter03; hfinter04; hfinter05];
           
 %% plot the inter-detection time for all 3 ETS, in days
@@ -112,8 +127,10 @@ ymax = 1.2*max([ttol2; ttol1]);
 %% group the tremor bursts 
 % ttol = 1e-3*ones(3,1); 
 % ntol = 10;
-ttol = 100/86400*ones(3,1);  % this is about 4*median
-ntol = 1;
+ttol = 35/86400*ones(3,1);  % this is about 4*median
+ntol = 3;
+% ttol = 35/86400*ones(3,1);  % this is about 4*median
+% ntol = 3;
 [bursthf03, n03] = group_tremor_burst_indep(hfinter03,ttol(1),ntol);
 [bursthf04, n04] = group_tremor_burst_indep(hfinter04,ttol(2),ntol);
 [bursthf05, n05] = group_tremor_burst_indep(hfinter05,ttol(3),ntol);
@@ -236,10 +253,10 @@ xlabel('Length in time (s) of each burst ');
 ylabel('Counts');
 
 % get the new catalog composed only by the bursts
-hfnew = refine_catalog_by_trange(hfbnd,daycol,seccol,trange);
+hfnew = refine_catalog_by_trange(hfanalyse,daycol,seccol,trange);
 hfnew = hfnew(:,1:end-1); % ignore the last column of relative time in days
 
-perchfnew = size(hfnew,1)/size(hfbnd,1)
+perchfnew = size(hfnew,1)/size(hfanalyse,1)
 
 % figure
 % histogram(log10(tsep),'BinWidth',1); hold on;
@@ -270,16 +287,18 @@ keyboard
 % fprintf(fid,'%.4f %.4f %.4f %.4f %.4f %.4f %d %d %6.2f %6.2f %.4f %.4f %d %d %9.1f %10.3f %8.3f %7.2f %10.3e %7.3f %10.3e %10.3e %10.3e %10.3e %10.3e %10.3e %10.3e %10.3e %10.3e %7.3f %7.3f %7.3f %7.3f %7.3f %5.2f %5.2f %7.3f %7.3f %7.3f %6.2f %6.2f %6.2f %d %d %d %d %.4f %.4f %.4f %.4f %d %d %d %d %.3f %.3f %.3f %.3f \n',...
 %         hfnew');
   
-fid = fopen(strcat(rstpath, '/MAPS/tdec.bstran',num2str(round(ttol(1)*86400)),'s.',...
-  num2str(ntol),'.pgc002.',cutout(1:4)),'w+');
-% fid = fopen(strcat(rstpath, '/MAPS/tdec.bstran',num2str(round(ttol(1)*86400)),'s.pgc002.',cutout(1:4)),'w+');
+if isequaln(hfanalyse(:,1:end-1),hfbnd)
+  fid = fopen(strcat(rstpath, '/MAPS/tdec.bstran',num2str(round(ttol(1)*86400)),'s.',...
+    num2str(ntol),'.pgc002.',cutout(1:4)),'w+');
+  % fid = fopen(strcat(rstpath, '/MAPS/tdec.bstran',num2str(round(ttol(1)*86400)),'s.pgc002.',cutout(1:4)),'w+');
+
+elseif isequaln(hfanalyse(:,1:end-1),hfout)
+  fid = fopen(strcat(rstpath, '/MAPS/tdec.bstran',num2str(round(ttol(1)*86400)),'s.',...
+    num2str(ntol),'.pgcout002.',cutout(1:4)),'w+');
+
+end
 
 fprintf(fid,'%d %9.2f %9.2f \n',trange');
 fclose(fid);
-
-
-
-
-
 
 

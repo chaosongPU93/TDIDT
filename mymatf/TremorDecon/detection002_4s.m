@@ -165,7 +165,7 @@ for ifam = 1: size(fampool,1)
     MO=day2month(jday,year);     % EXTERNAL function, day2month, get the month of one particular date
     IDENTIF=[YEAR,'.',JDAY,'.',fam,'.lo',num2str(loopoffmax),'.cc',num2str(xcmaxAVEnmin),...
       '.',int2str(npo),int2str(npa),'.ms', int2str(mshift)]
-    direc=[datapath, '/', YEAR,'/',MO,'/'];     % directory name
+    direc=[datapath, '/arch', YEAR,'/',MO,'/'];     % directory name
     prename=[direc,YEAR,'.',JDAY,'.00.00.00.0000.CN'];    %  path plus prefix of data file,
        
     %read horizontal optimal and orthogonal components

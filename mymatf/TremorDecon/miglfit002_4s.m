@@ -45,8 +45,6 @@ set(0,'DefaultFigureVisible','on');
 
 workpath = getenv('ALLAN');
 temppath = strcat(workpath, '/templates/');
-%%% choose the data path here
-% datapath = workpath;
 datapath = strcat(workpath,'/data-no-resp');
 rstpath = strcat(datapath, '/PGCtrio');
 
@@ -73,6 +71,8 @@ nsta=size(stas,1);         %  number of stations
 sps = 40;
 
 iup = 4;  % upsample 4 times
+
+cutout = 'ellipse';
 
 %load detections
 if isequal(fam,'002')
@@ -114,24 +114,63 @@ hfall = sortrows(hfall, [daycol, seccol]);
 %%%   in(1:nstanew) loff(1:nstanew) ioff(1:nstanew) ccmaxave(1:nstanew)
 
 %%
-%Time ranges of RTMs
-trange = [
-  2005255   1.35*3600    1.70*3600;
-  2005255   9.55*3600   10.10*3600;
-  2005255  16.10*3600   16.55*3600;
-  2003063   1.70*3600    2.05*3600;
-  ];
+% %Time ranges of RTMs
+% trange = [
+%   2005255   1.35*3600    1.70*3600;
+%   2005255   9.55*3600   10.10*3600;
+%   2005255  16.10*3600   16.55*3600;
+%   2003063   1.70*3600    2.05*3600;
+%   ];
+
+ttol = 35;
+ntol = 3;
+tranbst = load(strcat(rstpath, '/MAPS/tdec.bstran',num2str(round(ttol)),'s.pgc002.',cutout(1:4)));
+tlen = tranbst(:,3)-tranbst(:,2);
+
+ttol = 1e-3*86400;
+tranmig = load(strcat(rstpath, '/MAPS/migran',num2str(round(ttol)),'s.pgc002'),'w+');
+% tranmig(:,2:3) = tranmig(:,2:3)/3600; 
+
+%%%migrations in Rubin et al. 2013, correspondence is listed as to my deconvolution
+%%%burst windows, and to my migration windows
+tranmigrubin = [
+           2003062 6.15 6.28; %s2b, <->none, <->#3
+           2003062 9.02 9.16; %s2c, <->#23, <->#12
+           2003062 10.65 10.81; %s2d, <->#31, <->#15
+           2003062 20.85 21.25; %s2e, <->#44-47, <->#23
+           2003062 21.38 21.58; %s2f, <->#48-49, <->#24
+           2003063 1.71 2.04; %s2g, <->#53, <->#27
+           2003063 18.03 18.21; %s2h, <->#65-66, <->#37
+           2004196 11.097 11.128; %s3a, <->#73, <->none
+           2004196 15.57 15.74; %s3b, <->#92-93,, <->none
+           2004196 19.55 19.68; %s3c, <->#99, <->#57
+           2004196 20.51 20.71; %s3d, <->#100, <->#58 
+           2004197 8.5 8.8; %s3e, <->#115-116, <->#69-70
+           2004197 10.38 10.72; %s3f, <->#117-118, <->#71-72
+           2004197 10.88 11.00; %s3g, <->#119-120, <->#73
+           2004197 11.93 12.15; %s3h, <->#121, <->#74
+           2005254 7.62 7.79; %fig 6a, <->#146, <->#92
+           2005254 8.43 8.80; %fig 6b, <->#147-150, <->#93
+           2005254 9.58 9.71; %6c, <->#151-152, <->#94
+           2005254 9.77 9.98; %6d, <->#153, <->#95
+           2005254 20.43 20.49; %6e, <->#164, <->#98
+           2005255 1.34 1.69; %6f, <->#170, <->#100
+           2005255 9.57 10.11; %6g, <->#174-175, <->#103
+           2005255 16.12 16.55; %fig 4 and 6h, <->#181, <->#109
+           ];
                       
-                      
+indplt = [3; 12; 15; 23; 24; 27; 37; 57; 58; 69; 70; 71; 72; 73; 74;
+          92; 93; 94; 95; 98; 100; 103; 109];
+           
 xran = [-7 3];
 yran = [-4 4];
 
 angle = 0:5:355;
 
-slopehf = zeros(size(trange,1),length(angle));
-rmsehf = zeros(size(trange,1),length(angle));
-angrmsehf = zeros(size(trange,1),1);
-angslopehf = zeros(size(trange,1),1);                      
+slopehf = zeros(size(indplt,1),length(angle));
+rmsehf = zeros(size(indplt,1),length(angle));
+angrmsehf = zeros(size(indplt,1),1);
+angslopehf = zeros(size(indplt,1),1);                      
                       
 % create fit object with free constraints
 fttpfree = fittype( @(a,b,x) a*x+b);
@@ -143,12 +182,14 @@ semib = 1.0;
 angrot = 45;
 [xell, yell] = ellipse_chao(x0,y0,semia,semib,0.01,angrot,[x0,y0]);
         
-for i = 1: size(trange,1)
-  % for i = 1: 211
-  %     i=46;
-  disp(trange(i,:));
-  indhf = find(hfall(:,daycol)==trange(i,1) & hfall(:,seccol)>=trange(i,2) & ...
-    hfall(:,seccol)<=trange(i,3));
+% for i = 1: size(trange,1)
+for i = 1: size(indplt,1)
+    %     i=46;
+  % disp(trange(i,:));
+  disp(tranmig(indplt(i)));
+  indhf = find(hfall(:,daycol)==tranmig(indplt(i),1) & ...
+    hfall(:,seccol)>=tranmig(indplt(i),2) & ...
+    hfall(:,seccol)<=tranmig(indplt(i),3));
   mighf = hfall(indhf,:);
   
   %%% find best angle, now is mainly to get the variation of se and slope with the trial angle
@@ -188,15 +229,11 @@ for i = 1: size(trange,1)
                     
                     
   %%% define and position the figure frame and axes of each plot
-  f.fig=figure;
   widin = 8;  % maximum width allowed is 8.5 inches
   htin = 9;   % maximum height allowed is 11 inches
-  set(f.fig,'Position',[scrsz(1)+1*scrsz(3)/10 scrsz(2)+scrsz(4)/20 widin*res htin*res]);
   nrow = 2;
   ncol = 2;
-  for isub = 1:nrow*ncol
-    f.ax(isub) = subplot(nrow,ncol,isub);
-  end
+  f = initfig(widin,htin,nrow,ncol);
   
   %%% reposition
   set(f.ax(1), 'position', [ 0.08, 0.64, 0.36, 0.32]);
@@ -217,7 +254,7 @@ for i = 1: size(trange,1)
   pos = f.ax(1).Position;
   c.Position = [pos(1), pos(2)-0.018, pos(3), 0.02];
   %     c.TickLabels=[];
-  juldate = num2str(trange(i,1));
+  juldate = num2str(tranmig(indplt(i),1));
   yr = str2double(juldate(1:4));
   date = str2double(juldate(5:end));
   a = jul2dat(yr,date);
@@ -234,8 +271,8 @@ for i = 1: size(trange,1)
   c.Label.String = strcat({'Time (hr) on '}, day, mo, yr);
   %     c.Label.String = strcat(num2str(trange(i,1)),' of HF',' (hr)');
   c.Label.FontSize = 11;
-  caxis(f.ax(1),[trange(i,2)/3600 trange(i,3)/3600])
-  text(f.ax(1),0.85,0.1,'HF','FontSize',12,'unit','normalized');
+  caxis(f.ax(1),[tranmig(indplt(i),2)/3600 tranmig(indplt(i),3)/3600])
+  % text(f.ax(1),0.85,0.1,'HF','FontSize',12,'unit','normalized');
   text(f.ax(1),0.04,0.93,'a','FontSize',11,'unit','normalized','EdgeColor','k','Margin',2);
   text(f.ax(1),0.04,0.1,'PGC','FontSize',11,'unit','normalized','EdgeColor','k','Margin',2);
   f.ax(1).Box = 'on';
@@ -258,12 +295,12 @@ for i = 1: size(trange,1)
   xlabel(f.ax(1),'E (km)','fontsize',11);
   ylabel(f.ax(1),'N (km)','fontsize',11);
   axis(f.ax(1),[xran yran]);
-  text(f.ax(1),0.5,0.1,num2str(i),'FontSize',12,'unit','normalized');
+  % text(f.ax(1),0.5,0.1,num2str(i),'FontSize',12,'unit','normalized');
   text(f.ax(1),0.84,0.95,strcat(num2str(size(mighf,1)),{' detections'}),'FontSize',8,...
     'unit','normalized','horizontalalignment','center');
-  text(f.ax(1),0.84,0.90,strcat({'in '},num2str(trange(i,3)-trange(i,2)),{' s'}),'FontSize',8,...
+  text(f.ax(1),0.84,0.90,strcat({'in '},num2str(tranmig(indplt(i),3)-tranmig(indplt(i),2)),{' s'}),'FontSize',8,...
     'unit','normalized','horizontalalignment','center');
-  rate = sprintf('%.3f',size(mighf,1)/(trange(i,3)-trange(i,2)));
+  rate = sprintf('%.3f',size(mighf,1)/(tranmig(indplt(i),3)-tranmig(indplt(i),2)));
   text(f.ax(1),0.84,0.85,strcat({'rate: '},rate),'FontSize',8,...
     'unit','normalized','horizontalalignment','center');
   text(f.ax(1),0.84,0.78,strcat(num2str(angrmsehf(i)),{'{\circ}'}),'FontSize',10,...
@@ -298,7 +335,7 @@ for i = 1: size(trange,1)
   f.ax(3).Box = 'on';
   grid(f.ax(3), 'on');
   f.ax(3).GridLineStyle = '--';
-  xran1 = [trange(i,2)/3600 trange(i,3)/3600];
+  xran1 = [tranmig(indplt(i),2)/3600 tranmig(indplt(i),3)/3600];
   %     yran1 = [round(min([mighfdum(:,1);miglfdum(:,1)]))-1 ...
   %              round(max([mighfdum(:,1);miglfdum(:,1)]))+1];
   aa = round(prctile(mighfdum(:,1), 98));
@@ -389,8 +426,25 @@ for i = 1: size(trange,1)
   xlabel(f.ax(4),'Trial propagation direction (deg)','fontsize',11);
   hold(f.ax(4),'off');
 
+  %save figure
+  fignm{i,1} = strcat('miglfit002rubin',num2zeropadstr(i,2),'.pdf');
+  orient(f.fig,'landscape');
+  print(f.fig,'-dpdf','-bestfit',fullfile(rstpath, '/FIGS',fignm{i,1}));
+  
+%   keyboard
 end
 
+%% merge all figures into a single pdf file
+status = system('rm -f /home/data2/chaosong/matlab/allan/data-no-resp/PGCtrio/FIGS/miglfit002rubin.pdf');
+for i = 1:size(fignm,1)
+  mergenm{i} = fullfile(rstpath, '/FIGS/',fignm{i});
+end
+append_pdfs(fullfile(rstpath, '/FIGS/miglfit002rubin.pdf'),mergenm);
+
+%delete separated files
+status = system('rm -f /home/data2/chaosong/matlab/allan/data-no-resp/PGCtrio/FIGS/miglfit002rubin??.pdf');
+
+keyboard
 
 %% estimate the time needed to pass through 002 ellipse
 %angle between propagation direction and semi-minor axis

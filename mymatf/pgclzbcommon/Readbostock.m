@@ -1,3 +1,4 @@
+function timeoffrot = Readbostock(fam)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % 
 % This is a callable function to read Michael Bostock's newest catalog,
@@ -8,10 +9,9 @@
 % First created date:   2019/04/19
 % Last modified date:   2019/04/19
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-function timeoffrot = Readbostock(fam)
 % set default value
 defval('fam','002')
+defval('minnum',40)
 
 % set path and name
 catapath= ('/home/data2/chaosong/matlab/allan/BOSTOCK/');
@@ -36,7 +36,7 @@ icount = 0;
 for i = 1: ndate
     ind = find(famdet==dateall(i));
     nlfeday = length(ind);
-    if nlfeday >= 40
+    if nlfeday >= minnum
         icount = icount+1;
         dateava(icount) = dateall(i);   % available dates, with number of LFE >40
     end

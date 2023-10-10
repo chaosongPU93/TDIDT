@@ -1,4 +1,4 @@
-function [projx,orty,nlocxy] = customprojection(olocxy,projang)
+function [projx,projy,projxy] = customprojection(locxy,projang)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % [propx,orty,nlocxy] = customprojection(olocxy,propang)
 %
@@ -12,9 +12,9 @@ function [projx,orty,nlocxy] = customprojection(olocxy,projang)
 % First created date:   2023/01/26
 % Last modified date:   2023/01/26
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-nlocxy = olocxy;
-for i = 1: size(olocxy,1)
-  [nlocxy(i,1), nlocxy(i,2)] = coordinate_rot(olocxy(i,1),olocxy(i,2),-(projang-90),[0 0]);
+projxy = locxy;
+for i = 1: size(locxy,1)
+  [projxy(i,1), projxy(i,2)] = coordinate_rot(locxy(i,1),locxy(i,2),-(projang-90),[0 0]);
 end
-projx = nlocxy(:,1);
-orty = nlocxy(:,2);
+projx = projxy(:,1);
+projy = projxy(:,2);

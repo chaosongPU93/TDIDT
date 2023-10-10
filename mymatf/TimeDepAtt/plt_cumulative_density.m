@@ -30,24 +30,15 @@ defval('msizelf',2.5*msizehf);
 
 [scrsz, res] = pixelperinch(1);
 
-f.fig=figure;
-f.fig.Renderer='Painters';
 nrow = 1;
 ncol = (~isempty(hfplt))+(~isempty(lfplt));
 widin = 4*ncol;  % maximum width allowed is 8.5 inches
 htin = 5;   % maximum height allowed is 11 inches
-set(f.fig,'Position',[scrsz(1)+1*scrsz(3)/10 scrsz(2)+scrsz(4)/20 widin*res htin*res]);
-for isub = 1:nrow*ncol
-    f.ax(isub) = subplot(nrow,ncol,isub);
-end
+[f] = initfig(widin,htin,nrow,ncol);
 
 pltxran = [0.08 0.95]; pltyran = [0.15 0.9];
 pltxsep = 0.08; pltysep = 0.05; 
 axpos = optaxpos(f,nrow,ncol,pltxran,pltyran,pltxsep,pltysep);
-
-for isub = 1:nrow*ncol
-  set(f.ax(isub), 'position', axpos(isub,:));
-end    
 
 % xran = [-20 25];
 % yran = [-20 20];

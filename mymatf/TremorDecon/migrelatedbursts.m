@@ -4,20 +4,22 @@
 % & the burst windows used in deconvolution. Ideally, they should show 
 % similar location and temporal variation, if there is some migrating pattern
 % for both. Reference migrations come from Rubin et al. 2013.
+% The product is the mean envelope with 4-s tremors, automatic migration 
+% windows, automic burst windows, Allan's migrations in Rubin et al. 2013.
 %
 % 
 %
 %
 % Chao Song, chaosong@princeton.edu
 % First created date:   2022/06/30
-% Last modified date:   2022/06/30
+% Last modified date:   2023/09/30
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
  
 %% Initialization
 %%% SAME if focusing on the same region (i.e. same PERMROTS and POLROTS)
 %%% AND if using the same family, same station trio
 format short e   % Set the format to 5-digit floating point
-% clear
+clear
 clc
 close all
 
@@ -127,6 +129,7 @@ hfout = sortrows(hfout, [daycol, seccol]);
 %%%   in(1:nstanew) loff(1:nstanew) ioff(1:nstanew) ccmaxave(1:nstanew)
 
 ttol = 35;
+ntol = 3;
 tranbst = load(strcat(rstpath, '/MAPS/tdec.bstran',num2str(round(ttol)),'s.pgc002.',cutout(1:4)));
 tlen = tranbst(:,3)-tranbst(:,2);
 
@@ -134,31 +137,32 @@ ttol = 1e-3*86400;
 tranmig = load(strcat(rstpath, '/MAPS/migran',num2str(round(ttol)),'s.pgc002'),'w+');
 tranmig(:,2:3) = tranmig(:,2:3)/3600; 
 
-%%%migrations in Rubin et al. 2013
+%%%migrations in Rubin et al. 2013, correspondence is listed as to my deconvolution
+%%%burst windows, and to my migration windows
 tranmigrubin = [
-           2003062 6.15 6.28; %s2b
-           2003062 9.02 9.16; %s2c, <->#23
-           2003062 10.65 10.81; %s2d, <->#31
-           2003062 20.85 21.25; %s2e, <->#44-47
-           2003062 21.38 21.58; %s2f, <->#48-49
-           2003063 1.71 2.04; %s2g, <->#53
-           2003063 18.03 18.21; %s2h, <->#65-66
-           2004196 11.097 11.128; %s3a, <->#73
-           2004196 15.57 15.74; %s3b, <->#92-93
-           2004196 19.55 19.68; %s3c, <->#99
-           2004196 20.51 20.71; %s3d, <->#100 
-           2004197 8.5 8.8; %s3e, <->#115-116
-           2004197 10.38 10.72; %s3f, <->#117-118
-           2004197 10.88 11.00; %s3g, <->#119-120
-           2004197 11.93 12.15; %s3h, <->#121
-           2005254 7.62 7.79; %fig 6a, <->#146
-           2005254 8.43 8.80; %fig 6b, <->#147-150
-           2005254 9.58 9.71; %6c, <->#151-152
-           2005254 9.77 9.98; %6d, <->#153  
-           2005254 20.43 20.49; %6e, <->#164
-           2005255 1.34 1.69; %6f, <->#170
-           2005255 9.57 10.11; %6g, <->#174-175
-           2005255 16.12 16.55; %fig 4 and 6h, <->#181
+           2003062 6.15 6.28; %s2b, <->none, <->#3
+           2003062 9.02 9.16; %s2c, <->#23, <->#12
+           2003062 10.65 10.81; %s2d, <->#31, <->#15
+           2003062 20.85 21.25; %s2e, <->#44-47, <->#23
+           2003062 21.38 21.58; %s2f, <->#48-49, <->#24
+           2003063 1.71 2.04; %s2g, <->#53, <->#27
+           2003063 18.03 18.21; %s2h, <->#65-66, <->#37
+           2004196 11.097 11.128; %s3a, <->#73, <->none
+           2004196 15.57 15.74; %s3b, <->#92-93,, <->none
+           2004196 19.55 19.68; %s3c, <->#99, <->#57
+           2004196 20.51 20.71; %s3d, <->#100, <->#58 
+           2004197 8.5 8.8; %s3e, <->#115-116, <->#69-70
+           2004197 10.38 10.72; %s3f, <->#117-118, <->#71-72
+           2004197 10.88 11.00; %s3g, <->#119-120, <->#73
+           2004197 11.93 12.15; %s3h, <->#121, <->#74
+           2005254 7.62 7.79; %fig 6a, <->#146, <->#92
+           2005254 8.43 8.80; %fig 6b, <->#147-150, <->#93
+           2005254 9.58 9.71; %6c, <->#151-152, <->#94
+           2005254 9.77 9.98; %6d, <->#153, <->#95
+           2005254 20.43 20.49; %6e, <->#164, <->#98
+           2005255 1.34 1.69; %6f, <->#170, <->#100
+           2005255 9.57 10.11; %6g, <->#174-175, <->#103
+           2005255 16.12 16.55; %fig 4 and 6h, <->#181, <->#109
            ];
 
 %% load other catalogs
@@ -297,29 +301,26 @@ for i = 1: length(dates)  % dates in each ets
   menv = mean(envup,2);
   
   %%%start the plot, and plot the mean envelope
-  f.fig = figure;
-  f.fig.Renderer = 'painters';
   widin = 10.5;  % maximum width allowed is 8.5 inches
   htin = 6;   % maximum height allowed is 11 inches
-  [scrsz, resol] = pixelperinch(1);
-  set(f.fig,'Position',[1*scrsz(3)/20 scrsz(4)/10 widin*resol htin*resol]);
-
   nrow = 6;
   ncol = 1;
+  f = initfig(widin,htin,nrow,ncol);
 
-  %get the locations for each axis
-  axpos = [0.08 0.87 0.85 0.1;
-           0.08 0.74 0.85 0.1;
-           0.08 0.585 0.85 0.1;
-           0.08 0.1 0.8 0.23;
-           ];
-  for isub = 1:nrow*ncol
-    set(f.ax(isub), 'position', axpos(isub,:));
-  end
+  pltxran = [0.06 0.96]; pltyran = [0.06 0.96]; % optimal axis location
+  pltxsep = 0.03; pltysep = 0.04;  
+  axpos = optaxpos(f,nrow,ncol,pltxran,pltyran,pltxsep,pltysep);
 
-  for isub = 1:nrow*ncol
-    f.ax(isub) = subplot(nrow,ncol,isub);
-  end
+
+  % %get the locations for each axis
+  % axpos = [0.08 0.87 0.85 0.1;
+  %          0.08 0.74 0.85 0.1;
+  %          0.08 0.585 0.85 0.1;
+  %          0.08 0.1 0.8 0.23;
+  %          ];
+  % for isub = 1:nrow*ncol
+  %   set(f.ax(isub), 'position', axpos(isub,:));
+  % end
 
   for isub = 1: nrow
     ax = f.ax(isub);
@@ -415,6 +416,7 @@ for i = 1: length(dates)  % dates in each ets
     end
   end
   
+  % keyboard
   %save figure
   fignm{i,1} = sprintf('meanenv%d.pdf',date);
   orient(f.fig,'landscape');
@@ -428,6 +430,11 @@ for i = 1:size(fignm,1)
   mergenm{i} = fullfile(rstpath, '/FIGS/',fignm{i});
 end
 append_pdfs(fullfile(rstpath, '/FIGS/meanenv.pdf'),mergenm);
+
+%delete separated files
+status = system('rm -f /home/data2/chaosong/matlab/allan/data-no-resp/PGCtrio/FIGS/meanenv?.pdf');
+
+keyboard
 
 %% which burst windows have reliable/less ambiguious pre-event noise
 gp{1} = 1;

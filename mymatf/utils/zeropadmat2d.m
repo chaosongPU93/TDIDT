@@ -1,4 +1,5 @@
-function [xyzgridpad,xgrid,ygrid,zgrid,ind2] = zeropadmat2d(xyzscatter,xvec,yvec,const)
+function [xyzgridpad,xgrid,ygrid,zgrid,indgrid] = ...
+  zeropadmat2d(xyzscatter,xvec,yvec,const)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % [xyzgridpad,xgrid,ygrid,zgrid,ind2] = zeropadmat2d(xyzscatter,xvec,yvec)
 %
@@ -42,10 +43,17 @@ z = reshape(zgrid,[],1);
 
 %find the index in created grid that correspond to the input scattered x y z
 xyloc = [x y];
-[~,ind1,ind2] = intersect(xyzscatter(:,1:2),xyloc,'rows','stable');
-%if not all input has a match of grid point
-if ~isequaln(ind1,(1:size(xyzscatter,1))') || ~isequal(length(ind2),size(xyzscatter,1))   
-  error('The input range of grid is smaller than data scatter.');
+% [~,ind1,ind2] = intersect(xyzscatter(:,1:2),xyloc,'rows','stable');
+% %if not all input has a match of grid point
+% if ~isequaln(ind1,(1:size(xyzscatter,1))') || ~isequal(length(ind2),size(xyzscatter,1))   
+%   error('The input range of grid is smaller than data scatter.');
+% end
+ind2 = nan(size(xyzscatter,1),1);
+for i = 1:size(xyzscatter,1)
+  ind2(i) = find(abs(xyloc(:,1)-xyzscatter(i,1))<1e-6 & abs(xyloc(:,2)-xyzscatter(i,2))<1e-6);
+  if isempty(ind2(i))
+    error('The input range of grid is smaller than data scatter.');
+  end
 end
 
 %At those matched grid points, just replace the z value 
@@ -57,6 +65,8 @@ zgrid = reshape(z,size(xgrid));
 %return the result as the same format as input 'xyzscatter'
 xyzgridpad = [x y z];
 
+%return indices of zero-padded grid that correspond to input 'xyzscatter'
+indgrid = ind2;
 
 % keyboard
 

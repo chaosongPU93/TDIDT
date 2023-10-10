@@ -1,21 +1,41 @@
 % function synthshift_chao
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% THIS should be the modified version of Allan's code 'synthshift' which uses
-% 'plaw3c' to draw uniformly and randomly from an elliptical or rectangular
-% source region. 
-% This code wants to make a step further, so that you can draw samples from
-% any custom PDF, not necessarily the uniform distribution. And, I will use 
-% my own way of translating the time offset grid to spatial distribution
-% ('off2space002'), or vice versa ('space2off002')
-% 
+% THIS should be the modified version of Allan's code 'synthshift',
+% integrating my own codes to make synthetic seismograms from LFE
+% templates.
+% It is now able to do a lot of different things by turning on/off
+% different flags, for example, with uniformly and randomly 
+% distributed sources with/without a physical dimension from an 
+% specified size of region, with different saturation level in time.
+% It could also draw samples from any custom PDF, not necessarily the
+% uniform distribution. (DONE as of 2023/09/07)
+% You can also choose different transformation time offset grid 
+% between offset and spatial location, either Allan's grid from direct
+% interpolation from JA's inverted but sparser grid, or my own 
+% inversion. (DONE as of 2023/09/07)
+% Rather than having sources from a limited region with a negligible
+% noise level, another extreme is to put all sources at a single spot
+% with variable noise level, and see how the result like, compared 
+% to statistics from data. (subject to change as of 2023/09/07)
 %
+% Available flags are:
+%   distrloc -- distribution for source location
+%   timetype -- which time is uniform in time
+%   physicalsize -- if considering the physical size of each source
+%   srcregion -- shape of the source region
+%   ftrans -- regime for location transformation
+%   forcesep -- if forcing a min speration of arrival time for 2 events
+%               from the same spot
 %
+% The algorithm of addition of ground truth sources to seismograms is
+% confirmed to reproducable by using convolution between source impulses
+% and templates. 
 %
 %
 %
 % Chao Song, chaosong@princeton.edu
 % First created date:   2022/04/07
-% Last modified date:   2022/04/07
+% Last modified date:   2023/09/06
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% Initialization
@@ -48,7 +68,7 @@ stas=['PGC  '
 %   'LZB  '
 %   'TWKB '
 %   'MGCB '
-%   'KLNB '
+  'KLNB '
   ]; % determine the trio and order, here the 1st sta is PGC
 nsta=size(stas,1);         %  number of stations
 
@@ -122,6 +142,9 @@ mshiftadd=10*sps/40;
 tempxc(:,1)=xcorr(STAtmp(:,2),STAtmp(:,3),mshiftadd,'coeff');
 tempxc(:,2)=xcorr(STAtmp(:,1),STAtmp(:,2),mshiftadd,'coeff'); %shift STAtmp(3,:) to right for positive values
 tempxc(:,3)=xcorr(STAtmp(:,1),STAtmp(:,3),mshiftadd,'coeff'); %shift STAtmp(2,:) to right for positive values
+for ista = 4: nsta
+  tempxc(:,ista)=xcorr(STAtmp(:,1),STAtmp(:,ista),mshiftadd,'coeff'); %shift STAtmp(2,:) to right for positive values
+end
 [~,imax]=max(tempxc,[],1);
 imax=imax-(mshiftadd+1); %This would produce a slightly different shift, if filtered seisms were used.
 imax(2)-imax(3)+imax(1);   %enclosed if it equals to 0
@@ -174,6 +197,11 @@ iup = 1;    % times of upsampling
 offwlet1i(1) = 0;
 offwlet1i(2) = round(off12con);
 offwlet1i(3) = round(off13con);
+if nsta>3 
+  for ista = 4: nsta
+    [mcoef,offwlet1i(ista)] = xcorrmax(tmpwletf(:,1), tmpwletf(:,ista), mshiftadd, 'coeff');
+  end
+end
 
 %%%automatically find the rough zero-crossing time, whose abs. value is closest to 0, whether + or -
 [~,imin] = min(tmpwletf(:,1));
@@ -194,12 +222,20 @@ for ista = 1: nsta
   greenf(:,ista) = detrend(greenf(:,ista));
   
   %re-find the zero-crossing as the template length has changed
-  [~,imin] = min(greenf(:,ista));
-  [~,imax] = max(greenf(:,ista));
-  [~,zcrosses(ista)] = min(abs(greenf(imin:imax,ista)));
+  [~,imin] = min(green(:,ista));
+  [~,imax] = max(green(:,ista));
+  [~,zcrosses(ista)] = min(abs(green(imin:imax,ista)));
   zcrosses(ista) = zcrosses(ista)+imin-1;
   ppeaks(ista) = imax;
   npeaks(ista) = imin;
+  
+  [~,imin] = min(greenf(:,ista));
+  [~,imax] = max(greenf(:,ista));
+  [~,zcrossesf(ista)] = min(abs(greenf(imin:imax,ista)));
+  zcrossesf(ista) = zcrossesf(ista)+imin-1;
+  ppeaksf(ista) = imax;
+  npeaksf(ista) = imin;
+
 end
 %the following is just a check, because now the templates must be best aligned 
 ccmid = round(size(greenf,1)/2);
@@ -212,6 +248,15 @@ iup = 1;    % times of upsampling
 if ~(off12con==0 && off13con==0)
   disp('Filtered templates are NOT best aligned \n');
 end
+if nsta>3 
+  for ista = 4: nsta
+    [mcoef,mlag] = xcorrmax(greenf(:,1), greenf(:,ista), mshiftadd, 'coeff');
+    if mlag~=0   % offset in samples
+      fprintf('Filtered templates are NOT best aligned at %s \n',stas(ista,:));
+    end
+  end
+end
+
 amprat(1,:) = minmax(greenf(:,1)')./minmax(greenf(:,2)');	% amp ratio between max at sta 3 and 2 or min
 amprat(2,:) = minmax(greenf(:,1)')./minmax(greenf(:,3)');	% amp ratio between max at sta 3 and 1 or min  
 amprat(3,:) = minmax(greenf(:,2)')./minmax(greenf(:,3)');	% amp ratio between max at sta 3 and 1 or min  
@@ -222,15 +267,14 @@ plt_templates(green,greenf,stas,[],[],lowlet,hiwlet,sps);
 
 %just the filtered templates
 % plt_templates_bp(greenf,stas,lowlet,hiwlet,sps);
+% zcrosses
+% ppeaks
+% npeaks
+% zcrossesf
+% ppeaksf
+% npeaksf
+% keyboard
 
-for ista = 1: nsta
-  [~,imin(ista,1)] = min(tmpwlet(:,ista));
-  [~,imax(ista,1)] = max(tmpwlet(:,ista));
-end
-(imax-imin)*2
-
-(ppeaks-npeaks)*2
-  
 %% synthetics generation
 %%%Specify the amplitude-frequency (counts) distribution 
 distr='UN'  % uniform distribution
@@ -250,8 +294,8 @@ satn=1/tdura*Twin   % if just saturated, how many templates can be fit in? a sin
     %avoid checking for subscript overrrun.  When "synths" are written from "synth" in the
     %subroutine, Greenlen from the start and end will not be written.
 fracelsew=0; %0.25 %0.5; %0.6; %The ratio of elsewhere events to local events.  Zero for Discrete Ide.
-nsat=[0.1 0.4 1 2 4 10 100];  % times of saturation 
-% nsat=[0.4 2 10];  % times of saturation 
+nsat=[0.1 0.4 1 2 4 10 20 40 100];  % times of saturation 
+% nsat=[95 100 200];  % times of saturation 
 writes=round(nsat*satn) %how many templates to throw in, under different degrees of saturation
 rng('default');
 %%%Here the noise is 'uniform' in time!
@@ -267,9 +311,13 @@ seed=round(writes(1)/5e3); %for random number generator
 % distrloc = 'custompdf'; %using a custom PDF function
 distrloc = 'uniform'; %uniformly random in a specified region,
 
+%%%specify which time is uniform in time
+% timetype = 'tarvl';
+timetype = 'tori';
+
 %%%specify if considering the physical size of each source
-physicalsize = 1;
-% physicalsize = 0;
+% physicalsize = 1;
+physicalsize = 0;
 
 %%%specify shape of the source region
 srcregion='ellipse';
@@ -282,8 +330,8 @@ srcregion='ellipse';
 ftrans = 'interpchao';
 
 %%%specify if forcing a min speration of arrival time for 2 events from the same spot 
-forcesep = 1;
-% forcesep = 0;
+% forcesep = 1;
+forcesep = 0;
 
 if strcmp(distrloc, 'custompdf')
   
@@ -306,17 +354,17 @@ if strcmp(distrloc, 'custompdf')
   npa=2;
   winlensec=4;
   winoffsec=1;        % window offset in sec, which is the step of a moving window
-  winlen=winlensec*spsdect;      % length in smaples
+  wlen=winlensec*spsdect;      % length in smaples
   PREFIX = strcat(fam,'.up.lo',num2str(loopoffmax),'.cc',num2str(xcmaxAVEnmin),'.',...
                           int2str(npo),int2str(npa),'.ms', int2str(mshift));
   hftime = load(strcat(rstpath, '/MAPS/tdectimeori_',PREFIX,'_',num2str(lo),'-',num2str(hi),'_',...
-              num2str(winlen/spsdect),'s',num2str(spsdect),'sps','4add'));
+              num2str(wlen/spsdect),'s',num2str(spsdect),'sps','4add'));
   %format as follows:
   %%% 34+4*nstanew cols, if 4 new stas, then will be 50 cols
   %%% UPDATED at 2021/06/23
   %%%   1:off12(n) 2:off13(n) 3:off12sec 4:off13sec 5:fam 6:date 7:timswin(n)
   %%%   8:timswin(n)-winlensec/2+idiff/sps 9:xcmaxAVEnbang(nin) 10:loopoff(n)
-  %%%   11:cumsumtrdiff  12:cumsumtrdiff/cumsumtr(winlen)
+  %%%   11:cumsumtrdiff  12:cumsumtrdiff/cumsumtr(wlen)
   %%%   for the rest, n=n+4;
   %%%   9:Ampsq(nin) 10:Prior(nin) 11:Post(nin) 12:Prior4(nin) 13:Post4(nin) 14:Prior8(nin)
   %%%   15:Post8(nin) 16:Prior16(nin) 17:Post16(nin) 18:cc(nin) 19:ccprior(nin)
@@ -354,19 +402,7 @@ if strcmp(distrloc, 'custompdf')
   hfbnd = hfuse(isinbnd == 1, :);
   %format as follows:
   %%% 8+34+4*nstanew cols, if 4 new stas, then will be 58 cols
-  %%% UPDATED at 2021/06/23
-  %%%   dx,dy,lon,lat,dep,ttrvl,off12,off13 (integer samples at upsampled sps)
-  %%%   1:off12(n) 2:off13(n) 3:off12sec 4:off13sec 5:fam 6:date 7:timswin(n)
-  %%%   8:timswin(n)-winlensec/2+idiff/sps 9:xcmaxAVEnbang(nin) 10:loopoff(n)
-  %%%   11:cumsumtrdiff  12:cumsumtrdiff/cumsumtr(winlen)
-  %%%   for the rest, n=n+4;
-  %%%   9:Ampsq(nin) 10:Prior(nin) 11:Post(nin) 12:Prior4(nin) 13:Post4(nin) 14:Prior8(nin)
-  %%%   15:Post8(nin) 16:Prior16(nin) 17:Post16(nin) 18:cc(nin) 19:ccprior(nin)
-  %%%   20:ccpost(nin) 21:ccprior4(nin) 22:ccpost4(nin) 23:STAamp(nin,2) 24:STAamp(nin,3)
-  %%%   25:sumsSTA12n(n,iSTA12bang) 26:sumsSTA13n(n,iSTA13bang)
-  %%%   27:sumsSTA32n(n,iSTA32bang) 28:sigma(nin) 29:sigma12(nin) 30:sigma13(nin)
-  %%%   in(1:nstanew) loff(1:nstanew) ioff(1:nstanew) ccmaxave(1:nstanew)
-
+  
   %%%Obtain the location density (count), bin by pixel
   % dx = 0.05;
   % dy = 0.05;
@@ -448,25 +484,48 @@ if strcmp(distrloc, 'custompdf')
   c=colorbar;
   c.Label.String = 'Probability Density';
   caxis([0 max(epdfoffpad(:,3))]);
+  title('Zero-padded PDF for location sampling');
   xlabel(strcat({'Offset 12 (samples at '},num2str(sps),' sps)'));
   ylabel(strcat({'Offset 13 (samples at '},num2str(sps),' sps)'));
   box on; grid on;
+
+  %save the source location grid
+  fid = fopen([workpath,'/synthetics/synsrcloc.custompdf.grd'],'w');
+  fprintf(fid,'%8.3f %8.3f %8.3f\n',epdfoffpad');
+  fclose(fid);
+  size(epdfoffpad)
 
   %%%generation of synthetics 
   b=999. %>150 for uniform size distribution
   %USE unfiltered templates to generate synthetics, then bandpass before deconvolution
   [synths,mommax,sources,greensts]=synthgen(writes,winlen,skiplen,synth,green,b,xgrid,...
-    ygrid,epdfoffgrid,sps,fracelsew,seed,ftrans);
+    ygrid,epdfoffgrid,sps,fracelsew,seed,timetype,ftrans,stas);
+
+  % %simple check if the tori or tarvl is indeed uniform in time
+  % figure
+  % inwrites = 5;
+  % n=writes(inwrites);
+  % a = sources(1:n,:);
+  % b = a(any(a,2),:);
+  % if strcmp(timetype,'tarvl')
+  %   histogram(b(:,1),'facecolor','k');
+  %   xlabel('Arrival time');
+  % elseif strcmp(timetype,'tori')
+  %   histogram(b(:,1),'facecolor','k'); hold on;
+  %   histogram(b(:,4),'facecolor','r');
+  %   xlabel('Arrival/Origin time');
+  % end
+  % ylabel('Count');
+  % keyboard
   
 elseif strcmp(distrloc,'uniform')
   
   b=999. %>150 for uniform size distribution
-  xygrid=load('xygridArmb'); %Made from /ARMMAP/MAPS/2021/interpgrid.m; format PGSS, PGSI, dx, dy
-  size(xygrid) %this grid is 40 sps!
-  
+ 
   %which location transformation to use
   if strcmp(ftrans,'interpArmb')
-    xygrid = xygrid;
+    xygrid=load('xygridArmb'); %Made from /ARMMAP/MAPS/2021/interpgrid.m; format PGSS, PGSI, dx, dy
+    size(xygrid) %this grid is 40 sps!
   elseif strcmp(ftrans,'interpArmbreloc') || strcmp(ftrans,'interpchao')
     [loc, indinput] = off2space002([],sps,ftrans,0);
     % loc has 8 cols, format: dx,dy,lon,lat,dep,ttrvl,off12,off13
@@ -488,7 +547,7 @@ elseif strcmp(distrloc,'uniform')
     lly=xygrid(1,4);  %lower left corner x and y
     urx=xygrid(end,3);  %upper right corner x and y    
     ury=xygrid(end,4);
-    diam=0.3;% 0.5; %0.6; %
+    diam=0.15;  %note that if diam is <150m, in sample space you'll have too many nonunqiue sources 
     [hxq,hyq]=meshgrid(llx:diam:urx, lly:diam*sqrt(3)/2:ury); %area of a hexagon is sqrt(3)*a^2, a=diam/2
     for i=2:2:size(hxq,1)
         hxq(i,:)=hxq(i,:)+0.5*diam; %shift x every 2 rows, to create hex grid
@@ -511,6 +570,8 @@ elseif strcmp(distrloc,'uniform')
     %%%%%%%%%%%%% end, main revision from 'synthshift.m' %%%%%%%%%%%%%%%%%%%%%%
     
     xygrid = hexgrid;
+  else
+    diam=0;
   end
   
   %which shape of source region to use
@@ -540,8 +601,15 @@ elseif strcmp(distrloc,'uniform')
 %     yaxis=1.25; %(semi-, in km)
 %     xaxis=2.0; %(semi-, in km)
 %     yaxis=1.25; %(semi-, in km)
-    xaxis=1.75; %axis length of the same ellipse of my 4-s catalog
-    yaxis=1.25;
+    %variation of source region size
+    semia = 1.75*(0.6:0.2:2.0);
+    semib = 1.25*(0.6:0.2:2.0);
+    nreg = length(semia);
+    ireg = 8;
+    xaxis = semia(ireg); %axis length of the same ellipse of my 4-s catalog
+    yaxis = semib(ireg);
+    % xaxis=1.75; %axis length of the same ellipse of my 4-s catalog
+    % yaxis=1.25;
     [xcut,ycut] = ellipse_chao(shiftor(1),shiftor(2),xaxis,yaxis,0.01,45,shiftor);
     xygrid(sqrt((xygrid(:,5)/xaxis).^2 + (xygrid(:,6)/yaxis).^2) > 1,:)=[]; %This limits xygrid to the desired range.  PGSS, PGSI, x, y, x', y'
   elseif strcmp(srcregion,'circle') %The following adds 0.5 km to y, rotates 45˚, and looks for an elliptical region with major semi-axis y' < 3 km and minor semi-axis < 2 km
@@ -558,8 +626,19 @@ elseif strcmp(distrloc,'uniform')
   end
 
   %whether to consider the physical size of each source
-  tmp = ceil(max(max(abs([xcut,ycut]))));
   figure
+  subplot(1,2,1)
+  axis equal
+  hold on; grid on; box on
+  plot(xygrid(:,1)*iup,xygrid(:,2)*iup,'.');
+  xlabel(sprintf('off12 samples (%d Hz)',sps));
+  ylabel(sprintf('off13 samples (%d Hz)',sps));
+  tmp = ceil(max(max(abs([xygrid(:,1)*iup,xygrid(:,2)*iup]))))+1;
+  xran = [-tmp tmp];
+  yran = [-tmp tmp];
+  xlim(xran);
+  ylim(yran);
+  subplot(1,2,2)
   axis equal
   hold on; grid on; box on
   scatter(shiftor(1),shiftor(2),15,'k','filled');
@@ -567,6 +646,7 @@ elseif strcmp(distrloc,'uniform')
   plot(xygrid(:,3),xygrid(:,4),'.');
   text(0.95,0.05,sprintf('%d unique sources',size(xygrid,1)),'Units','normalized',...
     'HorizontalAlignment','right');
+  tmp = ceil(max(max(abs([xcut,ycut]))));
   xran = [-tmp tmp];
   yran = [-tmp tmp];
   xlim(xran);
@@ -589,25 +669,87 @@ elseif strcmp(distrloc,'uniform')
       plot(xygrid(ispot,3)+xasp,xygrid(ispot,4)+yasp,'r');
     end
   end
-
-
-  %save the source location grid
-  fid = fopen([workpath,'/synthetics/synsrcloc.',srcregion(1:3),'.grd'],'w');
-  tmpgrid = xygrid;
-  tmpgrid(:,1:2)=round(sps/40*tmpgrid(:,1:2)); % *4 to get to 160 sps from 40.
-  fprintf(fid,'%8.3f %8.3f %7.2f %7.2f %8.3f %8.3f\n',tmpgrid');
-  fclose(fid);
   size(xygrid)
-  
+
   %whether to force a min speration if 2 events from the same spot separated by less than the template duration
   %USE unfiltered templates to generate synthetics, then bandpass before deconvolution
   if forcesep
-    [synths,mommax,sources,greensts]=plaw3d(writes,winlen,skiplen,synth,green,b,xygrid,sps,fracelsew,seed,tdura); 
+    [synths,mommax,sources,greensts]=csplaw3d(writes,winlen,skiplen,synth,green,b,...
+      xygrid,sps,fracelsew,seed,tdura,timetype,ftrans,stas); 
   else
-    [synths,mommax,sources,greensts]=plaw3c(writes,winlen,skiplen,synth,green,b,xygrid,sps,fracelsew,seed);
+    [synths,mommax,sources,greensts]=csplaw3c(writes,winlen,skiplen,synth,green,b,...
+      xygrid,sps,fracelsew,seed,timetype,ftrans,stas);
   end
-    
+  
+  % %simple check if the tori or tarvl is indeed uniform in time
+  % figure
+  % inwrites = 5;
+  % n=writes(inwrites);
+  % if forcesep
+  %   a = squeeze(sources(1:n,:,inwrites));
+  %   b = a(any(a,2),:);
+  % else
+  %   a = sources(1:n,:);
+  %   b = a(any(a,2),:);
+  % end
+  % if strcmp(timetype,'tarvl')
+  %   histogram(b(:,1),'facecolor','k');
+  %   xlabel('Arrival time');
+  % elseif strcmp(timetype,'tori')
+  %   histogram(b(:,1),'facecolor','k'); hold on;
+  %   histogram(b(:,3),'facecolor','r');
+  %   xlabel('Arrival/Origin time');
+  % end
+  % ylabel('Count');
+  % keyboard
+
 end
+
+%% a simple plot the synthetics
+% figure
+% tmp = synths(:,:,2)-synth(skiplen:winlen,:);
+% plot(tmp(:,1),'b');
+% xlim([0 31*sps]);
+
+figure
+nrow = length(writes)+1;
+ncol = 1;
+subplot(nrow,ncol,1)
+hold on
+tmp = synth;
+if nsta == 3
+  plot(tmp(:,1),'r');
+  plot(tmp(:,2),'b');
+  plot(tmp(:,3),'k');
+else
+  color = jet(nsta);
+  for ista = 1: nsta
+    plot(tmp(:,ista),'Color',color(ista,:));
+  end
+end
+xlim([0 40*sps]);
+axranexp(gca,6,20);
+
+for i = 1: length(writes)
+subplot(nrow,ncol,i+1)
+hold on
+tmp = synths(:,:,i);
+if nsta == 3
+  plot(tmp(:,1),'r');
+  plot(tmp(:,2),'b');
+  plot(tmp(:,3),'k');
+else
+  color = jet(nsta);
+  for ista = 1: nsta
+    plot(tmp(:,ista),'Color',color(ista,:));
+  end
+end
+text(0.95,0.9,sprintf('%.1f x saturation',nsat(i)),'Units','normalized','HorizontalAlignment',...
+  'right');
+xlim([0 40*sps]);
+axranexp(gca,6,20);
+end
+xlabel(sprintf('Samples at %d Hz',sps),'FontSize',12);
 
 %% save files
 for inwrites=1:length(writes)
@@ -627,7 +769,11 @@ for inwrites=1:length(writes)
       'nsat',num2str(nsat(inwrites))],'w');  
   end
   towrite=squeeze(synths(:,:,inwrites));
-  fprintf(fid,'%13.5e %13.5e %13.5e\n', towrite');
+  if nsta == 3
+    fprintf(fid,'%13.5e %13.5e %13.5e \n', towrite');
+  elseif nsta == 4
+    fprintf(fid,'%13.5e %13.5e %13.5e %13.5e \n', towrite');
+  end
   fclose(fid);
   
   %%%source info
@@ -645,20 +791,49 @@ for inwrites=1:length(writes)
       'nsat',num2str(nsat(inwrites)),'_sources'],'w');  
   end
   if strcmp(distrloc,'uniform')
-    if forcesep
-      truncsources=squeeze(sources(1:n,:,inwrites));
-    else
-      truncsources=sources(1:n,:);
+%     if forcesep
+      a = squeeze(sources(1:n,:,inwrites));
+      b = a(any(a,2),:);
+%     else
+%       a = sources(1:n,:);
+%       b = a(any(a,2),:);
+%     end
+    size(b)
+    truncsources=b;
+    if strcmp(timetype,'tarvl')
+      fprintf(fid,'%13i %5i \n', truncsources'); %arrival; loc ind of grid
+    elseif strcmp(timetype,'tori')
+      fprintf(fid,'%13i %5i %13i %13i \n', truncsources'); %arrival; loc ind of grid; origin; travel time
     end
-%     indzero = find(truncsources(:,1)==0);
-%     truncsources(indzero,:)=[];  
-    fprintf(fid,'%13i %5i \n', truncsources'); %seismogram index (1); source location index in the grid(2);
     fclose(fid);
   elseif strcmp(distrloc,'custompdf')
-    truncsources=sources(1:n,:);
-    fprintf(fid,'%d %d %d %d %d %.1f \n', truncsources');
+    a = sources(1:n,:);
+    b = a(any(a,2),:);
+    truncsources=b;
+    if strcmp(timetype,'tarvl')
+      fprintf(fid,'%d %d %d %.1f \n', truncsources'); %arrival; off12; off13; moment
+    elseif strcmp(timetype,'tori')
+      fprintf(fid,'%d %d %d %d %d %.1f \n', truncsources'); %arrival; off12; off13; origin; travel time; moment
+    end   
     fclose(fid);
   end
+  
+  %save the source grid location 
+%   fid = fopen([workpath,'/synthetics/synsrcloc.',srcregion(1:3),'.grd'],'w');
+  if strcmp(srcregion,'ellipse')
+    fid = fopen([workpath,'/synthetics/synsrcloc.',distr,'.',int2str(sps),'sps.',srcregion(1:3),...
+      '_',num2str(xaxis),'-',num2str(yaxis),'.diam',num2str(diam),'_grd'],'w');
+  elseif strcmp(srcregion,'rectangle')
+    fid = fopen([workpath,'/synthetics/synsrcloc.',distr,'.',int2str(sps),'sps.',srcregion(1:3),...
+      '_',num2str(ll(1)),num2str(ll,2),num2str(ur(1)),num2str(ur,2),'.diam',num2str(diam),'_grd'],'w');
+  elseif strcmp(srcregion,'circle')
+    fid = fopen([workpath,'/synthetics/synsrcloc.',distr,'.',int2str(sps),'sps.',srcregion(1:3),...
+      '_',num2str(radi),'.diam',num2str(diam),'_grd'],'w');  
+  end
+  tmpgrid = xygrid;
+  tmpgrid(:,1:2)=round(sps/40*tmpgrid(:,1:2)); % *4 to get to 160 sps from 40.
+  fprintf(fid,'%8.3f %8.3f %7.2f %7.2f %8.3f %8.3f\n',tmpgrid');
+  fclose(fid);
   
   %%%in particular, starting indices of added greens function (i.e., templates), I need them for
   %%%forward convolution
@@ -679,34 +854,6 @@ for inwrites=1:length(writes)
   fprintf(fid,'%d \n', tmp');
     
 end
-
-%%
-%%%a simple plot the synthetics
-figure
-nrow = length(writes)+1;
-ncol = 1;
-subplot(nrow,ncol,1)
-hold on
-tmp = synth;
-plot(tmp(:,1),'r');
-plot(tmp(:,2),'b');
-plot(tmp(:,3),'k');
-xlim([0 40*sps]);
-axranexp(gca,6,20);
-
-for i = 1: length(writes)
-subplot(nrow,ncol,i+1)
-hold on
-tmp = synths(:,:,i);
-plot(tmp(:,1),'r');
-plot(tmp(:,2),'b');
-plot(tmp(:,3),'k');
-text(0.95,0.9,sprintf('%.1f x saturation',nsat(i)),'Units','normalized','HorizontalAlignment',...
-  'right');
-xlim([0 40*sps]);
-axranexp(gca,6,20);
-end
-xlabel(sprintf('Samples at %d Hz',sps),'FontSize',12);
 
 keyboard
 
@@ -769,9 +916,9 @@ end
 % ylabel('Med. of med. of abs amplitude');
     
 %% extract and validate the added impulses of template 
-insat = 1;  %which saturation to look at
+insat = 2;  %which saturation to look at
 disp(nsat(insat));
-wlensec = 20; %how long the window to test
+wlensec = 30; %how long the window to test
 bufsec = 1; %need some buffer window for later CC alignment
 buffer = bufsec*sps;
 wlensecb = wlensec+bufsec;  
@@ -784,30 +931,37 @@ noistab = [];  %target window of noise
 srcpairstab = cell(nsta,1);  %sources whose zero-crossing with time range, [indtarvl rnoff12 rnoff13 amp]
 
 for ista = 1: nsta
-  % ista = 3;
-  
+  % ista = 3;  
   tgreen = zcrosses(ista);  % anchor time of templates, here choose as zero-crossing time
   indstsig = 1;  % starting index of the simulated signal to test
   indedsig = wlensecb*sps+indstsig-1; % ending index of the simulated signal to test
 %   source = squeeze(sources(1:size(greensts{insat}{1},1), :, insat));  % [indtori indttrvl indtarvl rnoff12 rnoff13 amp];
+  n=writes(insat);
   if strcmp(distrloc,'uniform')
-    if forcesep
-      source = squeeze(sources(1:writes(insat),:,insat));
-    else
-      source = sources(1:writes(insat),:);
-    end
+%     if forcesep
+      a = squeeze(sources(1:n,:,insat));
+      b = a(any(a,2),:);
+%     else
+%       a = sources(1:n,:);
+%       b = a(any(a,2),:);
+%     end
+    source=b;
     off = tmpgrid(source(:,2),1:2); %note that 'tmpgrid' has the desired sps
   elseif strcmp(distrloc,'custompdf')
-    source = sources(1:writes(insat),:);
-    off = source(:,4:5);
+    a = sources(1:n,:);
+    b = a(any(a,2),:);
+    source=b;
+    off = source(:,1:2);
   end
   if ista == 1
     greenst = greensts{insat}{1}; % the starting index of each added template, context of full length
-  else
+  elseif ista <=3
     %ind - rnoff is the arrival time in index at sta 2 and 3
     %note the sign here, if off12 >0, move 2 to the right to align with 1, meaning that 2 is
     %earlier than 1, ie., tarvl2 < tarvl1. Be consistent all the time
     greenst = greensts{insat}{1}-off(:, ista-1); 
+  else
+    greenst = pred_tarvl_at4thsta(stas(ista,:),off(:,1),off(:,2),greensts{insat}{1});
   end
   
   %%%you don't need all impulses, only some of them contribute to the length of truncated record
@@ -821,7 +975,7 @@ for ista = 1: nsta
   source = [source(:,1) off];
   
   greenzc = greenst+tgreen; % index of approximate zero-crossing
-  source(:, 1) = source(:, 1)+tgreen;  % now 'greenzc' should be the same as 1st col of 'source'
+  source(:, 1) = source(:, 1)+zcrosses(1);  % now 'greenzc' should be the same as 1st col of 'source'
   impamp = zeros(max(greenzc)+20,1);
   for i = 1: length(greenzc)
     impamp(greenzc(i)) = impamp(greenzc(i))+1;  %assuming every source has an amp of 1
@@ -859,78 +1013,86 @@ for ista = 1: nsta
   plot([indstsig indstsig],ax.YLim,'--','color',[.5 .5 .5]);
   plot([indedsig indedsig],ax.YLim,'--','color',[.5 .5 .5]);
   legend(p1,'Synthetic random impulses');
+  xran1 = ax.XLim; axpos1 = ax.Position(1);
   subplot(413);
   plot(sigstab(:,ista),'b'); hold on
+  ax=gca; xran2 = ax.XLim;
+  shrink(ax,xran1/xran2,1);
+  ax.Position(1)=axpos1;  
   plot(sigconvstab(:,ista),'k');
   legend('Truncated synthetic signal','Truncated signal from convolution');
   subplot(414);
   plot(sigstab(:,ista)-sigconvstab(:,ista),'k'); hold on
   legend('Difference');
+  ax=gca; xran3 = ax.XLim;
+  shrink(ax,xran1/xran3,1);
+  ax.Position(1)=axpos1;
   
-  %%%For showing purpose
-  widin = 6;  % maximum width allowed is 8.5 inches
-  htin = 5;   % maximum height allowed is 11 inches
-  nrow = 4;
-  ncol = 1;
-  f = initfig(widin,htin,nrow,ncol);  % create a figure with subplots
-  
-  pltxran = [0.1 0.9]; pltyran = [0.1 0.9];
-  pltxsep = 0.02; pltysep = 0.04;
-  %get the locations for each axis
-  axpos = optaxpos(f,nrow,ncol,pltxran,pltyran,pltxsep,pltysep);
-  
-  ax = f.ax(1);
-  plot(ax,green(:,ista),'r'); hold on
-  xlim(ax,[0 greenlen]);
-  nolabels(ax,1);
-  legend(ax,'Template (unfiltered)');
-  ylabel(ax,'Amplitude');
-  shrink(ax,wlensecb*sps/greenlen,1);
-  ax.Position(1)=axpos(1,1);
-  longticks(ax,1.5);
-  axsym(ax,2);
-  axranexp(ax,6,10);
-  text(ax,0.05,0.85,stas(ista,:),'unit','normalized');
-  
-  ax = f.ax(2);
-  imptemp = find(impamp>0);
-  p1=stem(ax,imptemp-skiplen, impamp(imptemp),'b','MarkerSize',4); hold on;
-  % p1=stem((1:size(impamp))-skiplen, impamp,'b','MarkerSize',4); hold on;
-  % ax = gca;
-  % plot([indstsig indstsig],ax.YLim,'--','color',[.5 .5 .5]);
-  % plot([indedsig indedsig],ax.YLim,'--','color',[.5 .5 .5]);
-  nolabels(ax,1);
-  longticks(ax,3);
-  legend(ax,p1,'Synthetic random impulses');
-  %We only show the impulses whose zero-cross is inside 'wlensecb', even if later ones contribute
-  %the trace as well, but their contribution is small. To avoid talking about them, we need to taper
-  %both ends of the signal before deconvolution
-  xlim(ax,[0 wlensecb*sps]);  
-  ylabel(ax,'Amplitude');
-  axranexp(ax,2,10);
-  
-  ax = f.ax(3);
-  plot(ax,sigconvstab(:,ista),'k');
-  xlim(ax,[0 wlensecb*sps]);
-  nolabels(ax,1);
-  longticks(ax,3);
-  legend(ax,'Truncated signal from direct convolution');
-  ylabel(ax,'Amplitude');
-  axranexp(ax,6,10);
-  
-  % noistd = 5.e-2;
-  % rng(seed,'twister');
-  % noi = noistd*randn(length(sigconv),1);
-  % sigplnoi = sigconv+noi;
-  ax = f.ax(4);
-  plot(ax,sigpnstab(:,ista),'k');
-  xlim(ax,[0 wlensecb*sps]);
-  longticks(ax,3);
-  legend(ax,sprintf('Gaussian noise with std=%.2f added',noistd));
-%   legend(ax,sprintf('Uniform noise with a max amp of %.1e added',mampnoi));
-  xlabel(ax,sprintf('Samples at %d Hz',sps));
-  ylabel(ax,'Amplitude');
-  axranexp(ax,6,10);
+  keyboard
+%   %%%For showing purpose
+%   widin = 6;  % maximum width allowed is 8.5 inches
+%   htin = 5;   % maximum height allowed is 11 inches
+%   nrow = 4;
+%   ncol = 1;
+%   f = initfig(widin,htin,nrow,ncol);  % create a figure with subplots
+%   
+%   pltxran = [0.1 0.9]; pltyran = [0.1 0.9];
+%   pltxsep = 0.02; pltysep = 0.04;
+%   %get the locations for each axis
+%   axpos = optaxpos(f,nrow,ncol,pltxran,pltyran,pltxsep,pltysep);
+%   
+%   ax = f.ax(1);
+%   plot(ax,green(:,ista),'r'); hold on
+%   xlim(ax,[0 greenlen]);
+%   nolabels(ax,1);
+%   legend(ax,'Template (unfiltered)');
+%   ylabel(ax,'Amplitude');
+%   shrink(ax,wlensecb*sps/greenlen,1);
+%   ax.Position(1)=axpos(1,1);
+%   longticks(ax,1.5);
+%   axsym(ax,2);
+%   axranexp(ax,6,10);
+%   text(ax,0.05,0.85,stas(ista,:),'unit','normalized');
+%   
+%   ax = f.ax(2);
+%   imptemp = find(impamp>0);
+%   p1=stem(ax,imptemp-skiplen, impamp(imptemp),'b','MarkerSize',4); hold on;
+%   % p1=stem((1:size(impamp))-skiplen, impamp,'b','MarkerSize',4); hold on;
+%   % ax = gca;
+%   % plot([indstsig indstsig],ax.YLim,'--','color',[.5 .5 .5]);
+%   % plot([indedsig indedsig],ax.YLim,'--','color',[.5 .5 .5]);
+%   nolabels(ax,1);
+%   longticks(ax,3);
+%   legend(ax,p1,'Synthetic random impulses');
+%   %We only show the impulses whose zero-cross is inside 'wlensecb', even if later ones contribute
+%   %the trace as well, but their contribution is small. To avoid talking about them, we need to taper
+%   %both ends of the signal before deconvolution
+%   xlim(ax,[0 wlensecb*sps]);  
+%   ylabel(ax,'Amplitude');
+%   axranexp(ax,2,10);
+%   
+%   ax = f.ax(3);
+%   plot(ax,sigconvstab(:,ista),'k');
+%   xlim(ax,[0 wlensecb*sps]);
+%   nolabels(ax,1);
+%   longticks(ax,3);
+%   legend(ax,'Truncated signal from direct convolution');
+%   ylabel(ax,'Amplitude');
+%   axranexp(ax,6,10);
+%   
+%   % noistd = 5.e-2;
+%   % rng(seed,'twister');
+%   % noi = noistd*randn(length(sigconv),1);
+%   % sigplnoi = sigconv+noi;
+%   ax = f.ax(4);
+%   plot(ax,sigpnstab(:,ista),'k');
+%   xlim(ax,[0 wlensecb*sps]);
+%   longticks(ax,3);
+%   legend(ax,sprintf('Gaussian noise with std=%.2f added',noistd));
+% %   legend(ax,sprintf('Uniform noise with a max amp of %.1e added',mampnoi));
+%   xlabel(ax,sprintf('Samples at %d Hz',sps));
+%   ylabel(ax,'Amplitude');
+%   axranexp(ax,6,10);
   
   
   %now 'source' contain impulse triplets that contribute to the trace segment of interest, but we

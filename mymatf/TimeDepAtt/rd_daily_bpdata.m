@@ -55,8 +55,8 @@ end
 %Get timsSTA from the permanent stations (last one over-writes):
 tracelen=86400*sps; %one day of data at 40 sps, overall trace length, 24*3600
 nsta = size(stas,1);
-STAopt=zeros(tracelen,nsta);    % one day of samples
-STAort=zeros(tracelen,nsta);
+STAopt=zeros(tracelen,nsta+1);    % one day of samples
+STAort=zeros(tracelen,nsta+1);
 STAnzeros=zeros(nwin,nsta);    % used to flag windows with glitches
 
 fileflag = 1;   % 1 means all files exist, the file status is normal
@@ -86,6 +86,8 @@ for ista=1:nsta
       % 2. this is for data with no response
       [opt,ort,nzeros,time]=readpermsv2(prename,PERMSTA,PERMROTS,idx,sps,lo,hi,npo,...
         npa,fact,nwin,winlen,winoff,igstart,varargin);
+      STAopt(:, 1)=time;
+      STAort(:, 1)=time;  
     else
       fileflag = 0;   % change the file flag to 0, meaning abnormal
       fprintf('No data for station %s in day %s %s, this day will be omitted. \n',...
@@ -119,12 +121,14 @@ for ista=1:nsta
       break   % break the entire station loop
     end
   end
-  STAopt(:, ista+1)=opt;
-  STAort(:, ista+1)=ort;
-  STAnzeros(:, ista) = nzeros;
+
+  if fileflag
+    STAopt(:, ista+1)=opt;
+    STAort(:, ista+1)=ort;
+    STAnzeros(:, ista) = nzeros;
+  end
 end
-STAopt(:, 1)=time;
-STAort(:, 1)=time;
+
 
 % keyboard
 

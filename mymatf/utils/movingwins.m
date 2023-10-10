@@ -1,4 +1,4 @@
-function [windows] = movingwins(indst,inded,mwlen,ovlplen,fplt)
+function windows = movingwins(indst,inded,mwlen,ovlplen,fplt)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % [windows] = movingwins(indst,inded,mwlen,ovlplen,fplt)
 %
@@ -33,6 +33,17 @@ for i = 1: nwin
   windows(i,2) = iend;
 end
 
+%if some portions are not included
+if windows(end,2) < inded
+  %make it an separate window if its length is at least half of that of the others
+  if inded-(windows(end,1)+(mwlen-ovlplen))+1 >= mwlen/2
+    windows = [windows; [windows(end,1)+(mwlen-ovlplen) inded]];
+    %otherwise just combine the portion to the last window
+  else
+    windows(end,2) = inded;
+  end
+end
+      
 %plot a schematic figure about all windows
 if fplt
   figure

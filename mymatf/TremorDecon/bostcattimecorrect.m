@@ -163,7 +163,7 @@ if remake
       end
       %     MO = 'SEP';
       MO=day2month(jday,year);     % EXTERNAL function, day2month, get the month of one particular date
-      direc=[datapath, '/', YEAR,'/',MO,'/'];     % directory name
+      direc=[datapath, '/arch', YEAR,'/',MO,'/'];     % directory name
       %     fprintf('%s \n',direc);
       datafnm = [direc, YEAR,'.',JDAY,'.00.00.00.0000.CN'];
       %     fprintf('Processing date: %s / %s \n',YEAR, JDAY);

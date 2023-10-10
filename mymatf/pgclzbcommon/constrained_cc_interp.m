@@ -18,9 +18,9 @@ function [off12,off13,cc,iloff,loff] = constrained_cc_interp(trace,mid,wlen,mshi
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %in case it has non-zero mean
-% for i = 1:size(trace,1)
-%   trace(i,:) = detrend(trace(i,:));   
-% end
+for i = 1:size(trace,1)
+  trace(i,:) = detrend(trace(i,:));   
+end
 stackauto = trace.*trace;
 templen = size(trace,2);
 lenx = templen-2*mshift;
@@ -104,7 +104,8 @@ if xcmaxAVEn<ccmin || abs(loff)>loffmax || isequal(abs(imaxstack12cent),mshift).
         || isequal(abs(imaxstack13cent),mshift) || isequal(abs(imaxstack32cent),mshift)
     % return the BAD offset and loopoff, and cc at offset (0,0)
     off12=mshift+1; off13=mshift+1; off32=mshift+1; %dummy them, if these criteria are met
-    cc = (sumstack12n(mshift+1)+sumstack13n(mshift+1)+sumstack32n(mshift+1))/3;
+%     cc = (sumstack12n(mshift+1)+sumstack13n(mshift+1)+sumstack32n(mshift+1))/3;
+    cc = xcmaxAVEn;
     disp('WRONG! The basic criteria is not met');
 else
     interpstack12n=interp(sumstack12n,iup,3);
@@ -156,7 +157,8 @@ else
     else
         disp('WRONG! Loopoff is not enclosed');
         off12=mshift+1; off13=mshift+1; off32=mshift+1; %dummy them, if these criteria are met
-        cc = (sumstack12n(mshift+1)+sumstack13n(mshift+1)+sumstack32n(mshift+1))/3;
+%         cc = (sumstack12n(mshift+1)+sumstack13n(mshift+1)+sumstack32n(mshift+1))/3;
+        cc = xcmaxAVEn;
 
     end
 end

@@ -24,19 +24,23 @@
 % overfit the noise due to more iters. However, i am not sure how the synthetics
 % would behave.
 %
+% --If you instead use a uniform random distribution for sources, then you 
+% should use code 'analyze_synth'. 
 %
 %
 %
 %
 % Chao Song, chaosong@princeton.edu
 % First created date:   2022/05/04
-% Last modified date:   2022/05/04
+% Last modified date:   2023/09/07
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% Initialization
+format short e   % Set the format to 5-digit floating point
 clear
 clc
 close all
+
 set(0,'DefaultFigureVisible','on');
 %set(0,'DefaultFigureVisible','off');
 
@@ -47,46 +51,78 @@ rstpath = strcat(datapath, '/PGCtrio');
 
 [scrsz, resol] = pixelperinch(1);
 
-%% prepare templates (Green's functions)
-ccstack = [];
-sps = 160;
-templensec = 60;
+%% prepare templates (Green's functions), from 'lfetemp002_160sps.m' or Allan's templates
+defval('normflag',0); %whether to normalize templates
 
-fam = '002';
-disp(fam);
+% tempflag = 'allan';
+tempflag = 'chao';
 
-stas=['PGC ';
-      'SSIB';
-      'SILB';
-      ];
-nsta=size(stas,1);
+adatapath = '/home/data2/chaosong/matlab/allan/matfils/';  %path for Allan's data
 
-for ista = 1: nsta
-    fname = strcat(temppath, fam, '_', strtrim(stas(ista, :)), '_', num2str(sps), 'sps_', ...
-        num2str(templensec), 's_', 'BBCCS_', 'opt_Nof_Non_Chao_catnew');
-    ccstack(:,ista) = load(fname);
-end
-STA = ccstack;
+stas=['PGC  '
+  'SSIB '
+  'SILB '
+%   'LZB  '
+%   'TWKB '
+%   'MGCB '
+  'KLNB '
+  ]; % determine the trio and order, here the 1st sta is PGC
+nsta=size(stas,1);         %  number of stations
 
-for ista=1:nsta
-    STA(:,ista)=Bandpass(STA(:,ista),sps,0.1,15,2,2,'butter');   % change 'bandpass' to 'Bandpass'
-end
-%plot the raw templates, not filtered, not best aligned
+if strcmp(tempflag,'chao')
+  fam = '002';   % family number
+  sps = 160;
+  templensec = 60;
+  ccstack = [];
+  for ista = 1: nsta
+      fname = strcat(temppath, fam, '_', strtrim(stas(ista, :)), '_', num2str(sps), 'sps_', ...
+          num2str(templensec), 's_', 'BBCCS_', 'opt_Nof_Non_Chao_catnew');
+      ccstack(:,ista) = load(fname);
+  end
+  STA = detrend(ccstack);
+elseif strcmp(tempflag,'allan')
+  sps = 100;
+  templensec = 120;   
+  fname = ['PGCopt_002_1-15Hz_2pass_100sps.le14sh0.75-15Hz_le14sh_0.5-15Hz_CC1.25-6.5Hz_le20shift';
+           'SSIopt_002_1-15Hz_2pass_100sps.le14sh0.75-15Hz_le14sh_0.5-15Hz_CC1.25-6.5Hz_le20shift';
+           'SILopt_002_1-15Hz_2pass_100sps.le14sh0.75-15Hz_le14sh_0.5-15Hz_CC1.25-6.5Hz_le20shift'];
+%   templensec = 60;   
+%   fname = ['PGCopt_002_1-15Hz_2pass_100sps.le14sh0.75-15Hz_le14sh0.5-15Hz_le14sh';
+%            'SSIopt_002_1-15Hz_2pass_100sps.le14sh0.75-15Hz_le14sh0.5-15Hz_le14sh';
+%            'SILopt_002_1-15Hz_2pass_100sps.le14sh0.75-15Hz_le14sh0.5-15Hz_le14sh'];
+  for ista=1:nsta
+    temp=load(strcat(adatapath,fname(ista,:)));
+    STA(:,ista)=detrend(temp(:,1))/350;
+  end  
+end  
+
+% %plot the raw templates, not filtered, not best aligned
 % figure
+% ltemp = size(STA,1);
+% subplot(111)
 % hold on
-% plot(STA(:,1),'r')
-% plot(STA(:,2),'b')
-% plot(STA(:,3),'k')
+% for ista = 1: nsta
+%   plot((1:ltemp)/sps,STA(:,ista));
+% end
 
 %%%The below aligns the templates by x-correlation
-[maxses,imaxses]=max(STA,[],1);
-[minses,iminses]=min(STA,[],1);
+if strcmp(tempflag,'chao')
+  ist = templensec*sps*4/10;  %not using whole window in case any station has very long-period energy
+  ied = templensec*sps*6/10;
+elseif strcmp(tempflag,'allan')
+  ist = templensec*sps*6/10;
+  ied = templensec*sps*8/10;
+end
+[maxses,imaxses]=max(STA(ist:ied,:),[],1);
+[minses,iminses]=min(STA(ist:ied,:),[],1);
 spread=maxses-minses;
+imaxses = imaxses+ist-1;  %convert to global indices
+iminses = iminses+ist-1;
 % zcrosses=round(0.5*(imaxses+iminses));  % rough, assuming symmetry, Chao 2021/07/16
 %automatically find the zero-crossings
 zcrosses = zeros(nsta,1);
 for ista = 1:nsta
-    seg = STA(iminses(ista): imaxses(ista),ista);  % for zero-crossing timing, only use the main station
+    seg = detrend(STA(iminses(ista): imaxses(ista),ista));  % for zero-crossing timing, only use the main station
     [~,zcrosses(ista)] = min(abs(seg));
     zcrosses(ista) = zcrosses(ista)-1+iminses(ista);  % convert to global index
 end
@@ -96,27 +132,35 @@ sampaft=10*sps;
 is=zcrosses-sampbef;
 ie=zcrosses+sampaft;
 for ista=1:nsta
-    STAtmp(:,ista)=STA(is(ista):ie(ista),ista);  % this means templates are 'aligned' at zero-crossings
+    STAtmp(:,ista)=detrend(STA(is(ista):ie(ista),ista));  % this means templates are 'aligned' at zero-crossings
 end
 %x-correlation independently between each station pair 
 mshiftadd=10*sps/40;
 tempxc(:,1)=xcorr(STAtmp(:,2),STAtmp(:,3),mshiftadd,'coeff');
 tempxc(:,2)=xcorr(STAtmp(:,1),STAtmp(:,2),mshiftadd,'coeff'); %shift STAtmp(3,:) to right for positive values
 tempxc(:,3)=xcorr(STAtmp(:,1),STAtmp(:,3),mshiftadd,'coeff'); %shift STAtmp(2,:) to right for positive values
+for ista = 4: nsta
+  tempxc(:,ista)=xcorr(STAtmp(:,1),STAtmp(:,ista),mshiftadd,'coeff'); %shift STAtmp(2,:) to right for positive values
+end
 [~,imax]=max(tempxc,[],1);
 imax=imax-(mshiftadd+1); %This would produce a slightly different shift, if filtered seisms were used.
-imax(2)-imax(3)+imax(1)   %enclosed if it equals to 0
+imax(2)-imax(3)+imax(1);   %enclosed if it equals to 0
 for ista=2:nsta
-    STAtmp(mshiftadd+1:end-(mshiftadd+1),ista)=STAtmp(mshiftadd+1-imax(ista):end-(mshiftadd+1)-imax(ista),ista);
+    STAtmp(mshiftadd+1:end-(mshiftadd+1),ista)=detrend(STAtmp(mshiftadd+1-imax(ista):end-(mshiftadd+1)-imax(ista),ista));
 end
-for ista=1:nsta
-    STAtmp(:,ista)=STAtmp(:,ista)/spread(ista); % now templates are 'aligned' indeoendently by x-corr wrt. sta 1
+%normalization
+if normflag 
+  for ista=1:nsta
+      STAtmp(:,ista)=STAtmp(:,ista)/spread(ista); % now templates are 'aligned' indeoendently by x-corr wrt. sta 1
+  end
 end
 % figure
+% ltemp = size(STAtmp,1);
+% subplot(111)
 % hold on
-% plot(STAtmp(:,1),'r')
-% plot(STAtmp(:,2),'b')
-% plot(STAtmp(:,3),'k')
+% for ista = 1: nsta
+%   plot((1:ltemp)/sps,STAtmp(:,ista));
+% end
 %%%The above aligns the templates by x-correlation
 
 %%%detrend, taper and bandpass templates
@@ -130,13 +174,13 @@ for ista = 1: nsta
   w = tukeywin(size(tmpwlet(:,ista),1),fractap);
   tmpwlet(:,ista) = w.* tmpwlet(:,ista);
   %detrend again for caution
-  tmpwlet(:,ista)=detrend(tmpwlet(:,ista));
+  tmpwlet(:,ista) = detrend(tmpwlet(:,ista));
   %filter the template
   hiwlet=18;
   lowlet=1.8;
   tmpwletf(:,ista) = Bandpass(tmpwlet(:,ista), sps, lowlet, hiwlet, 2, 2, 'butter');
   %detrend again for caution
-  tmpwletf(:,ista)=detrend(tmpwletf(:,ista));
+  tmpwletf(:,ista) = detrend(tmpwletf(:,ista));
 end
 
 %%%constrained CC, so that only 2 offsets are independent
@@ -145,11 +189,16 @@ ccwlen = 10*sps;
 loffmax = 5*sps/40;
 ccmin = 0.01;  % depending on the length of trace, cc could be very low
 iup = 1;    % times of upsampling
-[off12con,off13con,cc,iloopoff,loopoff] = constrained_cc_interp(tmpwletf',ccmid,...
+[off12con,off13con,cc] = constrained_cc_interp(tmpwletf(:,1:3)',ccmid,...
   ccwlen,mshiftadd,loffmax,ccmin,iup);
 offwlet1i(1) = 0;
 offwlet1i(2) = round(off12con);
 offwlet1i(3) = round(off13con);
+if nsta>3 
+  for ista = 4: nsta
+    [mcoef,offwlet1i(ista)] = xcorrmax(tmpwletf(:,1), tmpwletf(:,ista), mshiftadd, 'coeff');
+  end
+end
 
 %%%automatically find the rough zero-crossing time, whose abs. value is closest to 0, whether + or -
 [~,imin] = min(tmpwletf(:,1));
@@ -159,22 +208,31 @@ zcsta1 = zcsta1+imin-1;
 greenlen = pow2(9)*sps/40;
 green = zeros(greenlen,nsta); % no bandpass
 greenf = zeros(greenlen,nsta);  % bandpassed version
+ppeaks = zeros(nsta,1); % positive peaks
+npeaks = zeros(nsta,1); % negative peaks
 for ista = 1: nsta
   %cut according to the zero-crossing and the time shift from the constrained CC
   green(:,ista) = tmpwlet(zcsta1+8*sps-greenlen+1-offwlet1i(ista): zcsta1+8*sps-offwlet1i(ista), ista);
   greenf(:,ista) = tmpwletf(zcsta1+8*sps-greenlen+1-offwlet1i(ista): zcsta1+8*sps-offwlet1i(ista), ista);
   %detrend again for caution
-  green(:,ista)=detrend(green(:,ista));
-  greenf(:,ista)=detrend(greenf(:,ista));
-  %normalize by max amp
-  green(:,ista)=green(:,ista)/max(abs(green(:,ista)));    % normalize
-  greenf(:,ista)=greenf(:,ista)/max(abs(green(:,ista)));    % normalize
+  green(:,ista) = detrend(green(:,ista));
+  greenf(:,ista) = detrend(greenf(:,ista));
   
   %re-find the zero-crossing as the template length has changed
+  [~,imin] = min(green(:,ista));
+  [~,imax] = max(green(:,ista));
+  [~,zcrosses(ista)] = min(abs(green(imin:imax,ista)));
+  zcrosses(ista) = zcrosses(ista)+imin-1;
+  ppeaks(ista) = imax;
+  npeaks(ista) = imin;
+  
   [~,imin] = min(greenf(:,ista));
   [~,imax] = max(greenf(:,ista));
-  [~,zcrosses(ista)] = min(abs(greenf(imin:imax,ista)));
-  zcrosses(ista) = zcrosses(ista)+imin-1;
+  [~,zcrossesf(ista)] = min(abs(greenf(imin:imax,ista)));
+  zcrossesf(ista) = zcrossesf(ista)+imin-1;
+  ppeaksf(ista) = imax;
+  npeaksf(ista) = imin;
+
 end
 %the following is just a check, because now the templates must be best aligned 
 ccmid = round(size(greenf,1)/2);
@@ -182,55 +240,27 @@ ccwlen = 4*sps;
 loffmax = 5*sps/40;
 ccmin = 0.01;  % depending on the length of trace, cc could be very low
 iup = 1;    % times of upsampling
-[off12con,off13con,cc,iloopoff,loopoff] = constrained_cc_interp(greenf',ccmid,...
+[off12con,off13con,cc] = constrained_cc_interp(greenf(:,1:3)',ccmid,...
   ccwlen,mshiftadd,loffmax,ccmin,iup);
 if ~(off12con==0 && off13con==0)
-  disp('Filtered templates are NOT best aligned');
+  disp('Filtered templates are NOT best aligned \n');
+end
+if nsta>3 
+  for ista = 4: nsta
+    [mcoef,mlag] = xcorrmax(greenf(:,1), greenf(:,ista), mshiftadd, 'coeff');
+    if mlag~=0   % offset in samples
+      fprintf('Filtered templates are NOT best aligned at %s \n',stas(ista,:));
+    end
+  end
 end
 
+amprat(1,:) = minmax(greenf(:,1)')./minmax(greenf(:,2)');	% amp ratio between max at sta 3 and 2 or min
+amprat(2,:) = minmax(greenf(:,1)')./minmax(greenf(:,3)');	% amp ratio between max at sta 3 and 1 or min  
+amprat(3,:) = minmax(greenf(:,2)')./minmax(greenf(:,3)');	% amp ratio between max at sta 3 and 1 or min  
+spread = range(greenf);   % range of the amp of template
+
 %%%plot the unfiltered and filtered templates
-mean(green,1)
-figure
-subplot(2,1,1)
-hold on
-plot(green(:,1),'r')
-plot(green(:,2),'b')
-plot(green(:,3),'k')
-text(0.95,0.9,'Raw','Units','normalized','HorizontalAlignment',...
-  'right');
-mx=max([abs(green(:,1)); abs(green(:,2))]);
-xlim([0 greenlen])
-ylim([-mx mx])
-title("Green's functions");
-box on
-
-subplot(2,1,2)
-hold on
-plot(greenf(:,1),'r')
-plot(greenf(:,2),'b')
-plot(greenf(:,3),'k')
-text(0.95,0.9,sprintf('%.1f-%.1f Hz',lowlet,hiwlet),'Units','normalized','HorizontalAlignment',...
-  'right');
-mx=max([abs(greenf(:,1)); abs(greenf(:,2))]);
-
-%%%running CC using a window length of 'cclen'
-mwlen=sps/2;
-[ircc,rcc12] = RunningCC(greenf(:,1), greenf(:,2), mwlen);
-[~,rcc13] = RunningCC(greenf(:,1), greenf(:,3), mwlen);
-[~,rcc23] = RunningCC(greenf(:,2), greenf(:,3), mwlen);
-rcc = (rcc12+rcc13+rcc23)/3;
-%alln(alln<0)=-10^4*yma; %just so they don't plot.
-% plot(samples(cclen/2+1:greenlen-cclen/2),mx*alln,'co','markersize',2); % scale with data amp.
-plot(ircc,mx*rcc,'co','markersize',2); % scale with data amp.
-xlim([0 greenlen])
-ylim([-mx mx])
-box on
-xc23=xcorr(greenf(:,2),greenf(:,3),10,'coeff');
-xc13=xcorr(greenf(:,1),greenf(:,3),10,'coeff');
-xc12=xcorr(greenf(:,1),greenf(:,2),10,'coeff');
-[ccmax23,imax23]=max(xc23)
-[ccmax13,imax13]=max(xc13)
-[ccmax12,imax12]=max(xc12)
+plt_templates(green,greenf,stas,[],[],lowlet,hiwlet,sps);
 
 
 %% load the true 4-s tremor detections, obtain its PDF that will be used to generate synthetic sources

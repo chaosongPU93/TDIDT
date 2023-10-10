@@ -109,7 +109,7 @@ else
   ax=f.ax(4);
   hold(ax,'on');
   ax.Box='on'; grid(ax,'on');
-  p2=scatter(ax,timevec/sps,locxyproj(:,2),15,[.6 1 1],'filled','o','MarkerEdgeColor','k');
+  % p2=scatter(ax,timevec/sps,locxyproj(:,2),15,[.6 1 1],'filled','o','MarkerEdgeColor','k');
   p1=scatter(ax,timevec/sps,locxyproj(:,1),15,[.5 .5 .5],'filled','o','MarkerEdgeColor','k');
   % linear robust least square
   fttpfree = fittype( @(a,b,x) a*x+b);
@@ -120,7 +120,6 @@ else
   plot(ax,timevec/sps,fitproj,'-','linewidth',2,'color','k');
   text(ax,0.98,0.95,sprintf('speed: %.1f km / %.1f s',range(fitproj),range(timevec/sps)),...
     'HorizontalAlignment','right','Units','normalized','FontSize',9);
-  % legend(ax,[p1,p2],'Along prop. direction', 'Orthogonal to prop. dir.','FontSize',9);
   if isequal(ttype,'tori')
     xlabel(ax,'Relative origin time (s)');
   elseif isequal(ttype,'tarvl')
@@ -133,7 +132,7 @@ else
   ax=f.ax(5);
   hold(ax,'on');
   ax.Box='on'; grid(ax,'on');
-  scatter(ax,dtime/sps,dlocxyproj(:,2),15,[.6 1 1],'filled','o','MarkerEdgeColor','k');
+  % scatter(ax,dtime/sps,dlocxyproj(:,2),15,[.6 1 1],'filled','o','MarkerEdgeColor','k');
   scatter(ax,dtime/sps,dlocxyproj(:,1),15,[.5 .5 .5],'filled','o','MarkerEdgeColor','k');
   text(ax,0.98,0.95,strcat({'med. |dloc| of dt\leq1.0s: '},sprintf('%.2f km',...
     median(abs(dlocxyproj(dtime/sps<=1,1))))),'Units','normalized','HorizontalAlignment','right',...
@@ -156,7 +155,7 @@ else
   ax=f.ax(6);
   hold(ax,'on');
   ax.Box='on'; grid(ax,'on');
-  p2=histogram(ax,dlocxyproj(:,2),'BinWidth',0.1,'FaceColor',[.6 1 1],'Orientation','horizontal');
+  % p2=histogram(ax,dlocxyproj(:,2),'BinWidth',0.1,'FaceColor',[.6 1 1],'Orientation','horizontal');
   p1=histogram(ax,dlocxyproj(:,1),'BinWidth',0.1,'FaceColor','k','Orientation','horizontal');
   text(ax,0.98,0.95,sprintf('med. |dloc|: %.2f km',median(abs(dlocxyproj(:,1)))),...
     'Units','normalized','HorizontalAlignment','right','FontSize',9);
@@ -164,8 +163,9 @@ else
   % xlim(ax,[0 50]);
   % ylabel(ax,'Proj. dist. between consecutive sources (km)');
   xlabel(ax,'Counts');
-  legend(ax,[p1,p2],'Along proj. direction', 'Orthogonal to proj. dir.','FontSize',9,...
-    'location','southeast');
+  % legend(ax,[p1,p2],'Along proj. direction', 'Orthogonal to proj. dir.','FontSize',9,...
+  %   'location','southeast');
+  legend(ax,p1,'Along proj. direction','FontSize',9,'location','southeast');    
   longticks(ax,2);
   nolabels(ax,2);
 

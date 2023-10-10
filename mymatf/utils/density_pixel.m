@@ -1,4 +1,4 @@
-function [density,indices] = density_pixel(x,y)
+function [density,induniq] = density_pixel(x,y)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % [density,indices] = density_pixel(x,y)
 %
@@ -28,12 +28,12 @@ data = [x y];
 dataunq = unique(data,'rows','stable');
 nuniq = size(dataunq,1);
 density = zeros(nuniq, 3);
-indices = cell(nuniq,1);
+induniq = cell(nuniq,1);
 for i = 1: nuniq
   ind = find(ismember(data ,dataunq(i,:), 'rows'));
   density(i,1:2) = dataunq(i,:);
   density(i,3) = length(ind);
-  indices{i} = ind;
+  induniq{i} = ind;
 end
 
 

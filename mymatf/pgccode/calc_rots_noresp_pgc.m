@@ -261,7 +261,7 @@ for id = 1: nday
                 % 1. this is for data without removing station response
                 %   [opt,ort,timeperm]=readperm_1daynofilterv2(datafnm, PERMSTA, PERMROTS, idx, sps, fact);
                 % 2. this is for data with no response
-                [dataE, dataN, ~] = readperms_norotsv2(datafnm, PERMSTA, idx, sps, fact);
+                [dataE, dataN, ~] = readperms_norotsv2(datafnm, PERMSTA, idx, sps, fact, []);
             else
                 fileflag = 0;   % change the file flag to 0, meaning abnormal
                 fprintf('No data for station %s in day %s %s, this day will be omitted. \n',...
@@ -285,7 +285,7 @@ for id = 1: nday
                 %                 % 1. this is for data without removing station response
                 %                 [opt,ort,nzeros]=readpols(prename,POLSTA,POLROTS,idx,sps,lo,hi,npo,npa,fact,nwin,winlen,winoff,igstart);
                 % 2. this is for data with no response
-                [dataE, dataN, ~] = readpols_norotsv2(datafnm, POLSTA, idx, sps, fact);
+                [dataE, dataN, ~] = readpols_norotsv2(datafnm, POLSTA, idx, sps, fact, []);
             else
                 fileflag = 0;   % change the file flag to 0, meaning abnormal
                 fprintf('No data for station %s in day %s / %s. \n',POLSTA(idx,1:4), YEAR, JDAY);

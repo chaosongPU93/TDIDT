@@ -1,6 +1,6 @@
-function f=plt_deconpk_rat_comb(f,srcamprall,impindepstall,color)
+function axall=plt_deconpk_rat_comb(axall,srcamprall,impindepstall,color,flag)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% f=plt_deconpk_rat_comb(f,srcamprall,color)
+% axall=plt_deconpk_rat_comb(axall,srcamprall,impindepstall,color,flag)
 %
 % This function is to plot the direct and scaled deconvolved positive and 
 % negative source peak ratios between all station pairs (12,13, and 23). 
@@ -18,12 +18,15 @@ function f=plt_deconpk_rat_comb(f,srcamprall,impindepstall,color)
 % Last modified date:   2022/09/28 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-for i = 1: round(length(f.ax)/2)
+defval('flag','both');
+
+for i = 1: size(srcamprall,2)
   %hist of direct amp ratios
-  ax = f.ax(i);
+  % ax = f.ax(i);
+  ax = axall(i);
   hold(ax,'on');  
   grid(ax,'on');
-  histogram(ax,log10(srcamprall(:,i)),'FaceColor',color,'Normalization','pdf');
+  histogram(ax,log10(srcamprall(:,i)),'FaceColor',color,'Normalization','count','BinWidth',0.05);
   plot(ax,[median(log10(srcamprall(:,i))) median(log10(srcamprall(:,i)))],ax.YLim,'--',...
     'color',color,'linew',1);
   errorbar(ax,median(log10(srcamprall(:,i))), 0.9*ax.YLim(2), mad(log10(srcamprall(:,i)),1),...
@@ -31,34 +34,36 @@ for i = 1: round(length(f.ax)/2)
     'color',color,'linewidth',0.8,'CapSize',5,'MarkerSize',0.5);
 %   text(ax,0.95,0.9,sprintf('med=%.2f; MAD=%.2f',median(srcamprall(:,i)),mad(srcamprall(:,i), 1)),...
 %     'Units','normalized','HorizontalAlignment','right');  %note here is linear scale
-  if i ==1
-%     ylabel(ax,'# of source');
-    ylabel(ax,'PDF');
-    xlabel(ax,'log_{10}{src amp ratio 1/2}');
-  elseif i ==2
-    xlabel(ax,'log_{10}{src amp ratio 1/3}');
+  if i==1
+    ylabel(ax,'Count');
+    % ylabel(ax,'PDF');
+    xlabel(ax,'log_{10}{src amp ratio PGC/SSIB}');
+  elseif i==2
+    xlabel(ax,'log_{10}{src amp ratio PGC/SILB}');
   elseif i==3
-    xlabel(ax,'log_{10}{src amp ratio 2/3}');
+    xlabel(ax,'log_{10}{src amp ratio SSIB/SILB}');
   end
   xlim(ax,[-1 1]);
   
-  %scatter of direct amp VS. amp ratios
-  ax = f.ax(3+i);
-  hold(ax,'on'); grid(ax, 'on');
-  if i ==1
-    scatter(ax,log10(impindepstall(:,2)),log10(srcamprall(:,i)),20,color);
-    xlabel(ax,'log_{10}{src amp at 1}');
-    ylabel(ax,'log_{10}{src amp ratio 1/2}');
-  elseif i ==2
-    scatter(ax,log10(impindepstall(:,2)),log10(srcamprall(:,i)),20,color);
-    xlabel(ax,'log_{10}{src amp at 1}');
-    ylabel(ax,'log_{10}{src amp ratio 1/3}');
-  elseif i==3
-    scatter(ax,log10(impindepstall(:,4)),log10(srcamprall(:,i)),20,color);
-    xlabel(ax,'log_{10}{src amp at 2}');
-    ylabel(ax,'log_{10}{src amp ratio 2/3}');
+  if strcmp(flag,'both')
+    %scatter of direct amp VS. amp ratios
+    ax = f.ax(size(srcamprall,2)+i);
+    hold(ax,'on'); grid(ax, 'on');
+    if i ==1
+      scatter(ax,log10(impindepstall(:,2)),log10(srcamprall(:,i)),20,color);
+      xlabel(ax,'log_{10}{src amp at PGC}');
+      ylabel(ax,'log_{10}{src amp at SSIB}');
+    elseif i ==2
+      scatter(ax,log10(impindepstall(:,2)),log10(srcamprall(:,i)),20,color);
+      xlabel(ax,'log_{10}{src amp at PGC}');
+      ylabel(ax,'log_{10}{src amp at SILB}');
+    elseif i==3
+      scatter(ax,log10(impindepstall(:,4)),log10(srcamprall(:,i)),20,color);
+      xlabel(ax,'log_{10}{src amp at SSIB}');
+      ylabel(ax,'log_{10}{src amp at SILB}');
+    end
+    axis(ax,'equal');
   end
-  axis(ax,'equal');
   
 end
   

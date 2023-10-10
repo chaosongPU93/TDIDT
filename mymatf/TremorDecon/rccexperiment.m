@@ -1,3 +1,4 @@
+% rccexperiment.m
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % It looks likes for noise and data may have a distinction on how long the
 % high coherence can last. Even random, noise can sometimes have high CC
@@ -5,12 +6,13 @@
 % So if you use a longer time window to obtain the RCC, there can be a 
 % larger differentiation between data and noise, and hopefully make it 
 % possible to find a proper RCC threshold to stop the deconvolution.
+% --Some parts is similar to 'analyze_synth'. 
 %
 %
 %
 % Chao Song, chaosong@princeton.edu
 % First created date:   2023/04/06
-% Last modified date:   2023/04/06
+% Last modified date:   2023/09/07
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 format short e   % Set the format to 5-digit floating point
 clear
@@ -22,7 +24,7 @@ defval('idxbst',1:195); %global indices of bursts to run
 defval('normflag',0); %whether to normalize templates
 defval('noiseflag',1);  %whether to use synthetic noises
 defval('pltflag',0);  %whether to plot figs for each burst
-defval('rccmwsec',2); %moving win len in sec for computing RCC
+defval('rccmwsec',0.5); %moving win len in sec for computing RCC
 
 rccflag = 1; %1 means RCC weighting is used
 whichrcc = 0; %if rcc weighting, which pair is used, 0 is best 2 pairs; 1 is 12; 2 is 13; 3 is 23
@@ -737,6 +739,7 @@ for iii = 1: length(idxbst)
 
       %if only use the mean RCC from pair 12 and 13
       rcccat = mean(rccpaircat(:,[1 2]), 2);
+      cccat = mean(ccwpair(:,[1 2]), 2);
       
       %if choose not to use RCC weighting; for easier comparison
       if ~rccflag
@@ -752,8 +755,9 @@ for iii = 1: length(idxbst)
         end
       end
 
-      rcccomb = [];
+      rcccomb = []; cccomb = [];
       rcccomb(:,1) = rcccat;
+      cccomb(:,1) = median(cccat);
 
 %       figure
 %       subplot(231); hold on; ax=gca;
@@ -878,6 +882,11 @@ for iii = 1: length(idxbst)
       
       rcc = (rcc12+rcc13)/2;
       rcccomb(:,3) = rcc;
+
+      cc12 = xcorr(sigsta(:,1), sigsta(:,2),0,'normalized');  %0-lag maximum cc based on current alignment
+      cc13 = xcorr(sigsta(:,1), sigsta(:,3),0,'normalized');
+      cc = (cc12+cc13)/2;
+      cccomb(:,3) = cc;
       
 %       %for ort. comp
 %       sigstaort = zeros(size(ortdat,1), nsta);
@@ -1140,6 +1149,7 @@ for iii = 1: length(idxbst)
         
         %if only use the mean RCC from pair 12 and 13
         rcccat = mean(rccpaircat(:,[1 2]), 2);
+        cccat = mean(ccwpair(:,[1 2]), 2);
 
         %if choose NOT to use RCC weighting; for easier comparison
         if ~rccflag
@@ -1156,6 +1166,7 @@ for iii = 1: length(idxbst)
         end
 
         rcccomb(:,2) = rcccat;
+        cccomb(:,2) = median(cccat);
 
 %         figure
 %         subplot(231); hold on; ax=gca;
@@ -1266,19 +1277,27 @@ for iii = 1: length(idxbst)
       
         rcc = (rcc12+rcc13)/2;
         rcccomb(:,4) = rcc;
+
+        cc12 = xcorr(sigsta(:,1), sigsta(:,2),0,'normalized');  %0-lag maximum cc based on current alignment
+        cc13 = xcorr(sigsta(:,1), sigsta(:,3),0,'normalized');
+        cc = (cc12+cc13)/2;
+        cccomb(:,4) = cc;
         
       end 
 
       rccbst{iii} = rcccomb;
+      ccbst{iii} = cccomb;
 
 end
 
-  save(strcat('rcc',num2str(rccmwsec),'.mat'),'rccbst');
+  save(strcat('rcc',num2str(rccmwsec),'.mat'),'rccbst','ccbst');
 
 else
   load(strcat('rcc',num2str(rccmwsec),'.mat'));
 end
   
+keyboard
+
 %%
 %%%bootstrap, resample n points (n bursts) from the original data set (all burst windows) by M
 %%%times

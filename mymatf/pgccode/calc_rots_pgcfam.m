@@ -68,23 +68,24 @@ rstpath = strcat(datapath,'/split_chao/pgctrio/');
 
 % trial fams, not necessarily the final used ones
 fampool = [
-           '002';
-           '243'; 
-           '253';
-           '036';
-           '034'; 
-           '061';
-           '023';
-           '055';
-           '026';
-           '251';
-           '162';
-           '240';
-           '250';
-           '255'; 
-           '012'; 
-           '065'; 
-           '047';
+%            '002';
+%            '243'; 
+%            '253';
+%            '036';
+%            '034'; 
+%            '061';
+%            '023';
+%            '055';
+%            '026';
+%            '251';
+%            '162';
+%            '240';
+%            '250';
+%            '255'; 
+%            '012'; 
+%            '065'; 
+%            '047';
+           '246';
            ];
 
 nfam = length(fampool);
@@ -385,8 +386,19 @@ if remake   % re-calculate all results
 %     fclose(fid);
 %     keyboard
     
-    %%% fam 047
-    fam = '047';
+%     %%% fam 047
+%     fam = '047';
+%     splitoff = 12;  % the twkb trio are poor, pgc trio and klnb are fine
+%     staoff = 8;
+%     mainsta = 1;
+% %     lo = 1.25;
+% %     hi = 6.5;
+%     [ROTS]=calc_rots_noresp(fam,lo,hi,sps,bef,aft,splitoff,staoff,mainsta);
+%     % save all in one file
+%     ROTSALL((1-1)*nsta+1:1*nsta, :) = ROTS;
+    
+    %%% fam 246
+    fam = '246';
     splitoff = 12;  % the twkb trio are poor, pgc trio and klnb are fine
     staoff = 8;
     mainsta = 1;
@@ -403,8 +415,6 @@ if remake   % re-calculate all results
     fprintf(fid,'%d %d %d %d \n',ROTS');
     fclose(fid);
     keyboard
-
-
 
 else   
     %%% fam 243

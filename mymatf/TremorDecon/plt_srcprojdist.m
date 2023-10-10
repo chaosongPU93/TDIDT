@@ -1,5 +1,5 @@
 function [f] = plt_srcprojdist(timevec,locxy,dtime,dist,locxyproj,...
-  dlocxyproj,stats,sps,ttype)
+  dlocxyproj,stats,sps,ttype,wt)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % [f] = plt_srcprojdist(timevec,locxy,dtime,dist,locxyproj,...
 %   dlocxyproj,stats,sps,ttype)
@@ -16,6 +16,7 @@ function [f] = plt_srcprojdist(timevec,locxy,dtime,dist,locxyproj,...
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 defval('ttype','tori');  % default is sort the sources by origin time
+defval('wt',ones(size(timevec))); 
 
 %%%number of sources has to be larger than 2, otherwise there can be only 1 possible line to fit 
 if size(locxy,1) <= 2
@@ -119,8 +120,11 @@ else
   ax=f.ax(4);
   hold(ax,'on');
   ax.Box='on'; grid(ax,'on');
-  p2=scatter(ax,timevec/sps,locxyproj(:,2),15,[.6 1 1],'filled','o','MarkerEdgeColor','k');
-  p1=scatter(ax,timevec/sps,locxyproj(:,1),15,[.5 .5 .5],'filled','o','MarkerEdgeColor','k');
+  wtmax = prctile(wt,95); %use percentile in case
+  refscl = wt./wtmax;
+  refscl(refscl>=1) = 1;  %force the larger amp to be plotted as the same size in case of saturation
+%   scatter(ax,timevec/sps,locxyproj(:,2),15,[.6 1 1],'filled','o','MarkerEdgeColor','k');
+  scatter(ax,timevec/sps,locxyproj(:,1),30*refscl,[.5 .5 .5],'filled','o','MarkerEdgeColor','k');  
   % linear robust least square
   fttpfree = fittype( @(a,b,x) a*x+b);
   fitobjproj = fit(timevec/sps, locxyproj(:,1),fttpfree,'Robust','Bisquare',...
@@ -128,11 +132,36 @@ else
   % output fit parameters
   fitproj = feval(fitobjproj,timevec/sps);
   plot(ax,timevec/sps,fitproj,'-','linewidth',2,'color','k');
+  fitproj = reshape(fitproj,[],1);
+%   binw = stats.gof.rmse;
+%   npropbin = 4;
+%   propbineg = -npropbin/2: 1: npropbin/2;
+%   fitprojbin = repmat(fitproj,1,npropbin+1)+propbineg*binw.*ones(size(fitproj));
+%   for i = 1: npropbin+1
+%     plot(ax,timevec/sps,fitprojbin(:,i),'r--');
+%   end
+%   for i = 1: npropbin
+%     cnt(i) = median((fitprojbin(:,i)+fitprojbin(:,i+1))/2);
+%     ind = find(locxyproj(:,1)>=fitprojbin(:,i) & locxyproj(:,1)<fitprojbin(:,i+1));
+%     amp(i) = median(wt(ind));
+%     sprintf('%.2f \n',sort(wt(ind)))
+%   end
+%   ntbin = 5;
+%   [~,indbin] = binxeqnum(timevec,ntbin);
+%   for i = 1: ntbin
+%     cnt(i) = median(timevec(indbin{i}));
+%     amp(i) = median(wt(indbin{i}));
+%     ampp = median(wt((locxyproj(indbin{i},1)-fitproj(indbin{i}))>=0));
+%     ampn = median(wt((locxyproj(indbin{i},1)-fitproj(indbin{i}))<0));
+%     ampdiff(i) = ampp-ampn;
+%   end
+%   text(ax,0.98,0.85,sprintf('ampsum diff: %.1f',ampp-ampn),...
+%     'HorizontalAlignment','right','Units','normalized','FontSize',9);
   text(ax,0.98,0.95,sprintf('speed: %.1f km / %.1f s',range(fitproj),range(timevec/sps)),...
     'HorizontalAlignment','right','Units','normalized','FontSize',9);
-  text(ax,0.98,0.88,sprintf('Pearson: %.2f',stats.pearwt),...
+  text(ax,0.98,0.90,sprintf('Pearson: %.2f',stats.pearwt),...
     'HorizontalAlignment','right','Units','normalized','FontSize',9);
-  % legend(ax,[p1,p2],'Along prop. direction', 'Orthogonal to prop. dir.','FontSize',9);
+% legend(ax,[p1,p2],'Along prop. direction', 'Orthogonal to prop. dir.','FontSize',9);
   if isequal(ttype,'tori')
     xlabel(ax,'Relative origin time (s)');
   elseif isequal(ttype,'tarvl')
@@ -141,11 +170,29 @@ else
   ylabel(ax,'Projected location (km)');
   ylim(ax,yran);
   longticks(ax,2);
-
+  
+%   f1 = initfig(5,5,1,1); %initialize fig
+%   ax=f1.ax(1); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
+%   plot(ax,cnt/sps,amp,'ko-','MarkerSize',4);
+%   plot(ax,cnt/sps,ampdiff,'ro-','MarkerSize',4);
+%   if isequal(ttype,'tori')
+%     xlabel(ax,'Relative origin time (s)');
+%   elseif isequal(ttype,'tarvl')
+%     xlabel(ax,'Arrival time (s)');
+%   end
+%   ylabel(ax,'Amp');
+%   legend(ax,'median amp','median amp diff wrt prop front');
+% 
+%   f1 = initfig(5,5,1,1); %initialize fig
+%   ax=f1.ax(1); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
+%   plot(ax,cnt,amp,'ko-','MarkerSize',4);
+%   xlabel(ax,'Projected location (km)');
+%   ylabel(ax,'Med amp');
+   
   ax=f.ax(5);
   hold(ax,'on');
   ax.Box='on'; grid(ax,'on');
-  scatter(ax,dtime/sps,dlocxyproj(:,2),15,[.6 1 1],'filled','o','MarkerEdgeColor','k');
+%   scatter(ax,dtime/sps,dlocxyproj(:,2),15,[.6 1 1],'filled','o','MarkerEdgeColor','k');
   scatter(ax,dtime/sps,dlocxyproj(:,1),15,[.5 .5 .5],'filled','o','MarkerEdgeColor','k');
   text(ax,0.98,0.95,strcat({'med. |dloc| of dt\leq1.0s: '},sprintf('%.2f km',...
     median(abs(dlocxyproj(dtime/sps<=1,1))))),'Units','normalized','HorizontalAlignment','right',...
@@ -168,7 +215,7 @@ else
   ax=f.ax(6);
   hold(ax,'on');
   ax.Box='on'; grid(ax,'on');
-  p2=histogram(ax,dlocxyproj(:,2),'BinWidth',0.1,'FaceColor',[.6 1 1],'Orientation','horizontal');
+%   p2=histogram(ax,dlocxyproj(:,2),'BinWidth',0.1,'FaceColor',[.6 1 1],'Orientation','horizontal');
   p1=histogram(ax,dlocxyproj(:,1),'BinWidth',0.1,'FaceColor','k','Orientation','horizontal');
   text(ax,0.98,0.95,sprintf('med. |dloc|: %.2f km',median(abs(dlocxyproj(:,1)))),...
     'Units','normalized','HorizontalAlignment','right','FontSize',9);
@@ -176,8 +223,8 @@ else
   % xlim(ax,[0 50]);
   % ylabel(ax,'Proj. dist. between consecutive sources (km)');
   xlabel(ax,'Counts');
-  legend(ax,[p1,p2],'Along proj. direction', 'Orthogonal to proj. dir.','FontSize',9,...
-    'location','southeast');
+  legend(ax,[p1],'Along proj. direction','FontSize',9,...
+    'location','southeast'); %, 'Orthogonal to proj. dir.'
   longticks(ax,2);
   nolabels(ax,2);
 

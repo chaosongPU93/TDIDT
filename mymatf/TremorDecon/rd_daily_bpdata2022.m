@@ -7,7 +7,7 @@ function [STAopt,STAort,STAnzeros,fileflag] = rd_daily_bpdata2022(year,jday,pren
 % with overlapping etc.
 % This is a mutant version of 'rd_daily_bpdata.m'. It still takes in the 
 % absolute path of the data file, but different from 'rd_daily_bpdata.m',
-% it sets the 'factor' to 1 (unit as nm/s) or 1e-3 (unit as um/s) for all
+% it sets the 'fact' to 1 (unit as nm/s) or 1e-3 (unit as um/s) for all
 % cases, assuming that after IRR using the lastest nominal RESP files.  
 % These RESP files are stored in
 % '/home/data2/chaosong/matlab/allan/data-no-resp/stdresp/CN/ and PO/'.
@@ -15,8 +15,8 @@ function [STAopt,STAort,STAnzeros,fileflag] = rd_daily_bpdata2022(year,jday,pren
 %
 %
 % Chao Song, chaosong@princeton.edu
-% First created date:   2021/11/08
-% Last modified date:   2021/11/08
+% First created date:   2022/11/08
+% Last modified date:   2022/11/08
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 YEAR = int2str(year);

@@ -5,14 +5,17 @@
 % more stations are suitable for deconvolution as well. Through the waxing
 % waning, you would see if the envelope of other station would have a similar
 % shape to that of the trio stations.
+% --2023/09/27, revise the code, as we now know KLNB is the only promising
+%   4th sta, so env of other stations is omitted. Also I want to add the 
+%   temporal density of LFEs from other fams.
+% 
 %
 %
 % Chao Song, chaosong@princeton.edu
 % First created date:   2022/07/25
-% Last modified date:   2022/07/25
+% Last modified date:   2023/09/27
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
- 
 %% Initialization
 %%% SAME if focusing on the same region (i.e. same PERMROTS and POLROTS)
 %%% AND if using the same family, same station trio
@@ -71,9 +74,9 @@ stas=['PGC  '
   'SSIB '
   'SILB '
   'KLNB '
-  'LZB  '
-  'TWKB '
-  'MGCB '
+  % 'LZB  '
+  % 'TWKB '
+  % 'MGCB '
   ];     % determine the trio and order, here the 1st sta is PGC
 nsta=size(stas,1);         %  number of stations
 
@@ -132,23 +135,53 @@ hfout = sortrows(hfout, [daycol, seccol]);
 %%%   in(1:nstanew) loff(1:nstanew) ioff(1:nstanew) ccmaxave(1:nstanew)
 
 ttol = 35;
-tranbst = load(strcat(rstpath, '/MAPS/tdec.bstran',num2str(round(ttol)),'s.pgc002.',cutout(1:4)));
+ntol = 3;
+tranbst = load(strcat(rstpath, '/MAPS/tdec.bstran',num2str(ttol),'s.pgc002.',cutout(1:4)));
 tlen = tranbst(:,3)-tranbst(:,2);
 
 ttol = 1e-3*86400;
 tranmig = load(strcat(rstpath, '/MAPS/migran',num2str(round(ttol)),'s.pgc002'),'w+');
 tranmig(:,2:3) = tranmig(:,2:3)/3600;
 
+% dates and ets
+%%% NOTE: 'dates' is the dates that the tremor is active at the region of interest, so that the
+%%% waveform at the stations on these dates you are looking at mainly comes from the sources at the
+%%% region of interest. We want to see if there is a noticable change in spectra during the burst
+%%% windows on these dates
+dates = unique(tranbst(:,1));
+years = unique(floor(dates/1000));
+nets = length(years);
+
 % figure
 % histogram(tranmig(:,3)-tranmig(:,2));
 
 %% load other catalogs
-%%% load the LFE catalog of Michael Bostock, inside and outside the rectangle in 'locinterp002_4s.m'
+%%%load the LFE catalog of Michael Bostock, inside and outside the rectangle in 'locinterp002_4s.m'
+%%%his time is approximately corrected to the postive waveform peak 
 %obtain the location of fam 002, lon0 and lat0
-loc0 = off2space002([0 0],sps*iup,'interpchao',0); % 8 cols, format: dx,dy,lon,lat,dep,ttrvl,off12,off13
-%format: [fam yyyy mm dd sec dx dy lon lat dep magnitude number-of-stations], 12 cols
-%time should point to the peak, zero-crossing?
-bostcat = ReformBostock(loc0(3),loc0(4),0);
+ftrans = 'interpchao';
+% loc0 = off2space002([0 0],sps*iup,ftrans,0); % 8 cols, format: dx,dy,lon,lat,dep,ttrvl,off12,off13
+% %format: [fam yyyy mm dd sec dx dy lon lat dep magnitude number-of-stations], 12 cols
+% %time should point to the peak, zero-crossing?
+% bostcat = ReformBostock(loc0(3),loc0(4),0);
+
+bosdir = ('/home/data2/chaosong/matlab/allan/BOSTOCK');
+lfefnm = ('newlfeloc');
+lfeloc = load(fullfile(bosdir, lfefnm));
+loc0 = lfeloc(lfeloc(:,1)==2,:);
+%%%if still use the catalog separated by each fam
+%this specifies which MB LFE catalog to use, 'AMR' is updated within 2-4 Hz
+%while 'NEW' is within 0.5-1 Hz
+flag = 'NEW';
+% flag = 'AMR';
+bostname = strcat('/BOSTOCK/update20230916/total_mag_detect_0000_cull_',flag,'.txt');
+bostcatof = ReformBostock(loc0(3),loc0(2),1,bostname);
+bostcatof = bostcatof(bostcatof(:,2)==2003 | bostcatof(:,2)==2004 | bostcatof(:,2)==2005, :);
+bostcatof = bostcatof(bostcatof(:,1)~=2 & bostcatof(:,1)~=47 & bostcatof(:,1)~=246, :);
+bostcatof(:,13) = mag2moment(bostcatof(:,11));
+
+%%%if use the lumped catalog that combine unique events from 002 and 246
+bostcat = load(strcat(bosdir,'/002-246_lumped.2003-2005_cull_',flag,'_chao'));
 
 %the cut-out boundary of 4-s detections
 cutout = 'ellipse';
@@ -174,7 +207,7 @@ bnd = [xcut ycut];
 [iin,ion] = inpolygon(bostcat(:,6),bostcat(:,7),bnd(:,1),bnd(:,2));
 isinbnd = iin | ion;
 bostcati = bostcat(isinbnd == 1, :);
-bostcato = bostcat(isinbnd ~= 1, :);
+% bostcato = bostcat(isinbnd ~= 1, :);
 clear bostcat
 
 %%%load the tremor catalog of John Armbruster
@@ -190,16 +223,27 @@ armcati = armcat(isinbnd == 1, :);
 armcato = armcat(isinbnd ~= 1, :);
 clear armcat
 
+%% How did i not include many of MB's LFEs?
+%all MB's LFEs of the SAME dates that I have been using
+bostdayi = cell(length(dates),1);
+for i = 1: length(dates)
+  date = dates(i);
+  year = floor(date/1000);
+  jday = floor(date-year*1000);
+  a = jul2dat(year,jday);
+
+  temp = bostcati(bostcati(:,2)==year & bostcati(:,3)==a(1) & bostcati(:,4)==a(2),:);
+  bostdayi{i} = sortrows(temp, 5);
+  nbostdayi(i) = size(temp,1);
+  
+  temp = bostcatof(bostcatof(:,2)==year & bostcatof(:,3)==a(1) & bostcatof(:,4)==a(2),:);
+  bostdayof{i} = sortrows(temp, 5);
+end
+bostdayia = cat(1,bostdayi{:});   %MB 002/246 lfes of the same dates I case
+bostdayofa = cat(1,bostdayof{:});   %MB other fams' lfes of the same dates I case
+clear bostdayof
 
 %%
-% dates and ets
-%%% NOTE: 'dates' is the dates that the tremor is active at the region of interest, so that the
-%%% waveform at the stations on these dates you are looking at mainly comes from the sources at the
-%%% region of interest. We want to see if there is a noticable change in spectra during the burst
-%%% windows on these dates
-dates = unique(tranbst(:,1));
-years = unique(floor(dates/1000));
-nets = length(years);
 
 %filtering passband for reading data, confirmed by 'spectrabursts002_4s.m'
 hisig=6.3; % this will give a similar spectral shape between template and signal
@@ -246,16 +290,16 @@ for i = 1: length(dates)  % dates in each ets
   end
 
   %Bostock's LFE catalog on the same date
-  bostdayi = bostcati(bostcati(:,2)==year & bostcati(:,3)==a(1) & bostcati(:,4)==a(2),:);
+  bostdayi = bostdayia(bostdayia(:,2)==year & bostdayia(:,3)==a(1) & bostdayia(:,4)==a(2),:);
   bostdayi = sortrows(bostdayi, 5);
-  bostdayo = bostcato(bostcato(:,2)==year & bostcato(:,3)==a(1) & bostcato(:,4)==a(2),:);
-  bostdayo = sortrows(bostdayo, 5);
+  % bostdayo = bostcato(bostcato(:,2)==year & bostcato(:,3)==a(1) & bostcato(:,4)==a(2),:);
+  % bostdayo = sortrows(bostdayo, 5);
   
-  %Armbruster's tremor catalog on the same date
-  armdayi = armcati(armcati(:,1)==year & armcati(:,2)==a(1) & armcati(:,3)==a(2),:);
-  armdayi = sortrows(armdayi, 4);
-  armdayo = armcato(armcato(:,1)==year & armcato(:,2)==a(1) & armcato(:,3)==a(2),:);
-  armdayo = sortrows(armdayo, 4);
+  % %Armbruster's tremor catalog on the same date
+  % armdayi = armcati(armcati(:,1)==year & armcati(:,2)==a(1) & armcati(:,3)==a(2),:);
+  % armdayi = sortrows(armdayi, 4);
+  % armdayo = armcato(armcato(:,1)==year & armcato(:,2)==a(1) & armcato(:,3)==a(2),:);
+  % armdayo = sortrows(armdayo, 4);
   
   %bursts and 4-s detections of the same day
   rangetemp = tranbst(tranbst(:,1)==date, :);
@@ -272,10 +316,29 @@ for i = 1: length(dates)  % dates in each ets
   tcnti = hfdayi(:, 15);  % the center of detecting win is the 15th col
   tcnto = hfdayo(:, 15);  % the center of detecting win is the 15th col
   tbosti = bostdayi(:,5); % (arrival) time of Bostock's LFE catalog inside the rectangle
-  tbosto = bostdayo(:,5); % (arrival) time of Bostock's LFE catalog outside the rectangle
-  tarmi = armdayi(:,4); % (arrival) time of Armbruster's tremor catalog inside the rectangle
-  tarmo = armdayo(:,4); % (arrival) time of Armbruster's tremor catalog outside the rectangle
-    
+  % tbosto = bostdayo(:,5); % (arrival) time of Bostock's LFE catalog outside the rectangle
+  % tarmi = armdayi(:,4); % (arrival) time of Armbruster's tremor catalog inside the rectangle
+  % tarmo = armdayo(:,4); % (arrival) time of Armbruster's tremor catalog outside the rectangle
+
+  %Bostock's LFEs of other fams 
+  bostdayofi = bostdayofa(bostdayofa(:,2)==year & bostdayofa(:,3)==a(1) & bostdayofa(:,4)==a(2),:);
+  bostdayofi = sortrows(bostdayofi, 5);
+  tbostof = bostdayofi(:,5);
+  %compute the temporal density for 1-min interval
+  subwlen = 60*sps;
+  ovlplen = 0;
+  twins = movingwins(1,86400*sps,subwlen,ovlplen,0);
+  twincnt = floor(mean(twins,2));
+  %find which subwin this lfe's time belongs to
+  iwin = findwhichrange(tbostof*sps,twins);
+  nwin = length(twins);
+  tempden = zeros(nwin,1);
+  for j = 1:nwin
+    tempden(j) = sum(iwin == j);
+  end
+  tempden = [twincnt tempden];
+  tempden = tempden(tempden(:,2)>0, :); 
+
   %read horizontal optimal and orthogonal components
   JDAY = num2zeropadstr(jday,3);
   MO=day2month(jday,year);     % EXTERNAL function, day2month, get the month of one particular date
@@ -297,8 +360,41 @@ for i = 1: length(dates)  % dates in each ets
 %   w = tukeywin(size(STAopt,1),fractap);
 %   tmp = w.* tmp;
   tmp = detrend(tmp); %detrend again for caution
-  [envup,~] = envelope(tmp);
-  
+  envup = envelope(tmp);
+
+  % %%%obtain the CC for each 1-min
+  % msftaddm = 0.5*sps;
+  % msftadd = 20;
+  % ccmin = 0.01;  % depending on the length of trace, cc could be very low
+  % for j = 1:nwin
+  %   envupi = envup(twins(j,1): twins(j,2), 1:3);
+  %   envcc = envupi(1+msftaddm: end-msftaddm, :);
+  %   ccmid = ceil(size(envcc,1)/2);
+  %   ccwlen = round(size(envcc,1)-2*(msftadd+1));
+  %   iup = 1;    % times of upsampling
+  %   %for the whole win, ask how well can you align the noise, does not matter if the location is
+  %   %the most reliable, but the resulting CC is the highest possible
+  %   off1i(1) = 0;
+  %   [off1i(2),off1i(3),cc] = constrained_cc_loose(envcc(:,1:3)',ccmid,...
+  %     ccwlen,msftadd,ccmin,iup);
+  %   %if a better alignment cannot be achieved, use 0,0
+  %   if off1i(2) == msftadd+1 && off1i(3) == msftadd+1
+  %     off1i(2) = 0;
+  %     off1i(3) = 0;
+  %   end
+  %   %Align records
+  %   envali = [];  % win +/-3 s, segment of interest,first 1s will be tapered 
+  %   for ista = 1: 3
+  %     envali(:, ista) = envupi(1+msftaddm-off1i(ista): end-msftaddm-off1i(ista), ista);
+  %   end
+  %   ccw12 = xcorr(envali(:,1), envali(:,2),0,'normalized');  %0-lag maximum cc based on current alignment
+  %   ccw13 = xcorr(envali(:,1), envali(:,3),0,'normalized');
+  %   % ccw23 = xcorr(envali(:,2), envali(:,3),0,'normalized');
+  %   ccaliw(j,1) = (ccw12+ccw13)/2;
+  % end
+  % ccaliw = [twincnt ccaliw];
+  % ccaliw = ccaliw(ccaliw(:,2)>0, :); 
+
   %%
   %%%start the plot, and plot the mean envelope
   ifig = ifig+1;
@@ -397,19 +493,38 @@ for i = 1: length(dates)  % dates in each ets
         end
         
       end
-      
+
+      %plot MB 002/246 LFEs of the same date
+      yloc = ax.YLim(1)+(ax.YLim(2)-ax.YLim(1))*0.87;
+      scatter(ax,tbosti/3600, yloc*ones(size(tbosti)),6,'r','filled');
+
+      %plot the temporal density of MB other fams' LFEs of the same date, in terms of density in 1-win windows
+      yloc = ax.YLim(1)+(ax.YLim(2)-ax.YLim(1))*0.82;
+      scatter(ax,tempden(:,1)/sps/3600, yloc*ones(size(tempden(:,1))),20,tempden(:,2),'filled');%,'MarkerEdgeColor','k'
+      colormap(ax,flipud(colormap(ax,'gray')));
+
+      % %plot the mean CC in 1-win windows
+      % yloc = ax.YLim(1)+(ax.YLim(2)-ax.YLim(1))*0.77;
+      % scatter(ax,ccaliw(:,1)/sps/3600, yloc*ones(size(ccaliw(:,1))),40,ccaliw(:,2)*5,...
+      %   's','filled');%,'MarkerEdgeColor','k'
+      % colormap(ax,flipud(colormap(ax,'gray')));
+
       %label if the time segment is during the local day time or night time 6pm--6am
       if xran(1)>=night(1) && xran(2)<=night(2)
-        text(ax,0.5,0.8,'N','Units','normalized','FontSize',10);
+        text(ax,0.5,0.5,'N','Units','normalized','FontSize',10);
       else
-        text(ax,0.5,0.8,'D','Units','normalized','FontSize',10);
+        text(ax,0.5,0.5,'D','Units','normalized','FontSize',10);
       end
       
       if isub == 1
         for ista = 1: nsta
           text(ax,xran(2)-sublen*0.02,0.25*(ista-1)+0.1,strtrim(stas(ista,:)),...
           'HorizontalAlignment','right');
-          title(ax,'N: local night time, 6pm--6am; D: day');
+          if year == 2003
+            title(ax,'N: local night time 10pm--5am (UTC-8); D: day');
+          else
+            title(ax,'N: local night time 10pm--5am (UTC-7); D: day');
+          end  
         end
       end
       
@@ -419,14 +534,15 @@ for i = 1: length(dates)  % dates in each ets
       end
       
     end
-    
-    
+%      keyboard  
+ 
   end  
 
   %if the same date is finished, print it
   %print the current figure f1
   xlabel(ax,sprintf('Time (hr) on %s %s, %s',mo,dy,yr),'FontSize',10);
   ylabel(ax,'Envelope','FontSize',10);
+%   keyboard  
   fname{ifig,1} = sprintf('envelope002_%dhFig%s_%d_%.1f-%.1f.pdf',...
     sublen,num2zeropadstr(ifig,2),date,losig,hisig);
   print(f.fig,'-dpdf','-fillpage',fullfile(rstpath, '/FIGS',fname{ifig,1}));
@@ -436,11 +552,15 @@ for i = 1: length(dates)  % dates in each ets
 end
 
 %% merge all figures into a single pdf file
-status = system('rm -f /home/data2/chaosong/matlab/allan/data-no-resp/PGCtrio/FIGS/envelope002.pdf');
+status = system('rm -f /home/data2/chaosong/matlab/allan/data-no-resp/PGCtrio/FIGS/envelope002v2.pdf');
 for i = 1:size(fname,1)
   mergenm{i} = fullfile(rstpath, '/FIGS/',fname{i});
 end
-append_pdfs(fullfile(rstpath, '/FIGS/envelope002.pdf'),mergenm);
+append_pdfs(fullfile(rstpath, '/FIGS/envelope002v2.pdf'),mergenm);
+
+%delete separated files
+status = system('rm -f /home/data2/chaosong/matlab/allan/data-no-resp/PGCtrio/FIGS/envelope002_*.pdf');
+
 
 
 
