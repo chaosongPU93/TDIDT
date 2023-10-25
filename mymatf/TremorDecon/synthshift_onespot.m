@@ -4,12 +4,18 @@
 % from LFE templates.
 % But this code tries to put all srcs at one and only one spot, then add
 % different level of noise, which is diff precent of noise that is made of
-% the same amp spectrum of data and randomized phase, times the envelope of
-% data (so that the noise has the same fluctuation as data)
+% the same amp spectrum of synthetics and randomized phase, *[times the 
+% envelope of data (so that the noise has the same fluctuation as data)]
 % 1. in order to see what percentage of noise would make it look like data
 % 2. now there can be 2 end-member synthetic tests: one is different saturation
 %  level, diff source area, and no noise (or little); one is same spot source,
 %  plus diff satur level and diff noise level
+% 3. It should have nothing to do with data, the amp spectrum comes from
+%   the synthetics with a certain saturation level, (and a certain size)
+% 4. Since technically both synthetics have a uniform amp distribution 
+%   (we now know synthetics have a smaller amp fluctuation compared with 
+%   data), you don't have to multiply the envelope of synthetics with noise. 
+%   You just need to match their median envelope for 100% noise 
 %
 %
 %
@@ -262,294 +268,20 @@ else
   % npeaksf
   % keyboard
   
-  
-  %% make synthetic noise that has the same fluctuation as data
-  freqflag='hf';  % flag to indicate whether to do hf or lf;
-  
-  FLAG = 'PGC'; % detector
-  
-  fam = '002';   % family number
-  
-  [timoffrot,~] = GetDays4Stack(fam);
-  nday = size(timoffrot, 1);
-  
-  %Use new LFE catalog
-  CATA = 'new';
-  
-  % get permanent and polaris station rotation parameters, based on 40-sps data
-  sft2=0;     % centroid shift of station 2
-  sft3=0;     % centroid shift of station 3
-  [PERMROTS, POLROTS] = GetRotsCommon(FLAG,fam,CATA,datapath,sft2,sft3);
-  if ~isequal(CATA, 'fixed')
-    reftime = PERMROTS(1,4);     % reftime is the reference time at the 1st station,depends on the choice of 1st station
-    PERMROTS(:,4) = PERMROTS(:,4)-reftime;    % to make sure that 1st station is 0
-    POLROTS(:,4) = POLROTS(:,4)-reftime;
-  end
-  PERMROTS(:,2:3)=pi*PERMROTS(:,2:3)/180.;     % convert 2-3 columns to rad
-  POLROTS(:,2:3)=pi*POLROTS(:,2:3)/180.;
-  
-  %%% corresponds to PERMROTS
-  PERMSTA=['PGC'        % permanent station names
-    'LZB'];
-  POLSTA=['SSIB '           % polaris station names
-    'SILB '
-    'KLNB '
-    'MGCB '
-    'TWKB '];
-  
-  sps = 40;
-  
-  iup = 4;  % upsample 4 times
-  
-  cutout = 'ellipse';
-  
-  %load detections
-  if isequal(fam,'002')
-    cyclskip = 0;
-    mshift=26+cyclskip; %19; %maximum shift for the x-correlations. 19 for 002 Stanford,    % in sps, 0.5s*40sps=20
-    loopoffmax=2.1; %1.5 for standard 1.5-6Hz; 4 for 0.5-1.5Hz.  2 for non-interpolated.   % what is loopoffmax, the circuit of time offsets
-    xcmaxAVEnmin=0.44; %0.44; %0.44 for 002 Stanford %0.45; %0.36 for 4s 1-12 Hz; %0.4 for 4s 1.5-6 Hz and 6s 0.5-1.5Hz; 0.36 for 4s2-8 Hz ; 0.38 for 4s0.75-6 Hz; 0.094 for 128s 2-8Hz;  0.1 for 128s 1.5-6Hz; 0.44 for 3-s window?
-  end
-  hi=6.5;    % frequency band
-  lo=1.25;
-  npo=2;     % poles, passes of filters
-  npa=2;
-  winlensec=4;
-  winoffsec=1;        % window offset in sec, which is the step of a moving window
-  winlen=winlensec*sps;      % length in smaples
-  
-  %load detections inside the cutout boundary of interest, an output of 'locinterp002_4s.m'
-  PREFIX = strcat(fam,'.up.lo',num2str(loopoffmax),'.cc',num2str(xcmaxAVEnmin),'.',...
-    int2str(npo),int2str(npa),'.ms', int2str(mshift));
-  hfbnd = load(strcat(rstpath, '/MAPS/eloc.pgc.tdec_',PREFIX,'_',num2str(lo),'-',num2str(hi),'_',...
-    num2str(winlen/sps),'s',num2str(sps),'sps4add_',cutout(1:4)));
-  daycol = 14;
-  seccol = 16;  % 2 choices here, one is the center of detecting window, other is the start of strongest .5 s
-  hfbnd = sortrows(hfbnd, [daycol, seccol]);
-  off12ran = minmax(hfbnd(:,9)');
-  off13ran = minmax(hfbnd(:,10)');
-  
-  %load all detections, an output of 'locinterp002_4s.m'
-  hfall = load(strcat(rstpath, '/MAPS/eloc.pgc.tdec_',PREFIX,'_',num2str(lo),'-',num2str(hi),'_',...
-    num2str(winlen/sps),'s',num2str(sps),'sps4add_'));
-  hfall = sortrows(hfall, [daycol, seccol]);
-  %get ones outside your boundary
-  hfout = setdiff(hfall,hfbnd,'rows');
-  hfout = sortrows(hfout, [daycol, seccol]);
-  %format as follows:
-  %%% 8+34+4*nstanew cols, if 4 new stas, then will be 58 cols
-  %%% UPDATED at 2021/06/23
-  %%%   dx,dy,lon,lat,dep,tori,off12,off13 (integer samples at upsampled sps)
-  %%%   1:off12(n) 2:off13(n) 3:off12sec 4:off13sec 5:fam 6:date 7:timswin(n)
-  %%%   8:timswin(n)-winlensec/2+idiff/sps 9:xcmaxAVEnbang(nin) 10:loopoff(n)
-  %%%   11:cumsumtrdiff  12:cumsumtrdiff/cumsumtr(winlen)
-  %%%   for the rest, n=n+4;
-  %%%   9:Ampsq(nin) 10:Prior(nin) 11:Post(nin) 12:Prior4(nin) 13:Post4(nin) 14:Prior8(nin)
-  %%%   15:Post8(nin) 16:Prior16(nin) 17:Post16(nin) 18:cc(nin) 19:ccprior(nin)
-  %%%   20:ccpost(nin) 21:ccprior4(nin) 22:ccpost4(nin) 23:STAamp(nin,2) 24:STAamp(nin,3)
-  %%%   25:sumsSTA12n(n,iSTA12bang) 26:sumsSTA13n(n,iSTA13bang)
-  %%%   27:sumsSTA32n(n,iSTA32bang) 28:sigma(nin) 29:sigma12(nin) 30:sigma13(nin)
-  %%%   in(1:nstanew) loff(1:nstanew) ioff(1:nstanew) ccmaxave(1:nstanew)
-  
-  ttol = 35;
-  cutout = 'ellipse';
-  trange = load(strcat(rstpath, '/MAPS/tdec.bstran',num2str(ttol),'s.pgc002.',cutout(1:4)));
-  tlen = trange(:,3)-trange(:,2);
-  nbst = size(trange,1);
-  % dates and ets
-  %%% NOTE: 'dates' is the dates that the tremor is active at the region of interest, so that the
-  %%% waveform at the stations on these dates you are looking at mainly comes from the sources at the
-  %%% region of interest. We want to see if there is a noticable change in spectra during the burst
-  %%% windows on these dates
-  dates = unique(trange(:,1));
-  years = unique(floor(dates/1000));
-  nets = length(years);
-  
-  sps = 160;
-  
-  %filtering passband for reading data, confirmed by 'spectrabursts002_4s.m'
-  hisig=6.3; % this will give a similar spectral shape between template and signal
-  losig=1.8;
-  
-  %%%moving window length in samples for running CC, envelope, etc.
-  %standard window length is about 0.5s, this is about the visual duration of the filtered and unfiltered
-  %template, although in fact to include as least one cycle of the main dipole of template
-  rccmwlen=rccmwsec*sps;
-  % rccmwlen=sps/2;
-  % rccmwlen=sps;
-  
-  idxbst = 181;
-  
-  [iets,i,j] = indofburst(trange,idxbst);
-  
-  % for iets = 3: nets
-  % dates in each ets
-  year = years(iets);
-  datesets = dates(floor(dates/1000)==year);
-  
-  %   for i = 2: length(datesets)
-  
-  date = datesets(i);
-  jday = floor(date-year*1000);
-  a = jul2dat(year,jday);
-  if a(1) == 9
-    mo = 'Sep.';
-  elseif a(1) == 7
-    mo = 'Jul.';
-  else
-    mo = 'Mar.';
-  end
-  dy = num2str(a(2));
-  yr = num2str(a(3));
-  
-  %bursts and 4-s detections of the same day
-  rangetemp = trange(trange(:,1)==datesets(i), :);
-  hfdayi = hfbnd(hfbnd(:,daycol)==datesets(i), :);  % inside bound of the day
-  hfdayo = hfout(hfout(:,daycol)==datesets(i), :);  % outside bound of the day
-  
-  %read horizontal optimal and orthogonal components
-  JDAY = num2zeropadstr(jday,3);
-  MO=day2month(jday,year);     % EXTERNAL function, day2month, get the month of one particular date
-  direc=[datapath, '/arch', yr,'/',MO,'/'];     % directory name
-  prename=[direc,yr,'.',JDAY,'.00.00.00.0000.CN'];    %  path plus prefix of data file,
-  %     disp(prename);
-  [STAopt,STAort,~,fileflag] = rd_daily_bpdata(year,jday,prename,stas,PERMSTA,POLSTA,...
-    PERMROTS,POLROTS,sps,losig,hisig,npo,npa,[],[],[],[]);
-  
-  if fileflag == 0    % means there are missing files
-    fprintf('Day %s / %s will be omitted because of missing files. \n', yr, JDAY);
-    % continue    % continue to the next day
-  end
-  
-  k = idxbst;
-  disp(k);
-  
-  tmaxi = hfdayi(:, seccol); % starting time of max power rate of half sec inside the ellipse
-  tmaxo = hfdayo(:, seccol); % starting time of max power rate of half sec outside the ellipse
-  tcnti = hfdayi(:, 15);  % the center of detecting win is the 15th col
-  
-  tst = rangetemp(j,2); % start and end time of bursts
-  ted = rangetemp(j,3);
-  
-  %how many 4-s detections fall into the burst range
-  indtmaxi = find(tmaxi>=tst-0.1 & tmaxi<=ted+0.1);
-  ninbst(k,1) = length(indtmaxi); %+-0.1 s in case of resolution while saving to file
-  
-  %       %%%%Use a fixed range of time before and after the 0.5-s strongest arrival
-  %       tbuffer = 3;   % buffer time to include some coherent precursor or coda, first 1s will be tapered
-  %       tstbuf = tst-tbuffer; % start and end time of bursts, buffer added
-  %       tedbuf = ted+tbuffer;
-  %%%%Use the start and end of the 4-s detecting window
-  tstbuf = min(tcnti(indtmaxi)-2);
-  tedbuf = max(tcnti(indtmaxi)+2);
-  tlenbuf = tedbuf-tstbuf;
-  
-  %max allowable shift in best alignment
-  %       msftaddm = (round(max(abs([off12ran off13ran])))+1)*sps/40;  %+1 for safety
-  %       msftaddm = sps+1;  %+1 for safety
-  msftaddm = 1.5*sps+1;  %+1 for safety
-  %       msftaddm = round(sps/8);    % maximum allowed shift between 2 traces
-  
-  %have some overshoot, so that the resulted rcc would have the same length as the signal
-  overshoot = rccmwlen/2;
-  %       overshoot = 0;
-  
-  %%%%2022/09/26, obtain all information for data before decon, so that you know the threshold
-  %%%%being used, although this was used mainly for noise experiment, we still use it here
-  %chop a record segment
-  optseg = STAopt(max(floor(tstbuf*sps+1-overshoot-msftaddm),1): ...
-    min(floor(tedbuf*sps+overshoot+msftaddm),86400*sps), :); % sta 1
-  
-  %%%according the linear fitting result of off12 and off13 VS. origin time, we sort of know how
-  %%%much it needs to change the overall offset to change by 1 sample
-  %generate overlapping windows of the same length
-  indst = floor(tstbuf*sps+1);
-  inded = floor(tedbuf*sps);
-  
-  %% making synthetic noise as the base
-  %obtain the amp and phase spectra of records via fft
-  nfft = size(optseg,1); % number of points in fft
-  [xf,ft,amp,pha] = fftspectrum(optseg(:,2:end), nfft, sps,'twosided');
-  
-  %uniform, random phase with the same span [-pi,pi];
-  mpharan = minmax(pha');
-  seedpool = 10:10:40;
-  seed = idxbst;
-  %       for ise = 1: length(seedpool)
-  %       seed = seedpool(ise);
-  rng(seed);
-  pharand = (rand(nfft,nsta)-0.5)*2*pi;  %make the phases span from -pi to pi
-  
-  %construct record with the same amplitude but random phase
-  xfrand = amp.*nfft.*exp(1i.*pharand);
-  optsegnoi = real(ifft(xfrand,nfft));
-  
-  xnoi1 = optsegnoi; %synthetic noise
-  
-  xnoi = xnoi1;
-  % ind = find(impindepst(:,1)/sps >= xnoi(1) & impindepst(:,1)/sps <= xnoi(2));
-  
-  %%%Different scaling schemes
-  %       %1. To make noise have the median amp of data
-  %       sclfact = median(envelope(detrend(optseg(:,2:end))));
-  %2. To make noise have the same fluctuation as data
-  env = envelope(detrend(optseg(:,2:end)));
-  % sclfact = env./range(env);  %normalize
-  sclfact = env;
-  %       %3. To make noise have the median amp of decon sources from data
-  %       sclfact = 6.4461e-01*mean(spread(1:3))/2;
-  %scale the noise so that it has amp fluctuation as data
-  xnoi = xnoi .* sclfact;
-  
-  %normalize so that noi has the same median env as data
-  envn = envelope(detrend(xnoi));
-  xnoi = xnoi .* median(env) ./ median(envn);
-  median(env) - median(envelope(detrend(xnoi)))
-  
-  figure
-  subplot(311)
-  plot((1:size(optseg,1))/sps,optseg(:,2),'r','linew',1); hold on
-  plot((1:size(optseg,1))/sps,optseg(:,3),'b','linew',1);
-  plot((1:size(optseg,1))/sps,optseg(:,4),'k','linew',1);
-  text(0.95,0.9,'Data','Units','normalized','HorizontalAlignment','right');
-  %       xlabel('Samples at 160 sps');
-  xlabel('Time (s)');
-  ylabel('Amplitude');
-  xlim([0 size(optseg,1)]/sps);
-  ylim([-1.2 1.2]);
-  
-  subplot(312)
-  plot((1:size(optseg,1))/sps,xnoi(:,1),'r','linew',1); hold on
-  plot((1:size(optseg,1))/sps,xnoi(:,2),'b','linew',1);
-  plot((1:size(optseg,1))/sps,xnoi(:,3),'k','linew',1);
-  text(0.95,0.9,'100% noise','Units','normalized','HorizontalAlignment','right');
-  %       xlabel('Samples at 160 sps');
-  xlabel('Time (s)');
-  ylabel('Amplitude');
-  xlim([0 size(optseg,1)]/sps);
-  ylim([-1.2 1.2]);
-  
-  subplot(313)
-  plot((1:size(optseg,1))/sps,optseg(:,2)+xnoi(:,1),'r','linew',1); hold on
-  plot((1:size(optseg,1))/sps,optseg(:,3)+xnoi(:,2),'b','linew',1);
-  plot((1:size(optseg,1))/sps,optseg(:,4)+xnoi(:,3),'k','linew',1);
-  text(0.95,0.9,'Data+100% noise','Units','normalized','HorizontalAlignment','right');
-  %       xlabel('Samples at 160 sps');
-  xlabel('Time (s)');
-  ylabel('Amplitude');
-  xlim([0 size(optseg,1)]/sps);
-  ylim([-1.2 1.2]);
-  
-  keyboard
+ 
   
   %% generate synthetic sources
   %%%Specify the amplitude-frequency (counts) distribution
   distr='UN'  % uniform distribution
   
-  % Twin=0.5*3600+3+2*ceil(greenlen/sps); %Early and late portions will be deleted. Twin includes only the early portion. In seconds.
-  % winlen=Twin*sps+1;
-  winlen = size(xnoi,1)+greenlen-1;
-  Twin = winlen/sps;
+  %%%specify distribution for source location
+  % distrloc = 'custompdf'; %using a custom PDF function
+  distrloc = 'uniform'; %uniformly random in a specified region,
+  
+  Twin=0.5*3600+3+2*ceil(greenlen/sps); %Early and late portions will be deleted. Twin includes only the early portion. In seconds.
+  winlen=Twin*sps+1;
+%   winlen = size(xnoi,1)+greenlen-1;
+%   Twin = winlen/sps;
   skiplen=greenlen;
   %%%for the duration of templates, there are several options
   %%%1. (ppeak-npeak)*2 of the bb template: 44;54;38
@@ -571,6 +303,8 @@ else
   synth=zeros(winlen+greenlen,nsta);
   
   nouts=length(writes);
+  seed=round(writes(1)/5e3); %for random number generator
+
   
   %%%specify which time is uniform in time
   % timetype = 'tarvl';
@@ -611,7 +345,8 @@ else
   
   [synths,mommax,sources,greensts]=csplaw3c(writes,winlen,skiplen,synth,green,b,...
     xygrid,sps,fracelsew,seed,timetype,ftrans,stas);
-  
+ 
+  %%
   %%% a simple plot the synthetics
   figure
   nrow = length(writes)+1;
@@ -653,68 +388,14 @@ else
   end
   xlabel(sprintf('Samples at %d Hz',sps),'FontSize',12);
   
-  tmpgrid = xygrid;
-  tmpgrid(:,1:2)=round(sps/40*tmpgrid(:,1:2)); % *4 to get to 160 sps from 40.
-  insat = 2;  %which saturation to look at
-  n=writes(insat);
-  a = squeeze(sources(1:n,:,insat));
-  b = a(any(a,2),:);
-  source=b;
-  off = tmpgrid(source(:,2),1:2); %note that 'tmpgrid' has the desired sps
-  
-  close all
-  
-  %% filter data
-  for insat = 1: nnsat
-    for ista = 1:nsta
-      synths(:,ista,insat) = Bandpass(synths(:,ista,insat), sps, losig, hisig, 2, 2, 'butter');
-    end
-  end
-  
-  %% a glance of signal
-  %add simulated noise to the current burst window
-  insat = 2;
-  tmp = synths(:,:,insat) + xnoi;
-  
-  figure
-  subplot(311)
-  plot((1:size(xnoi,1))/sps,synths(:,1,insat),'r','linew',1); hold on
-  plot((1:size(xnoi,1))/sps,synths(:,2,insat),'b','linew',1);
-  plot((1:size(xnoi,1))/sps,synths(:,3,insat),'k','linew',1);
-  text(0.95,0.9,sprintf('Synthetics with sat=%.1f',nsat(insat)),'Units','normalized',...
-    'HorizontalAlignment','right');
-  %       xlabel('Samples at 160 sps');
-  xlabel('Time (s)');
-  ylabel('Amplitude');
-  % xlim([0 size(xnoi,1)]/sps);
-  xlim([0 30]);
-  ylim([-1.2 1.2]);
-  
-  subplot(312)
-  plot((1:size(xnoi,1))/sps,xnoi(:,1),'r','linew',1); hold on
-  plot((1:size(xnoi,1))/sps,xnoi(:,2),'b','linew',1);
-  plot((1:size(xnoi,1))/sps,xnoi(:,3),'k','linew',1);
-  text(0.95,0.9,'100% noise','Units','normalized','HorizontalAlignment','right');
-  %       xlabel('Samples at 160 sps');
-  xlabel('Time (s)');
-  ylabel('Amplitude');
-  % xlim([0 size(xnoi,1)]/sps);
-  xlim([0 30]);
-  ylim([-1.2 1.2]);
-  
-  subplot(313)
-  plot((1:size(xnoi,1))/sps,tmp(:,1),'r','linew',1); hold on
-  plot((1:size(xnoi,1))/sps,tmp(:,2),'b','linew',1);
-  plot((1:size(xnoi,1))/sps,tmp(:,3),'k','linew',1);
-  text(0.95,0.9,'Synthetics+100% noise','Units','normalized','HorizontalAlignment','right');
-  %       xlabel('Samples at 160 sps');
-  xlabel('Time (s)');
-  ylabel('Amplitude');
-  % xlim([0 size(xnoi,1)]/sps);
-  xlim([0 30]);
-  ylim([-1.2 1.2]);
-  
-  keyboard
+%   tmpgrid = xygrid;
+%   tmpgrid(:,1:2)=round(sps/40*tmpgrid(:,1:2)); % *4 to get to 160 sps from 40.
+%   insat = 2;  %which saturation to look at
+%   n=writes(insat);
+%   a = squeeze(sources(1:n,:,insat));
+%   b = a(any(a,2),:);
+%   source=b;
+%   off = tmpgrid(source(:,2),1:2); %note that 'tmpgrid' has the desired sps
   
   %% compose new synthetic waveform and carry out deconvolution
   %%%flag for validating if ground truth of sources can recover the record
@@ -745,6 +426,50 @@ else
   % pltsrcflag3 = 1;
   pltsrcflag3 = 0;
   
+%   %%%%%%%%%%%%% params of synthetics from diff sat levels and region sizes %%%%%%%%%%%%
+%   %%%specify shape of the source region
+%   srcregion='ellipse';
+%   % srcregion='rectangle';
+%   % srcregion='circle';
+%   
+%   %variation of source region size
+%   if strcmp(srcregion,'ellipse')
+%     semia = 1.75*(0.6:0.2:2.0);
+%     semib = 1.25*(0.6:0.2:2.0);
+%     nreg = length(semia);
+%   end
+%   
+%   %'ireg' is chosen based on CC and median sep from noise-free synthetic experiment comparison with data
+%   ireg = 5;
+%   disp(semia(ireg));
+%   disp(semib(ireg));
+%   
+%   %params of limited source region, subject to variation!
+%   if strcmp(srcregion,'circle')
+%     shiftor=[0.2 0.2]; %(in km) %center of the same ellipse of my 4-s catalog
+%     radi=1.25; %radius
+%     [xcut,ycut] = circle_chao(shiftor(1),shiftor(2),radi,0.01);
+%   elseif strcmp(srcregion,'ellipse')
+%     xaxis = semia(ireg);
+%     yaxis = semib(ireg);
+%     % xaxis=1.75; %axis length of the same ellipse of my 4-s catalog
+%     % yaxis=1.25;
+%     shiftor=[0.2 0.2]; %(in km) %center of the same ellipse of my 4-s catalog
+%     [xcut,ycut] = ellipse_chao(shiftor(1),shiftor(2),xaxis,yaxis,0.01,45,shiftor);
+%   end
+%   
+%   %%%file name prefix of synthetics
+%   if strcmp(srcregion,'ellipse')
+%     fname = ['/synthetics/STAS.',distr,'.',int2str(sps),'sps.',srcregion(1:3),'_',...
+%       num2str(xaxis),'-',num2str(yaxis),'.diam',num2str(diam),'.else',num2str(fracelsew,2),...
+%       'nsat'];
+%   elseif strcmp(srcregion,'circle')
+%     fname = ['/synthetics/STAS.',distr,'.',int2str(sps),'sps.',srcregion(1:3),...
+%       '_',num2str(radi),'.diam',num2str(diam),'.else',num2str(fracelsew,2),...
+%       'nsat'];
+%   end
+%   %%%%%%%%%%%%% params of synthetics from diff sat levels and region sizes %%%%%%%%%%%%
+  
   %different percent of noise
   perctrial = 0.1*(0:1:10)';
   ntrial = length(perctrial);
@@ -754,24 +479,164 @@ else
   imp4th = cell(nnsat,ntrial);
   
   %%%loop for noise level
-  for iperc = 1: ntrial
+  for iperc = ntrial: ntrial
     
     perc = perctrial(iperc);
     disp(perc);
     
-    noiseg = xnoi .*perc;
+    synnew = synths;  %time, station, sat
     
-    synnew = synths;
     %%%loop for saturation level
     for insat = 1: nnsat
       %   insat = 1;
       disp(nsat(insat));
       
+      %%%load synthetics of certain saturation level
+%       optseg = load(strcat(workpath,fname,num2str(nsat(insat))));
+      optseg = synths(:,:,insat);
+      
+%       %%%load sources
+%       synsrc = load(strcat(workpath,fname,num2str(nsat(insat)),'_sources'));
+%       if strcmp(distrloc, 'uniform')
+%         xygrid = load([workpath,'/synthetics/synsrcloc.',distr,'.',int2str(sps),'sps.',srcregion(1:3),...
+%           '_',num2str(xaxis),'-',num2str(yaxis),'.diam',num2str(diam),'_grd']);
+%         tmp = xygrid(synsrc(:,2),:);
+%         synsrc = [synsrc(:,1) tmp(:,1:4) ones(length(tmp),1)];  %[indtarvl, off12, off13, loce, locn, amp]
+%       elseif strcmp(distrloc, 'custompdf')
+%         [loc, indinput] = off2space002(synsrc(:,2:3),sps,ftrans,0);
+%         synsrc = [synsrc(:,1) loc(:,1:4) ones(length(loc),1)];  %[indtarvl, off12, off13, loce, locn, amp]
+%       end
+      
+      %%% make noise by amp spectrum of synthetics and random phase
+      %obtain the amp and phase spectra of records via fft
+      nfft = size(optseg,1); % number of points in fft
+      [xf,ft,amp,pha] = fftspectrum(optseg(:,1:end), nfft, sps,'twosided');
+      
+      %uniform, random phase with the same span [-pi,pi];
+      mpharan = minmax(pha');
+      
+      rng(seed);
+      pharand = (rand(nfft,nsta)-0.5)*2*pi;  %make the phases span from -pi to pi
+      
+      %construct record with the same amplitude but random phase
+      xfrand = amp.*nfft.*exp(1i.*pharand);
+      optsegnoi = real(ifft(xfrand,nfft));
+      
+      xnoi1 = optsegnoi; %synthetic noise
+      
+      xnoi = xnoi1;
+      % ind = find(impindepst(:,1)/sps >= xnoi(1) & impindepst(:,1)/sps <= xnoi(2));
+      
+      %%%Different scaling schemes
+%       %1. To make noise have the median amp of data
+%       sclfact = median(envelope(detrend(optseg(:,2:end))));
+      %2. To make noise have the same fluctuation as data
+      env = envelope(detrend(optseg(:,1:end)));
+      % sclfact = env./range(env);  %normalize
+      sclfact = env;
+%       %3. To make noise have the median amp of decon sources from data
+%       sclfact = 6.4461e-01*mean(spread(1:3))/2;
+
+      %scale the noise so that it has amp fluctuation as data
+%       xnoi = xnoi .* sclfact;
+      
+      %normalize so that noi has the same median env as data
+      envn = envelope(detrend(xnoi));
+      xnoi = xnoi .* median(env) ./ median(envn);
+      median(env) - median(envelope(detrend(xnoi)))
+      
+      figure
+      subplot(311)
+      plot((1:size(optseg,1))/sps,optseg(:,1),'r','linew',1); hold on
+      plot((1:size(optseg,1))/sps,optseg(:,2),'b','linew',1);
+      plot((1:size(optseg,1))/sps,optseg(:,3),'k','linew',1);
+      text(0.95,0.9,sprintf('syn from sat: %.1f',nsat(insat)),'Units','normalized',...
+        'HorizontalAlignment','right');
+      %       xlabel('Samples at 160 sps');
+      xlabel('Time (s)');
+      ylabel('Amplitude');
+      xlim([0 size(optseg,1)]/sps);
+      ax = gca; yran = ax.YLim;      
+%       ylim([-1.2 1.2]);
+      
+      subplot(312)
+      plot((1:size(optseg,1))/sps,xnoi(:,1),'r','linew',1); hold on
+      plot((1:size(optseg,1))/sps,xnoi(:,2),'b','linew',1);
+      plot((1:size(optseg,1))/sps,xnoi(:,3),'k','linew',1);
+      text(0.95,0.9,'100% assembled noise','Units','normalized','HorizontalAlignment','right');
+      %       xlabel('Samples at 160 sps');
+      xlabel('Time (s)');
+      ylabel('Amplitude');
+      xlim([0 size(optseg,1)]/sps);
+      ylim(yran);
+            
+      subplot(313)
+      plot((1:size(optseg,1))/sps,optseg(:,1)+xnoi(:,1),'r','linew',1); hold on
+      plot((1:size(optseg,1))/sps,optseg(:,2)+xnoi(:,2),'b','linew',1);
+      plot((1:size(optseg,1))/sps,optseg(:,3)+xnoi(:,3),'k','linew',1);
+      text(0.95,0.9,'syn + 100% noise','Units','normalized','HorizontalAlignment','right');
+      %       xlabel('Samples at 160 sps');
+      xlabel('Time (s)');
+      ylabel('Amplitude');
+      xlim([0 30]);
+      ylim(yran);
+%       keyboard
+      
+      %some percent of assembled noise
+      noiseg = xnoi .*perc;
+    
       %add simulated noise to the current burst window
       tmp = synths(:,:,insat);
       synnew(:,:,insat) = tmp + noiseg;
       
-      %%%load synthetics of certain saturation level
+%       %%%filter data
+%       for ista = 1:nsta
+%         synnew(:,ista,insat) = Bandpass(synnew(:,ista,insat), sps, losig, hisig, 2, 2, 'butter');
+%       end
+      
+      %%
+      %%%a glance of signal
+      figure
+      subplot(311)
+      plot((1:size(synths,1))/sps,synths(:,1,insat),'r','linew',1); hold on
+      plot((1:size(synths,1))/sps,synths(:,2,insat),'b','linew',1);
+      plot((1:size(synths,1))/sps,synths(:,3,insat),'k','linew',1);
+      text(0.95,0.9,sprintf('Single-spot synthetics with sat=%.1f',nsat(insat)),'Units','normalized',...
+        'HorizontalAlignment','right');
+      %       xlabel('Samples at 160 sps');
+      xlabel('Time (s)');
+      ylabel('Amplitude');
+      % xlim([0 size(xnoi,1)]/sps);
+      xlim([0 30]);
+      ax = gca; yran = ax.YLim;      
+      
+      subplot(312)
+      plot((1:size(synths,1))/sps,noiseg(:,1),'r','linew',1); hold on
+      plot((1:size(synths,1))/sps,noiseg(:,2),'b','linew',1);
+      plot((1:size(synths,1))/sps,noiseg(:,3),'k','linew',1);
+      text(0.95,0.9,sprintf('%d%% noise',round(perc*100)),'Units','normalized','HorizontalAlignment','right');
+      %       xlabel('Samples at 160 sps');
+      xlabel('Time (s)');
+      ylabel('Amplitude');
+      % xlim([0 size(xnoi,1)]/sps);
+      xlim([0 30]);
+      ylim(yran);
+      
+      subplot(313)
+      plot((1:size(synths,1))/sps,synnew(:,1,insat),'r','linew',1); hold on
+      plot((1:size(synths,1))/sps,synnew(:,2,insat),'b','linew',1);
+      plot((1:size(synths,1))/sps,synnew(:,3,insat),'k','linew',1);
+      text(0.95,0.9,'Synthetics+noise','Units','normalized','HorizontalAlignment','right');
+      %       xlabel('Samples at 160 sps');
+      xlabel('Time (s)');
+      ylabel('Amplitude');
+      % xlim([0 size(xnoi,1)]/sps);
+      xlim([0 30]);
+      ylim(yran);
+      
+      close all
+  
+      %% load synthetics of certain saturation level
       STAopt = synnew(:,:,insat);
       
       %%%load sources
@@ -779,7 +644,6 @@ else
       a = squeeze(sources(1:n,:,insat));
       b = a(any(a,2),:);
       synsrc=b;
-      
       tmp = xygrid(synsrc(:,2),:);
       synsrc = [synsrc(:,1) tmp(:,1:4) ones(length(tmp),1)];  %[indtarvl, off12, off13, loce, locn, amp]
       
@@ -886,12 +750,13 @@ else
       end
       
       %% filter data (and templates)
-      % %%filter data
-      % optseg = [];
-      % for ista = 1:nsta
-      %   optseg(:,ista) = Bandpass(STAopt(:,ista), sps, losig, hisig, 2, 2, 'butter');
-      % end
+      %%filter data
       optseg = STAopt;
+      hisig=6.3; % this will give a similar spectral shape between template and signal
+      losig=1.8;
+      for ista = 1:nsta
+        optseg(:,ista) = Bandpass(STAopt(:,ista), sps, losig, hisig, 2, 2, 'butter');
+      end
       
       %%%important, does the data actucally have a similar spectral shape to templates
       if testfreqflag
@@ -1840,35 +1705,45 @@ for iperc = 1: ntrial
 end %loop end for noise level
 
 %% Summary of amplitude ratio
-%%%loop for noise level
-for iperc = 1: ntrial
-  perc = perctrial(iperc);
-  disp(perc);
-  
-  %%%loop for saturation level
-  for insat = 1: nnsat
-    disp(nsat(insat));
-    
-    f3 = initfig(16,8,2,4); %plot histograms of source amp
-    supertit(f3.ax,sprintf('noise: %.1f, Secondary sources removed & Checkd at 4th stas',...
-      perc));
-    %     f4 = initfig(16,4,1,4); %plot histograms of source amp
-    %     supertit(f4.ax,'Checkd at 4th stas');
-    
-    impindepst = imp{insat,iperc};
-    srcampr = srcamprall{insat,iperc};
-    f3.ax(1:3) = plt_deconpk_rat_comb(f3.ax(1:3),srcampr,impindepst,'k','hist');
-    
-    impindepst = imp4th{insat,iperc};
-    srcampr4th = srcamprall4th{insat,iperc};
-    f3.ax(5:end) = plt_deconpk_rat_comb4th(f3.ax(5:end),srcampr4th,impindepst,'k','hist');
-    
-    %     keyboard
-  end %loop end for saturation level
-end %loop end for noise level
+% %%%%%%%%% you can choose to plot the actual histogram for each sat and noise
+% %%%loop for noise level
+% for iperc = 1: ntrial
+%   perc = perctrial(iperc);
+%   disp(perc);
+%   %%%loop for saturation level
+%   for insat = 1: nnsat
+%     disp(nsat(insat));    
+%     f3 = initfig(16,8,2,4); %plot histograms of source amp
+%     supertit(f3.ax,sprintf('noise: %.1f, Secondary sources removed & Checkd at 4th stas',...
+%       perc));
+%     impindepst = imp{insat,iperc};
+%     srcampr = srcamprall{insat,iperc};
+%     f3.ax(1:3) = plt_deconpk_rat_comb(f3.ax(1:3),srcampr,impindepst,'k','hist');
+%     impindepst = imp4th{insat,iperc};
+%     srcampr4th = srcamprall4th{insat,iperc};
+%     f3.ax(5:end) = plt_deconpk_rat_comb4th(f3.ax(5:end),srcampr4th,impindepst,'k','hist');   
+%   end %loop end for saturation level
+% end %loop end for noise level
+% %%%%%%%%% you can choose to plot the actual histogram for each sat and noise
+
+%%%%%%%%% or only plot the median & mad for each sat and noise
+f = initfig(12,8,2,3); %initialize fig
+for iperc = 1: ntrial 
+  label{iperc} = sprintf('noise=%.1f',perctrial(iperc));
+end
+f=plt_deconpk_rat_stat(f,nsat,label,msrcampr,madsrcampr);
+stit = supertit(f.ax,'Secondary sources removed');
+movev(stit,0.3);
+
+f = initfig(15,8,2,4); %initialize fig
+f=plt_deconpk_rat_stat(f,nsat,label,msrcampr4th,madsrcampr4th);
+stit = supertit(f.ax,'Checkd at 4th stas');
+movev(stit,0.3);
+%%%%%%%%% or only plot the median & mad for each sat and noise
+
 
 %% consecutive dist along min-scatter VS saturation rate & region size
-f = initfig(12,4,1,3); %initialize fig
+f = initfig(12,5,1,3); %initialize fig
 color = jet(ntrial);
 ax=f.ax(1); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
 for iperc = 1: ntrial
@@ -1877,19 +1752,27 @@ for iperc = 1: ntrial
 end
 legend(ax,p,label);
 title(ax,'Grouped Total');
-xlabel(ax,'Saturation level (log)');
-ylabel(ax,'med. consec. dist. along min-scatter direc');
+xlabel(ax,'log_{10}(Saturation)');
+ylabel(ax,'Distance (km)');
+yran = [0 0.5];
+ylim(ax,yran);
 
 ax=f.ax(2); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
 for iperc = 1: ntrial
   plot(ax,log10(nsat),mprojx22all(:,iperc),'-o','markersize',4,'color',color(iperc,:));
 end
 title(ax,'Secondary sources removed');
+ylim(ax,yran);
 
 ax=f.ax(3); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
 for iperc = 1: ntrial
   plot(ax,log10(nsat),mprojx32all(:,iperc),'-o','markersize',4,'color',color(iperc,:));
 end
 title(ax,'Checkd at 4th stas');
+ylim(ax,yran);
+
+stit = supertit(f.ax,'Med. dist. along min-error direc from each to all others w/i 2 s');
+movev(stit,0.4);
+
 
 

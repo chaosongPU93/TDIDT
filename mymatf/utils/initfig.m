@@ -18,7 +18,10 @@ function [f] = initfig(widin,htin,nrow,ncol,ifig)
 % First created date:   2022/03/12
 % Last modified date:   2022/03/12
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+defval('widin',6);
+defval('htin',5);
+defval('nrow',1);
+defval('ncol',1);
 defval('ifig',[]);
 
 % get the scrsz in pixels and number of pixels per inch of monitor 1

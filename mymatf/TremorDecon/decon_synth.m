@@ -30,8 +30,8 @@ clc
 close all
 
 %%%Flag to indicate if it is necessary to recalculate everything
-% flagrecalc = 0;
-flagrecalc = 1;
+flagrecalc = 0;
+% flagrecalc = 1;
 
 if ~flagrecalc
   load('rst_decon_synth.mat');
@@ -1452,6 +1452,7 @@ for ireg = 1: nreg
     shiftor=[0.2 0.2]; %(in km) %center of the same ellipse of my 4-s catalog
     [xcut,ycut] = ellipse_chao(shiftor(1),shiftor(2),xaxis,yaxis,0.01,45,shiftor);
   end
+  
   %%%loop for saturation level
   for insat = 1: nnsat
     
@@ -1584,35 +1585,47 @@ end %loop end for src region size
 
 
 %% Summary of amplitude ratio 
+% %%%%%%%%% you can choose to plot the actual histogram for each sat and noise
 %%%loop for region size
-for ireg = 7: nreg
-  disp(semia(ireg));
-  disp(semib(ireg));
+% for ireg = 1: nreg
+%   disp(semia(ireg));
+%   disp(semib(ireg));
+%   %%%loop for saturation level
+%   for insat = 1: nnsat
+%     disp(nsat(insat));
+%     f3 = initfig(16,8,2,4); %plot histograms of source amp
+%     supertit(f3.ax,'Secondary sources removed & Checkd at 4th stas');
+%     impindepst = imp{insat,ireg};
+%     srcampr = srcamprall{insat,ireg};
+%     f3.ax(1:3) = plt_deconpk_rat_comb(f3.ax(1:3),srcampr,impindepst,'k','hist');  
+%     impindepst = imp4th{insat,ireg};
+%     srcampr4th = srcamprall4th{insat,ireg};
+%     f3.ax(5:end) = plt_deconpk_rat_comb4th(f3.ax(5:end),srcampr4th,impindepst,'k','hist');  
+%   end %loop end for saturation level 
+% end %loop end for src region size
+% %%%%%%%%% you can choose to plot the actual histogram for each sat and noise
 
-  %%%loop for saturation level
-  for insat = 1: nnsat
-    disp(nsat(insat));
+%%%%%%%%% or only plot the median & mad for each sat and noise
+f = initfig(12,8,2,3); %initialize fig
+for ireg = 1: nreg
+  label{ireg} = sprintf('a/2=%.2f,b/2=%.2f',semia(ireg),semib(ireg));
+end
+f=plt_deconpk_rat_stat(f,nsat,label,msrcampr,madsrcampr);
+stit = supertit(f.ax,'Secondary sources removed');
+movev(stit,0.3);
+ylim(f.ax(4:end),[0 0.3]);
+xlim(f.ax(:),[-0.5 2]);
 
-    f3 = initfig(16,8,2,4); %plot histograms of source amp
-    supertit(f3.ax,'Secondary sources removed & Checkd at 4th stas');
-%     f4 = initfig(16,4,1,4); %plot histograms of source amp
-%     supertit(f4.ax,'Checkd at 4th stas');
-    
-    impindepst = imp{insat,ireg};
-    srcampr = srcamprall{insat,ireg};
-    f3.ax(1:3) = plt_deconpk_rat_comb(f3.ax(1:3),srcampr,impindepst,'k','hist');  
-
-    impindepst = imp4th{insat,ireg};
-    srcampr4th = srcamprall4th{insat,ireg};
-    f3.ax(5:end) = plt_deconpk_rat_comb4th(f3.ax(5:end),srcampr4th,impindepst,'k','hist');  
-
-%     keyboard  
-  end %loop end for saturation level 
-end %loop end for src region size
-
+f = initfig(15,8,2,4); %initialize fig
+f=plt_deconpk_rat_stat(f,nsat,label,msrcampr4th,madsrcampr4th);
+stit = supertit(f.ax,'Checkd at 4th stas');
+movev(stit,0.3);
+ylim(f.ax(5:end),[0 0.3]);
+xlim(f.ax(:),[-0.5 2]);
+%%%%%%%%% or only plot the median & mad for each sat and noise
 
 %% consecutive dist along min-scatter VS saturation rate & region size
-f = initfig(12,4,1,3); %initialize fig
+f = initfig(12,5,1,3); %initialize fig
 color = jet(nreg);
 ax=f.ax(1); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
 for ireg = 1: nreg
@@ -1622,8 +1635,10 @@ for ireg = 1: nreg
 end
 legend(ax,p,label);
 title(ax,'Grouped Total');
-xlabel(ax,'Saturation level (log)');
-ylabel(ax,'med. dist. along min-scatter to all srcs w/i 2 s');
+xlabel(ax,'log_{10}(Saturation)');
+ylabel(ax,'Distance (km)');
+yran = [0 1];
+ylim(ax,yran);
 
 ax=f.ax(2); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
 for ireg = 1: nreg
@@ -1631,6 +1646,7 @@ for ireg = 1: nreg
   plot(ax,log10(nsat),mprojx22all(:,ireg),'-o','markersize',4,'color',color(ireg,:));
 end
 title(ax,'Secondary sources removed');
+ylim(ax,yran);
 
 ax=f.ax(3); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
 for ireg = 1: nreg
@@ -1638,6 +1654,10 @@ for ireg = 1: nreg
   plot(ax,log10(nsat),mprojx32all(:,ireg),'-o','markersize',4,'color',color(ireg,:));
 end
 title(ax,'Checkd at 4th stas');
+ylim(ax,yran);
+
+stit = supertit(f.ax,'Med. dist. along min-error direc from each to all others w/i 2 s');
+movev(stit,0.4);
 
 % keyboard
 

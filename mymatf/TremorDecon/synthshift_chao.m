@@ -301,7 +301,8 @@ rng('default');
 %%%Here the noise is 'uniform' in time!
 % noistd = 5e-2;
 % noistd = 2.e-7;
-noistd = 2.0e-4;
+% noistd = 2.0e-4;
+noistd = 0; %noise-free
 synth=noistd*(randn(winlen+greenlen+2*10,nsta)-0.5); %+2*10 a little extra, for jiggering 2nd & 3rd stations.% for ista=1:nsta
 
 nouts=length(writes);
@@ -605,7 +606,7 @@ elseif strcmp(distrloc,'uniform')
     semia = 1.75*(0.6:0.2:2.0);
     semib = 1.25*(0.6:0.2:2.0);
     nreg = length(semia);
-    ireg = 8;
+    ireg = 1;
     xaxis = semia(ireg); %axis length of the same ellipse of my 4-s catalog
     yaxis = semib(ireg);
     % xaxis=1.75; %axis length of the same ellipse of my 4-s catalog
