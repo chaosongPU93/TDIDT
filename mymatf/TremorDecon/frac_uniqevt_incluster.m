@@ -1,0 +1,111 @@
+function [fracsrc2all, dfracsrc2all]=frac_uniqevt_incluster(nbst,imp,nsrc,mmax)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% axall=plt_deconpk_rat_stat(axall,stat)
+%
+% This function is to plot the derived statistics from the amp ratio of 
+% sources 12, 13, 23 (and 14 if a 4th sta is involved), rather than the 
+% histogram or scatter like 'plt_deconpk_rat_comb.m'. The purpose is to
+% ease the summary of variation in ratio wrt noise level, sat level, etc.
+% 
+% 
+%
+% Chao Song, chaosong@princeton.edu
+% First created date:   2023/10/18
+% Last modified date:   2023/10/18 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+fracsrc2all = [];
+for m = 1:mmax
+  
+  dtcut = 0.25*m+0.125;
+  nsrcsep = nsrc-m;
+  nsrcsep(nsrcsep<0) = 0;
+  ndcutpair = zeros(nbst, 1);
+  ndcutsrc = zeros(nbst, 1);
+  ndcutsrc2 = zeros(nbst, 1);
+  imppair = cell(nbst, 1);
+  imppairuni = cell(nbst, 1);
+  impcont = cell(nbst, 1);
+  impcontuni = cell(nbst, 1);
+  indcont = cell(nbst, 1);
+  indcontuni = cell(nbst, 1);
+  
+  for i = 1: nbst
+    if nsrc(i) == 0
+      continue
+    end
+    ist = sum(nsrc(1:i-1))+1;
+    ied = ist+nsrc(i)-1;
+    impi = imp(ist:ied,:);
+    %between Nth and (N-1)th source; Nth and (N-2)th; Nth and (N-3)th
+    dtarvl = srcdistNtoNm(impi(:,1),impi(:,7:8),mmax);
+    %   dtarvlnnsepall = [dtarvlnnsepall; dtarvl{nsep}];
+    if isempty(dtarvl{m})
+      continue
+    end
+    impbf = impi(1:end-m,:);
+    impaf = impi(1+m:end,:);
+    if ~isequal(size(impbf,1),length(dtarvl{m}))
+      disp('Check');
+    end
+    ind = find(dtarvl{m}/sps <= dtcut);
+    ndcutpair(i,1) = length(ind);
+    tmp = [];
+    for j = 1: length(ind)
+      tmp = [tmp; impbf(ind(j),:); impaf(ind(j),:)];
+    end
+    imppair{i,1} = tmp;
+    % impsort = sortrows(imppair,1);
+    imppairuni{i,1} = unique(tmp,'rows','stable');
+    % impall = [impall; impuni];
+    ndcutsrc(i,1) = size(imppairuni{i,1},1);
+    
+    tmp = [];
+    for j = 1: length(ind)
+      tmp = [tmp; impi(ind(j):ind(j)+m,:)];
+    end
+    impcont{i,1} = tmp;
+    impcontuni{i,1} = unique(tmp,'rows','stable');
+    % impall = [impall; impuni];
+    ndcutsrc2(i,1) = size(impcontuni{i,1},1);
+    
+    tmp = [];
+    for j = 1: length(ind)
+      tmp = [tmp; reshape(ind(j):ind(j)+m, [], 1)];
+    end
+    indcont{i,1} = tmp;
+    indcontuni{i,1} = unique(tmp,'rows','stable');
+  end
+  
+  imppairunia = cat(1,imppairuni{:});
+  ndcutsrcall = sum(ndcutsrc);
+  fracsrcall = ndcutsrcall/sum(nsrc)*100;
+  
+  impcontunia = cat(1,impcontuni{:});
+  ndcutsrc2all(m,1) = sum(ndcutsrc2);
+  fracsrc2all(m,1) = ndcutsrc2all(m,1)/sum(nsrc)*100;
+  
+  ndcutpairall(m,1) = sum(ndcutpair);
+  fracpairall = ndcutpairall(m,1)/sum(nsrcsep)*100;
+  
+end
+
+for m = 1:15
+  dtcut = 0.25*m+0.125;
+  fprintf('%d clusters of %d consecutive events (%d/%d unique) w/i %.3f s \n',...
+    ndcutpairall(m,1), m+1, ndcutsrc2all(m,1), sum(nsrc), dtcut);
+end
+
+fracsrc2all = [100; fracsrc2all];
+fprintf('%.3f \n',fracsrc2all);
+dfracsrc2all = fracsrc2all(1:end-1) - fracsrc2all(2:end);
+fprintf('%.3f \n',dfracsrc2all);
+
+f=initfig;
+ax=f.ax(1); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
+plot(ax,0:1:15,fracsrc2all,'ko-','linew',1,'markersize',4);
+plot(ax,1:15,dfracsrc2all,'ro-','linew',1,'markersize',4);
+xlabel(ax,'m');
+ylabel(ax,'Frac of srcs');
+title(ax,'Frac of srcs in cluster of N & N-m whose diff time w/i 0.25*m+0.125 s');
+legend(ax,'inclusive','exclusive');

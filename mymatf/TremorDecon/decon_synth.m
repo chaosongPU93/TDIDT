@@ -1625,16 +1625,16 @@ xlim(f.ax(:),[-0.5 2]);
 %%%%%%%%% or only plot the median & mad for each sat and noise
 
 %% consecutive dist along min-scatter VS saturation rate & region size
-f = initfig(12,5,1,3); %initialize fig
+f = initfig(8,5,1,2); %initialize fig
 color = jet(nreg);
 ax=f.ax(1); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
 for ireg = 1: nreg
-  % p(ireg) = plot(ax,log10(nsat),mprojx1nn1(:,ireg),'-o','markersize',4,'color',color(ireg,:));
-  p(ireg) = plot(ax,log10(nsat),mprojx12all(:,ireg),'-o','markersize',4,'color',color(ireg,:));
+  % p(ireg) = plot(ax,log10(nsat),mprojx2nn1(:,ireg),'-o','markersize',4,'color',color(ireg,:));
+  p(ireg) = plot(ax,log10(nsat),mprojx22all(:,ireg),'-o','markersize',4,'color',color(ireg,:));
   label{ireg} = sprintf('a/2=%.2f,b/2=%.2f',semia(ireg),semib(ireg));
 end
 legend(ax,p,label);
-title(ax,'Grouped Total');
+title(ax,'Secondary sources removed');
 xlabel(ax,'log_{10}(Saturation)');
 ylabel(ax,'Distance (km)');
 yran = [0 1];
@@ -1642,19 +1642,19 @@ ylim(ax,yran);
 
 ax=f.ax(2); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
 for ireg = 1: nreg
-  % plot(ax,log10(nsat),mprojx2nn1(:,ireg),'-o','markersize',4,'color',color(ireg,:));
-  plot(ax,log10(nsat),mprojx22all(:,ireg),'-o','markersize',4,'color',color(ireg,:));
-end
-title(ax,'Secondary sources removed');
-ylim(ax,yran);
-
-ax=f.ax(3); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
-for ireg = 1: nreg
   % plot(ax,log10(nsat),mprojx3nn1(:,ireg),'-o','markersize',4,'color',color(ireg,:));
   plot(ax,log10(nsat),mprojx32all(:,ireg),'-o','markersize',4,'color',color(ireg,:));
 end
 title(ax,'Checkd at 4th stas');
 ylim(ax,yran);
+
+% ax=f.ax(3); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
+% for ireg = 1: nreg
+%   % plot(ax,log10(nsat),mprojx1nn1(:,ireg),'-o','markersize',4,'color',color(ireg,:));
+%   plot(ax,log10(nsat),mprojx12all(:,ireg),'-o','markersize',4,'color',color(ireg,:));
+% end
+% title(ax,'Grouped Total');
+% ylim(ax,yran);
 
 stit = supertit(f.ax,'Med. dist. along min-error direc from each to all others w/i 2 s');
 movev(stit,0.4);

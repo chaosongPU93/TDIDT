@@ -1743,15 +1743,15 @@ movev(stit,0.3);
 
 
 %% consecutive dist along min-scatter VS saturation rate & region size
-f = initfig(12,5,1,3); %initialize fig
+f = initfig(8,5,1,2); %initialize fig
 color = jet(ntrial);
 ax=f.ax(1); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
 for iperc = 1: ntrial
-  p(iperc) = plot(ax,log10(nsat),mprojx12all(:,iperc),'-o','markersize',4,'color',color(iperc,:));
+  p(iperc) = plot(ax,log10(nsat),mprojx22all(:,iperc),'-o','markersize',4,'color',color(iperc,:));
   label{iperc} = sprintf('noise=%.1f',perctrial(iperc));
 end
 legend(ax,p,label);
-title(ax,'Grouped Total');
+title(ax,'Secondary sources removed');
 xlabel(ax,'log_{10}(Saturation)');
 ylabel(ax,'Distance (km)');
 yran = [0 0.5];
@@ -1759,17 +1759,17 @@ ylim(ax,yran);
 
 ax=f.ax(2); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
 for iperc = 1: ntrial
-  plot(ax,log10(nsat),mprojx22all(:,iperc),'-o','markersize',4,'color',color(iperc,:));
-end
-title(ax,'Secondary sources removed');
-ylim(ax,yran);
-
-ax=f.ax(3); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
-for iperc = 1: ntrial
   plot(ax,log10(nsat),mprojx32all(:,iperc),'-o','markersize',4,'color',color(iperc,:));
 end
-title(ax,'Checkd at 4th stas');
 ylim(ax,yran);
+title(ax,'Checkd at 4th stas');
+
+% ax=f.ax(3); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
+% for iperc = 1: ntrial
+%   plot(ax,log10(nsat),mprojx12all(:,iperc),'-o','markersize',4,'color',color(iperc,:));
+% end
+% title(ax,'Grouped Total');
+% ylim(ax,yran);
 
 stit = supertit(f.ax,'Med. dist. along min-error direc from each to all others w/i 2 s');
 movev(stit,0.4);
