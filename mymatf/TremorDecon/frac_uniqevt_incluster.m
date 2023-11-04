@@ -1,17 +1,17 @@
-function [fracsrc2all, dfracsrc2all]=frac_uniqevt_incluster(nbst,imp,nsrc,mmax)
+function [fracsrc2all,dfracsrc2all,f]=frac_uniqevt_incluster(nbst,imp,nsrc,mmax,sps)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% axall=plt_deconpk_rat_stat(axall,stat)
+% [fracsrc2all,dfracsrc2all,f]=frac_uniqevt_incluster(nbst,imp,nsrc,mmax,sps)
 %
-% This function is to plot the derived statistics from the amp ratio of 
-% sources 12, 13, 23 (and 14 if a 4th sta is involved), rather than the 
-% histogram or scatter like 'plt_deconpk_rat_comb.m'. The purpose is to
-% ease the summary of variation in ratio wrt noise level, sat level, etc.
+% This function is to compute the fraction of unique events within the 
+% cluster composed by consecutive events within N & N-m source pairs. 
+% The diff time of eligible N & N-m source pairs needs be smaller than
+% a 'dtcut = 0.25*m+0.125'. 
 % 
 % 
 %
 % Chao Song, chaosong@princeton.edu
-% First created date:   2023/10/18
-% Last modified date:   2023/10/18 
+% First created date:   2023/11/03
+% Last modified date:   2023/11/03
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 fracsrc2all = [];
