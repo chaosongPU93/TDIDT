@@ -85,6 +85,9 @@ fnsuffix = [];
 % dtarvlnn6n = allbstnoi.dtarvlnn6all;
 % dtarvlnn7n = allbstnoi.dtarvlnn7all;
 % dtarvlnn8n = allbstnoi.dtarvlnn8all;
+% dtarvlplt = dtarvlnn1;
+% dtarvlpltn = dtarvlnn1n;
+% m = 5;
 
 % %%%param for further checked at KLNB
 % locxyprojall = allbstsig.locxyproj4thall;
@@ -100,10 +103,6 @@ fnsuffix = [];
 
 % typepltnoi = 1; %plot noise
 typepltnoi = 2; %plot data -noise
-
-% dtarvlplt = dtarvlnn1;
-% dtarvlpltn = dtarvlnn1n;
-% m = 5;
 
 keyboard
 
