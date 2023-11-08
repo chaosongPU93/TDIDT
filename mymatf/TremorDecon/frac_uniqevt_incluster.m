@@ -3,9 +3,12 @@ function [fracsrc2all,dfracsrc2all,f]=frac_uniqevt_incluster(nbst,imp,nsrc,mmax,
 % [fracsrc2all,dfracsrc2all,f]=frac_uniqevt_incluster(nbst,imp,nsrc,mmax,sps)
 %
 % This function is to compute the fraction of unique events within the 
-% cluster composed by consecutive events within N & N-m source pairs. 
+% cluster defined by consecutive events within N & N-m source pairs. 
 % The diff time of eligible N & N-m source pairs needs be smaller than
-% a 'dtcut = 0.25*m+0.125'. 
+% a 'dtcut = 0.25*m+0.125'. Returns the inclusive fractions 'fracsrc2all',
+% and exclusive fractions 'dfracsrc2all', and a figure handle. 
+% Deal with data and synthetic noise only, NOT for synthetics.
+% Deal with a series of m < mmax.
 % 
 % 
 %
@@ -90,7 +93,7 @@ for m = 1:mmax
   
 end
 
-for m = 1:15
+for m = 1:mmax
   dtcut = 0.25*m+0.125;
   fprintf('%d clusters of %d consecutive events (%d/%d unique) w/i %.3f s \n',...
     ndcutpairall(m,1), m+1, ndcutsrc2all(m,1), sum(nsrc), dtcut);
@@ -103,9 +106,11 @@ fprintf('%.3f \n',dfracsrc2all);
 
 f=initfig;
 ax=f.ax(1); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
-plot(ax,0:1:15,fracsrc2all,'ko-','linew',1,'markersize',4);
-plot(ax,1:15,dfracsrc2all,'ro-','linew',1,'markersize',4);
+plot(ax,0:1:mmax,fracsrc2all,'ko-','linew',1,'markersize',4);
+plot(ax,1:mmax,dfracsrc2all,'ro-','linew',1,'markersize',4);
 xlabel(ax,'m');
 ylabel(ax,'Frac of srcs');
 title(ax,'Frac of srcs in cluster of N & N-m whose diff time w/i 0.25*m+0.125 s');
 legend(ax,'inclusive','exclusive');
+
+

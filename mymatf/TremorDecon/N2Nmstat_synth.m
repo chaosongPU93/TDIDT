@@ -53,24 +53,24 @@ offmax = round(2.0*rmse);
 singleflag = 0;
 if ~singleflag  %%%synthetics from different region sizes and saturation levels  
   savefile = 'rst_decon_synth.mat';
-  ttstr1 = {'Noise-free synthetics, '};
+  ttstr1 = {'Noise-free syn, '};
   load(savefile);
   nrounds = nreg;
 else  %%%synthetics from different noise and saturation levels, sources at a single spot
   savefile = 'rst_synth_onespot.mat';
-  ttstr1 = {'Single-spot synthetics, '};
+  ttstr1 = {'Single-spot syn, '};
   load(savefile);
   nrounds = ntrial;
 end
 
 %%
 %%%param for secondary sources removed
-ttstr2 = 'Secondary sources removed';
+ttstr2 = '2ndary removed';
 fnsuffix = [];
 impplt = imp;
 denom = 18275;
 % %%%param for further checked at KLNB
-% ttstr2 = 'Further checked at KLNB';
+% ttstr2 = 'Checked at KLNB';
 % fnsuffix = '4th';
 % impplt = imp4th;
 % denom = 10547;
@@ -112,359 +112,59 @@ for insat = 1: nnsat
     f = initfig(12,4,1,2); %initialize fig
     tit=supertit(f.ax,supertstr);
     movev(tit,0.3);
-    m = 2;
+    m = 1;
     nbin = 5;
-    [f,Nn,ampbincnt,fraci]=plt_frac_difftime_NNm_syn_binamp(f,impplt,mmax,insat,iround,sps,m,nbin);
+    [f,Nn,ampbincnt,fraci,dtarvlplt,ampplt] = ...
+      plt_frac_difftime_NNm_syn_binamp(f,impplt,mmax,insat,iround,sps,m,nbin);
+  keyboard
 
   end
 end
 
 keyboard
 
-%%%first bin source by amp, then plot diff arrival time for N and N-1 for each amp bin
-%%%loop for saturation level
-for insat = 1: nnsat
-  disp(nsat(insat));
-  %%%loop for region size or noise level
-  for iround = 1: nrounds
-    impi = impplt{insat,iround};
-    nsrc = size(impi,1);
-    %between Nth and (N-1)th source; Nth and (N-2)th; Nth and (N-3)th
-    dtarvl = srcdistNtoNm(impi(:,1),impi(:,7:8),mmax);
-    %   dtarvlnnsepall = [dtarvlnnsepall; dtarvl{m}];
-    if isempty(dtarvl{m})
-      continue
-    end
-    dtarvlplt = dtarvl{m};
-    
-    ampcont = [];
-    for i = 1: nsrc-m
-      impcont = impi(i: i+m,:);
-      ampcont(i,1) = median(mean(impcont(:,[2 4 6]),2));
-    end
-    ampplt = ampcont;
-    
-    %%%
-    f = initfig(12,4,1,2); %initialize fig
-    tit=supertit(f.ax,supertstr);
-    movev(tit,0.2);
-    ax=f.ax(1); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
-    %%%%%%%%%% if bin by amp with a equal number
-    nbin = 5;
-    [ampbin,indbin,n] = binxeqnum(ampplt,nbin);
-    color = jet(nbin);
-    binwdt = 0.05;
-    dtcut = 0.25*m+0.125;
-    if m < 3
-      xran = [0 2];
-    else
-      xran = [0 2*ceil(dtcut)];
-    end
-    nx = round(xran(2)/binwdt)+1;
-    Nn = zeros(nx, nbin);
-    edges = xran(1)-binwdt/2: binwdt: xran(2)+binwdt/2;
-    cnt = xran(1): binwdt: xran(2);
-    label = []; p = []; fraci = [];
-    for i = 1: nbin
-      ind = indbin{i};
-      dtarvli = dtarvlplt(ind);
-      ampbincnt(i) = median(ampbin{i});
-      N=histcounts(dtarvli/sps,edges,'normalization','count');
-      Nn(:,i) = N./mode(n);
-      fraci(i) = sum(dtarvli/sps<=dtcut)/mode(n);
-      p(i)=plot(ax,cnt,Nn(:,i),'color',color(i,:),'LineWidth',1);
-      label{i} = sprintf('amp of %.1f',ampbincnt(i));
-      % label{i} = sprintf('%d/%dth amp',i,nbin);
-      % keyboard
-    end
-    %%%%%%%%%% if bin by amp with a equal number
-    Nnm = mean(Nn,2);
-    p(nbin+1)=plot(ax,cnt,Nnm,'k-','LineWidth',1.5);
-    label{nbin+1} = sprintf('mean');  %median
-    legend(ax,p,label);
-    ylabel(ax,'Normalized count');
-    xlabel(ax,sprintf('Diff. arrival between sources N and N-%d (s)',m));
-    xlim(ax,xran);
-    if m == 1
-      yran = [0 0.2];
-    elseif m == 2
-      yran = [0 0.06];
-    else
-      yran = ax.YLim;
-    end
-    ylim(ax,yran);
-    longticks(ax,2);
-    hold(ax,'off');
-    title(ax,'Data');
-    
-    ax=f.ax(2); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
-    yran=[0 1];
-    plot(ax,log(ampbincnt),fraci,'k-','linew',1,'marker','o','markersize',4,'markerfacec','k');
-    xlabel(ax,'Median log_{10}{amp}');
-    % ylabel(ax,'Median diff. arrival (s)');
-    ylabel(ax,sprintf('Frac. of diff. arrival w/i %.3f s',dtcut));
-    ylim(ax,yran);
-    title(ax,'Data');
-    
-  end
-  
-end
-keyboard
     
 %% bin by amp, only summarize frac, for each satur and size/noise level
+m = 1;
+nbin = 5;
 f = initfig(15,8,2,round(nnsat/2)); %initialize fig
 tit=supertit(f.ax,strcat(supertstr, sprintf(', N & N-%d',m)));
 movev(tit,0.2);
-
-color = jet(nrounds);
-
-%%%loop for saturation level
-for insat = 1: nnsat
-  disp(nsat(insat));
-  
-  ax=f.ax(insat); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
-  
-  %%%loop for region size or noise level
-  for iround = 1: nrounds
-    impi = impplt{insat,iround};
-    nsrc = size(impi,1);
-    %between Nth and (N-1)th source; Nth and (N-2)th; Nth and (N-3)th
-    dtarvl = srcdistNtoNm(impi(:,1),impi(:,7:8),mmax);
-    %   dtarvlnnsepall = [dtarvlnnsepall; dtarvl{m}];
-    if isempty(dtarvl{m})
-      continue
-    end
-    dtarvlplt = dtarvl{m};
-    
-    ampcont = [];
-    for i = 1: nsrc-m
-      impcont = impi(i: i+m,:);
-      ampcont(i,1) = median(mean(impcont(:,[2 4 6]),2));
-    end
-    ampplt = ampcont;
-    
-    %%%
-    %%%%%%%%%% if bin by amp with a equal number
-    nbin = 5;
-    [ampbin,indbin,n] = binxeqnum(ampplt,nbin);
-    binwdt = 0.05;
-    dtcut = 0.25*m+0.125;
-    if m < 3
-      xran = [0 2];
-    else
-      xran = [0 2*ceil(dtcut)];
-    end
-    nx = round(xran(2)/binwdt)+1;
-    Nn = zeros(nx, nbin);
-    edges = xran(1)-binwdt/2: binwdt: xran(2)+binwdt/2;
-    cnt = xran(1): binwdt: xran(2);
-    fraci = [];
-    for i = 1: nbin
-      ind = indbin{i};
-      dtarvli = dtarvlplt(ind);
-      ampbincnt(i) = median(ampbin{i});
-      N=histcounts(dtarvli/sps,edges,'normalization','count');
-      Nn(:,i) = N./mode(n);
-      fraci(i,iround) = sum(dtarvli/sps<=dtcut)/mode(n);
-    end
-    p(iround) = plot(ax,log(ampbincnt),fraci(:,iround),'-','Color',color(iround,:),'linew',1,...
-      'marker','o','markersize',4,'markerfacec',color(iround,:));
-    if ~singleflag
-      label{iround} = sprintf('a/2=%.2f,b/2=%.2f',semia(iround),semib(iround));
-    else
-      label{iround} = sprintf('noise=%.1f',perctrial(iround));
-    end
-  end
-  if insat == 1
-    xlabel(ax,'Median log_{10}{amp}');
-    % ylabel(ax,'Median diff. arrival (s)');
-    ylabel(ax,sprintf('Frac. of diff. arrival w/i %.3f s',dtcut));
-    legend(ax,p,label);
-  end
-  text(ax,0.02,0.05,sprintf('Satur=%.1f',nsat(insat)),'Units','normalized',...
-    'HorizontalAlignment','left');
-  yran=[0 1];
-  ylim(ax,yran);
-  longticks(ax,2);
-  hold(ax,'off');
-    
-end
-
-%% fraction of event pairs w/i a diff time cut, and fraction of all catalog
-% m = 14;
-for m = 1:mmax
-
-dcut = 0.25*m+0.125;
-nsrcsep = nsrc-m;
-nsrcsep(nsrcsep<0) = 0; 
-ndcutpair = zeros(size(trange,1), 1);
-ndcutsrc = zeros(size(trange,1), 1);
-ndcutsrc2 = zeros(size(trange,1), 1);
-imppair = cell(size(trange,1), 1);
-imppairuni = cell(size(trange,1), 1);
-impcont = cell(size(trange,1), 1);
-impcontuni = cell(size(trange,1), 1);
-indcont = cell(size(trange,1), 1);
-indcontuni = cell(size(trange,1), 1);
-mmax = 15;
-
-for i = 1: size(trange,1)
-  if nsrc(i) == 0
-    continue
-  end
-  ist = sum(nsrc(1:i-1))+1;
-  ied = ist+nsrc(i)-1;
-  impi = imp(ist:ied,:);
-  %between Nth and (N-1)th source; Nth and (N-2)th; Nth and (N-3)th
-  dtarvl = srcdistNtoNm(impi(:,1),impi(:,7:8),mmax);
-%   dtarvlnnsepall = [dtarvlnnsepall; dtarvl{m}];
-  if isempty(dtarvl{m})
-    continue
-  end
-  impbf = impi(1:end-m,:);
-  impaf = impi(1+m:end,:);
-  if ~isequal(size(impbf,1),length(dtarvl{m}))
-    disp('Check');
-  end
-  ind = find(dtarvl{m}/sps <= dcut);
-  ndcutpair(i,1) = length(ind);
-  tmp = [];
-  for j = 1: length(ind)
-    tmp = [tmp; impbf(ind(j),:); impaf(ind(j),:)];
-  end
-  imppair{i,1} = tmp;
-  % impsort = sortrows(imppair,1);
-  imppairuni{i,1} = unique(tmp,'rows','stable');
-  % impall = [impall; impuni];
-  ndcutsrc(i,1) = size(imppairuni{i,1},1);
-
-  tmp = [];
-  for j = 1: length(ind)
-    tmp = [tmp; impi(ind(j):ind(j)+m,:)];
-  end
-  impcont{i,1} = tmp;
-  impcontuni{i,1} = unique(tmp,'rows','stable');
-  % impall = [impall; impuni];
-  ndcutsrc2(i,1) = size(impcontuni{i,1},1);
-
-  tmp = [];
-  for j = 1: length(ind)
-    tmp = [tmp; reshape(ind(j):ind(j)+m, [], 1)];
-  end
-  indcont{i,1} = tmp;
-  indcontuni{i,1} = unique(tmp,'rows','stable');
-end
-
-imppairunia = cat(1,imppairuni{:});
-ndcutsrcall = sum(ndcutsrc);
-fracsrcall = ndcutsrcall/sum(nsrc)*100;
-
-impcontunia = cat(1,impcontuni{:});
-ndcutsrc2all(m,1) = sum(ndcutsrc2);
-fracsrc2all(m,1) = ndcutsrc2all(m,1)/sum(nsrc)*100;
-
-ndcutpairall(m,1) = sum(ndcutpair);
-fracpairall = ndcutpairall(m,1)/sum(nsrcsep)*100;
-
-end
-
-for m = 1:15
-  dcut = 0.25*m+0.125;
-  fprintf('%d clusters of %d consecutive events (%d/%d unique) w/i %.3f s \n',...
-    ndcutpairall(m,1), m+1, ndcutsrc2all(m,1), sum(nsrc), dcut);
-end
-
-fracsrc2all = [100; fracsrc2all];
-fprintf('%.3f \n',fracsrc2all);
-dfracsrc2all = fracsrc2all(1:end-1) - fracsrc2all(2:end);
-fprintf('%.3f \n',dfracsrc2all);
+[f,ampbincnt,fraci,dtarvlplt,ampplt] = ...
+  plt_fracdifftime_NNm_syn_binamp(f,impplt,mmax,nsat,nrounds,label,sps,m,nbin);
 
 keyboard
 
 
-%%
-%%%abs distance along min-rmse direction between each source and all others whose arrival 
-%%%separation is <=2 s
-widin = 11;  % maximum width allowed is 8.5 inches
-htin = 5;   % maximum height allowed is 11 inches
-nrow = 1;
-ncol = 2;
-f = initfig(widin,htin,nrow,ncol); %initialize fig
-
-ax=f.ax(1);
-hold(ax,'on'); ax.Box = 'on'; grid(ax,'on');
-binwdist = 0.1;
-binedge = (0: binwdist: 50*binwdist)';
-%if looking at distance in map view, use plain count or normalize by area
-%%%projection along the min-rmse direction
-%%%for noise
-nsrcpropn = nsrcn;
-nsrcpropn(nsrcpropn<=2)=0;
-dlocproj2allbstn = [];
-for i = 1: size(trange,1)
-%   i
-  ist = sum(nsrcn(1:i-1))+1;
-  ied = ist+nsrcn(i)-1;
-  tarvlsplst = tarvlsplstalln(ist:ied);
-  ist = sum(nsrcpropn(1:i-1))+1;
-  ied = ist+nsrcpropn(i)-1;
-  locxyproj = locxyprojalln(ist:ied, :);
-  if ~isempty(tarvlsplst) && ~isempty(locxyproj) 
-    [~,dlocproj2all] = srcdistall(tarvlsplst,locxyproj,[0 2*sps]);
-    dlocproj2allbstn = [dlocproj2allbstn; dlocproj2all];
-  end
-end
-dist2alln = abs(dlocproj2allbstn(:,1));
-[bincnt,binhgt,count,normalizer] = histbinbyarea(dist2alln,binedge,'countdensity');
-% binhgt = binhgt./length(dist2all);
-binhgt = count./length(dist2all);
-p2=bar(ax,bincnt,binhgt,1,'stacked','r','facea',0.6);
-% stairs(ax,binedge,[binhgt; binhgt(end)],'k','LineWidth',1);
-plot(ax,[median(dist2alln) median(dist2alln)],ax.YLim,'r--','linew',1.5);
-text(ax,median(dist2alln)+0.1,ax.YLim(2)-0.2*range(ax.YLim),...
-  sprintf('%.2f',median(dist2alln)),'HorizontalAlignment','left');
-xlabel(ax,'Dist. (km) along min-scatter direc. between each source and all others with diff. arrival time \leq 2 s');
-ylabel(ax,'Normalized count');
-legend(ax,[p1,p2],'Data','Synthetic noise','location','east');
-xlim(ax,[0 4]);
-longticks(ax,2);
-hold(ax,'off');
-
-ax=f.ax(2);
-hold(ax,'on'); ax.Box = 'on'; grid(ax,'on');
-binwdt = 0.05;
-[N,edges]=histcounts(dtarvlpltn/sps,'binwidth',binwdt,'normalization','count');
-N = N./length(dtarvlplt);
-bincnt = (edges(1:end-1)+edges(2:end))/2;
-p2=bar(ax,bincnt,N,1,'stacked','r','facea',0.6,'edgecolor','k');
-plot(ax,[median(dtarvlpltn/sps) median(dtarvlpltn/sps)],ax.YLim, '--', ...
-  'Color', 'r', 'linew', 1.5);
-text(ax,median(dtarvlpltn/sps)+0.02,ax.YLim(2)-0.2*range(ax.YLim),...
-  sprintf('%.2f',median(dtarvlpltn/sps)),'HorizontalAlignment','left');
-ylabel(ax,'Normalized count');
-xlabel(ax,sprintf('Diff. arrival time between sources N and N-%d (s)',m));
-legend(ax,[p1,p2],'Data','Synthetic noise','location','east');
-xlim(ax,[0 1.5]);
-% ylim(ax,[0 3.5]);
-longticks(ax,2);
-hold(ax,'off');
-tit=supertit(f.ax,supertstr);
+%% fraction of event pairs w/i a diff time cut, and fraction of all catalog
+mmax = 10;
+f1 = initfig(15,8,2,round(nnsat/2)); %initialize fig
+tit=supertit(f1.ax,strcat(supertstr,...
+  {', inclusive Frac of srcs in cluster of N & N-m whose diff time w/i 0.25*m+0.125 s'}));
 movev(tit,0.2);
 
-orient(f.fig,'landscape');
-fname = strcat(sprintf('nn%ddiff',m),fnsuffix,'.pdf');
-% print(f.fig,'-dpdf',strcat('/home/chaosong/Pictures/',fname));
+f2 = initfig(15,8,2,round(nnsat/2)); %initialize fig
+tit=supertit(f2.ax,strcat(supertstr,...
+  {', exclusive Frac of srcs in cluster of N & N-m whose diff time w/i 0.25*m+0.125 s'}));
+movev(tit,0.2);
 
-% keyboard
+label = [];
+for iround = 1: nrounds
+  if ~singleflag
+    label{iround} = sprintf('a/2=%.2f,b/2=%.2f',semia(iround),semib(iround));
+  else
+    label{iround} = sprintf('noise=%.1f',perctrial(iround));
+  end
+end
+
+[f1,f2,fracsrc2all,dfracsrc2all]=frac_uniqevt_incluster_syn(f1,f2,impplt,mmax,nsat,nrounds,label,sps);
+keyboard
 
 
-
-% keyboard
 
 
 
 %% 
-
 % figure
 % subplot(311)
 % h=histogram(log10(ampbfdt),'BinWidth',0.25); hold on; %,'NumBins',5

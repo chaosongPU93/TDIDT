@@ -1,12 +1,13 @@
-function [f,Nn,frac,Nnn,fracn,fracdif]=...
-  plt_difftime_frac_NNm(f,dtarvlplt,dtarvlpltn,dtcut,sps,m)
+function [f1,f2,Nn,frac,Nnn,fracn,fracdif]=...
+  plt_difftime_NNm(f1,f2,dtarvlplt,dtarvlpltn,dtcut,sps,typepltnoi,m)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% function [f,Nn,frac,Nnn,fracn,fracdif]=...
-%   plt_difftime_frac_NNm(f,dtarvlplt,dtarvlpltn,dtcut,m)
-% This function is to plot the diff time distribution of srcs, binned by amp
-% first, for each m smaller than mmax, of N & N-m source pairs. 
-% Amp here is the median amp of the 
-% cluster composed by consecutive events within N & N-m source pairs.
+% [f,Nn,frac,Nnn,fracn,fracdif]=...
+%   plt_difftime_NNm(f,dtarvlplt,dtarvlpltn,dtcut,sps,m)
+%
+% This function is to plot the diff time distribution of srcs, for a certain
+% m, for data and synthetics noise, plotting them together in one panel or
+% separately.
+% Text shown the fraction of diff time measurements w/i a dtcut.
 % 
 % 
 %
@@ -38,7 +39,7 @@ N=histcounts(dtarvlpltn/sps,edges,'normalization','count');
 Nnn = N./length(dtarvlplt);
 fracn = sum(dtarvlpltn/sps<=dtcut)/length(dtarvlpltn);
 
-ax=f.ax(1); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
+ax=f1.ax(1); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
 p(1)=plot(ax,cnt,Nn,'color','b','LineWidth',1);
 label{1}='Data';
 p(2)=plot(ax,cnt,Nnn,'color','r','LineWidth',1);
@@ -64,4 +65,30 @@ xlim(ax,xran);
 % ylim(ax,yran);
 longticks(ax,2);
 hold(ax,'off');
-% keyboard
+
+
+ax=f2.ax(1); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
+plot(ax,cnt,Nn,'color','k','LineWidth',1);
+text(ax,0.7,0.7,sprintf('%.2f',frac),'Color','b','HorizontalAlignment','left','Units','normalized');
+title(ax,'Data');
+yran = ax.YLim;
+ylabel(ax,'Normalized count');
+xlabel(ax,sprintf('Diff. arrival between sources N and N-%d (s)',m));
+xlim(ax,xran);
+longticks(ax,2);
+hold(ax,'off');
+
+ax=f2.ax(2); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
+if typepltnoi == 1
+  plot(ax,cnt,Nnn,'color','k','LineWidth',1);
+  text(ax,0.7,0.7,sprintf('%.2f',fracn),'Color','k','HorizontalAlignment','left','Units','normalized');
+  title(ax,'Synthetic noise');
+elseif typepltnoi == 2
+  plot(ax,cnt,Nn-Nnn,'color','k','LineWidth',1);
+  text(ax,0.7,0.7,sprintf('%.2f',fracdif),'Color','k','HorizontalAlignment','left','Units','normalized');
+  title(ax,'Data - Synthetic noise');
+end
+xlim(ax,xran);
+ylim(ax,yran);
+longticks(ax,2);
+hold(ax,'off');

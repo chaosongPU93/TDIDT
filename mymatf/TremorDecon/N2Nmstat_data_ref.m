@@ -124,11 +124,11 @@ nbst = size(trange,1);
 [f,cnt,Nn,Nnn,frac,fracn,ampdt,dtarvl,ampdtn,dtarvln]=...
   plt_srcdifftime_NNm_mmax(f1,nbst,imp,nsrc,impn,nsrcn,mmax,sps,typepltnoi);
 
-
+%%
 f2 = initfig(10,9,2,2); %initialize fig
 tit=supertit(f2.ax,strcat({'Diff. arrival between N & N-m, binned by amp, '},supertstr));
 movev(tit,0.2);
-[f2,ampbincnt,Nbn,fracb,ampbinncnt,Nbnn,fracbn]=...
+[f2,ampbincnt,Nbn,fracb,Nbnn,fracbn]=...
   plt_fracdifftime_NNm_mmax(f2,nbst,imp,nsrc,impn,nsrcn,mmax,sps,typepltnoi);
 
 keyboard
@@ -137,19 +137,23 @@ keyboard
 %% for a certain m, similar plots for N & N-m pairs 
 %%%Median amplitude for srcs w/i the cluster
 m = 1;
-mmax = 15;
 nbst = size(trange,1);
 dtcut = 0.25*m+0.125;
-[ampplt,dtarvlplt]=med_amp_incluster(nbst,imp,nsrc,mmax,m);
-[amppltn,dtarvlpltn]=med_amp_incluster(nbst,impn,nsrcn,mmax,m);
+[ampplt,dtarvlplt]=med_amp_incluster(nbst,imp,nsrc,m);
+[amppltn,dtarvlpltn]=med_amp_incluster(nbst,impn,nsrcn,m);
 
 %%
-%%%summarize the whole catalog, diff arrival time and fractions
-f = initfig(5.5,4,1,1); %initialize fig
-tit=supertit(f.ax,supertstr);
+%%%summarize the whole catalog, diff arrival time and fractions, data and noise together
+f1 = initfig(5.5,4,1,1); %initialize fig
+tit=supertit(f1.ax,supertstr);
 movev(tit,0.2);
-[f,Nn,frac,Nnn,fracn,fracdif]=...
-  plt_difftime_frac_NNm(f,dtarvlplt,dtarvlpltn,dtcut,sps,m);
+
+f2 = initfig(12,4,1,2); %initialize fig
+tit=supertit(f2.ax,supertstr);
+movev(tit,0.2);
+
+[f1,f2,Nn,frac,Nnn,fracn,fracdif]=...
+  plt_difftime_NNm(f1,f2,dtarvlplt,dtarvlpltn,dtcut,sps,typepltnoi,m);
 
 %%
 %%%Bin by amp, then plot diff time distribution, and frac w/i some 'dtcut'
@@ -340,24 +344,6 @@ print(f.fig,'-dpdf','-fillpage',strcat('/home/chaosong/Pictures/',fname));
 % plot(ax,ax.XLim,[200 200],'k--');
 % xlim([-1.5 1]);
 % text(0.95,0.9,'Mean of the pair','Units','normalized','HorizontalAlignment','right');
-% 
-% %amp distribution of source pair 
-% figure
-% subplot(121)
-% h=histogram(log10(ampplt),'BinWidth',0.25); hold on;
-% ax=gca;
-% xlim([-1.5 1]);
-% title('Mean of the pair for data');
-% ylabel(ax,'Count');
-% xlabel(ax,sprintf('log_{10}{amp} between sources N and N-%d (s)',nsep));
-% 
-% subplot(122)
-% h=histogram(log10(amppltn),'BinWidth',0.25); hold on;
-% ax=gca;
-% xlim([-1.5 1]);
-% title('Mean of the pair for syn noise');
-% ylabel(ax,'Count');
-% xlabel(ax,sprintf('log_{10}{amp} between sources N and N-%d (s)',nsep));
 
 
 %%

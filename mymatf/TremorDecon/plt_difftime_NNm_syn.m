@@ -2,11 +2,9 @@ function [f,Nn,frac]=plt_difftime_NNm_syn(f,impplt,mmax,nsat,nrounds,label,sps,m
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % [f,Nn,frac]=plt_difftime_NNm_syn(f,impplt,mmax,nsat,nrounds,label,sps,m)
 %
-% Similar purpose as 'plt_fracdifftime_NNm_mmax', This function is for the certain m,
-% to plot the diff time distribution of srcs, binned by amp
-% first, for each m smaller than mmax, of N & N-m source pairs. 
-% Amp here is the median amp of the 
-% cluster composed by consecutive events within N & N-m source pairs.
+% This function is to plot the diff time distribution of N & N-m source 
+% pairs, for a certain m. It summarizes different saturation, and different
+% noise levels or source region sizes of synthetics. 
 % 
 % 
 %

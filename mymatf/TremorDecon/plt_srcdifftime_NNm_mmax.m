@@ -1,14 +1,15 @@
 function [f,cnt,Nn,Nnn,frac,fracn,ampplt,dtarvlplt,amppltn,dtarvlpltn]=...
   plt_srcdifftime_NNm_mmax(f,nbst,imp,nsrc,impn,nsrcn,mmax,sps,typepltnoi)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% [f,cnt,Nn,Nnn,frac,fracn,ampdt,dtarvlplt,ampdtn,dtarvlpltn]=...
-%    plt_srcdifftime_NNm_mmax(f,nbst,imp,nsrc,impn,nsrcn,mmax,sps,typepltnoi)
+% [f,cnt,Nn,Nnn,frac,fracn,ampplt,dtarvlplt,amppltn,dtarvlpltn]=...
+%   plt_srcdifftime_NNm_mmax(f,nbst,imp,nsrc,impn,nsrcn,mmax,sps,typepltnoi)
 %
 % This function is to plot the diff time distribution of srcs, binned by amp
 % first, for each m smaller than mmax, of N & N-m source pairs. 
-% Amp here is the median amp of the 
-% cluster composed by consecutive events within N & N-m source pairs.
-%
+% Amp here is the median amp of the cluster defined by consecutive events
+% within N & N-m source pairs. 
+% Deal with data and synthetic noise only, NOT for synthetics.
+% Deal with a series of m < mmax
 % 
 % 
 %
@@ -25,8 +26,8 @@ else
 end
 for m = 1:mmax
   dtcut = 0.25*m+0.125;
-  [ampplt,dtarvlplt]=med_amp_incluster(nbst,imp,nsrc,mmax,m);
-  [amppltn,dtarvlpltn]=med_amp_incluster(nbst,impn,nsrcn,mmax,m);
+  [ampplt,dtarvlplt]=med_amp_incluster(nbst,imp,nsrc,m);
+  [amppltn,dtarvlpltn]=med_amp_incluster(nbst,impn,nsrcn,m);
 
   %%%distribution of diff time
   binwdt = 0.05;

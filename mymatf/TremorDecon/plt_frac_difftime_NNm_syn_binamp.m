@@ -1,12 +1,16 @@
-function [f,Nn,ampbincnt,fraci]=plt_frac_difftime_NNm_syn_binamp(f,impplt,mmax,insat,iround,sps,m,nbin)
+function [f,Nn,ampbincnt,fraci,dtarvlplt,ampplt] = ...
+  plt_frac_difftime_NNm_syn_binamp(f,impplt,mmax,insat,iround,sps,m,nbin)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% [f,Nn,frac]=plt_difftime_NNm_syn(f,impplt,mmax,nsat,nrounds,label,sps,m)
+% [f,Nn,ampbincnt,fraci,dtarvlplt,ampplt] = ...
+%   plt_frac_difftime_NNm_syn_binamp(f,impplt,mmax,insat,iround,sps,m,nbin)
 %
-% Similar purpose as 'plt_fracdifftime_NNm_mmax', This function is for the certain m,
-% to plot the diff time distribution of srcs, binned by amp
-% first, for each m smaller than mmax, of N & N-m source pairs. 
+% Similar purpose as 'plt_fracdifftime_NNm', This function is for the certain m,
+% a certain saturation level, and certain trial of synthetics (either different
+% source region size or noise levels), 
+% plot the diff time distribution of N & N-m source pairs, binned by amp
+% first, and the fraction w/i some dtcut. 
 % Amp here is the median amp of the 
-% cluster composed by consecutive events within N & N-m source pairs.
+% cluster defined by consecutive events within N & N-m source pairs.
 % 
 % 
 %

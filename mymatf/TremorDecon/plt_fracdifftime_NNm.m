@@ -8,7 +8,8 @@ function [f,Nn,fracm,ampbincntm,Nnn,fracnm,ampbinncntm]=...
 % to plot the diff time distribution of srcs, binned by amp
 % first, for each m smaller than mmax, of N & N-m source pairs. 
 % Amp here is the median amp of the 
-% cluster composed by consecutive events within N & N-m source pairs.
+% cluster defined by consecutive events within N & N-m source pairs.
+% Deal with data and synthetic noise only, NOT for synthetics.
 % 
 % 
 %
