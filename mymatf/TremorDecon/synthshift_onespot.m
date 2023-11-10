@@ -479,7 +479,7 @@ else
   imp4th = cell(nnsat,ntrial);
   
   %%%loop for noise level
-  for iperc = ntrial: ntrial
+  for iperc = 1: ntrial
     
     perc = perctrial(iperc);
     disp(perc);
@@ -937,12 +937,12 @@ else
       
       %amp and density at each pixel for ground truth sources
       ampgt = mean(impgt(:,[2 4 6]),2); %amp for all LFE catalog
-      density1d = density_pixel(impgt(:,7),impgt(:,8));
-      % ampgtsum = sum_pixel(impgt(:,7),impgt(:,8),ampgt);
+      [density1d, inddup] = density_pixel(impgt(:,7),impgt(:,8));
+      ampgtsum = sum_at_indices(ampgt,inddup);
       [impgtloc, ~] = off2space002(density1d(:,1:2),sps,ftrans,0); % 8 cols, format: dx,dy,lon,lat,dep,ttrvl,off12,off13
       density1d = [impgtloc(:,1:2) density1d(:,3)];
-      % ampgtsum1d = sortrows([impgtloc(:,1:2) ampgtsum(:,3)], 3);
-      
+      ampgtsum1d = sortrows([impgtloc(:,1:2) ampgtsum], 3);
+
       %%%if you want to plot the ground truth
       if pltgtflag
         %plot the ground truth source offset
@@ -970,15 +970,11 @@ else
         ax=gca;
         [ax] = plt_decon_imp_scatter_space(ax,impgt,xran,yran,cran,offxran,...
           offyran,sps,50,ftrans,'mean','tarvl');
-        plot(ax,xcut,ycut,'k-','linew',2);
         title(ax,'Ground truth');
         
         %%%plot the cumulative density and summed amp of detections
-        [f] = plt_sum_pixel(density1d,ampgtsum1d,[-4 4],[-4 4],20,'amp','linear');
-        hold(f.ax(1),'on');
-        plot(f.ax(1),xcut,ycut,'k-','linew',2);
-        hold(f.ax(2),'on');
-        plot(f.ax(2),xcut,ycut,'k-','linew',2);
+        cstr = {'# detections / pixel'; 'amp sum / pixel'};
+        [f] = plt_sum_pixel(density1d,ampgtsum1d,[-4 4],[-4 4],20,cstr,'o','linear');
         supertit(f.ax,'Ground truth');
         
         % %plot the ground truth source map locations from grid
@@ -1027,7 +1023,7 @@ else
         width = 2.5;  % width for Gaussian filter
         dres_min = 0.5;  % tolerance, percentage change in residual per iteration
         mfit_min = 5e-1;  % tolerance, norm of the residual/misfit
-        tdura = 0.5;  % estimate from the broadband template from fam 002
+        tdura = 0.4;  % estimate from the broadband template from fam 002
         tlen = ceil(lsig/sps);
         nit_max = round(1.5*1/tdura*tlen*nsat(insat));  % max numer of iterations
         nimp_max = round(1/tdura*tlen*nsat(insat));%a single peak is ~20 samples wide; maybe a little less (at 100 sps). ~0.4s, 1/0.4=2.5
@@ -1065,7 +1061,33 @@ else
       impindep(:,7:8) = impindep(:,7:8)+repmat([off1i(2) off1i(3)],size(impindep,1),1); %account for prealignment
       impindepst = sortrows(impindep,1);
       impgrp{insat,iperc} = impindepst;
+
       
+      %% distance, diff time for source pairs right after grouping
+      %note the 'tsep' obtained from the deconvolved positive peaks should be identical to that if
+      %obtained from the deconvolved impulses themselves, which represent the arrival indices of the
+      %zero-crossing
+      ista=1;
+      %convert time offset to relative loc
+      [imploc, indinput] = off2space002(impindepst(:,7:8),sps,ftrans,0); % 8 cols, format: dx,dy,lon,lat,dep,ttrvl,off12,off13
+      [impindepstst, indsort] = sortrows(impindepst, (ista-1)*2+1);
+      implocst = imploc(indsort, :);
+      tarvlsplst = impindepstst(:,(ista-1)*2+1);
+      
+      %between Nth and (N-1)th source; Nth and (N-2)th; Nth and (N-3)th
+      m = 5;
+      [dtarvl,dneloc,eucdist] = srcdistNtoNm(tarvlsplst, implocst, m);
+      
+      %project along min-scatter direction
+      projang = 135;
+      [projx,projy,projxy] = customprojection(implocst,projang);
+      dprojxy = [diffcustom(projx,1,'forward') diffcustom(projy,1,'forward')];
+      mprojx1nn1(insat,iperc) = median(abs(dprojxy(:,1))); %median consecutive dist along min-scatter after grouping
+      
+      %For each LFE source, get its distance to all other LFEs, maybe we don't care that long separation in time
+      [~,dprojxy2all] = srcdistall(tarvlsplst,projxy,[0 2*sps]);
+      mprojx12all(insat,iperc) = median(abs(dprojxy2all(:,1))); %median dist along min-scatter to all sources after grouping
+
       %%%if you want to plot the deconvolved sources
       if pltsrcflag1
         %plot the scatter of offsets, accounting for prealignment offset, == true offset
@@ -1095,13 +1117,14 @@ else
         title(ax,'Grouped Total');
         
         %plot the cumulative density and summed amp of detections
-        amp = mean(impindepst(:,[2 4 6]),2); %amp for all LFE catalog
-        density1d = density_pixel(impindepst(:,7),impindepst(:,8));
-        ampsum = sum_pixel(impindepst(:,7),impindepst(:,8),amp);
+        [density1d, inddup] = density_pixel(impindepst(:,7),impindepst(:,8)); %count at each unique loc
         [imploc, ~] = off2space002(density1d(:,1:2),sps,ftrans,0); % 8 cols, format: dx,dy,lon,lat,dep,ttrvl,off12,off13
         density1d = [imploc(:,1:2) density1d(:,3)];
-        ampsum1d = sortrows([imploc(:,1:2) ampsum(:,3)], 3);
-        [f] = plt_sum_pixel(density1d,ampsum1d,[-4 4],[-4 4],20,'amp','linear');
+        amp = mean(impindepst(:,[2 4 6]),2); %amp for all LFE catalog
+        ampsum = sum_at_indices(amp,inddup);
+        ampsum1d = sortrows([imploc(:,1:2) ampsum], 3);
+        cstr = {'# detections / pixel'; 'amp sum / pixel'};
+        [f] = plt_sum_pixel(density1d,ampsum1d,[-4 4],[-4 4],20,cstr,'o','linear');
         hold(f.ax(1),'on');
         plot(f.ax(1),xcut,ycut,'k-','linew',2);
         hold(f.ax(2),'on');
@@ -1122,29 +1145,8 @@ else
         ylabel(ax,'count');
         xlabel(ax,'amp at pixel');
         supertit(f.ax,'Grouped Total');
-      end
-      % keyboard
-      
-      %% distance, diff time for source pairs right after grouping
-      %note the 'tsep' obtained from the deconvolved positive peaks should be identical to that if
-      %obtained from the deconvolved impulses themselves, which represent the arrival indices of the
-      %zero-crossing
-      ista=1;
-      %convert time offset to relative loc
-      [imploc, indinput] = off2space002(impindepst(:,7:8),sps,ftrans,0); % 8 cols, format: dx,dy,lon,lat,dep,ttrvl,off12,off13
-      [impindepstst, indsort] = sortrows(impindepst, (ista-1)*2+1);
-      implocst = imploc(indsort, :);
-      tarvlsplst = impindepstst(:,(ista-1)*2+1);
-      
-      %between Nth and (N-1)th source; Nth and (N-2)th; Nth and (N-3)th
-      m = 5;
-      [dtarvl,dneloc,eucdist] = srcdistNtoNm(tarvlsplst, implocst, m);
-      
-      %project along min-scatter direction
-      projang = 135;
-      [projx,projy,projxy] = customprojection(implocst,projang);
-      dprojxy = [diffcustom(projx,1,'forward') diffcustom(projy,1,'forward')];
-      if pltsrcflag1
+
+        %plot distance between srcs N&N-m along the projected direction
         if ~isempty(dprojxy)
           nsep = 1;
           [f] = plt_customprojdist(tarvlsplst,implocst,dtarvl{nsep},eucdist{nsep},...
@@ -1153,11 +1155,7 @@ else
           plot(f.ax(1),xcut,ycut,'k-','linew',2);
         end
       end
-      mprojx1nn1(insat,iperc) = median(abs(dprojxy(:,1))); %median consecutive dist along min-scatter after grouping
-      
-      %For each LFE source, get its distance to all other LFEs, maybe we don't care that long separation in time
-      [~,dprojxy2all] = srcdistall(tarvlsplst,projxy,[0 2*sps]);
-      mprojx12all(insat,iperc) = median(abs(dprojxy2all(:,1))); %median dist along min-scatter to all sources after grouping
+      % keyboard
       
       %% Remove the small-amplitude, secondary triplets from the grouped result
       %convert the sources in terms of the arrival time of zero-crossing to positve peaks' indices
@@ -1184,65 +1182,6 @@ else
       impindepst = sortrows(impindep,1);
       imp{insat,iperc} = impindepst;
       
-      %%%if you want to plot the deconvolved sources
-      if pltsrcflag2
-        %plot the scatter of offsets, accounting for prealignment offset, == true offset
-        xran = [-loff_max+off1i(2)-1 loff_max+off1i(2)+1];
-        yran = [-loff_max+off1i(3)-1 loff_max+off1i(3)+1];
-        offxran = [-loff_max+off1i(2) loff_max+off1i(2)];
-        offyran = [-loff_max+off1i(3) loff_max+off1i(3)];
-        cran = [0 lsig];
-        f.fig = figure;
-        f.fig.Renderer = 'painters';
-        ax=gca;
-        [ax,torispl,mamp,xbnd,ybnd] = plt_decon_imp_scatter(ax,impindepst,xran,yran,cran,offxran,offyran,...
-          sps,50,'mean','tarvl');
-        scatter(ax,off1i(2),off1i(3),20,'ks','filled','MarkerEdgeColor','k');
-        title(ax,'Secondary sources removed');
-        
-        %plot the scatter of sources in terms of rela locations
-        xran = [-4 4];
-        yran = [-4 4];
-        cran = [0 lsig/sps];
-        f.fig = figure;
-        f.fig.Renderer = 'painters';
-        ax=gca;
-        [ax] = plt_decon_imp_scatter_space(ax,impindepst,xran,yran,cran,offxran,...
-          offyran,sps,50,ftrans,'mean','tarvl');
-        plot(ax,xcut,ycut,'k-','linew',2);
-        title(ax,'Secondary sources removed');
-        
-        %plot the cumulative density and summed amp of detections
-        amp = mean(impindepst(:,[2 4 6]),2); %amp for all LFE catalog
-        density1d = density_pixel(impindepst(:,7),impindepst(:,8));
-        ampsum = sum_pixel(impindepst(:,7),impindepst(:,8),amp);
-        [imploc, ~] = off2space002(density1d(:,1:2),sps,ftrans,0); % 8 cols, format: dx,dy,lon,lat,dep,ttrvl,off12,off13
-        density1d = [imploc(:,1:2) density1d(:,3)];
-        ampsum1d = sortrows([imploc(:,1:2) ampsum(:,3)], 3);
-        [f] = plt_sum_pixel(density1d,ampsum1d,[-4 4],[-4 4],20,'amp','linear');
-        hold(f.ax(1),'on');
-        plot(f.ax(1),xcut,ycut,'k-','linew',2);
-        hold(f.ax(2),'on');
-        plot(f.ax(2),xcut,ycut,'k-','linew',2);
-        supertit(f.ax,'Secondary sources removed');
-        
-        %distribution of amp, statistically and in space
-        f = initfig(10,5,1,2); %initialize fig
-        ax=f.ax(1); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
-        plot(ax,(1:length(ampgtsum1d))/length(ampgtsum1d),ampgtsum1d(:,3),'ko-','markersize',3);
-        plot(ax,(1:length(ampsum1d))/length(ampsum1d),ampsum1d(:,3),'ro-','markersize',3);
-        xlabel(ax,'sorted loc index');
-        ylabel(ax,'amp at pixel');
-        ax=f.ax(2); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
-        histogram(ax,ampgtsum1d(:,3),'facecolor','k');
-        histogram(ax,ampsum1d(:,3),'facecolor','r');
-        plot(ax,[median(ampsum1d(:,3)) median(ampsum1d(:,3))],ax.YLim,'b--');
-        ylabel(ax,'count');
-        xlabel(ax,'amp at pixel');
-        supertit(f.ax,'Secondary sources removed');
-      end
-      % keyboard
-      
       %% distance, diff time for source pairs, after 2ndary sources removed
       %note the 'tsep' obtained from the deconvolved positive peaks should be identical to that if
       %obtained from the deconvolved impulses themselves, which represent the arrival indices of the
@@ -1262,15 +1201,6 @@ else
       projang = 135;
       [projx,projy,projxy] = customprojection(implocst,projang);
       dprojxy = [diffcustom(projx,1,'forward') diffcustom(projy,1,'forward')];
-      if pltsrcflag2
-        if ~isempty(dprojxy)
-          nsep = 1;
-          [f] = plt_customprojdist(tarvlsplst,implocst,dtarvl{nsep},eucdist{nsep},...
-            projxy,dprojxy,projang,sps,'tarvl');
-          hold(f.ax(1),'on');
-          plot(f.ax(1),xcut,ycut,'k-','linew',2);
-        end
-      end
       mprojx2nn1(insat,iperc) = median(abs(dprojxy(:,1))); %median consecutive dist along min-scatter after 2nd src removal
       
       %For each LFE source, get its distance to all other LFEs, maybe we don't care that long separation in time
@@ -1311,14 +1241,76 @@ else
       
       srcamprall{insat,iperc} = srcampr;
       
-      %plot histograms of source amp
+      %%%if you want to plot the deconvolved sources
       if pltsrcflag2
-        f = initfig(12,6,2,3); %initialize fig
-        f=plt_deconpk_rat_comb(f,srcampr,impindepst,'k');
+        %plot the scatter of offsets, accounting for prealignment offset, == true offset
+        xran = [-loff_max+off1i(2)-1 loff_max+off1i(2)+1];
+        yran = [-loff_max+off1i(3)-1 loff_max+off1i(3)+1];
+        offxran = [-loff_max+off1i(2) loff_max+off1i(2)];
+        offyran = [-loff_max+off1i(3) loff_max+off1i(3)];
+        cran = [0 lsig];
+        f.fig = figure;
+        f.fig.Renderer = 'painters';
+        ax=gca;
+        [ax,torispl,mamp,xbnd,ybnd] = plt_decon_imp_scatter(ax,impindepst,xran,yran,cran,offxran,offyran,...
+          sps,50,'mean','tarvl');
+        scatter(ax,off1i(2),off1i(3),20,'ks','filled','MarkerEdgeColor','k');
+        title(ax,'Secondary sources removed');
+        
+        %plot the scatter of sources in terms of rela locations
+        xran = [-4 4];
+        yran = [-4 4];
+        cran = [0 lsig/sps];
+        f.fig = figure;
+        f.fig.Renderer = 'painters';
+        ax=gca;
+        [ax] = plt_decon_imp_scatter_space(ax,impindepst,xran,yran,cran,offxran,...
+          offyran,sps,50,ftrans,'mean','tarvl');
+        text(ax,0.98,0.95,sprintf('Satur=%.1f',nsat(insat)),'Units','normalized',...
+          'HorizontalAlignment','right');
+        text(ax,0.02,0.05,sprintf('%.2f',mprojx22all(insat,iperc)),'Units','normalized',...
+          'HorizontalAlignment','left');
+        title(ax,'Secondary sources removed');
+        
+        %plot the cumulative density and summed amp of detections
+        [density1d, inddup] = density_pixel(impindepst(:,7),impindepst(:,8)); %count at each unique loc
+        [imploc, ~] = off2space002(density1d(:,1:2),sps,ftrans,0); % 8 cols, format: dx,dy,lon,lat,dep,ttrvl,off12,off13
+        density1d = [imploc(:,1:2) density1d(:,3)];
+        amp = mean(impindepst(:,[2 4 6]),2); %amp for all LFE catalog
+        ampsum = sum_at_indices(amp,inddup);
+        ampsum1d = sortrows([imploc(:,1:2) ampsum], 3);
+        cstr = {'# detections / pixel'; 'amp sum / pixel'};
+        [f] = plt_sum_pixel(density1d,ampsum1d,[-4 4],[-4 4],20,cstr,'o','linear');
+        supertit(f.ax,'Secondary sources removed');
+        
+        %distribution of amp, statistically and in space
+        f = initfig(10,5,1,2); %initialize fig
+        ax=f.ax(1); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
+        plot(ax,(1:length(ampgtsum1d))/length(ampgtsum1d),ampgtsum1d(:,3),'ko-','markersize',3);
+        plot(ax,(1:length(ampsum1d))/length(ampsum1d),ampsum1d(:,3),'ro-','markersize',3);
+        xlabel(ax,'sorted loc index');
+        ylabel(ax,'amp at pixel');
+        ax=f.ax(2); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
+        histogram(ax,ampgtsum1d(:,3),'facecolor','k');
+        histogram(ax,ampsum1d(:,3),'facecolor','r');
+        plot(ax,[median(ampsum1d(:,3)) median(ampsum1d(:,3))],ax.YLim,'b--');
+        ylabel(ax,'count');
+        xlabel(ax,'amp at pixel');
+        supertit(f.ax,'Secondary sources removed');
+        
+        if ~isempty(dprojxy)
+          nsep = 1;
+          [f] = plt_customprojdist(tarvlsplst,implocst,dtarvl{nsep},eucdist{nsep},...
+            projxy,dprojxy,projang,sps,'tarvl');
+        end
+        
+        %plot histograms of source amp
+        f = initfig(12,5,1,3); %initialize fig
+        f.ax(1:3) = plt_deconpk_rat_comb4th(f.ax(1:3),srcampr,impindepst,'k','hist');
         supertit(f.ax,'Secondary sources removed');
       end
       % keyboard
-      
+            
       %% 2ndary src removed, prediction of impulse tarvl at 4th sta given sources and empirical off14-src relation
       %%%carry out 'deconvolution' at 4th stations as well for the tarvl and amp
       modname = 'timeoff_plfit_4thsta_160sps.mat';
@@ -1382,6 +1374,79 @@ else
       impindepst = sortrows(impindep,1);
       imp4th{insat,iperc} = impindepst;
       
+      %%%
+      %off14 prediction for decon srcs using plane fit model WITH alignment
+      [~,off14pred] = pred_tarvl_at4thsta(stas(trust4th,:),impindepst(:,7),impindepst(:,8),...
+        impindepst(:,1),0);
+      %off14 computed from actually-matched arrivals at stas 1 and 4 from decon
+      % +repmat(off1i(trust4th),size(impindepst,1),1)
+      off14 = impindepst(:,1)-impindepst(:,9+(trust4th-4)*2+1); %after prealignment
+      
+      %source arrival prediction from plane fitting, including calibrating the arrival prediction in the
+      %context of prealigned signal, note sign is '+'
+      [~,off14gt] = pred_tarvl_at4thsta(stas(trust4th,:),impgtst(:,7),impgtst(:,8),impgtst(:,1),0);
+      
+      %%%amp ratio 12 and 13, and 23, with 4th station checked
+      %%%ideally, when templates and data are not normalized, and there is no particular noise or any
+      %%%other factors causing the amplitude scaling between temp and data and each station to be
+      %%%vastly different, then for each deconvolved source, the direct impulse amp should be
+      %%%~identical at all stations, ie., the ratio between station pairs should be ~1
+      srcampr4th = [impindepst(:,2)./impindepst(:,4) impindepst(:,2)./impindepst(:,6) ...
+        impindepst(:,4)./impindepst(:,6) impindepst(:,2)./impindepst(:,end)];
+      
+      psrcamprs4th = [impindepst(:,2)*max(greenf(:,1))./(impindepst(:,4)*max(greenf(:,2))) ...
+        impindepst(:,2)*max(greenf(:,1))./(impindepst(:,6)*max(greenf(:,3))) ...
+        impindepst(:,4)*max(greenf(:,2))./(impindepst(:,6)*max(greenf(:,3))) ...
+        impindepst(:,2)*max(greenf(:,1))./(impindepst(:,end)*max(greenf(:,end)))];
+      psrcamps4th = [impindepst(:,2)*max(greenf(:,1)) impindepst(:,4)*max(greenf(:,2)) ...
+        impindepst(:,6)*max(greenf(:,3)) impindepst(:,end)*max(greenf(:,end))];
+      
+      nsrcamprs4th = [impindepst(:,2)*min(greenf(:,1))./(impindepst(:,4)*min(greenf(:,2))) ...
+        impindepst(:,2)*min(greenf(:,1))./(impindepst(:,6)*min(greenf(:,3))) ...
+        impindepst(:,4)*min(greenf(:,2))./(impindepst(:,6)*min(greenf(:,3))) ...
+        impindepst(:,2)*min(greenf(:,1))./(impindepst(:,end)*min(greenf(:,end)))];
+      nsrcamps4th = [impindepst(:,2)*min(greenf(:,1)) impindepst(:,4)*min(greenf(:,2))...
+        impindepst(:,6)*min(greenf(:,3)) impindepst(:,end)*min(greenf(:,end))];
+      
+      msrcampr4th{insat,iperc} = median(log10(srcampr4th), 1);
+      madsrcampr4th{insat,iperc} = mad(log10(srcampr4th), 1, 1);
+      mpsrcamprs4th{insat,iperc} = median(log10(psrcamprs4th), 1);
+      madpsrcamprs4th{insat,iperc} = mad(log10(psrcamprs4th), 1, 1);
+      mnsrcamprs4th{insat,iperc} = median(log10(nsrcamprs4th), 1);
+      madnsrcamprs4th{insat,iperc} = mad(log10(nsrcamprs4th), 1, 1);
+      nsrc4th{insat,iperc} = size(srcampr4th,1);
+      
+      %what is the deviation of amp ratio from the median for each source?
+      lndevsrcampr = srcampr-median(srcampr, 1); % in linear scale
+      lgdevsrcampr = log10(srcampr)-median(log10(srcampr), 1); % in log scale, note that log2+log5=log10, so this means a ratio
+      
+      srcamprall4th{insat,iperc} = srcampr4th;
+            
+      %% distance, diff time for source pairs, after 4th sta check
+      %note the 'tsep' obtained from the deconvolved positive peaks should be identical to that if
+      %obtained from the deconvolved impulses themselves, which represent the arrival indices of the
+      %zero-crossing
+      ista=1;
+      %convert time offset to relative loc
+      [imploc, indinput] = off2space002(impindepst(:,7:8),sps,ftrans,0); % 8 cols, format: dx,dy,lon,lat,dep,ttrvl,off12,off13
+      [impindepstst, indsort] = sortrows(impindepst, (ista-1)*2+1);
+      implocst = imploc(indsort, :);
+      tarvlsplst = impindepstst(:,(ista-1)*2+1);
+      
+      %between Nth and (N-1)th source; Nth and (N-2)th; Nth and (N-3)th
+      m = 5;
+      [dtarvl,dneloc,eucdist] = srcdistNtoNm(tarvlsplst, implocst, m);
+      
+      %project along min-scatter direction
+      projang = 135;
+      [projx,projy,projxy] = customprojection(implocst,projang);
+      dprojxy = [diffcustom(projx,1,'forward') diffcustom(projy,1,'forward')];
+      mprojx3nn1(insat,iperc) = median(abs(dprojxy(:,1))); %median consecutive dist along min-scatter after 2nd src removal
+      
+      %For each LFE source, get its distance to all other LFEs, maybe we don't care that long separation in time
+      [~,dprojxy2all] = srcdistall(tarvlsplst,projxy,[0 2*sps]);
+      mprojx32all(insat,iperc) = median(abs(dprojxy2all(:,1))); %median dist along min-scatter to all sources after 2nd src removal
+      
       %%%if you want to plot the deconvolved sources
       if pltsrcflag3
         %plot the scatter of offsets, accounting for prealignment offset, == true offset
@@ -1407,38 +1472,23 @@ else
         ax=gca;
         [ax] = plt_decon_imp_scatter_space(ax,impindepst,xran,yran,cran,offxran,...
           offyran,sps,50,ftrans,'mean','tarvl');
-        plot(ax,xcut,ycut,'k-','linew',2);
+        text(ax,0.98,0.95,sprintf('Satur=%.1f',nsat(insat)),'Units','normalized',...
+          'HorizontalAlignment','right');
+        text(ax,0.02,0.05,sprintf('%.2f',mprojx32all(insat,iperc)),'Units','normalized',...
+          'HorizontalAlignment','left');
         title(ax,'Checkd at 4th stas');
         
         %plot the cumulative density and summed amp of detections
-        amp = mean(impindepst(:,[2 4 6]),2); %amp for all LFE catalog
-        density1d = density_pixel(impindepst(:,7),impindepst(:,8));
-        ampsum = sum_pixel(impindepst(:,7),impindepst(:,8),amp);
+        [density1d, inddup] = density_pixel(impindepst(:,7),impindepst(:,8)); %count at each unique loc
         [imploc, ~] = off2space002(density1d(:,1:2),sps,ftrans,0); % 8 cols, format: dx,dy,lon,lat,dep,ttrvl,off12,off13
         density1d = [imploc(:,1:2) density1d(:,3)];
-        ampsum1d = sortrows([imploc(:,1:2) ampsum(:,3)], 3);
-        [f] = plt_sum_pixel(density1d,ampsum1d,[-4 4],[-4 4],20,'amp','linear');
-        hold(f.ax(1),'on');
-        plot(f.ax(1),xcut,ycut,'k-','linew',2);
-        hold(f.ax(2),'on');
-        plot(f.ax(2),xcut,ycut,'k-','linew',2);
+        amp = mean(impindepst(:,[2 4 6]),2); %amp for all LFE catalog
+        ampsum = sum_at_indices(amp,inddup);
+        ampsum1d = sortrows([imploc(:,1:2) ampsum], 3);
+        cstr = {'# detections / pixel'; 'amp sum / pixel'};
+        [f] = plt_sum_pixel(density1d,ampsum1d,[-4 4],[-4 4],20,cstr,'o','linear');
         supertit(f.ax,'Checkd at 4th stas');
-        
-      end
-      
-      %%%
-      %off14 prediction for decon srcs using plane fit model WITH alignment
-      [~,off14pred] = pred_tarvl_at4thsta(stas(trust4th,:),impindepst(:,7),impindepst(:,8),...
-        impindepst(:,1),0);
-      %off14 computed from actually-matched arrivals at stas 1 and 4 from decon
-      % +repmat(off1i(trust4th),size(impindepst,1),1)
-      off14 = impindepst(:,1)-impindepst(:,9+(trust4th-4)*2+1); %after prealignment
-      
-      %source arrival prediction from plane fitting, including calibrating the arrival prediction in the
-      %context of prealigned signal, note sign is '+'
-      [~,off14gt] = pred_tarvl_at4thsta(stas(trust4th,:),impgtst(:,7),impgtst(:,8),impgtst(:,1),0);
-      
-      if pltsrcflag3
+              
         % f = initfig(5,5,1,1); %initialize fig
         % ax=f.ax(1); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
         % p1=scatter3(ax,impindepst(:,7),impindepst(:,8),off14pred,15,'r','filled','MarkerEdgeColor','k');
@@ -1480,88 +1530,21 @@ else
         % plot(ax,[offmax offmax],ax.YLim,'k--');
         % xlabel(ax,'diff. in plane-fit off14 between decon and ground truth');
         % ylabel(ax,'count');
-      end
-      
-      % keyboard
-      
-      %%%amp ratio 12 and 13, and 23, with 4th station checked
-      %%%ideally, when templates and data are not normalized, and there is no particular noise or any
-      %%%other factors causing the amplitude scaling between temp and data and each station to be
-      %%%vastly different, then for each deconvolved source, the direct impulse amp should be
-      %%%~identical at all stations, ie., the ratio between station pairs should be ~1
-      srcampr4th = [impindepst(:,2)./impindepst(:,4) impindepst(:,2)./impindepst(:,6) ...
-        impindepst(:,4)./impindepst(:,6) impindepst(:,2)./impindepst(:,end)];
-      
-      psrcamprs4th = [impindepst(:,2)*max(greenf(:,1))./(impindepst(:,4)*max(greenf(:,2))) ...
-        impindepst(:,2)*max(greenf(:,1))./(impindepst(:,6)*max(greenf(:,3))) ...
-        impindepst(:,4)*max(greenf(:,2))./(impindepst(:,6)*max(greenf(:,3))) ...
-        impindepst(:,2)*max(greenf(:,1))./(impindepst(:,end)*max(greenf(:,end)))];
-      psrcamps4th = [impindepst(:,2)*max(greenf(:,1)) impindepst(:,4)*max(greenf(:,2)) ...
-        impindepst(:,6)*max(greenf(:,3)) impindepst(:,end)*max(greenf(:,end))];
-      
-      nsrcamprs4th = [impindepst(:,2)*min(greenf(:,1))./(impindepst(:,4)*min(greenf(:,2))) ...
-        impindepst(:,2)*min(greenf(:,1))./(impindepst(:,6)*min(greenf(:,3))) ...
-        impindepst(:,4)*min(greenf(:,2))./(impindepst(:,6)*min(greenf(:,3))) ...
-        impindepst(:,2)*min(greenf(:,1))./(impindepst(:,end)*min(greenf(:,end)))];
-      nsrcamps4th = [impindepst(:,2)*min(greenf(:,1)) impindepst(:,4)*min(greenf(:,2))...
-        impindepst(:,6)*min(greenf(:,3)) impindepst(:,end)*min(greenf(:,end))];
-      
-      msrcampr4th{insat,iperc} = median(log10(srcampr4th), 1);
-      madsrcampr4th{insat,iperc} = mad(log10(srcampr4th), 1, 1);
-      mpsrcamprs4th{insat,iperc} = median(log10(psrcamprs4th), 1);
-      madpsrcamprs4th{insat,iperc} = mad(log10(psrcamprs4th), 1, 1);
-      mnsrcamprs4th{insat,iperc} = median(log10(nsrcamprs4th), 1);
-      madnsrcamprs4th{insat,iperc} = mad(log10(nsrcamprs4th), 1, 1);
-      nsrc4th{insat,iperc} = size(srcampr4th,1);
-      
-      %what is the deviation of amp ratio from the median for each source?
-      lndevsrcampr = srcampr-median(srcampr, 1); % in linear scale
-      lgdevsrcampr = log10(srcampr)-median(log10(srcampr), 1); % in log scale, note that log2+log5=log10, so this means a ratio
-      
-      srcamprall4th{insat,iperc} = srcampr4th;
-      
-      if pltsrcflag3
-        %plot histograms of source amp
-        f = initfig(16,6,2,4); %initialize fig
-        f = plt_deconpk_rat_comb4th(f,srcampr4th,impindepst,'k');
-        supertit(f.ax,'Checkd at 4th stas');
-      end
-      % keyboard
-      
-      %% distance, diff time for source pairs, after 4th sta check
-      %note the 'tsep' obtained from the deconvolved positive peaks should be identical to that if
-      %obtained from the deconvolved impulses themselves, which represent the arrival indices of the
-      %zero-crossing
-      ista=1;
-      %convert time offset to relative loc
-      [imploc, indinput] = off2space002(impindepst(:,7:8),sps,ftrans,0); % 8 cols, format: dx,dy,lon,lat,dep,ttrvl,off12,off13
-      [impindepstst, indsort] = sortrows(impindepst, (ista-1)*2+1);
-      implocst = imploc(indsort, :);
-      tarvlsplst = impindepstst(:,(ista-1)*2+1);
-      
-      %between Nth and (N-1)th source; Nth and (N-2)th; Nth and (N-3)th
-      m = 5;
-      [dtarvl,dneloc,eucdist] = srcdistNtoNm(tarvlsplst, implocst, m);
-      
-      %project along min-scatter direction
-      projang = 135;
-      [projx,projy,projxy] = customprojection(implocst,projang);
-      dprojxy = [diffcustom(projx,1,'forward') diffcustom(projy,1,'forward')];
-      if pltsrcflag3
+        
+        %plot distance between srcs N&N-m along the projected direction
         if ~isempty(dprojxy)
           nsep = 1;
           [f] = plt_customprojdist(tarvlsplst,implocst,dtarvl{nsep},eucdist{nsep},...
             projxy,dprojxy,projang,sps,'tarvl');
-          hold(f.ax(1),'on');
-          plot(f.ax(1),xcut,ycut,'k-','linew',2);
         end
+        
+        %plot histograms of source amp
+        f = initfig(16,5,1,4); %initialize fig
+        f.ax(1:4) = plt_deconpk_rat_comb4th(f.ax(1:4),srcampr4th,impindepst,'k','hist');
+        supertit(f.ax,'Checkd at 4th stas');
       end
-      mprojx3nn1(insat,iperc) = median(abs(dprojxy(:,1))); %median consecutive dist along min-scatter after 2nd src removal
       
-      %For each LFE source, get its distance to all other LFEs, maybe we don't care that long separation in time
-      [~,dprojxy2all] = srcdistall(tarvlsplst,projxy,[0 2*sps]);
-      mprojx32all(insat,iperc) = median(abs(dprojxy2all(:,1))); %median dist along min-scatter to all sources after 2nd src removal
-      
+      % keyboard
       
     end %loop end for saturation level
     

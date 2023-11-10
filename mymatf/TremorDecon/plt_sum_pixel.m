@@ -41,6 +41,8 @@ if strcmp(scale,'log')
   dum(:,3) = log10(dum(:,3));
 end
 scatter(ax,dum(:,1),dum(:,2),msize,dum(:,3),symbol,'filled','MarkerEdgeColor','none');
+text(ax,0.98,0.05,sprintf('%d events',sum(density1d(:,3))),'Units','normalized',...
+  'HorizontalAlignment','right','FontSize',9);
 oldc = colormap(ax,'kelicol');
 newc = flipud(oldc);
 colormap(ax,newc);

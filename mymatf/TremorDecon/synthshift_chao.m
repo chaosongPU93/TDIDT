@@ -263,16 +263,17 @@ amprat(3,:) = minmax(greenf(:,2)')./minmax(greenf(:,3)');	% amp ratio between ma
 spread = range(greenf);   % range of the amp of template
 
 %%%plot the unfiltered and filtered templates
-plt_templates(green,greenf,stas,[],[],lowlet,hiwlet,sps);
+% plt_templates(green,greenf,stas,[],[],lowlet,hiwlet,sps);
 
 %just the filtered templates
 % plt_templates_bp(greenf,stas,lowlet,hiwlet,sps);
+
+% plt_templates(green(:,1:3),greenf(:,1:3),stas(1:3,:),[],[],lowlet,hiwlet,sps);
 % zcrosses
-% ppeaks
-% npeaks
+% 2*(ppeaks-npeaks)/sps
+% 
 % zcrossesf
-% ppeaksf
-% npeaksf
+% 2*(ppeaksf-npeaksf)/sps
 % keyboard
 
 %% synthetics generation
@@ -283,10 +284,10 @@ Twin=0.5*3600+3+2*ceil(greenlen/sps); %Early and late portions will be deleted. 
 winlen=Twin*sps+1;
 skiplen=greenlen;
 %%%for the duration of templates, there are several options
-%%%1. (ppeak-npeak)*2 of the bb template: 44;54;38
-%%%2. direct eyeballing for between zerocrossings: ~65
-%%%3. binned peak-to-peak separation for decently saturated unfiltered synthetics: ~37
-%%%4. similar to 3, but synthetics are filtered first: ~37
+%%%1. (ppeak-npeak)*2 of the bb template: 44;54;38, 0.275s, 0.337s, 0.25s
+%%%2. direct eyeballing for between zerocrossings: ~65, 0.4s
+%%%3. binned peak-to-peak separation for decently saturated unfiltered synthetics: ~37, 0.25s
+%%%4. similar to 3, but synthetics are filtered first: ~37, 0.25s
 tdura = 0.4;  % duration from Chao's broadband template, width is about 795-730=65 spls at 160 hz
 satn=1/tdura*Twin   % if just saturated, how many templates can be fit in? a single peak is ~20 samples wide; maybe a little less (at 100 sps).
     %Twin is window duration in seconds. Events can fall within Twin of
@@ -606,7 +607,7 @@ elseif strcmp(distrloc,'uniform')
     semia = 1.75*(0.6:0.2:2.0);
     semib = 1.25*(0.6:0.2:2.0);
     nreg = length(semia);
-    ireg = 1;
+    ireg = 8;
     xaxis = semia(ireg); %axis length of the same ellipse of my 4-s catalog
     yaxis = semib(ireg);
     % xaxis=1.75; %axis length of the same ellipse of my 4-s catalog

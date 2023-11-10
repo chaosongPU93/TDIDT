@@ -50,7 +50,7 @@ rmse = planefit.gof{4}.rmse;
 offmax = round(2.0*rmse);
 
 %flag to decide which type of synthetics to use
-singleflag = 0;
+singleflag = 1;
 if ~singleflag  %%%synthetics from different region sizes and saturation levels  
   savefile = 'rst_decon_synth.mat';
   ttstr1 = {'Noise-free syn, '};
