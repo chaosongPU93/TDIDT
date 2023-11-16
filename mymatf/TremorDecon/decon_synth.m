@@ -1625,6 +1625,7 @@ f = initfig(12,8,2,3); %initialize fig
 for ireg = 1: nreg
   label{ireg} = sprintf('a/2=%.2f,b/2=%.2f',semia(ireg),semib(ireg));
 end
+label{nreg+1} = 'data';
 f=plt_deconpk_rat_stat(f,nsat,label,msrcampr,madsrcampr);
 stit = supertit(f.ax,'Secondary sources removed');
 movev(stit,0.3);
@@ -1633,6 +1634,16 @@ xlim(f.ax(:),[-0.5 2]);
 
 f = initfig(15,8,2,4); %initialize fig
 f=plt_deconpk_rat_stat(f,nsat,label,msrcampr4th,madsrcampr4th);
+mamprdata4th = [6.8295e-02; 7.3471e-02; 5.1263e-03; 4.2474e-02]; %from real data
+madamprdata4th = [1.8660e-01; 1.8949e-01; 1.7845e-01; 1.7115e-01];
+for i = 1: nsta
+  ax=f.ax(i); hold(ax,'on');
+  plot(ax,log10(nsat),mamprdata4th(i)*ones(nnsat,1),'k--');
+end
+for i = nsta+1: nsta+nsta
+  ax=f.ax(i); hold(ax,'on');
+  plot(ax,log10(nsat),madamprdata4th(i-nsta)*ones(nnsat,1),'k--');  
+end
 stit = supertit(f.ax,'Checkd at 4th stas');
 movev(stit,0.3);
 ylim(f.ax(5:end),[0 0.3]);

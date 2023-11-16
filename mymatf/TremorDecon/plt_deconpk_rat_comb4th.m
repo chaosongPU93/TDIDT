@@ -1,4 +1,4 @@
-function axall=plt_deconpk_rat_comb4th(axall,srcamprall,impindepstall,color,flag)
+function [axall,mampr,madampr]=plt_deconpk_rat_comb4th(axall,srcamprall,impindepstall,color,flag)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % axall=plt_deconpk_rat_comb4th(axall,srcamprall,impindepstall,color,flag)
 %
@@ -24,6 +24,8 @@ for i = 1: size(srcamprall,2)
   ax = axall(i);
   hold(ax,'on');  
   grid(ax,'on');
+  mampr(i,1) = median(log10(srcamprall(:,i)));
+  madampr(i,1) =  mad(log10(srcamprall(:,i)),1);
   histogram(ax,log10(srcamprall(:,i)),'FaceColor',color,'Normalization','count','BinWidth',0.05);
   plot(ax,[median(log10(srcamprall(:,i))) median(log10(srcamprall(:,i)))],ax.YLim,'--',...
     'color',color,'linew',1);

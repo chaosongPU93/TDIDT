@@ -30,8 +30,8 @@ clc
 close all
 
 %%%Flag to indicate if it is necessary to recalculate everything
-% flagrecalc = 0;
-flagrecalc = 1;
+flagrecalc = 0;
+% flagrecalc = 1;
 
 if ~flagrecalc
   load('rst_synth_onespot.mat');
@@ -475,7 +475,7 @@ else
 %   %%%%%%%%%%%%% params of synthetics from diff sat levels and region sizes %%%%%%%%%%%%
   
   %different percent of noise
-  perctrial = 0.1*(0:1:10)';
+  perctrial = 0.1*(0:2:16)';
   ntrial = length(perctrial);
   
   impgrp = cell(nnsat,ntrial);
@@ -1722,14 +1722,28 @@ f = initfig(12,8,2,3); %initialize fig
 for iperc = 1: ntrial 
   label{iperc} = sprintf('noise=%.1f',perctrial(iperc));
 end
+label{ntrial+1} = 'data';
 f=plt_deconpk_rat_stat(f,nsat,label,msrcampr,madsrcampr);
 stit = supertit(f.ax,'Secondary sources removed');
 movev(stit,0.3);
+% ylim(f.ax(4:end),[0 0.3]);
+xlim(f.ax(:),[-0.5 2]);
 
 f = initfig(15,8,2,4); %initialize fig
 f=plt_deconpk_rat_stat(f,nsat,label,msrcampr4th,madsrcampr4th);
+mamprdata4th = [6.8295e-02; 7.3471e-02; 5.1263e-03; 4.2474e-02]; %from real data
+madamprdata4th = [1.8660e-01; 1.8949e-01; 1.7845e-01; 1.7115e-01];
+for i = 1: nsta
+  ax=f.ax(i); hold(ax,'on');
+  plot(ax,log10(nsat),mamprdata4th(i)*ones(nnsat,1),'k--');
+end
+for i = nsta+1: nsta+nsta
+  ax=f.ax(i); hold(ax,'on');
+  plot(ax,log10(nsat),madamprdata4th(i-nsta)*ones(nnsat,1),'k--');  
+end
 stit = supertit(f.ax,'Checkd at 4th stas');
 movev(stit,0.3);
+ylim(f.ax(5:end),[0 0.3]);
 %%%%%%%%% or only plot the median & mad for each sat and noise
 
 
@@ -1741,17 +1755,20 @@ for iperc = 1: ntrial
   p(iperc) = plot(ax,log10(nsat),mprojx22all(:,iperc),'-o','markersize',4,'color',color(iperc,:));
   label{iperc} = sprintf('noise=%.1f',perctrial(iperc));
 end
+p(ntrial+1) = plot(ax,log10(nsat),0.50*ones(nnsat,1),'k--');
+label{ntrial+1} = 'data';
 legend(ax,p,label);
 title(ax,'Secondary sources removed');
 xlabel(ax,'log_{10}(Saturation)');
 ylabel(ax,'Distance (km)');
-yran = [0 0.5];
+yran = [0 1];
 ylim(ax,yran);
 
 ax=f.ax(2); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
 for iperc = 1: ntrial
   plot(ax,log10(nsat),mprojx32all(:,iperc),'-o','markersize',4,'color',color(iperc,:));
 end
+plot(ax,log10(nsat),0.45*ones(nnsat,1),'k--');
 ylim(ax,yran);
 title(ax,'Checkd at 4th stas');
 

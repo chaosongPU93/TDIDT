@@ -115,8 +115,8 @@ sps = 160;
 
 %% call function 'deconv_ref_4s_exp_rand_fn', all bursts, DATA VS NOISE
 %%%Flag to indicate if it is necessary to recalculate everything
-flagrecalc = 0;
-% flagrecalc = 1;
+% flagrecalc = 0;
+flagrecalc = 1;
 
 if flagrecalc
   normflag = 0; %do not normalize the templates
@@ -142,7 +142,7 @@ else
   load(strcat(rstpath, '/MAPS/',savefile));
 end
 
-% keyboard
+keyboard
 
 % bstsig = allbstsig;
 % bstnoi = allbstnoi;
@@ -185,7 +185,7 @@ end
 % %data
 % locxyprojall = allbstsig.locxyprojall;
 % tarvlsplstall = allbstsig.impindepall(:,1);
-% nsrc = allbstsig.nsrcraw;
+% nsrc = allbstsig.nsrc;
 % dtarvlnn1 = allbstsig.dtarvlnn1all;
 % dtarvlnn2 = allbstsig.dtarvlnn2all;
 % dtarvlnn3 = allbstsig.dtarvlnn3all;
@@ -214,7 +214,7 @@ end
 % %noise
 % locxyprojalln = allbstnoi.locxyprojall;
 % tarvlsplstalln = allbstnoi.impindepall(:,1);
-% nsrcn = allbstnoi.nsrcraw;
+% nsrcn = allbstnoi.nsrc;
 % dtarvlnn1n = allbstnoi.dtarvlnn1all;
 % dtarvlnn2n = allbstnoi.dtarvlnn2all;
 % dtarvlnn3n = allbstnoi.dtarvlnn3all;
@@ -247,7 +247,7 @@ end
 %data
 locxyprojall = allbstsig.locxyproj4thall;
 tarvlsplstall = allbstsig.impindep4thall(:,1);
-nsrc = allbstsig.nsrc;
+nsrc = allbstsig.nsrc4th;
 dtarvlnn1 = allbstsig.dtarvlnn14thall;
 dtarvlnn2 = allbstsig.dtarvlnn24thall;
 dtarvlnn3 = allbstsig.dtarvlnn34thall;
@@ -264,10 +264,11 @@ eucdist{3,1} = allbstsig.distarvlnn34thall(:,1);
 dtarvl{1,1} = allbstsig.dtarvlnn14thall;
 dtarvl{2,1} = allbstsig.dtarvlnn24thall;
 dtarvl{3,1} = allbstsig.dtarvlnn34thall;
+srcamprall = allbstsig.srcampr4thall;
 %noise
 locxyprojalln = allbstnoi.locxyproj4thall;
 tarvlsplstalln = allbstnoi.impindep4thall(:,1);
-nsrcn = allbstnoi.nsrc;
+nsrcn = allbstnoi.nsrc4th;
 dtarvlnn1n = allbstnoi.dtarvlnn14thall;
 dtarvlnn2n = allbstnoi.dtarvlnn24thall;
 dtarvlnn3n = allbstnoi.dtarvlnn34thall;
@@ -284,7 +285,7 @@ eucdistn{3,1} = allbstnoi.distarvlnn34thall(:,1);
 dtarvln{1,1} = allbstnoi.dtarvlnn14thall;
 dtarvln{2,1} = allbstnoi.dtarvlnn24thall;
 dtarvln{3,1} = allbstnoi.dtarvlnn34thall;
-srcampralln = allbstnoi.srcamprall4th;
+srcampralln = allbstnoi.srcampr4thall;
 supertstr = 'Further checked at KLNB';
 fnsuffix = '4th';
 
@@ -300,6 +301,7 @@ m = 1;
 % dtarvlpltn = dtarvlnn3n;
 % nsep = 3;
 
+keyboard
 
 %%
 %%%abs distance along min-rmse direction between each source and all others whose arrival 
@@ -516,25 +518,11 @@ keyboard
 %%%combine the direct deconvolved amp ratio between all station pairs of
 %%%all burst wins, and summarize into one histogram
 
-f3 = initfig(16,4,1,4); %plot histograms of source amp
-supertit(f3.ax,'Secondary sources removed & Checkd at 4th stas');
-f3.ax(1:3) = plt_deconpk_rat_comb(f3.ax(1:3),srcamprall,imp,'b','hist');
-f3.ax(1:3) = plt_deconpk_rat_comb(f3.ax(1:3),srcampr4th,impindepst,'r','hist');
-
-
-plt_deconpk_rat_comb
-
-%% src amp ratio
-%%%combine the direct deconvolved amp ratio between all station pairs of
-%%%all burst wins, and summarize into one histogram
-srcamprall = allbstsig.srcamprall;
-impindep4thall = allbstsig.impindep4thall;
-f2 = initfig(16,9,2,size(srcamprall,2));
-f2 = plt_deconpk_rat_comb4th(f2,srcamprall,impindep4thall,'b');
-
-srcamprall = allbstnoi.srcamprall;
-impindep4thall = allbstnoi.impindep4thall;
-f2 = plt_deconpk_rat_comb4th(f2,srcamprall,impindep4thall,'r');
+f3 = initfig(16,5,1,4); %plot histograms of source amp
+tit=supertit(f3.ax,supertstr);
+movev(tit,0.2);
+[f3.ax(1:4),mampr,madampr] = plt_deconpk_rat_comb4th(f3.ax(1:4),srcamprall,imp,'b','hist');
+[f3.ax(1:4),mamprn,madamprn] = plt_deconpk_rat_comb4th(f3.ax(1:4),srcampralln,impn,'r','hist');
 
 %%
 %%%the direct/scaled deconvolved pos/neg source peak ratio between all station pairs, for each
