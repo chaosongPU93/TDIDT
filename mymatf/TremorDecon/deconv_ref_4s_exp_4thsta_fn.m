@@ -524,32 +524,17 @@ ndetwin4thk = cell(size(trange,1),1); % num of detections in each sub win after 
 % 
 % indtest = [18,21,22,23];
 
-%store all target windows
+%secondary arrivals removed, decon impulse tarvl separation, spatial distance, etc.
+impindepall = []; %deconvolved srcs 
 srcamprall = [];  %src amp ratio 
 lndevsrcamprall = []; %linear deviation from median src amp ratio
 lgdevsrcamprall = []; %log deviation from median src amp ratio
 rcccatsrcall = [];  %mean concat RCC among trio and RCC14 at src arrival 
 rccpairsrcall = []; %concat RCC for trio sta pairs at src arrival 
-rcccatsrc4thall = [];  %mean concat RCC among trio and RCC14 at src arrival 
-rccpairsrc4thall = []; %concat RCC for trio sta pairs at src arrival 
 psrcampsall = []; %positive scaled src amp  
 nsrcampsall = []; %negative scaled src amp  
 psrcamprsall = [];  %positive scaled src amp ratio  
 nsrcamprsall = [];  %negative scaled src amp ratio  
-clppkhtwfall = [];  %closest pos peak height of waveform
-clnpkhtwfall = [];  %closest neg peak height of waveform
-clppkwfsepall = [];  %closest pos peak separation of waveform
-clnpkwfsepall = [];  %closest neg peak separation of waveform
-ppkwfsepmed = []; %median of the pos peak separation of waveform
-ppkwfsepmod = []; %mode of the pos peak separation of waveform
-npkwfsepmed = []; %median of the neg peak separation of waveform
-npkwfsepmod = []; %mode of the neg peak separation of waveform
-pred4difftrall = [];  %difference in arrival from prediction at 4th sta  
-diffoff14trall = [];  %difference in off14 between prediction and decon arrivals
-impindepall = []; %after removing 2ndary sources
-impindep4thall = [];  %after 4th-sta check
-
-%secondary arrivals removed, decon impulse tarvl separation, spatial distance, etc.
 tsepall = []; 
 dtorinn1all = [];
 distorinn1all = [];
@@ -601,6 +586,26 @@ dt2allbsts2 = [];
 dt2allbsts3 = [];
 
 %4th station checked, decon impulse tarvl separation, spatial distance, etc.
+impindep4thall = [];  %deconvolved srcs 
+srcampr4thall = [];  %src amp ratio 
+lndevsrcampr4thall = []; %linear deviation from median src amp ratio
+lgdevsrcampr4thall = []; %log deviation from median src amp ratio
+rcccatsrc4thall = [];  %mean concat RCC among trio and RCC14 at src arrival 
+rccpairsrc4thall = []; %concat RCC for trio sta pairs at src arrival 
+psrcamps4thall = []; %positive scaled src amp  
+nsrcamps4thall = []; %negative scaled src amp  
+psrcamprs4thall = [];  %positive scaled src amp ratio  
+nsrcamprs4thall = [];  %negative scaled src amp ratio  
+clppkhtwf4thall = [];  %closest pos peak height of waveform
+clnpkhtwf4thall = [];  %closest neg peak height of waveform
+clppkwfsep4thall = [];  %closest pos peak separation of waveform
+clnpkwfsep4thall = [];  %closest neg peak separation of waveform
+ppkwfsepmed4th = []; %median of the pos peak separation of waveform
+ppkwfsepmod4th = []; %mode of the pos peak separation of waveform
+npkwfsepmed4th = []; %median of the neg peak separation of waveform
+npkwfsepmod4th = []; %mode of the neg peak separation of waveform
+pred4difftrall = [];  %difference in arrival from prediction at 4th sta  
+diffoff14trall = [];  %difference in off14 between prediction and decon arrivals
 tsep4thall = []; 
 dtorinn14thall = [];
 distorinn14thall = [];
@@ -1748,7 +1753,7 @@ for iii = 1: length(idxbst)
       npkindep(indremove, :) = [];
       sharp(indremove, :) = [];
       impindepst = sortrows(impindep,1);
-      nsrcraw(k,1) = size(impindepst,1);  % number of sources AFTER removing 2ndary
+      nsrc(k,1) = size(impindepst,1);  % number of sources AFTER removing 2ndary
 
       if ~isempty(impindepst)
 
@@ -1960,6 +1965,42 @@ for iii = 1: length(idxbst)
 %         print(f.fig,'-dpdf',strcat('/home/chaosong/Pictures/',ttype,'nn1dist.pdf'));
 %       end
 % keyboard
+
+      if isempty(impindepst)
+        continue
+      else
+      srcampr = [impindepst(:,2)./impindepst(:,4) impindepst(:,2)./impindepst(:,6) ...
+                 impindepst(:,4)./impindepst(:,6)];
+               
+      psrcamprs = [impindepst(:,2)*max(greenf(:,1))./(impindepst(:,4)*max(greenf(:,2))) ...
+                   impindepst(:,2)*max(greenf(:,1))./(impindepst(:,6)*max(greenf(:,3))) ...
+                   impindepst(:,4)*max(greenf(:,2))./(impindepst(:,6)*max(greenf(:,3)))];
+      psrcamps = [impindepst(:,2)*max(greenf(:,1)) impindepst(:,4)*max(greenf(:,2)) ...
+                  impindepst(:,6)*max(greenf(:,3))];
+      
+      nsrcamprs = [impindepst(:,2)*min(greenf(:,1))./(impindepst(:,4)*min(greenf(:,2))) ...
+                   impindepst(:,2)*min(greenf(:,1))./(impindepst(:,6)*min(greenf(:,3))) ...
+                   impindepst(:,4)*min(greenf(:,2))./(impindepst(:,6)*min(greenf(:,3)))];
+      nsrcamps = [impindepst(:,2)*min(greenf(:,1)) impindepst(:,4)*min(greenf(:,2))...
+                  impindepst(:,6)*min(greenf(:,3))];
+      
+      msrcampr(k,:) = median(log10(srcampr), 1);
+      madsrcampr(k,:) = mad(log10(srcampr), 1, 1);
+      mpsrcamprs(k,:) = median(log10(psrcamprs), 1);
+      madpsrcamprs(k,:) = mad(log10(psrcamprs), 1, 1);
+      mnsrcamprs(k,:) = median(log10(nsrcamprs), 1);
+      madnsrcamprs(k,:) = mad(log10(nsrcamprs), 1, 1);
+      srcamprall = [srcamprall; srcampr];
+      psrcampsall = [psrcampsall; psrcamps];
+      nsrcampsall = [nsrcampsall; nsrcamps];
+      psrcamprsall = [psrcamprsall; psrcamprs];
+      nsrcamprsall = [nsrcamprsall; nsrcamprs];
+
+      %what is the deviation of amp ratio from the median for each source?
+      lndevsrcampr = srcampr-median(srcampr, 1); % in linear scale
+      lgdevsrcampr = log10(srcampr)-median(log10(srcampr), 1); % in log scale, note that log2+log5=log10, so this means a ratio
+      lndevsrcamprall = [lndevsrcamprall; lndevsrcampr];
+      lgdevsrcamprall = [lgdevsrcamprall; lgdevsrcampr];
 
       %%%what are the corresponding RCC at each source
       rccpairsrc = [];
@@ -2240,6 +2281,7 @@ for iii = 1: length(idxbst)
       ppkindep(indremove, :) = [];
       npkindep(indremove, :) = [];
       impindepst = sortrows(impindep,1);
+      nsrc4th(k,1) = size(impindepst,1);  % number of sources AFTER 4th-sta check
       pred4difftrall = [pred4difftrall; pred4difftr];
       
       if ~isempty(impindepst)
@@ -2547,49 +2589,45 @@ for iii = 1: length(idxbst)
 %       keyboard
 
 
-      %% plot amp ratio 12 and 13, and 23, without 2ndary sources
+      %% plot amp ratio 12 and 13, and 23, after 4th-sta check
 %       %%ideally, when templates and data are not normalized, and there is no particular noise or any
 %       %%other factors causing the amplitude scaling between temp and data and each station to be
 %       %%vastly different, then for each deconvolved source, the direct impulse amp should be
 %       %%~identical at all stations, ie., the ratio between station pairs should be ~1
-      if isempty(impindepst)
-        continue
-      else
-      srcampr = [impindepst(:,2)./impindepst(:,4) impindepst(:,2)./impindepst(:,6) ...
+      srcampr4th = [impindepst(:,2)./impindepst(:,4) impindepst(:,2)./impindepst(:,6) ...
                  impindepst(:,4)./impindepst(:,6) impindepst(:,2)./impindepst(:,17)];
                
-      psrcamprs = [impindepst(:,2)*max(greenf(:,1))./(impindepst(:,4)*max(greenf(:,2))) ...
+      psrcamprs4th = [impindepst(:,2)*max(greenf(:,1))./(impindepst(:,4)*max(greenf(:,2))) ...
                    impindepst(:,2)*max(greenf(:,1))./(impindepst(:,6)*max(greenf(:,3))) ...
                    impindepst(:,4)*max(greenf(:,2))./(impindepst(:,6)*max(greenf(:,3))) ...
                    impindepst(:,2)*max(greenf(:,1))./(impindepst(:,17)*max(greenf(:,7)))];
-      psrcamps = [impindepst(:,2)*max(greenf(:,1)) impindepst(:,4)*max(greenf(:,2)) ...
+      psrcamps4th = [impindepst(:,2)*max(greenf(:,1)) impindepst(:,4)*max(greenf(:,2)) ...
                   impindepst(:,6)*max(greenf(:,3)) impindepst(:,17)*max(greenf(:,7))];
       
-      nsrcamprs = [impindepst(:,2)*min(greenf(:,1))./(impindepst(:,4)*min(greenf(:,2))) ...
+      nsrcamprs4th = [impindepst(:,2)*min(greenf(:,1))./(impindepst(:,4)*min(greenf(:,2))) ...
                    impindepst(:,2)*min(greenf(:,1))./(impindepst(:,6)*min(greenf(:,3))) ...
                    impindepst(:,4)*min(greenf(:,2))./(impindepst(:,6)*min(greenf(:,3))) ...
                    impindepst(:,2)*min(greenf(:,1))./(impindepst(:,17)*min(greenf(:,7)))];
-      nsrcamps = [impindepst(:,2)*min(greenf(:,1)) impindepst(:,4)*min(greenf(:,2))...
+      nsrcamps4th = [impindepst(:,2)*min(greenf(:,1)) impindepst(:,4)*min(greenf(:,2))...
                   impindepst(:,6)*min(greenf(:,3)) impindepst(:,17)*min(greenf(:,7))];
       
-      msrcampr(k,:) = median(log10(srcampr), 1);
-      madsrcampr(k,:) = mad(log10(srcampr), 1, 1);
-      mpsrcamprs(k,:) = median(log10(psrcamprs), 1);
-      madpsrcamprs(k,:) = mad(log10(psrcamprs), 1, 1);
-      mnsrcamprs(k,:) = median(log10(nsrcamprs), 1);
-      madnsrcamprs(k,:) = mad(log10(nsrcamprs), 1, 1);
-      nsrc(k,1) = size(srcampr,1);
-      srcamprall = [srcamprall; srcampr];
-      psrcampsall = [psrcampsall; psrcamps];
-      nsrcampsall = [nsrcampsall; nsrcamps];
-      psrcamprsall = [psrcamprsall; psrcamprs];
-      nsrcamprsall = [nsrcamprsall; nsrcamprs];
+      msrcampr4th(k,:) = median(log10(srcampr4th), 1);
+      madsrcampr4th(k,:) = mad(log10(srcampr4th), 1, 1);
+      mpsrcamprs4th(k,:) = median(log10(psrcamprs4th), 1);
+      madpsrcamprs4th(k,:) = mad(log10(psrcamprs4th), 1, 1);
+      mnsrcamprs4th(k,:) = median(log10(nsrcamprs4th), 1);
+      madnsrcamprs4th(k,:) = mad(log10(nsrcamprs4th), 1, 1);
+      srcampr4thall = [srcampr4thall; srcampr4th];
+      psrcamps4thall = [psrcamps4thall; psrcamps4th];
+      nsrcamps4thall = [nsrcamps4thall; nsrcamps4th];
+      psrcamprs4thall = [psrcamprs4thall; psrcamprs4th];
+      nsrcamprs4thall = [nsrcamprs4thall; nsrcamprs4th];
 
       %what is the deviation of amp ratio from the median for each source?
-      lndevsrcampr = srcampr-median(srcampr, 1); % in linear scale
-      lgdevsrcampr = log10(srcampr)-median(log10(srcampr), 1); % in log scale, note that log2+log5=log10, so this means a ratio
-      lndevsrcamprall = [lndevsrcamprall; lndevsrcampr];
-      lgdevsrcamprall = [lgdevsrcamprall; lgdevsrcampr];
+      lndevsrcampr4th = srcampr4th-median(srcampr4th, 1); % in linear scale
+      lgdevsrcampr4th = log10(srcampr4th)-median(log10(srcampr4th), 1); % in log scale, note that log2+log5=log10, so this means a ratio
+      lndevsrcampr4thall = [lndevsrcampr4thall; lndevsrcampr4th];
+      lgdevsrcampr4thall = [lgdevsrcampr4thall; lgdevsrcampr4th];
       
       %%%what are the corresponding RCC at each source
       rccpairsrc4th = [];
@@ -2761,37 +2799,37 @@ for iii = 1: length(idxbst)
       clppkhtwf = [clppkhtwf(:,1:3) clppkhtwf(:,end)];  %I only want KLNB
 %       mclppkhtwf(k, :) = median(clppkhtwf, 1);
 %       madclppkhtwf(k, :) = mad(clppkhtwf,1, 1);
-      clppkhtwfall = [clppkhtwfall; clppkhtwf];
+      clppkhtwf4thall = [clppkhtwf4thall; clppkhtwf];
       clppkwf = clppk.clppkwf;  %also store the waveform peak separation
       if size(clppkwf,1)>1
         clppkwfsep = diff([clppkwf(:,1:3) clppkwf(:,end)]);  %I only want KLNB
       else
         clppkwfsep = [];
       end
-      clppkwfsepall = [clppkwfsepall; clppkwfsep];
+      clppkwfsep4thall = [clppkwfsep4thall; clppkwfsep];
       
       clnpkhtwf = clnpk.clnpkhtwf;
       clnpkhtwf = [clnpkhtwf(:,1:3) clnpkhtwf(:,end)];  %I only want KLNB
 %       mclnpkhtwf(k, :) = median(clnpkhtwf, 1);
 %       madclnpkhtwf(k, :) = mad(clnpkhtwf,1, 1);
-      clnpkhtwfall = [clnpkhtwfall; clnpkhtwf];
+      clnpkhtwf4thall = [clnpkhtwf4thall; clnpkhtwf];
       clnpkwf = clnpk.clnpkwf;
       if size(clnpkwf,1)>1
         clnpkwfsep = diff([clnpkwf(:,1:3) clnpkwf(:,end)]);  %I only want KLNB
       else
         clnpkwfsep = [];
       end
-      clnpkwfsepall = [clnpkwfsepall; clnpkwfsep];
+      clnpkwfsep4thall = [clnpkwfsep4thall; clnpkwfsep];
       
       %also get the waveform peak separation for the full trace, since the number of peaks is not
       %the same for each station, keep 
       for ista = [1 2 3 nsta]
         [~, pk] = findpeaks(sigsta(:,ista));
-        ppkwfsepmed(k,ista) = median(diff(pk));
-        ppkwfsepmod(k,ista) = mode(diff(pk));
+        ppkwfsepmed4th(k,ista) = median(diff(pk));
+        ppkwfsepmod4th(k,ista) = mode(diff(pk));
         [~, pk] = findpeaks(-sigsta(:,ista));
-        npkwfsepmed(k,ista) = median(diff(pk));
-        npkwfsepmod(k,ista) = mode(diff(pk));
+        npkwfsepmed4th(k,ista) = median(diff(pk));
+        npkwfsepmod4th(k,ista) = mode(diff(pk));
       end
       
 %       keyboard
@@ -3013,23 +3051,31 @@ end
 rststruct.srcamprall = srcamprall;
 rststruct.lndevsrcamprall = lndevsrcamprall;
 rststruct.lgdevsrcamprall = lgdevsrcamprall;
-rststruct.rcccatsrcall = rcccatsrcall;
-rststruct.rccpairsrcall = rccpairsrcall;
-rststruct.rcccatsrc4thall = rcccatsrc4thall;
-rststruct.rccpairsrc4thall = rccpairsrc4thall;
 rststruct.psrcampsall = psrcampsall;
 rststruct.nsrcampsall = nsrcampsall;
 rststruct.psrcamprsall = psrcamprsall;
 rststruct.nsrcamprsall = nsrcamprsall;
-rststruct.clppkhtwfall = clppkhtwfall;
-rststruct.clnpkhtwfall = clnpkhtwfall;
-rststruct.clppkwfsepall = clppkwfsepall;
-rststruct.clnpkwfsepall = clnpkwfsepall;
-rststruct.ppkwfsepmed = ppkwfsepmed;
-rststruct.ppkwfsepmod = ppkwfsepmod;
-rststruct.npkwfsepmed = npkwfsepmed;
-rststruct.npkwfsepmod = npkwfsepmod;
+rststruct.rcccatsrcall = rcccatsrcall;
+rststruct.rccpairsrcall = rccpairsrcall;
 rststruct.rccbst = rccbst;
+
+rststruct.srcampr4thall = srcampr4thall;
+rststruct.lndevsrcampr4thall = lndevsrcampr4thall;
+rststruct.lgdevsrcampr4thall = lgdevsrcampr4thall;
+rststruct.psrcamps4thall = psrcamps4thall;
+rststruct.nsrcamps4thall = nsrcamps4thall;
+rststruct.psrcamprs4thall = psrcamprs4thall;
+rststruct.nsrcamprs4thall = nsrcamprs4thall;
+rststruct.rcccatsrc4thall = rcccatsrc4thall;
+rststruct.rccpairsrc4thall = rccpairsrc4thall;
+rststruct.clppkhtwf4thall = clppkhtwf4thall;
+rststruct.clnpkhtwf4thall = clnpkhtwf4thall;
+rststruct.clppkwfsep4thall = clppkwfsep4thall;
+rststruct.clnpkwfsep4thall = clnpkwfsep4thall;
+rststruct.ppkwfsepmed4th = ppkwfsepmed4th;
+rststruct.ppkwfsepmod4th = ppkwfsepmod4th;
+rststruct.npkwfsepmed4th = npkwfsepmed4th;
+rststruct.npkwfsepmod4th = npkwfsepmod4th;
 
 rststruct.off1iwk = off1iwk;
 rststruct.off1ic = off1ic;
@@ -3130,7 +3176,6 @@ rststruct.dloco2all4thbst = dloco2all4thbst;
 rststruct.disto2all4thbst = disto2all4thbst;
 
 if ~isempty(impindepst)
-  rststruct.nsrcraw = nsrcraw;
   rststruct.nsrc = nsrc;
   rststruct.msrcampr = msrcampr;
   rststruct.madsrcampr = madsrcampr;
@@ -3138,6 +3183,13 @@ if ~isempty(impindepst)
   rststruct.madpsrcamprs = madpsrcamprs;
   rststruct.mnsrcamprs = mnsrcamprs;
   rststruct.madnsrcamprs = madnsrcamprs;
+  rststruct.nsrc4th = nsrc4th;
+  rststruct.msrcampr4th = msrcampr4th;
+  rststruct.madsrcampr4th = madsrcampr4th;
+  rststruct.mpsrcamprs4th = mpsrcamprs4th;
+  rststruct.madpsrcamprs4th = madpsrcamprs4th;
+  rststruct.mnsrcamprs4th = mnsrcamprs4th;
+  rststruct.madnsrcamprs4th = madnsrcamprs4th;
   rststruct.l2normred = l2normred;
   rststruct.projangrm = projangrm;
   rststruct.projangsl = projangsl;
