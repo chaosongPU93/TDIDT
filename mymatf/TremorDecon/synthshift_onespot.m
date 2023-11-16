@@ -304,7 +304,6 @@ else
   
   nouts=length(writes);
   seed=round(writes(1)/5e3); %for random number generator
-
   
   %%%specify which time is uniform in time
   % timetype = 'tarvl';
@@ -318,6 +317,9 @@ else
   % ftrans = 'interpArmb';
   % ftrans = 'interpArmbreloc';
   ftrans = 'interpchao';
+  
+  %%%whether to plot to check the synthetics
+  pltsynflag = 0;
   
   %%%specify if forcing a min speration of arrival time for 2 events from the same spot
   % forcesep = 1;
@@ -348,29 +350,13 @@ else
  
   %%
   %%% a simple plot the synthetics
-  figure
-  nrow = length(writes)+1;
-  ncol = 1;
-  subplot(nrow,ncol,1)
-  hold on
-  tmp = synth;
-  % if nsta == 3
-  plot(tmp(:,1),'r');
-  plot(tmp(:,2),'b');
-  plot(tmp(:,3),'k');
-  % else
-  %   color = jet(nsta);
-  %   for ista = 1: nsta
-  %     plot(tmp(:,ista),'Color',color(ista,:));
-  %   end
-  % end
-  xlim([0 40*sps]);
-  axranexp(gca,6,20);
-  
-  for i = 1: length(writes)
-    subplot(nrow,ncol,i+1)
+  if pltsynflag
+    figure
+    nrow = length(writes)+1;
+    ncol = 1;
+    subplot(nrow,ncol,1)
     hold on
-    tmp = synths(:,:,i);
+    tmp = synth;
     % if nsta == 3
     plot(tmp(:,1),'r');
     plot(tmp(:,2),'b');
@@ -381,12 +367,30 @@ else
     %     plot(tmp(:,ista),'Color',color(ista,:));
     %   end
     % end
-    text(0.95,0.9,sprintf('%.1f x saturation',nsat(i)),'Units','normalized','HorizontalAlignment',...
-      'right');
     xlim([0 40*sps]);
     axranexp(gca,6,20);
+
+    for i = 1: length(writes)
+      subplot(nrow,ncol,i+1)
+      hold on
+      tmp = synths(:,:,i);
+      % if nsta == 3
+      plot(tmp(:,1),'r');
+      plot(tmp(:,2),'b');
+      plot(tmp(:,3),'k');
+      % else
+      %   color = jet(nsta);
+      %   for ista = 1: nsta
+      %     plot(tmp(:,ista),'Color',color(ista,:));
+      %   end
+      % end
+      text(0.95,0.9,sprintf('%.1f x saturation',nsat(i)),'Units','normalized','HorizontalAlignment',...
+        'right');
+      xlim([0 40*sps]);
+      axranexp(gca,6,20);
+    end
+    xlabel(sprintf('Samples at %d Hz',sps),'FontSize',12);
   end
-  xlabel(sprintf('Samples at %d Hz',sps),'FontSize',12);
   
 %   tmpgrid = xygrid;
 %   tmpgrid(:,1:2)=round(sps/40*tmpgrid(:,1:2)); % *4 to get to 160 sps from 40.
@@ -545,41 +549,43 @@ else
       xnoi = xnoi .* median(env) ./ median(envn);
       median(env) - median(envelope(detrend(xnoi)))
       
-      figure
-      subplot(311)
-      plot((1:size(optseg,1))/sps,optseg(:,1),'r','linew',1); hold on
-      plot((1:size(optseg,1))/sps,optseg(:,2),'b','linew',1);
-      plot((1:size(optseg,1))/sps,optseg(:,3),'k','linew',1);
-      text(0.95,0.9,sprintf('syn from sat: %.1f',nsat(insat)),'Units','normalized',...
-        'HorizontalAlignment','right');
-      %       xlabel('Samples at 160 sps');
-      xlabel('Time (s)');
-      ylabel('Amplitude');
-      xlim([0 size(optseg,1)]/sps);
-      ax = gca; yran = ax.YLim;      
-%       ylim([-1.2 1.2]);
-      
-      subplot(312)
-      plot((1:size(optseg,1))/sps,xnoi(:,1),'r','linew',1); hold on
-      plot((1:size(optseg,1))/sps,xnoi(:,2),'b','linew',1);
-      plot((1:size(optseg,1))/sps,xnoi(:,3),'k','linew',1);
-      text(0.95,0.9,'100% assembled noise','Units','normalized','HorizontalAlignment','right');
-      %       xlabel('Samples at 160 sps');
-      xlabel('Time (s)');
-      ylabel('Amplitude');
-      xlim([0 size(optseg,1)]/sps);
-      ylim(yran);
-            
-      subplot(313)
-      plot((1:size(optseg,1))/sps,optseg(:,1)+xnoi(:,1),'r','linew',1); hold on
-      plot((1:size(optseg,1))/sps,optseg(:,2)+xnoi(:,2),'b','linew',1);
-      plot((1:size(optseg,1))/sps,optseg(:,3)+xnoi(:,3),'k','linew',1);
-      text(0.95,0.9,'syn + 100% noise','Units','normalized','HorizontalAlignment','right');
-      %       xlabel('Samples at 160 sps');
-      xlabel('Time (s)');
-      ylabel('Amplitude');
-      xlim([0 30]);
-      ylim(yran);
+      if pltsynflag
+        figure
+        subplot(311)
+        plot((1:size(optseg,1))/sps,optseg(:,1),'r','linew',1); hold on
+        plot((1:size(optseg,1))/sps,optseg(:,2),'b','linew',1);
+        plot((1:size(optseg,1))/sps,optseg(:,3),'k','linew',1);
+        text(0.95,0.9,sprintf('syn from sat: %.1f',nsat(insat)),'Units','normalized',...
+          'HorizontalAlignment','right');
+        %       xlabel('Samples at 160 sps');
+        xlabel('Time (s)');
+        ylabel('Amplitude');
+        xlim([0 size(optseg,1)]/sps);
+        ax = gca; yran = ax.YLim;      
+  %       ylim([-1.2 1.2]);
+
+        subplot(312)
+        plot((1:size(optseg,1))/sps,xnoi(:,1),'r','linew',1); hold on
+        plot((1:size(optseg,1))/sps,xnoi(:,2),'b','linew',1);
+        plot((1:size(optseg,1))/sps,xnoi(:,3),'k','linew',1);
+        text(0.95,0.9,'100% assembled noise','Units','normalized','HorizontalAlignment','right');
+        %       xlabel('Samples at 160 sps');
+        xlabel('Time (s)');
+        ylabel('Amplitude');
+        xlim([0 size(optseg,1)]/sps);
+        ylim(yran);
+
+        subplot(313)
+        plot((1:size(optseg,1))/sps,optseg(:,1)+xnoi(:,1),'r','linew',1); hold on
+        plot((1:size(optseg,1))/sps,optseg(:,2)+xnoi(:,2),'b','linew',1);
+        plot((1:size(optseg,1))/sps,optseg(:,3)+xnoi(:,3),'k','linew',1);
+        text(0.95,0.9,'syn + 100% noise','Units','normalized','HorizontalAlignment','right');
+        %       xlabel('Samples at 160 sps');
+        xlabel('Time (s)');
+        ylabel('Amplitude');
+        xlim([0 30]);
+        ylim(yran);
+      end
 %       keyboard
       
       %some percent of assembled noise
@@ -596,45 +602,47 @@ else
       
       %%
       %%%a glance of signal
-      figure
-      subplot(311)
-      plot((1:size(synths,1))/sps,synths(:,1,insat),'r','linew',1); hold on
-      plot((1:size(synths,1))/sps,synths(:,2,insat),'b','linew',1);
-      plot((1:size(synths,1))/sps,synths(:,3,insat),'k','linew',1);
-      text(0.95,0.9,sprintf('Single-spot synthetics with sat=%.1f',nsat(insat)),'Units','normalized',...
-        'HorizontalAlignment','right');
-      %       xlabel('Samples at 160 sps');
-      xlabel('Time (s)');
-      ylabel('Amplitude');
-      % xlim([0 size(xnoi,1)]/sps);
-      xlim([0 30]);
-      ax = gca; yran = ax.YLim;      
+      if pltsynflag
+        figure
+        subplot(311)
+        plot((1:size(synths,1))/sps,synths(:,1,insat),'r','linew',1); hold on
+        plot((1:size(synths,1))/sps,synths(:,2,insat),'b','linew',1);
+        plot((1:size(synths,1))/sps,synths(:,3,insat),'k','linew',1);
+        text(0.95,0.9,sprintf('Single-spot synthetics with sat=%.1f',nsat(insat)),'Units','normalized',...
+          'HorizontalAlignment','right');
+        %       xlabel('Samples at 160 sps');
+        xlabel('Time (s)');
+        ylabel('Amplitude');
+        % xlim([0 size(xnoi,1)]/sps);
+        xlim([0 30]);
+        ax = gca; yran = ax.YLim;
+        
+        subplot(312)
+        plot((1:size(synths,1))/sps,noiseg(:,1),'r','linew',1); hold on
+        plot((1:size(synths,1))/sps,noiseg(:,2),'b','linew',1);
+        plot((1:size(synths,1))/sps,noiseg(:,3),'k','linew',1);
+        text(0.95,0.9,sprintf('%d%% noise',round(perc*100)),'Units','normalized','HorizontalAlignment','right');
+        %       xlabel('Samples at 160 sps');
+        xlabel('Time (s)');
+        ylabel('Amplitude');
+        % xlim([0 size(xnoi,1)]/sps);
+        xlim([0 30]);
+        ylim(yran);
+        
+        subplot(313)
+        plot((1:size(synths,1))/sps,synnew(:,1,insat),'r','linew',1); hold on
+        plot((1:size(synths,1))/sps,synnew(:,2,insat),'b','linew',1);
+        plot((1:size(synths,1))/sps,synnew(:,3,insat),'k','linew',1);
+        text(0.95,0.9,'Synthetics+noise','Units','normalized','HorizontalAlignment','right');
+        %       xlabel('Samples at 160 sps');
+        xlabel('Time (s)');
+        ylabel('Amplitude');
+        % xlim([0 size(xnoi,1)]/sps);
+        xlim([0 30]);
+        ylim(yran);
+      end
       
-      subplot(312)
-      plot((1:size(synths,1))/sps,noiseg(:,1),'r','linew',1); hold on
-      plot((1:size(synths,1))/sps,noiseg(:,2),'b','linew',1);
-      plot((1:size(synths,1))/sps,noiseg(:,3),'k','linew',1);
-      text(0.95,0.9,sprintf('%d%% noise',round(perc*100)),'Units','normalized','HorizontalAlignment','right');
-      %       xlabel('Samples at 160 sps');
-      xlabel('Time (s)');
-      ylabel('Amplitude');
-      % xlim([0 size(xnoi,1)]/sps);
-      xlim([0 30]);
-      ylim(yran);
-      
-      subplot(313)
-      plot((1:size(synths,1))/sps,synnew(:,1,insat),'r','linew',1); hold on
-      plot((1:size(synths,1))/sps,synnew(:,2,insat),'b','linew',1);
-      plot((1:size(synths,1))/sps,synnew(:,3,insat),'k','linew',1);
-      text(0.95,0.9,'Synthetics+noise','Units','normalized','HorizontalAlignment','right');
-      %       xlabel('Samples at 160 sps');
-      xlabel('Time (s)');
-      ylabel('Amplitude');
-      % xlim([0 size(xnoi,1)]/sps);
-      xlim([0 30]);
-      ylim(yran);
-      
-      close all
+%       close all
   
       %% load synthetics of certain saturation level
       STAopt = synnew(:,:,insat);

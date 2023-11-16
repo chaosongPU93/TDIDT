@@ -29,8 +29,8 @@ xran = [0.1 0.96]; yran = [0.06 0.96];
 xsep = 0.1; ysep = 0.08;
 optaxpos(f,nrow,ncol,xran,yran,xsep,ysep);
 
-nsep = size(dlocxy,1);
-color = jet(nsep);
+m = size(dlocxy,1);
+color = jet(m);
 
 if strcmp(disttype,'spl')
   X = -50:binw:50;
@@ -41,7 +41,7 @@ supertit(f.ax(1:ncol),'Between different source pairs');
 
 ax=f.ax(1);
 hold(ax,'on'); ax.Box = 'on'; grid(ax,'on');
-for i = nsep:-1:1
+for i = m:-1:1
   aa=dlocxy{i};
   [N,edges]=histcounts(aa(:,1),'binwidth',binw,'normalization','countdensity');
 %   edges = edges-binw/2;
@@ -66,7 +66,7 @@ hold(ax,'off');
 
 ax=f.ax(2);
 hold(ax,'on'); ax.Box = 'on'; grid(ax,'on');
-for i = nsep:-1:1
+for i = m:-1:1
   aa=dlocxy{i};
   [N,edges]=histcounts(abs(aa(:,1)),'binwidth',binw,'normalization','countdensity');
 %   edges = edges-binw/2;
@@ -95,7 +95,7 @@ hold(ax,'off');
 
 ax=f.ax(3);
 hold(ax,'on'); ax.Box = 'on'; grid(ax,'on');
-for i = nsep:-1:1
+for i = m:-1:1
   aa=dlocxy{i};
   [N,edges]=histcounts(aa(:,2),'binwidth',binw,'normalization','countdensity');
 %   edges = edges-binw/2;
@@ -120,7 +120,7 @@ hold(ax,'off');
 
 ax=f.ax(4);
 hold(ax,'on'); ax.Box = 'on'; grid(ax,'on');
-for i = nsep:-1:1
+for i = m:-1:1
   aa=dlocxy{i};
   [N,edges]=histcounts(abs(aa(:,2)),'binwidth',binw,'normalization','countdensity');
 %   edges = edges-binw/2;
@@ -148,7 +148,7 @@ hold(ax,'off');
 if strcmp(disttype,'spl')
   ax=f.ax(5);
   hold(ax,'on'); ax.Box = 'on'; grid(ax,'on');
-  for i = nsep:-1:1
+  for i = m:-1:1
     aa=dlocxy{i};
     [N,edges]=histcounts(aa(:,2)-aa(:,1),'binwidth',binw,'normalization','countdensity');
 %     edges = edges-binw/2;
@@ -167,7 +167,7 @@ if strcmp(disttype,'spl')
 
   ax=f.ax(6);
   hold(ax,'on'); ax.Box = 'on'; grid(ax,'on');
-  for i = nsep:-1:1
+  for i = m:-1:1
     aa=dlocxy{i};
     [N,edges]=histcounts(abs(aa(:,2)-aa(:,1)),'binwidth',binw,'normalization','countdensity');
 %     edges = edges-binw/2;

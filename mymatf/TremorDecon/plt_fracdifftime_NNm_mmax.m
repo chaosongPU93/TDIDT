@@ -36,8 +36,8 @@ end
 Nbnall = cell(mmax,1);
 for m = 1:mmax
   dtcut = 0.25*m+0.125;
-  [ampplt,dtarvlplt]=med_amp_incluster(nbst,imp,nsrc,mmax,m);
-  [amppltn,dtarvlpltn]=med_amp_incluster(nbst,impn,nsrcn,mmax,m);
+  [ampplt,dtarvlplt]=med_amp_incluster(nbst,imp,nsrc,m);
+  [amppltn,dtarvlpltn]=med_amp_incluster(nbst,impn,nsrcn,m);
 
   %%%fraction of diff time w/i 'dtcut' time
   ax=f.ax(1); hold(ax,'on'); ax.Box='on'; grid(ax,'on');

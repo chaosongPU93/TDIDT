@@ -182,6 +182,7 @@ end
  
 %% a specific plot for Allan's presentation, similar to last fig of AGU2022 poster
 %%%param for secondary sources removed
+%data
 locxyprojall = allbstsig.locxyprojall;
 tarvlsplstall = allbstsig.impindepall(:,1);
 nsrc = allbstsig.nsrcraw;
@@ -190,10 +191,26 @@ dtarvlnn2 = allbstsig.dtarvlnn2all;
 dtarvlnn3 = allbstsig.dtarvlnn3all;
 dtarvlnn4 = allbstsig.dtarvlnn4all;
 dtarvlnn5 = allbstsig.dtarvlnn5all;
-dtarvlnn6 = allbstsig.dtarvlnn6all;
-dtarvlnn7 = allbstsig.dtarvlnn7all;
-dtarvlnn8 = allbstsig.dtarvlnn8all;
 imp = allbstsig.impindepall;
+dt2all = allbstsig.dt2allbst;
+dist2all = allbstsig.dist2allbst;
+dloc2all = allbstsig.dloc2allbst;
+dneloc{1,1} = allbstsig.distarvlnn1all(:,2:3);
+dneloc{2,1} = allbstsig.distarvlnn2all(:,2:3);
+dneloc{3,1} = allbstsig.distarvlnn3all(:,2:3);
+dneloc{4,1} = allbstsig.distarvlnn4all(:,2:3);
+dneloc{5,1} = allbstsig.distarvlnn5all(:,2:3);
+eucdist{1,1} = allbstsig.distarvlnn1all(:,1);
+eucdist{2,1} = allbstsig.distarvlnn2all(:,1);
+eucdist{3,1} = allbstsig.distarvlnn3all(:,1);
+eucdist{4,1} = allbstsig.distarvlnn4all(:,1);
+eucdist{5,1} = allbstsig.distarvlnn5all(:,1);
+dtarvl{1,1} = allbstsig.dtarvlnn1all;
+dtarvl{2,1} = allbstsig.dtarvlnn2all;
+dtarvl{3,1} = allbstsig.dtarvlnn3all;
+dtarvl{4,1} = allbstsig.dtarvlnn4all;
+dtarvl{5,1} = allbstsig.dtarvlnn5all;
+%noise
 locxyprojalln = allbstnoi.locxyprojall;
 tarvlsplstalln = allbstnoi.impindepall(:,1);
 nsrcn = allbstnoi.nsrcraw;
@@ -202,44 +219,76 @@ dtarvlnn2n = allbstnoi.dtarvlnn2all;
 dtarvlnn3n = allbstnoi.dtarvlnn3all;
 dtarvlnn4n = allbstnoi.dtarvlnn4all;
 dtarvlnn5n = allbstnoi.dtarvlnn5all;
-dtarvlnn6n = allbstnoi.dtarvlnn6all;
-dtarvlnn7n = allbstnoi.dtarvlnn7all;
-dtarvlnn8n = allbstnoi.dtarvlnn8all;
 impn = allbstnoi.impindepall;
+dt2alln = allbstnoi.dt2allbst;
+dist2alln = allbstnoi.dist2allbst;
+dloc2alln = allbstnoi.dloc2allbst;
+dnelocn{1,1} = allbstnoi.distarvlnn1all(:,2:3);
+dnelocn{2,1} = allbstnoi.distarvlnn2all(:,2:3);
+dnelocn{3,1} = allbstnoi.distarvlnn3all(:,2:3);
+dnelocn{4,1} = allbstnoi.distarvlnn4all(:,2:3);
+dnelocn{5,1} = allbstnoi.distarvlnn5all(:,2:3);
+eucdistn{1,1} = allbstnoi.distarvlnn1all(:,1);
+eucdistn{2,1} = allbstnoi.distarvlnn2all(:,1);
+eucdistn{3,1} = allbstnoi.distarvlnn3all(:,1);
+eucdistn{4,1} = allbstnoi.distarvlnn4all(:,1);
+eucdistn{5,1} = allbstnoi.distarvlnn5all(:,1);
+dtarvln{1,1} = allbstnoi.dtarvlnn1all;
+dtarvln{2,1} = allbstnoi.dtarvlnn2all;
+dtarvln{3,1} = allbstnoi.dtarvlnn3all;
+dtarvln{4,1} = allbstnoi.dtarvlnn4all;
+dtarvln{5,1} = allbstnoi.dtarvlnn5all;
 supertstr = 'Secondary sources removed';
 fnsuffix = [];
 
 % %%%param for further checked at KLNB
+% %data
 % locxyprojall = allbstsig.locxyproj4thall;
 % tarvlsplstall = allbstsig.impindep4thall(:,1);
 % nsrc = allbstsig.nsrc;
 % dtarvlnn1 = allbstsig.dtarvlnn14thall;
 % dtarvlnn2 = allbstsig.dtarvlnn24thall;
 % dtarvlnn3 = allbstsig.dtarvlnn34thall;
-% dtarvlnn4 = allbstsig.dtarvlnn44thall;
-% dtarvlnn5 = allbstsig.dtarvlnn54thall;
-% dtarvlnn6 = allbstsig.dtarvlnn64thall;
-% dtarvlnn7 = allbstsig.dtarvlnn74thall;
-% dtarvlnn8 = allbstsig.dtarvlnn84thall;
 % imp = allbstsig.impindep4thall;
+% dt2all = allbstsig.dt2all4thbst;
+% dist2all = allbstsig.dist2all4thbst;
+% dloc2all = allbstsig.dloc2all4thbst;
+% dneloc{1,1} = allbstsig.distarvlnn14thall(:,2:3);
+% dneloc{2,1} = allbstsig.distarvlnn24thall(:,2:3);
+% dneloc{3,1} = allbstsig.distarvlnn34thall(:,2:3);
+% eucdist{1,1} = allbstsig.distarvlnn14thall(:,1);
+% eucdist{2,1} = allbstsig.distarvlnn24thall(:,1);
+% eucdist{3,1} = allbstsig.distarvlnn34thall(:,1);
+% dtarvl{1,1} = allbstsig.dtarvlnn14thall;
+% dtarvl{2,1} = allbstsig.dtarvlnn24thall;
+% dtarvl{3,1} = allbstsig.dtarvlnn34thall;
+% %noise
 % locxyprojalln = allbstnoi.locxyproj4thall;
 % tarvlsplstalln = allbstnoi.impindep4thall(:,1);
 % nsrcn = allbstnoi.nsrc;
 % dtarvlnn1n = allbstnoi.dtarvlnn14thall;
 % dtarvlnn2n = allbstnoi.dtarvlnn24thall;
 % dtarvlnn3n = allbstnoi.dtarvlnn34thall;
-% dtarvlnn4n = allbstnoi.dtarvlnn44thall;
-% dtarvlnn5n = allbstnoi.dtarvlnn54thall;
-% dtarvlnn6n = allbstnoi.dtarvlnn64thall;
-% dtarvlnn7n = allbstnoi.dtarvlnn74thall;
-% dtarvlnn8n = allbstnoi.dtarvlnn84thall;
 % impn = allbstnoi.impindep4thall;
+% dt2alln = allbstnoi.dt2all4thbst;
+% dist2alln = allbstnoi.dist2all4thbst;
+% dloc2alln = allbstnoi.dloc2all4thbst;
+% dnelocn{1,1} = allbstnoi.distarvlnn14thall(:,2:3);
+% dnelocn{2,1} = allbstnoi.distarvlnn24thall(:,2:3);
+% dnelocn{3,1} = allbstnoi.distarvlnn34thall(:,2:3);
+% eucdistn{1,1} = allbstnoi.distarvlnn14thall(:,1);
+% eucdistn{2,1} = allbstnoi.distarvlnn24thall(:,1);
+% eucdistn{3,1} = allbstnoi.distarvlnn34thall(:,1);
+% dtarvln{1,1} = allbstnoi.dtarvlnn14thall;
+% dtarvln{2,1} = allbstnoi.dtarvlnn24thall;
+% dtarvln{3,1} = allbstnoi.dtarvlnn34thall;
 % supertstr = 'Further checked at KLNB';
 % fnsuffix = '4th';
 
 dtarvlplt = dtarvlnn1;
 dtarvlpltn = dtarvlnn1n;
-nsep = 1;
+mmax = 5;
+m = 1;
 % dtarvlplt = dtarvlnn2;
 % dtarvlpltn = dtarvlnn2n;
 % nsep = 2;
@@ -284,15 +333,16 @@ for i = 1: size(trange,1)
     dlocprojnn2bst = [dlocprojnn2bst; dlocproj{2}];
   end
 end
-dist2all = abs(dlocproj2allbst(:,1));
-[bincnt,binhgt,count,normalizer] = histbinbyarea(dist2all,binedge,'countdensity');
+distpjnn1 = abs(dlocprojnn1bst(:,1));
+distpj2all = abs(dlocproj2allbst(:,1));
+[bincnt,binhgt,count,normalizer] = histbinbyarea(distpj2all,binedge,'countdensity');
 % binhgt = binhgt./length(dist2all);
-binhgt = count./length(dist2all);
+binhgt = count./length(distpj2all);
 p1=bar(ax,bincnt,binhgt,1,'stacked','b','facea',0.6);
 % stairs(ax,binedge,[binhgt; binhgt(end)],'k','LineWidth',1);
-plot(ax,[median(dist2all) median(dist2all)],ax.YLim,'b--','linew',1.5);
-text(ax,median(dist2all)+0.1,ax.YLim(2)-0.1*range(ax.YLim),...
-  sprintf('%.2f',median(dist2all)),'HorizontalAlignment','left');
+plot(ax,[median(distpj2all) median(distpj2all)],ax.YLim,'b--','linew',1.5);
+text(ax,median(distpj2all)+0.1,ax.YLim(2)-0.1*range(ax.YLim),...
+  sprintf('%.2f',median(distpj2all)),'HorizontalAlignment','left');
 %%%for noise
 nsrcpropn = nsrcn;
 nsrcpropn(nsrcpropn<=2)=0;
@@ -310,15 +360,15 @@ for i = 1: size(trange,1)
     dlocproj2allbstn = [dlocproj2allbstn; dlocproj2all];
   end
 end
-dist2alln = abs(dlocproj2allbstn(:,1));
-[bincnt,binhgt,count,normalizer] = histbinbyarea(dist2alln,binedge,'countdensity');
-% binhgt = binhgt./length(dist2all);
-binhgt = count./length(dist2all);
+distpj2alln = abs(dlocproj2allbstn(:,1));
+[bincnt,binhgt,count,normalizer] = histbinbyarea(distpj2alln,binedge,'countdensity');
+% binhgt = binhgt./length(distpj2all);
+binhgt = count./length(distpj2all);
 p2=bar(ax,bincnt,binhgt,1,'stacked','r','facea',0.6);
 % stairs(ax,binedge,[binhgt; binhgt(end)],'k','LineWidth',1);
-plot(ax,[median(dist2alln) median(dist2alln)],ax.YLim,'r--','linew',1.5);
-text(ax,median(dist2alln)+0.1,ax.YLim(2)-0.2*range(ax.YLim),...
-  sprintf('%.2f',median(dist2alln)),'HorizontalAlignment','left');
+plot(ax,[median(distpj2alln) median(distpj2alln)],ax.YLim,'r--','linew',1.5);
+text(ax,median(distpj2alln)+0.1,ax.YLim(2)-0.2*range(ax.YLim),...
+  sprintf('%.2f',median(distpj2alln)),'HorizontalAlignment','left');
 xlabel(ax,'Dist. (km) along min-scatter direc. between each source and all others with diff. arrival time \leq 2 s');
 ylabel(ax,'Normalized count');
 legend(ax,[p1,p2],'Data','Synthetic noise','location','east');
@@ -350,7 +400,7 @@ plot(ax,[median(dtarvlpltn/sps) median(dtarvlpltn/sps)],ax.YLim, '--', ...
 text(ax,median(dtarvlpltn/sps)+0.02,ax.YLim(2)-0.2*range(ax.YLim),...
   sprintf('%.2f',median(dtarvlpltn/sps)),'HorizontalAlignment','left');
 ylabel(ax,'Normalized count');
-xlabel(ax,sprintf('Diff. arrival time between sources N and N-%d (s)',nsep));
+xlabel(ax,sprintf('Diff. arrival time between sources N and N-%d (s)',m));
 legend(ax,[p1,p2],'Data','Synthetic noise','location','east');
 xlim(ax,[0 1.5]);
 % ylim(ax,[0 3.5]);
@@ -359,180 +409,20 @@ hold(ax,'off');
 tit=supertit(f.ax,supertstr);
 movev(tit,0.2);
 
-orient(f.fig,'landscape');
-fname = strcat(sprintf('nn%ddiff',nsep),fnsuffix,'.pdf');
+% orient(f.fig,'landscape');
+% fname = strcat(sprintf('nn%ddiff',nsep),fnsuffix,'.pdf');
 % print(f.fig,'-dpdf',strcat('/home/chaosong/Pictures/',fname));
 
 % keyboard
 
-%% in sample sapce, 2ndary sources removed
-% allbstsig = allbstnoi;
-dt2all = allbstsig.dt2allbst;
-dist2allsp = allbstsig.dist2allspbst;
-dloc2allsp = allbstsig.dloc2allspbst;
-imp = allbstsig.impindepall;
-f=plt_srcdlocinmap(dt2all,dloc2allsp,sps,'spl');
-
-nsrc = allbstsig.nsrcraw;
-dto2allbst=[];  %diff. origin time between event pairs
-dloco2allbst=[];  
-disto2allbst=[];
-impstall = [];
-tcorall = [];
-for i = 1: size(trange,1)
-  ist = sum(nsrc(1:i-1))+1;
-  ied = ist+nsrc(i)-1;
-  impi = imp(ist:ied,:);
-  if ~isempty(impi)
-    %convert time offset to relative loc
-    ftrans = 'interpchao';
-    [imploc, indinput] = off2space002(impi(:,7:8),sps,ftrans,0); % 8 cols, format: dx,dy,lon,lat,dep,ttrvl,off12,off13
-    [imploc0, ~] = off2space002([0 0],sps,ftrans,0);  % a ref source at 0,0
-    tcor = round((imploc(:,6)-imploc0(6))*sps);   % travel time difference between each source and a ref source at 0,0
-    torispl = impi(:,1)-tcor;
-    [torisplst, indsort] = sortrows(torispl,1); %note, sort by origin time now
-    implocst = imploc(indsort, :);
-    impst = impi(indsort, :);
-    %I suspect the diff loc and distance between pairs should be the same as using tarvl, but correspondance with time
-    %should be different
-    [dto2all,dloco2all,disto2all] = srcdistall(torisplst,impst(:,7:8),[0 2*sps]);
-    
-  else
-    dto2all = [];
-    dloco2all = [];
-    disto2all = [];
-    impst = [];
-    dto2all = [];
-    indsort = [];
-    tcor = [];
-  end
-  dto2allbst = [dto2allbst; dto2all];
-  dloco2allbst = [dloco2allbst; dloco2all] ;
-  disto2allbst = [disto2allbst; disto2all];
-  impstall = [impstall; impst];
-  tcorall = [tcorall; tcor(indsort)];
-end
-f=plt_srcdlocinmap(dto2allbst,dloco2allbst,sps,'spl','tori');
-
-%plot the diff time and euclidean distance between each LFE source to all others
-tlensec = 14981;  %total length of time in secs for all bursts combined
-f = plt_srcdistall(dt2all,dist2allsp,sps,40/sps,tlensec,1,'spl');
-f = plt_srcdistall(dto2allbst,disto2allbst,sps,40/sps,tlensec,1,'spl','tori');
-
-%plot the loc diff between each LFE source to all others
-f = plt_srcdlocall(dloc2allsp,1,'spl');
-
-doffset{1,1} = allbstsig.distarvlspnn1all(:,2:3);
-doffset{2,1} = allbstsig.distarvlspnn2all(:,2:3);
-doffset{3,1} = allbstsig.distarvlspnn3all(:,2:3);
-doffset{4,1} = allbstsig.distarvlspnn4all(:,2:3);
-doffset{5,1} = allbstsig.distarvlspnn5all(:,2:3);
-eucdistsp{1,1} = allbstsig.distarvlspnn1all(:,1);
-eucdistsp{2,1} = allbstsig.distarvlspnn2all(:,1);
-eucdistsp{3,1} = allbstsig.distarvlspnn3all(:,1);
-eucdistsp{4,1} = allbstsig.distarvlspnn4all(:,1);
-eucdistsp{5,1} = allbstsig.distarvlspnn5all(:,1);
-dtarvl{1,1} = allbstsig.dtarvlnn1all;
-dtarvl{2,1} = allbstsig.dtarvlnn2all;
-dtarvl{3,1} = allbstsig.dtarvlnn3all;
-dtarvl{4,1} = allbstsig.dtarvlnn4all;
-dtarvl{5,1} = allbstsig.dtarvlnn5all;
-%plot the diff time and euclidean distance between above source pairs
-f = plt_srcdistNtoNm(dtarvl,eucdistsp,sps,40/sps,tlensec,1,'spl');
-%plot the loc diff between above source pairs
-f = plt_srcdlocNtoNm(doffset,1,'spl');
-
-%%%if you want to copy several figs to a new summary to put everything into 
-% f1 = initfig(10,9,2,3);
-% for i = 1:3
-%   axchild=f.ax(i).Children;
-%   copyobj(axchild, f1.ax(i));
-% end
-
-%% in sample sapce, further checked by the 4th station KLNB
-dt2all = allbstsig.dt2all4thbst;
-dist2allsp = allbstsig.dist2allsp4thbst;
-dloc2allsp = allbstsig.dloc2allsp4thbst;
-imp = allbstsig.impindep4thall;
-f=plt_srcdlocinmap(dt2all,dloc2allsp,sps,'spl');
-
-nsrc = allbstsig.nsrc;
-dto2allbst=[];  %diff. origin time between event pairs
-dloco2allbst=[];  
-disto2allbst=[];
-impstall = [];
-tcorall = [];
-for i = 1: size(trange,1)
-  ist = sum(nsrc(1:i-1))+1;
-  ied = ist+nsrc(i)-1;
-  impi = imp(ist:ied,:);
-  if ~isempty(impi)
-    %convert time offset to relative loc
-    ftrans = 'interpchao';
-    [imploc, indinput] = off2space002(impi(:,7:8),sps,ftrans,0); % 8 cols, format: dx,dy,lon,lat,dep,ttrvl,off12,off13
-    [imploc0, ~] = off2space002([0 0],sps,ftrans,0);  % a ref source at 0,0
-    tcor = round((imploc(:,6)-imploc0(6))*sps);   % travel time difference between each source and a ref source at 0,0
-    torispl = impi(:,1)-tcor;
-    [torisplst, indsort] = sortrows(torispl,1); %note, sort by origin time now
-    implocst = imploc(indsort, :);
-    impst = impi(indsort, :);
-    %I suspect the diff loc and distance between pairs should be the same as using tarvl, but correspondance with time
-    %should be different
-    [dto2all,dloco2all,disto2all] = srcdistall(torisplst,impst(:,7:8),[0 2*sps]);
-    
-  else
-    dto2all = [];
-    dloco2all = [];
-    disto2all = [];
-    impst = [];
-    dto2all = [];
-    indsort = [];
-    tcor = [];
-  end
-  dto2allbst = [dto2allbst; dto2all];
-  dloco2allbst = [dloco2allbst; dloco2all] ;
-  disto2allbst = [disto2allbst; disto2all];
-  impstall = [impstall; impst];
-  tcorall = [tcorall; tcor(indsort)];
-end
-f=plt_srcdlocinmap(dto2allbst,dloco2allbst,sps,'spl','tori');
-
-%plot euclidean distance between each LFE source to all others
-f = plt_srcdistall(dt2all,dist2allsp,sps,40/sps,tlensec,1,'spl');
-f = plt_srcdistall(dto2allbst,disto2allbst,sps,40/sps,tlensec,1,'spl','tori');
-
-%plot the loc diff between each LFE source to all others
-f = plt_srcdlocall(dloc2allsp,1,'spl');
-
-doffset{1,1} = allbstsig.distarvlspnn14thall(:,2:3);
-doffset{2,1} = allbstsig.distarvlspnn24thall(:,2:3);
-doffset{3,1} = allbstsig.distarvlspnn34thall(:,2:3);
-doffset{4,1} = allbstsig.distarvlspnn44thall(:,2:3);
-doffset{5,1} = allbstsig.distarvlspnn54thall(:,2:3);
-eucdistsp{1,1} = allbstsig.distarvlspnn14thall(:,1);
-eucdistsp{2,1} = allbstsig.distarvlspnn24thall(:,1);
-eucdistsp{3,1} = allbstsig.distarvlspnn34thall(:,1);
-eucdistsp{4,1} = allbstsig.distarvlspnn44thall(:,1);
-eucdistsp{5,1} = allbstsig.distarvlspnn54thall(:,1);
-dtarvl{1,1} = allbstsig.dtarvlnn14thall;
-dtarvl{2,1} = allbstsig.dtarvlnn24thall;
-dtarvl{3,1} = allbstsig.dtarvlnn34thall;
-dtarvl{4,1} = allbstsig.dtarvlnn44thall;
-dtarvl{5,1} = allbstsig.dtarvlnn54thall;
-%plot the loc diff between above source pairs
-f = plt_srcdlocNtoNm(doffset,1,'spl');
-%plot the diff time and distance between above source pairs
-f = plt_srcdistNtoNm(dtarvl,eucdistsp,sps,40/sps,tlensec,1,'spl');
-
-
 %% in map view, 2ndary sources removed
-dt2all = allbstsig.dt2allbst;
-dist2all = allbstsig.dist2allbst;
-dloc2all = allbstsig.dloc2allbst;
-imp = allbstsig.impindepall;
-f=plt_srcdlocinmap(dt2all,dloc2all,sps,'km');
+% dt2all = allbstsig.dt2allbst;
+% dist2all = allbstsig.dist2allbst;
+% dloc2all = allbstsig.dloc2allbst;
+% imp = allbstsig.impindepall;
+% f=plt_srcdlocinmap(dt2all,dloc2all,sps,'km');
 
-nsrc = allbstsig.nsrcraw;
+% nsrc = allbstsig.nsrcraw;
 dto2allbst=[];  %diff. origin time between event pairs
 dloco2allbst=[];  
 disto2allbst=[];
@@ -560,7 +450,7 @@ for i = 1: size(trange,1)
   impstall = [impstall; impst];
   tcorall = [tcorall; tcor(indsort)];
 end
-f=plt_srcdlocinmap(dto2allbst,dloco2allbst,sps,'km','tori');
+% f=plt_srcdlocinmap(dto2allbst,dloco2allbst,sps,'km','tori');
 
 %plot euclidean distance between each LFE source to all others
 tlensec = 14981;
@@ -568,34 +458,31 @@ f = plt_srcdistall(dt2all,dist2all,sps,40/sps,tlensec,0.1,'km');
 %plot the loc diff between each LFE source to all others
 f = plt_srcdlocall(dloc2all,0.1,'km');
 
-dneloc{1,1} = allbstsig.distarvlnn1all(:,2:3);
-dneloc{2,1} = allbstsig.distarvlnn2all(:,2:3);
-dneloc{3,1} = allbstsig.distarvlnn3all(:,2:3);
-dneloc{4,1} = allbstsig.distarvlnn4all(:,2:3);
-dneloc{5,1} = allbstsig.distarvlnn5all(:,2:3);
-eucdist{1,1} = allbstsig.distarvlnn1all(:,1);
-eucdist{2,1} = allbstsig.distarvlnn2all(:,1);
-eucdist{3,1} = allbstsig.distarvlnn3all(:,1);
-eucdist{4,1} = allbstsig.distarvlnn4all(:,1);
-eucdist{5,1} = allbstsig.distarvlnn5all(:,1);
-dtarvl{1,1} = allbstsig.dtarvlnn1all;
-dtarvl{2,1} = allbstsig.dtarvlnn2all;
-dtarvl{3,1} = allbstsig.dtarvlnn3all;
-dtarvl{4,1} = allbstsig.dtarvlnn4all;
-dtarvl{5,1} = allbstsig.dtarvlnn5all;
+% dneloc{1,1} = allbstsig.distarvlnn1all(:,2:3);
+% dneloc{2,1} = allbstsig.distarvlnn2all(:,2:3);
+% dneloc{3,1} = allbstsig.distarvlnn3all(:,2:3);
+% dneloc{4,1} = allbstsig.distarvlnn4all(:,2:3);
+% dneloc{5,1} = allbstsig.distarvlnn5all(:,2:3);
+% eucdist{1,1} = allbstsig.distarvlnn1all(:,1);
+% eucdist{2,1} = allbstsig.distarvlnn2all(:,1);
+% eucdist{3,1} = allbstsig.distarvlnn3all(:,1);
+% eucdist{4,1} = allbstsig.distarvlnn4all(:,1);
+% eucdist{5,1} = allbstsig.distarvlnn5all(:,1);
+% dtarvl{1,1} = allbstsig.dtarvlnn1all;
+% dtarvl{2,1} = allbstsig.dtarvlnn2all;
+% dtarvl{3,1} = allbstsig.dtarvlnn3all;
+% dtarvl{4,1} = allbstsig.dtarvlnn4all;
+% dtarvl{5,1} = allbstsig.dtarvlnn5all;
 %plot the loc diff between above source pairs
 f = plt_srcdlocNtoNm(dneloc,0.1,'km');
 %plot the diff time and distance between above source pairs
 f = plt_srcdistNtoNm(dtarvl,eucdist,sps,40/sps,tlensec,0.1,'km');
 
-%%
 %%%projection along the min-rmse direction
-locxyprojall = allbstsig.locxyprojall;
-tarvlsplstall = allbstsig.impindepall(:,1);
-nsrc = allbstsig.nsrcraw;
+% locxyprojall = allbstsig.locxyprojall;
+% tarvlsplstall = allbstsig.impindepall(:,1);
+% nsrc = allbstsig.nsrcraw;
 dlocproj2allbst = [];
-% dt2allchkbst = [];
-m = 5;
 tmp1=[];
 tmp2=[];
 tmp3=[];
@@ -607,10 +494,9 @@ for i = 1: size(trange,1)
   tarvlsplst = tarvlsplstall(ist:ied);
   locxyproj = locxyprojall(ist:ied, :);
   [~,dlocproj2all] = srcdistall(tarvlsplst,locxyproj,[0 2*sps]);
-%   dt2allchkbst = [dt2allchkbst; dt2allchk];
   dlocproj2allbst = [dlocproj2allbst; dlocproj2all];
   
-  [~,dlocproj] = srcdistNtoNm(tarvlsplst,locxyproj,m);
+  [~,dlocproj] = srcdistNtoNm(tarvlsplst,locxyproj,mmax);
   tmp1 = [tmp1; dlocproj{1}];
   tmp2 = [tmp2; dlocproj{2}];
   tmp3 = [tmp3; dlocproj{3}];
@@ -643,90 +529,90 @@ xlabel(f.ax(4),'Abs diff loc along ort direc. to min-rmse');
 xlim(f.ax([1 3]),[-5 5]);
 xlim(f.ax([2 4]),[0 5]);
 
+keyboard
+
 %% in map view, further checked by the 4th station KLNB
-dt2all = allbstsig.dt2all4thbst;
-dist2all = allbstsig.dist2all4thbst;
-dloc2all = allbstsig.dloc2all4thbst;
-%plot euclidean distance between each LFE source to all others
-f = plt_srcdistall(dt2all,dist2all,sps,40/sps,tlensec,0.1,'km');
-%plot the loc diff between each LFE source to all others
-f = plt_srcdlocall(dloc2all,0.1,'km');
-
-dneloc{1,1} = allbstsig.distarvlnn14thall(:,2:3);
-dneloc{2,1} = allbstsig.distarvlnn24thall(:,2:3);
-dneloc{3,1} = allbstsig.distarvlnn34thall(:,2:3);
-dneloc{4,1} = allbstsig.distarvlnn44thall(:,2:3);
-dneloc{5,1} = allbstsig.distarvlnn54thall(:,2:3);
-eucdist{1,1} = allbstsig.distarvlnn14thall(:,1);
-eucdist{2,1} = allbstsig.distarvlnn24thall(:,1);
-eucdist{3,1} = allbstsig.distarvlnn34thall(:,1);
-eucdist{4,1} = allbstsig.distarvlnn44thall(:,1);
-eucdist{5,1} = allbstsig.distarvlnn54thall(:,1);
-dtarvl{1,1} = allbstsig.dtarvlnn14thall;
-dtarvl{2,1} = allbstsig.dtarvlnn24thall;
-dtarvl{3,1} = allbstsig.dtarvlnn34thall;
-dtarvl{4,1} = allbstsig.dtarvlnn44thall;
-dtarvl{5,1} = allbstsig.dtarvlnn54thall;
-%plot the loc diff between above source pairs
-f = plt_srcdlocNtoNm(dneloc,0.1,'km');
-%plot the diff time and distance between above source pairs
-f = plt_srcdistNtoNm(dtarvl,eucdist,sps,40/sps,tlensec,0.1,'km');
-
-%%%projection along the min-rmse direction
-locxyprojall = allbstsig.locxyproj4thall;
-tarvlsplstall = allbstsig.impindep4thall(:,1);
-nsrc = allbstsig.nsrc;
-dlocproj2allbst = [];
-% dt2allchkbst = [];
-m = 5;
-tmp1=[];
-tmp2=[];
-tmp3=[];
-tmp4=[];
-tmp5=[];
-for i = 1: size(trange,1)
-  ist = sum(nsrc(1:i-1))+1;
-  ied = ist+nsrc(i)-1;
-  tarvlsplst = tarvlsplstall(ist:ied);
-  locxyproj = locxyprojall(ist:ied, :);
-  [~,dlocproj2all] = srcdistall(tarvlsplst,locxyproj,[0 2*sps]);
-%   dt2allchkbst = [dt2allchkbst; dt2allchk];
-  dlocproj2allbst = [dlocproj2allbst; dlocproj2all];
-  
-  [~,dlocproj] = srcdistNtoNm(tarvlsplst,locxyproj,m);
-  tmp1 = [tmp1; dlocproj{1}];
-  tmp2 = [tmp2; dlocproj{2}];
-  tmp3 = [tmp3; dlocproj{3}];
-  tmp4 = [tmp4; dlocproj{4}];
-  tmp5 = [tmp5; dlocproj{5}];
-end
-dlocprojbst{1,1} = tmp1;
-dlocprojbst{2,1} = tmp2;
-dlocprojbst{3,1} = tmp3;
-dlocprojbst{4,1} = tmp4;
-dlocprojbst{5,1} = tmp5;
-
-%plot the projected loc diff between each LFE source to all others
-f = plt_srcdlocall(dlocproj2allbst,0.1,'km');
-xlabel(f.ax(1),'Diff loc along min-rmse direc.');
-xlabel(f.ax(2),'Abs diff loc along min-rmse direc.');
-xlabel(f.ax(3),'Diff loc along ort direc. to min-rmse');
-xlabel(f.ax(4),'Abs diff loc along ort direc. to min-rmse');
-xlim(f.ax([1 3]),[-5 5]);
-xlim(f.ax([2 4]),[0 5]);
-
-%plot the projected loc diff between above source pairs
-f = plt_srcdlocNtoNm(dlocprojbst,0.1,'km');
-xlabel(f.ax(1),'Diff loc along min-rmse direc.');
-xlabel(f.ax(2),'Abs diff loc along min-rmse direc.');
-xlabel(f.ax(3),'Diff loc along ort direc. to min-rmse');
-xlabel(f.ax(4),'Abs diff loc along ort direc. to min-rmse');
-xlim(f.ax([1 3]),[-5 5]);
-xlim(f.ax([2 4]),[0 5]);
-
-
-
-
+% dt2all = allbstsig.dt2all4thbst;
+% dist2all = allbstsig.dist2all4thbst;
+% dloc2all = allbstsig.dloc2all4thbst;
+% %plot euclidean distance between each LFE source to all others
+% f = plt_srcdistall(dt2all,dist2all,sps,40/sps,tlensec,0.1,'km');
+% %plot the loc diff between each LFE source to all others
+% f = plt_srcdlocall(dloc2all,0.1,'km');
+% 
+% dneloc{1,1} = allbstsig.distarvlnn14thall(:,2:3);
+% dneloc{2,1} = allbstsig.distarvlnn24thall(:,2:3);
+% dneloc{3,1} = allbstsig.distarvlnn34thall(:,2:3);
+% dneloc{4,1} = allbstsig.distarvlnn44thall(:,2:3);
+% dneloc{5,1} = allbstsig.distarvlnn54thall(:,2:3);
+% eucdist{1,1} = allbstsig.distarvlnn14thall(:,1);
+% eucdist{2,1} = allbstsig.distarvlnn24thall(:,1);
+% eucdist{3,1} = allbstsig.distarvlnn34thall(:,1);
+% eucdist{4,1} = allbstsig.distarvlnn44thall(:,1);
+% eucdist{5,1} = allbstsig.distarvlnn54thall(:,1);
+% dtarvl{1,1} = allbstsig.dtarvlnn14thall;
+% dtarvl{2,1} = allbstsig.dtarvlnn24thall;
+% dtarvl{3,1} = allbstsig.dtarvlnn34thall;
+% dtarvl{4,1} = allbstsig.dtarvlnn44thall;
+% dtarvl{5,1} = allbstsig.dtarvlnn54thall;
+% %plot the loc diff between above source pairs
+% f = plt_srcdlocNtoNm(dneloc,0.1,'km');
+% %plot the diff time and distance between above source pairs
+% f = plt_srcdistNtoNm(dtarvl,eucdist,sps,40/sps,tlensec,0.1,'km');
+% 
+% %%%projection along the min-rmse direction
+% locxyprojall = allbstsig.locxyproj4thall;
+% tarvlsplstall = allbstsig.impindep4thall(:,1);
+% nsrc = allbstsig.nsrc;
+% dlocproj2allbst = [];
+% % dt2allchkbst = [];
+% mmax = 5;
+% tmp1=[];
+% tmp2=[];
+% tmp3=[];
+% tmp4=[];
+% tmp5=[];
+% for i = 1: size(trange,1)
+%   ist = sum(nsrc(1:i-1))+1;
+%   ied = ist+nsrc(i)-1;
+%   tarvlsplst = tarvlsplstall(ist:ied);
+%   locxyproj = locxyprojall(ist:ied, :);
+%   [~,dlocproj2all] = srcdistall(tarvlsplst,locxyproj,[0 2*sps]);
+% %   dt2allchkbst = [dt2allchkbst; dt2allchk];
+%   dlocproj2allbst = [dlocproj2allbst; dlocproj2all];
+%   
+%   [~,dlocproj] = srcdistNtoNm(tarvlsplst,locxyproj,mmax);
+%   tmp1 = [tmp1; dlocproj{1}];
+%   tmp2 = [tmp2; dlocproj{2}];
+%   tmp3 = [tmp3; dlocproj{3}];
+%   tmp4 = [tmp4; dlocproj{4}];
+%   tmp5 = [tmp5; dlocproj{5}];
+% end
+% dlocprojbst{1,1} = tmp1;
+% dlocprojbst{2,1} = tmp2;
+% dlocprojbst{3,1} = tmp3;
+% dlocprojbst{4,1} = tmp4;
+% dlocprojbst{5,1} = tmp5;
+% 
+% %plot the projected loc diff between each LFE source to all others
+% f = plt_srcdlocall(dlocproj2allbst,0.1,'km');
+% xlabel(f.ax(1),'Diff loc along min-rmse direc.');
+% xlabel(f.ax(2),'Abs diff loc along min-rmse direc.');
+% xlabel(f.ax(3),'Diff loc along ort direc. to min-rmse');
+% xlabel(f.ax(4),'Abs diff loc along ort direc. to min-rmse');
+% xlim(f.ax([1 3]),[-5 5]);
+% xlim(f.ax([2 4]),[0 5]);
+% 
+% %plot the projected loc diff between above source pairs
+% f = plt_srcdlocNtoNm(dlocprojbst,0.1,'km');
+% xlabel(f.ax(1),'Diff loc along min-rmse direc.');
+% xlabel(f.ax(2),'Abs diff loc along min-rmse direc.');
+% xlabel(f.ax(3),'Diff loc along ort direc. to min-rmse');
+% xlabel(f.ax(4),'Abs diff loc along ort direc. to min-rmse');
+% xlim(f.ax([1 3]),[-5 5]);
+% xlim(f.ax([2 4]),[0 5]);
+% 
+% 
 %%
 %%%the direct/scaled deconvolved pos/neg source peak ratio between all station pairs, for each
 %%%burst win separately
@@ -736,9 +622,9 @@ madsrcampr = allbstsig.madsrcampr;
 f1 = initfig(16,5,1,size(msrcampr,2));
 f1 = plt_deconpk_rat4th(f1,msrcampr,madsrcampr,nsrc,'b');
 
-nsrc = allallallallbstnoi.nsrc;
-msrcampr = allallallallbstnoi.msrcampr;
-madsrcampr = allallallallbstnoi.madsrcampr;
+nsrc = allbstnoi.nsrc;
+msrcampr = allbstnoi.msrcampr;
+madsrcampr = allbstnoi.madsrcampr;
 f1 = plt_deconpk_rat4th(f1,msrcampr,madsrcampr,nsrc,'r');
 
 %%
@@ -749,8 +635,8 @@ impindep4thall = allbstsig.impindep4thall;
 f2 = initfig(16,9,2,size(srcamprall,2));
 f2 = plt_deconpk_rat_comb4th(f2,srcamprall,impindep4thall,'b');
 
-srcamprall = allallallallbstnoi.srcamprall;
-impindep4thall = allallallallbstnoi.impindep4thall;
+srcamprall = allbstnoi.srcamprall;
+impindep4thall = allbstnoi.impindep4thall;
 f2 = plt_deconpk_rat_comb4th(f2,srcamprall,impindep4thall,'r');
 
 %%
@@ -761,9 +647,9 @@ rcccatsrcall = allbstsig.rcccatsrcall;
 f3 = initfig(15,7,2,size(lgdevsrcamprall,2)); %initialize fig
 f3 = plt_deconpk_ratdevvsrcc4th(f3,lgdevsrcamprall,rccpairsrcall,rcccatsrcall,'b');
 
-lgdevsrcamprall = allallallallbstnoi.lgdevsrcamprall;
-rccpairsrcall = allallallallbstnoi.rccpairsrcall;
-rcccatsrcall = allallallallbstnoi.rcccatsrcall;
+lgdevsrcamprall = allbstnoi.lgdevsrcamprall;
+rccpairsrcall = allbstnoi.rccpairsrcall;
+rcccatsrcall = allbstnoi.rcccatsrcall;
 f3 = plt_deconpk_ratdevvsrcc4th(f3,lgdevsrcamprall,rccpairsrcall,rcccatsrcall,'r');
 
 %%
@@ -772,7 +658,7 @@ pred4offtrall = allbstsig.pred4offtrall;
 f4 = initfig(5,5,1,size(pred4offtrall,2)); %initialize fig
 f4 = plt_errorof4thtarvlpred(f4,pred4offtrall,offmax,'b');
 
-pred4offtrall = allallallallbstnoi.pred4offtrall;
+pred4offtrall = allbstnoi.pred4offtrall;
 f4 = plt_errorof4thtarvlpred(f4,pred4offtrall,offmax,'r');
 
 %%
@@ -782,8 +668,8 @@ impindep4thall = allbstsig.impindep4thall;
 f5 = initfig(12,5,1,3); %initialize fig
 f5 = plt_deconpk_rat14(f5,impindep4thall,srcamprall,'b');
 
-srcamprall = allallallallbstnoi.srcamprall;
-impindep4thall = allallallallbstnoi.impindep4thall;
+srcamprall = allbstnoi.srcamprall;
+impindep4thall = allbstnoi.impindep4thall;
 f5 = plt_deconpk_rat14(f5,impindep4thall,srcamprall,'r');
 
 %%
@@ -799,10 +685,10 @@ f6 = plt_deconpkratvswfpkrat4th(f6,clppkhtwfall,psrcampsall,clnpkhtwfall,nsrcamp
 % clnpkhtwfall = [clnpkhtwfall(:,1:3) clnpkhtwfall(:,end)];  %I only want KLNB
 % f6 = plt_deconpkratvswfpkrat4th(f6,clppkhtwfall,psrcampsall,clnpkhtwfall,nsrcampsall);
 
-clppkhtwfall = allallallallbstnoi.clppkhtwfall;
-psrcampsall = allallallallbstnoi.psrcampsall;
-clnpkhtwfall = allallallallbstnoi.clnpkhtwfall;
-nsrcampsall = allallallallbstnoi.nsrcampsall;
+clppkhtwfall = allbstnoi.clppkhtwfall;
+psrcampsall = allbstnoi.psrcampsall;
+clnpkhtwfall = allbstnoi.clnpkhtwfall;
+nsrcampsall = allbstnoi.nsrcampsall;
 f7 = initfig(15,7,2,size(clppkhtwfall,2)); %initialize fig
 f7 = plt_deconpkratvswfpkrat4th(f7,clppkhtwfall,psrcampsall,clnpkhtwfall,nsrcampsall);
 
@@ -820,7 +706,7 @@ f7 = plt_deconpkratvswfpkrat4th(f7,clpkspanwfall,srcampsspanall);
 
 %% how many sources from noise compared to data, after checked at 4th stations
 nsrcs = allbstsig.nsrc;  %number of sources from signal
-nsrcn = allallallallbstnoi.nsrc;  %number of sources from synthetic noise
+nsrcn = allbstnoi.nsrc;  %number of sources from synthetic noise
 
 frac = nsrcn./nsrcs; %fraction during day (noisy) times
 
@@ -961,17 +847,170 @@ f1 = plt_absdistvsdt(f1,[dtarvlnn1all,distarvlnn1all],1,sps,'tarvl','b');
 % median(dtarvlnn1all/sps)
 % legend(f1.ax(3),'Data','location','east');
 
-dtarvlnn1all = allallallallbstnoi.dtarvlnn1all;
-distarvlnn1all = allallallallbstnoi.distarvlnn1all;
+dtarvlnn1all = allbstnoi.dtarvlnn1all;
+distarvlnn1all = allbstnoi.distarvlnn1all;
 f1 = plt_absdistvsdt(f1,[dtarvlnn1all,distarvlnn1all],1,sps,'tarvl','r');
 ylim(f1.ax(1),[0 0.6]);
 ylim(f1.ax(2),[0 3]);
 
 
+%% in sample sapce, 2ndary sources removed
+% % allbstsig = allbstnoi;
+% dt2all = allbstsig.dt2allbst;
+% dist2allsp = allbstsig.dist2allspbst;
+% dloc2allsp = allbstsig.dloc2allspbst;
+% imp = allbstsig.impindepall;
+% f=plt_srcdlocinmap(dt2all,dloc2allsp,sps,'spl');
+% 
+% nsrc = allbstsig.nsrcraw;
+% dto2allbst=[];  %diff. origin time between event pairs
+% dloco2allbst=[];  
+% disto2allbst=[];
+% impstall = [];
+% tcorall = [];
+% for i = 1: size(trange,1)
+%   ist = sum(nsrc(1:i-1))+1;
+%   ied = ist+nsrc(i)-1;
+%   impi = imp(ist:ied,:);
+%   if ~isempty(impi)
+%     %convert time offset to relative loc
+%     ftrans = 'interpchao';
+%     [imploc, indinput] = off2space002(impi(:,7:8),sps,ftrans,0); % 8 cols, format: dx,dy,lon,lat,dep,ttrvl,off12,off13
+%     [imploc0, ~] = off2space002([0 0],sps,ftrans,0);  % a ref source at 0,0
+%     tcor = round((imploc(:,6)-imploc0(6))*sps);   % travel time difference between each source and a ref source at 0,0
+%     torispl = impi(:,1)-tcor;
+%     [torisplst, indsort] = sortrows(torispl,1); %note, sort by origin time now
+%     implocst = imploc(indsort, :);
+%     impst = impi(indsort, :);
+%     %I suspect the diff loc and distance between pairs should be the same as using tarvl, but correspondance with time
+%     %should be different
+%     [dto2all,dloco2all,disto2all] = srcdistall(torisplst,impst(:,7:8),[0 2*sps]);
+%     
+%   else
+%     dto2all = [];
+%     dloco2all = [];
+%     disto2all = [];
+%     impst = [];
+%     dto2all = [];
+%     indsort = [];
+%     tcor = [];
+%   end
+%   dto2allbst = [dto2allbst; dto2all];
+%   dloco2allbst = [dloco2allbst; dloco2all] ;
+%   disto2allbst = [disto2allbst; disto2all];
+%   impstall = [impstall; impst];
+%   tcorall = [tcorall; tcor(indsort)];
+% end
+% f=plt_srcdlocinmap(dto2allbst,dloco2allbst,sps,'spl','tori');
+% 
+% %plot the diff time and euclidean distance between each LFE source to all others
+% tlensec = 14981;  %total length of time in secs for all bursts combined
+% f = plt_srcdistall(dt2all,dist2allsp,sps,40/sps,tlensec,1,'spl');
+% f = plt_srcdistall(dto2allbst,disto2allbst,sps,40/sps,tlensec,1,'spl','tori');
+% 
+% %plot the loc diff between each LFE source to all others
+% f = plt_srcdlocall(dloc2allsp,1,'spl');
+% 
+% doffset{1,1} = allbstsig.distarvlspnn1all(:,2:3);
+% doffset{2,1} = allbstsig.distarvlspnn2all(:,2:3);
+% doffset{3,1} = allbstsig.distarvlspnn3all(:,2:3);
+% doffset{4,1} = allbstsig.distarvlspnn4all(:,2:3);
+% doffset{5,1} = allbstsig.distarvlspnn5all(:,2:3);
+% eucdistsp{1,1} = allbstsig.distarvlspnn1all(:,1);
+% eucdistsp{2,1} = allbstsig.distarvlspnn2all(:,1);
+% eucdistsp{3,1} = allbstsig.distarvlspnn3all(:,1);
+% eucdistsp{4,1} = allbstsig.distarvlspnn4all(:,1);
+% eucdistsp{5,1} = allbstsig.distarvlspnn5all(:,1);
+% dtarvl{1,1} = allbstsig.dtarvlnn1all;
+% dtarvl{2,1} = allbstsig.dtarvlnn2all;
+% dtarvl{3,1} = allbstsig.dtarvlnn3all;
+% dtarvl{4,1} = allbstsig.dtarvlnn4all;
+% dtarvl{5,1} = allbstsig.dtarvlnn5all;
+% %plot the diff time and euclidean distance between above source pairs
+% f = plt_srcdistNtoNm(dtarvl,eucdistsp,sps,40/sps,tlensec,1,'spl');
+% %plot the loc diff between above source pairs
+% f = plt_srcdlocNtoNm(doffset,1,'spl');
+% 
+% %%%if you want to copy several figs to a new summary to put everything into 
+% % f1 = initfig(10,9,2,3);
+% % for i = 1:3
+% %   axchild=f.ax(i).Children;
+% %   copyobj(axchild, f1.ax(i));
+% % end
 
-
-
-
-
+%% in sample sapce, further checked by the 4th station KLNB
+% dt2all = allbstsig.dt2all4thbst;
+% dist2allsp = allbstsig.dist2allsp4thbst;
+% dloc2allsp = allbstsig.dloc2allsp4thbst;
+% imp = allbstsig.impindep4thall;
+% f=plt_srcdlocinmap(dt2all,dloc2allsp,sps,'spl');
+% 
+% nsrc = allbstsig.nsrc;
+% dto2allbst=[];  %diff. origin time between event pairs
+% dloco2allbst=[];  
+% disto2allbst=[];
+% impstall = [];
+% tcorall = [];
+% for i = 1: size(trange,1)
+%   ist = sum(nsrc(1:i-1))+1;
+%   ied = ist+nsrc(i)-1;
+%   impi = imp(ist:ied,:);
+%   if ~isempty(impi)
+%     %convert time offset to relative loc
+%     ftrans = 'interpchao';
+%     [imploc, indinput] = off2space002(impi(:,7:8),sps,ftrans,0); % 8 cols, format: dx,dy,lon,lat,dep,ttrvl,off12,off13
+%     [imploc0, ~] = off2space002([0 0],sps,ftrans,0);  % a ref source at 0,0
+%     tcor = round((imploc(:,6)-imploc0(6))*sps);   % travel time difference between each source and a ref source at 0,0
+%     torispl = impi(:,1)-tcor;
+%     [torisplst, indsort] = sortrows(torispl,1); %note, sort by origin time now
+%     implocst = imploc(indsort, :);
+%     impst = impi(indsort, :);
+%     %I suspect the diff loc and distance between pairs should be the same as using tarvl, but correspondance with time
+%     %should be different
+%     [dto2all,dloco2all,disto2all] = srcdistall(torisplst,impst(:,7:8),[0 2*sps]);
+%     
+%   else
+%     dto2all = [];
+%     dloco2all = [];
+%     disto2all = [];
+%     impst = [];
+%     dto2all = [];
+%     indsort = [];
+%     tcor = [];
+%   end
+%   dto2allbst = [dto2allbst; dto2all];
+%   dloco2allbst = [dloco2allbst; dloco2all] ;
+%   disto2allbst = [disto2allbst; disto2all];
+%   impstall = [impstall; impst];
+%   tcorall = [tcorall; tcor(indsort)];
+% end
+% f=plt_srcdlocinmap(dto2allbst,dloco2allbst,sps,'spl','tori');
+% 
+% %plot euclidean distance between each LFE source to all others
+% f = plt_srcdistall(dt2all,dist2allsp,sps,40/sps,tlensec,1,'spl');
+% f = plt_srcdistall(dto2allbst,disto2allbst,sps,40/sps,tlensec,1,'spl','tori');
+% 
+% %plot the loc diff between each LFE source to all others
+% f = plt_srcdlocall(dloc2allsp,1,'spl');
+% 
+% doffset{1,1} = allbstsig.distarvlspnn14thall(:,2:3);
+% doffset{2,1} = allbstsig.distarvlspnn24thall(:,2:3);
+% doffset{3,1} = allbstsig.distarvlspnn34thall(:,2:3);
+% doffset{4,1} = allbstsig.distarvlspnn44thall(:,2:3);
+% doffset{5,1} = allbstsig.distarvlspnn54thall(:,2:3);
+% eucdistsp{1,1} = allbstsig.distarvlspnn14thall(:,1);
+% eucdistsp{2,1} = allbstsig.distarvlspnn24thall(:,1);
+% eucdistsp{3,1} = allbstsig.distarvlspnn34thall(:,1);
+% eucdistsp{4,1} = allbstsig.distarvlspnn44thall(:,1);
+% eucdistsp{5,1} = allbstsig.distarvlspnn54thall(:,1);
+% dtarvl{1,1} = allbstsig.dtarvlnn14thall;
+% dtarvl{2,1} = allbstsig.dtarvlnn24thall;
+% dtarvl{3,1} = allbstsig.dtarvlnn34thall;
+% dtarvl{4,1} = allbstsig.dtarvlnn44thall;
+% dtarvl{5,1} = allbstsig.dtarvlnn54thall;
+% %plot the loc diff between above source pairs
+% f = plt_srcdlocNtoNm(doffset,1,'spl');
+% %plot the diff time and distance between above source pairs
+% f = plt_srcdistNtoNm(dtarvl,eucdistsp,sps,40/sps,tlensec,1,'spl');
 
 

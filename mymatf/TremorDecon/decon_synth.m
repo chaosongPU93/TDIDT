@@ -30,8 +30,8 @@ clc
 close all
 
 %%%Flag to indicate if it is necessary to recalculate everything
-% flagrecalc = 0;
-flagrecalc = 1;
+flagrecalc = 0;
+% flagrecalc = 1;
 
 if ~flagrecalc
   load('rst_decon_synth.mat');
@@ -1442,7 +1442,7 @@ else
 end %if need to recalculate
 keyboard
 
-%%
+%% summarize cumulative density plot for each region size and sat level
 %%%loop for region size
 for ireg = 1: nreg
   disp(semia(ireg));
@@ -1639,7 +1639,7 @@ ylim(f.ax(5:end),[0 0.3]);
 xlim(f.ax(:),[-0.5 2]);
 %%%%%%%%% or only plot the median & mad for each sat and noise
 
-%% consecutive dist along min-scatter VS saturation rate & region size
+%% summarize consecutive dist along min-scatter VS saturation rate & region size
 f = initfig(8,5,1,2); %initialize fig
 color = jet(nreg);
 ax=f.ax(1); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
@@ -1648,6 +1648,8 @@ for ireg = 1: nreg
   p(ireg) = plot(ax,log10(nsat),mprojx22all(:,ireg),'-o','markersize',4,'color',color(ireg,:));
   label{ireg} = sprintf('a/2=%.2f,b/2=%.2f',semia(ireg),semib(ireg));
 end
+p(nreg+1) = plot(ax,log10(nsat),0.50*ones(nnsat,1),'k--');
+label{nreg+1} = 'data';
 legend(ax,p,label);
 title(ax,'Secondary sources removed');
 xlabel(ax,'log_{10}(Saturation)');
@@ -1660,6 +1662,7 @@ for ireg = 1: nreg
   % plot(ax,log10(nsat),mprojx3nn1(:,ireg),'-o','markersize',4,'color',color(ireg,:));
   plot(ax,log10(nsat),mprojx32all(:,ireg),'-o','markersize',4,'color',color(ireg,:));
 end
+plot(ax,log10(nsat),0.45*ones(nnsat,1),'k--');
 title(ax,'Checkd at 4th stas');
 ylim(ax,yran);
 
