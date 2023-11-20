@@ -30,8 +30,8 @@ clc
 close all
 
 %%%Flag to indicate if it is necessary to recalculate everything
-flagrecalc = 0;
-% flagrecalc = 1;
+% flagrecalc = 0;
+flagrecalc = 1;
 
 if ~flagrecalc
   load('rst_synth_onespot.mat');
@@ -256,7 +256,7 @@ else
   spread = range(greenf);   % range of the amp of template
   
   %%%plot the unfiltered and filtered templates
-  % plt_templates(green,greenf,stas,[],[],lowlet,hiwlet,sps);
+  plt_templates(green,greenf,stas,[],[],lowlet,hiwlet,sps);
   
   %just the filtered templates
   % plt_templates_bp(greenf,stas,lowlet,hiwlet,sps);
@@ -295,7 +295,7 @@ else
   %avoid checking for subscript overrrun.  When "synths" are written from "synth" in the
   %subroutine, Greenlen from the start and end will not be written.
   fracelsew=0; %0.25 %0.5; %0.6; %The ratio of elsewhere events to local events.  Zero for Discrete Ide.
-  nsat=[0.4 1 2 4 10 20 40 100];  % times of saturation
+  nsat=[0.1 0.4 1 2 4 10 20 40 100];  % times of saturation
   % nsat=[95 100 200];  % times of saturation
   nnsat = length(nsat);
   writes=round(nsat*satn) %how many templates to throw in, under different degrees of saturation
@@ -303,7 +303,7 @@ else
   synth=zeros(winlen+greenlen,nsta);
   
   nouts=length(writes);
-  seed=round(writes(1)/5e3); %for random number generator
+  seed=round(writes(4)/5e3); %for random number generator
   
   %%%specify which time is uniform in time
   % timetype = 'tarvl';
@@ -320,6 +320,11 @@ else
   
   %%%whether to plot to check the synthetics
   pltsynflag = 0;
+%   pltsynflag = 1;
+  
+  %%%whether to plot to check the new synthetics with added noise
+%   pltnewsynflag = 0;
+  pltnewsynflag = 1;
   
   %%%specify if forcing a min speration of arrival time for 2 events from the same spot
   % forcesep = 1;
@@ -340,8 +345,9 @@ else
     xygrid = [loc(:,7)/iup,loc(:,8)/iup,loc(:,1),loc(:,2)];
   end
   
-  %choose only one spot, use [0,0]
-  xygrid = xygrid(xygrid(:,1)==0 & xygrid(:,2)==0, :);
+  %choose only one spot
+%   xygrid = xygrid(xygrid(:,1)==0 & xygrid(:,2)==0, :); %use [0,0]
+  xygrid = xygrid(xygrid(:,1)==2/iup & xygrid(:,2)==2/iup, :);  %use [2,2]
   
   diam=0;
   
@@ -390,45 +396,60 @@ else
       axranexp(gca,6,20);
     end
     xlabel(sprintf('Samples at %d Hz',sps),'FontSize',12);
+    
+    %only the lowest saturation to see details
+    figure
+    i=1;
+    tmp = synths(:,:,i); 
+    plot(tmp(:,1),'r'); hold on
+    plot(tmp(:,2),'b');
+    plot(tmp(:,3),'k');
+    text(0.95,0.9,sprintf('%.1f x saturation',nsat(i)),'Units','normalized','HorizontalAlignment',...
+      'right');
+    xlim([0 40*sps]);
+    axranexp(gca,6,20);
+    xlabel(sprintf('Samples at %d Hz',sps),'FontSize',12);
+
   end
   
-%   tmpgrid = xygrid;
-%   tmpgrid(:,1:2)=round(sps/40*tmpgrid(:,1:2)); % *4 to get to 160 sps from 40.
-%   insat = 2;  %which saturation to look at
-%   n=writes(insat);
-%   a = squeeze(sources(1:n,:,insat));
-%   b = a(any(a,2),:);
-%   source=b;
-%   off = tmpgrid(source(:,2),1:2); %note that 'tmpgrid' has the desired sps
+  tmpgrid = xygrid;
+  tmpgrid(:,1:2)=round(sps/40*tmpgrid(:,1:2)); % *4 to get to 160 sps from 40.
+  insat = 2;  %which saturation to look at
+  n=writes(insat);
+  a = squeeze(sources(1:n,:,insat));
+  b = a(any(a,2),:);
+  source=b;
+  off = tmpgrid(source(:,2),1:2); %note that 'tmpgrid' has the desired sps
+  [~,off(:,3)] = pred_tarvl_at4thsta(stas(4,:),off(:,1),off(:,2));
   
   %% compose new synthetic waveform and carry out deconvolution
   %%%flag for validating if ground truth of sources can recover the record
-  % testsrcflag = 1;
-  testsrcflag = 0;
+  testsrcflag = 1;
+%   testsrcflag = 0;
   
   %%%flag for validing if the spectral shapes of data and templates are similar
   % testfreqflag = 1;
   testfreqflag = 0;
   
   %%%flag for plot the data
-  % pltdataflag = 1;
+%   pltdataflag = 1;
   pltdataflag = 0;
   
   %%%flag for plot the ground truth distribution
-  % pltgtflag = 1;
-  pltgtflag = 0;
+  pltgtflag = 1;
+  % pltgtflag = 0;
   
   %%%flag for plot the decon src distribution after grouping
-  % pltsrcflag1 = 1;
+%   pltsrcflag1 = 1;
   pltsrcflag1 = 0;
   
   %%%flag for plot the decon src distribution after removing 2ndary src
-  % pltsrcflag2 = 1;
-  pltsrcflag2 = 0;
+  pltsrcflag2 = 1;
+%   pltsrcflag2 = 0;
   
   %%%flag for plot the decon src distribution after checking at 4th stas
-  % pltsrcflag3 = 1;
-  pltsrcflag3 = 0;
+  pltsrcflag3 = 1;
+%   pltsrcflag3 = 0;
   
 %   %%%%%%%%%%%%% params of synthetics from diff sat levels and region sizes %%%%%%%%%%%%
 %   %%%specify shape of the source region
@@ -549,7 +570,7 @@ else
       xnoi = xnoi .* median(env) ./ median(envn);
       median(env) - median(envelope(detrend(xnoi)))
       
-      if pltsynflag
+      if pltnewsynflag
         figure
         subplot(311)
         plot((1:size(optseg,1))/sps,optseg(:,1),'r','linew',1); hold on
@@ -602,7 +623,7 @@ else
       
       %%
       %%%a glance of signal
-      if pltsynflag
+      if pltnewsynflag
         figure
         subplot(311)
         plot((1:size(synths,1))/sps,synths(:,1,insat),'r','linew',1); hold on
@@ -652,9 +673,9 @@ else
       a = squeeze(sources(1:n,:,insat));
       b = a(any(a,2),:);
       synsrc=b;
-      tmp = xygrid(synsrc(:,2),:);
+      tmp = tmpgrid(synsrc(:,2),:);
       synsrc = [synsrc(:,1) tmp(:,1:4) ones(length(tmp),1)];  %[indtarvl, off12, off13, loce, locn, amp]
-      
+
       % keyboard
       %%%load starting indices of added sources at sta 1
       synsrcstind = squeeze(greensts{insat}{1});
@@ -675,16 +696,16 @@ else
           indst = 1;  % starting index of the simulated signal to test
           inded = wlensecb*sps+indst-1; % ending index of the simulated signal to test
           source = synsrc;
-          if ista == 1
+%           if ista == 1
             greenst = synsrcstind; % the starting index of each added template, context of full length
-          elseif ista <=3
-            %ind - rnoff is the arrival time in index at sta 2 and 3
-            %note the sign here, if off12 >0, move 2 to the right to align with 1, meaning that 2 is
-            %earlier than 1, ie., tarvl2 < tarvl1. Be consistent all the time
-            greenst = synsrcstind-source(:, ista);
-          else
-            greenst = pred_tarvl_at4thsta(stas(ista,:),source(:,2),source(:,3),source(:,1));
-          end
+%           elseif ista <=3
+%             %ind - rnoff is the arrival time in index at sta 2 and 3
+%             %note the sign here, if off12 >0, move 2 to the right to align with 1, meaning that 2 is
+%             %earlier than 1, ie., tarvl2 < tarvl1. Be consistent all the time
+%             greenst = synsrcstind-source(:, ista);
+%           else
+%             greenst = pred_tarvl_at4thsta(stas(ista,:),source(:,2),source(:,3),source(:,1));
+%           end
           %%%you don't need all impulses, only some of them contribute to the length of truncated record
           %%%cut out the green indice and sources that contribute
           %%%Note that some zero-crossings might appear later than 'indedsig', but the corresponding start
@@ -702,7 +723,8 @@ else
           end
           
           %note that some length of the full simulation 'skiplen' was skipped in 'synthgen.m'
-          sigpntemp = STAopt(:,ista);  % simulated signal with white noise
+%           aaa=synths(:,ista,insat);
+          sigpntemp = synths(:,ista,insat);  % simulated signal with white noise
           noitemp = synth(skiplen:winlen,ista);   % account for the skipped part
           sigtemp = sigpntemp-noitemp; % subtract the white noise
           sigpnstagt(:,ista) = sigpntemp(indst:inded); % now focus on the part of interest
@@ -759,9 +781,9 @@ else
       
       %% filter data (and templates)
       %%filter data
-      optseg = STAopt;
       hisig=6.3; % this will give a similar spectral shape between template and signal
       losig=1.8;
+      optseg = [];
       for ista = 1:nsta
         optseg(:,ista) = Bandpass(STAopt(:,ista), sps, losig, hisig, 2, 2, 'butter');
       end
@@ -778,7 +800,7 @@ else
       
       %% Best alignment for the whole window
       %some params
-      bufsec = 0.5;
+      bufsec = 1;
       msftaddm = bufsec*sps;  %buffer range for later CC alignment
       rccmwsec = 0.5;
       rccmwlen = rccmwsec*sps;  %window length for computing RCC
@@ -817,6 +839,12 @@ else
         [mcoef(ista-3),off1i(ista)] = xcorrmax(optcc(:,1), optcc(:,ista), msftadd, 'coeff');
         mlag(ista-3) = off1i(ista);
       end
+      keyboard
+      %if you want to avoid the case when the alignment is way off the centroid 
+      %by chance while the saturation level is low, you can force it to be the 
+      %an average location, this reference value is from min region size & max
+      %saturation
+      off1i = [0 2 2 -4];
       
       %%%Align and compute the RCC based on the entire win, and take that as the input signal!
       optdat = [];  % win segment of interest
@@ -887,7 +915,7 @@ else
         legend(p,stas);
       end
       
-      %% ground truth of conrtibuting sources
+      %% ground truth of conrtibuting sources AFTER alignment
       lsig = size(STAopt,1); %length of original synthetics
       synsrcgtsta = cell(nsta,1);  %sources whose zero-crossing with time range, [indtarvl rnoff12 rnoff13 amp]
       for ista = 1: nsta
@@ -950,7 +978,7 @@ else
       [impgtloc, ~] = off2space002(density1d(:,1:2),sps,ftrans,0); % 8 cols, format: dx,dy,lon,lat,dep,ttrvl,off12,off13
       density1d = [impgtloc(:,1:2) density1d(:,3)];
       ampgtsum1d = sortrows([impgtloc(:,1:2) ampgtsum], 3);
-
+      keyboard
       %%%if you want to plot the ground truth
       if pltgtflag
         %plot the ground truth source offset
@@ -979,11 +1007,11 @@ else
         [ax] = plt_decon_imp_scatter_space(ax,impgt,xran,yran,cran,offxran,...
           offyran,sps,50,ftrans,'mean','tarvl');
         title(ax,'Ground truth');
-        
-        %%%plot the cumulative density and summed amp of detections
-        cstr = {'# detections / pixel'; 'amp sum / pixel'};
-        [f] = plt_sum_pixel(density1d,ampgtsum1d,[-4 4],[-4 4],20,cstr,'o','linear');
-        supertit(f.ax,'Ground truth');
+
+        % %%%plot the cumulative density and summed amp of detections
+        % cstr = {'# detections / pixel'; 'amp sum / pixel'};
+        % [f] = plt_sum_pixel(density1d,ampgtsum1d,[-4 4],[-4 4],20,cstr,'o','linear');
+        % supertit(f.ax,'Ground truth');
         
         % %plot the ground truth source map locations from grid
         % f.fig = figure;
@@ -1013,6 +1041,7 @@ else
         % xlim(ax,xran); xticks(ax,xran(1): 1 : xran(2));
         % ylim(ax,yran); yticks(ax,yran(1): 1 : yran(2));
       end
+      keyboard
       
       %% independent deconvolution at each station
       %%%finalize the signal, noise, and template (Green's function)
@@ -1249,6 +1278,7 @@ else
       
       srcamprall{insat,iperc} = srcampr;
       
+      %%
       %%%if you want to plot the deconvolved sources
       if pltsrcflag2
         %plot the scatter of offsets, accounting for prealignment offset, == true offset

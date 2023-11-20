@@ -1,4 +1,4 @@
-function [m0dot,time]=BSE1d_Ide(C0,dt,alpha,sigma,Vslip,mu)
+function [m0dot,time]=BSE1d_Ide(alpha,C0,dt,sigma,Vslip,mu)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % [m0dot,time]=BSE1d_Ide(C0,dt,alpha,sigma,Vslip,mu)
 %

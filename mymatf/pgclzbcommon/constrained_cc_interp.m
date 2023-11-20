@@ -21,112 +21,112 @@ function [off12,off13,cc,iloff,loff] = constrained_cc_interp(trace,mid,wlen,mshi
 for i = 1:size(trace,1)
   trace(i,:) = detrend(trace(i,:));   
 end
-stackauto = trace.*trace;
+staauto = trace.*trace;
 templen = size(trace,2);
 lenx = templen-2*mshift;
-stack12x = zeros(lenx, 2*mshift+1);
-stack13x = zeros(lenx, 2*mshift+1);    % stas: 1->PGC, 2->SSIB, 3->SILB
-stack32x = zeros(lenx, 2*mshift+1);
+sta12x = zeros(lenx, 2*mshift+1);
+sta13x = zeros(lenx, 2*mshift+1);    % stas: 1->PGC, 2->SSIB, 3->SILB
+sta32x = zeros(lenx, 2*mshift+1);
 
 for n=-mshift:mshift
     % PGC corr SSIB, 1+mshift:tracelen-mshift == 1+mshift-n:tracelen-mshift-n == lenx
-    stack12x(:,n+mshift+1)=trace(1,1+mshift:templen-mshift).* ...
+    sta12x(:,n+mshift+1)=trace(1,1+mshift:templen-mshift).* ...
         trace(2,1+mshift-n:templen-mshift-n);
     % PGC corr SILB
-    stack13x(:,n+mshift+1)=trace(1,1+mshift:templen-mshift).* ...
+    sta13x(:,n+mshift+1)=trace(1,1+mshift:templen-mshift).* ...
         trace(3,1+mshift-n:templen-mshift-n);
     % SILB corr SSIB
-    stack32x(:,n+mshift+1)=trace(3,1+mshift:templen-mshift).* ...
+    sta32x(:,n+mshift+1)=trace(3,1+mshift:templen-mshift).* ...
         trace(2,1+mshift-n:templen-mshift-n);
 end
 
-sumstack12=zeros(1,2*mshift+1);   % PGC-SSIB
-sumstack13=zeros(1,2*mshift+1);   % PGC-SILB
-sumstack32=zeros(1,2*mshift+1);   % SILB-SSIB
-sumstack1sq=zeros(1,2*mshift+1);  % "sq" are the running cumulative sum, to be used later by differencing the window edpoints
-sumstack2sq=zeros(1,2*mshift+1);
-sumstack3sq=zeros(1,2*mshift+1);
-sumstack3Bsq=zeros(1,2*mshift+1);
+sumsta12=zeros(1,2*mshift+1);   % PGC-SSIB
+sumsta13=zeros(1,2*mshift+1);   % PGC-SILB
+sumsta32=zeros(1,2*mshift+1);   % SILB-SSIB
+sumsta1sq=zeros(1,2*mshift+1);  % "sq" are the running cumulative sum, to be used later by differencing the window edpoints
+sumsta2sq=zeros(1,2*mshift+1);
+sumsta3sq=zeros(1,2*mshift+1);
+sumsta3Bsq=zeros(1,2*mshift+1);
 
 istart = mid-round(wlen/2)+1;
 iend = istart+wlen;
-sumstack12(1,:) = sum(stack12x(istart-mshift: iend-mshift, :));
-sumstack13(1,:) = sum(stack13x(istart-mshift: iend-mshift, :));
-sumstack32(1,:) = sum(stack32x(istart-mshift: iend-mshift, :));
-sumstack1sq(1,:) = sum(stackauto(1, istart: iend));
-sumstack3Bsq(1,:) = sum(stackauto(3, istart: iend));
+sumsta12(1,:) = sum(sta12x(istart-mshift: iend-mshift, :));
+sumsta13(1,:) = sum(sta13x(istart-mshift: iend-mshift, :));
+sumsta32(1,:) = sum(sta32x(istart-mshift: iend-mshift, :));
+sumsta1sq(1,:) = sum(staauto(1, istart: iend));
+sumsta3Bsq(1,:) = sum(staauto(3, istart: iend));
 for m = -mshift:mshift
-    sumstack2sq(1,m+mshift+1)=sum(stackauto(2, istart-m: iend-m)); %+m??? (yes).
-    sumstack3sq(1,m+mshift+1)=sum(stackauto(3, istart-m: iend-m));
+    sumsta2sq(1,m+mshift+1)=sum(staauto(2, istart-m: iend-m)); %+m??? (yes).
+    sumsta3sq(1,m+mshift+1)=sum(staauto(3, istart-m: iend-m));
 end
 
 %An attempt to bypass glitches in data.  Min value of good data typically ~10^{-2}
 glitches=1.e-7;
-sumstack1sq=max(sumstack1sq,glitches);
-sumstack2sq=max(sumstack2sq,glitches);
-sumstack3sq=max(sumstack3sq,glitches);    % return maximum between A and B
+sumsta1sq=max(sumsta1sq,glitches);
+sumsta2sq=max(sumsta2sq,glitches);
+sumsta3sq=max(sumsta3sq,glitches);    % return maximum between A and B
 
-denomstack12n=realsqrt(sumstack1sq.*sumstack2sq);    % Real square root, An error is produced if X is negative
-denomstack13n=realsqrt(sumstack1sq.*sumstack3sq);
-denomstack32n=realsqrt(sumstack3Bsq.*sumstack2sq);
+denomsta12n=realsqrt(sumsta1sq.*sumsta2sq);    % Real square root, An error is produced if X is negative
+denomsta13n=realsqrt(sumsta1sq.*sumsta3sq);
+denomsta32n=realsqrt(sumsta3Bsq.*sumsta2sq);
 
-sumstack12n=sumstack12./denomstack12n;   % suffix 'n' means normalized
-sumstack13n=sumstack13./denomstack13n;
-sumstack32n=sumstack32./denomstack32n;
+sumsta12n=sumsta12./denomsta12n;   % suffix 'n' means normalized
+sumsta13n=sumsta13./denomsta13n;
+sumsta32n=sumsta32./denomsta32n;
 
-[xcmaxstack12n,imaxstack12]=max(sumstack12n,[],2);   %Integer-offset max cross-correlation
-[xcmaxstack13n,imaxstack13]=max(sumstack13n,[],2);   % along row, max cc val and index in each window
-[xcmaxstack32n,imaxstack32]=max(sumstack32n,[],2);
+[xcmaxsta12n,imaxsta12]=max(sumsta12n,[],2);   %Integer-offset max cross-correlation
+[xcmaxsta13n,imaxsta13]=max(sumsta13n,[],2);   % along row, max cc val and index in each window
+[xcmaxsta32n,imaxsta32]=max(sumsta32n,[],2);
 
 %Parabolic fit:
-[xmaxstack12n,ymaxstack12n,aSTA12]=parabol(1,mshift,sumstack12n,imaxstack12); %Interpolated max cross-correlation
-[xmaxstack13n,ymaxstack13n,aSTA13]=parabol(1,mshift,sumstack13n,imaxstack13);
-[xmaxstack32n,ymaxstack32n,aSTA32]=parabol(1,mshift,sumstack32n,imaxstack32);
+[xmaxsta12n,ymaxsta12n,aSTA12]=parabol(1,mshift,sumsta12n,imaxsta12); %Interpolated max cross-correlation
+[xmaxsta13n,ymaxsta13n,aSTA13]=parabol(1,mshift,sumsta13n,imaxsta13);
+[xmaxsta32n,ymaxsta32n,aSTA32]=parabol(1,mshift,sumsta32n,imaxsta32);
 
 %Center them
-imaxstack12cent=imaxstack12-mshift-1;  % "cent" is "centered"; imaxSTA12 is original 1: 2*mshift+1, corresponds to -mshift: mshift
-imaxstack13cent=imaxstack13-mshift-1;
-imaxstack32cent=imaxstack32-mshift-1;
+imaxsta12cent=imaxsta12-mshift-1;  % "cent" is "centered"; imaxSTA12 is original 1: 2*mshift+1, corresponds to -mshift: mshift
+imaxsta13cent=imaxsta13-mshift-1;
+imaxsta32cent=imaxsta32-mshift-1;
 %%% NOTICE: the right order of a closed 3-sta pair is +13, -12, +32, where 13 means 1-->3
-iloff=imaxstack13cent-imaxstack12cent+imaxstack32cent; %How well does the integer loop close?
+iloff=imaxsta13cent-imaxsta12cent+imaxsta32cent; %How well does the integer loop close?
 %
-xmaxstack12n=xmaxstack12n-mshift-1;
-xmaxstack13n=xmaxstack13n-mshift-1;
-xmaxstack32n=xmaxstack32n-mshift-1;
-loff=xmaxstack13n-xmaxstack12n+xmaxstack32n; %How well does the interpolated loop close?
-xcmaxAVEn=(xcmaxstack12n+xcmaxstack13n+xcmaxstack32n)/3;
-off12=xmaxstack12n;    % tmp == temporary
-off13=xmaxstack13n;
-off32=xmaxstack32n;
+xmaxsta12n=xmaxsta12n-mshift-1;
+xmaxsta13n=xmaxsta13n-mshift-1;
+xmaxsta32n=xmaxsta32n-mshift-1;
+loff=xmaxsta13n-xmaxsta12n+xmaxsta32n; %How well does the interpolated loop close?
+xcmaxAVEn=(xcmaxsta12n+xcmaxsta13n+xcmaxsta32n)/3;
+off12=xmaxsta12n;    % tmp == temporary
+off13=xmaxsta13n;
+off32=xmaxsta32n;
 
 
-if xcmaxAVEn<ccmin || abs(loff)>loffmax || isequal(abs(imaxstack12cent),mshift)...
-        || isequal(abs(imaxstack13cent),mshift) || isequal(abs(imaxstack32cent),mshift)
+if xcmaxAVEn<ccmin || abs(loff)>loffmax || isequal(abs(imaxsta12cent),mshift)...
+        || isequal(abs(imaxsta13cent),mshift) || isequal(abs(imaxsta32cent),mshift)
     % return the BAD offset and loopoff, and cc at offset (0,0)
     off12=mshift+1; off13=mshift+1; off32=mshift+1; %dummy them, if these criteria are met
 %     cc = (sumstack12n(mshift+1)+sumstack13n(mshift+1)+sumstack32n(mshift+1))/3;
     cc = xcmaxAVEn;
     disp('WRONG! The basic criteria is not met');
 else
-    interpstack12n=interp(sumstack12n,iup,3);
-    interpstack13n=interp(sumstack13n,iup,3);
-    interpstack32n=interp(sumstack32n,iup,3);
-    leninterp=length(interpstack12n);
-    [xcmaxinterpstack12n,imaxinterpstack12]=max(interpstack12n(1:leninterp-(iup-1)));
-    [xcmaxinterpstack13n,imaxinterpstack13]=max(interpstack13n(1:leninterp-(iup-1)));
-    [xcmaxinterpstack32n,imaxinterpstack32]=max(interpstack32n(1:leninterp-(iup-1)));
+    interpsta12n=interp(sumsta12n,iup,3);
+    interpsta13n=interp(sumsta13n,iup,3);
+    interpsta32n=interp(sumsta32n,iup,3);
+    leninterp=length(interpsta12n);
+    [xcmaxinterpsta12n,imaxinterpsta12]=max(interpsta12n(1:leninterp-(iup-1)));
+    [xcmaxinterpsta13n,imaxinterpsta13]=max(interpsta13n(1:leninterp-(iup-1)));
+    [xcmaxinterpsta32n,imaxinterpsta32]=max(interpsta32n(1:leninterp-(iup-1)));
     xcmaxconprev=-99999.;  %used to be 0; not good with glitches
     %predefine below in case none qualified are found, but replacable otherwise
     iSTA12bang=mshift+1;
     iSTA13bang=mshift+1;
-    for iSTA12=max(1,imaxinterpstack12-3*iup):min(imaxinterpstack12+3*iup,iup*(2*mshift+1)-...
+    for iSTA12=max(1,imaxinterpsta12-3*iup):min(imaxinterpsta12+3*iup,iup*(2*mshift+1)-...
             (iup-1))
         %3 samples from peak;%intentionally wider than acceptable;%iup-1 are extrapolated points
-        for iSTA13=max(1,imaxinterpstack13-3*iup):min(imaxinterpstack13+3*iup,iup*...
+        for iSTA13=max(1,imaxinterpsta13-3*iup):min(imaxinterpsta13+3*iup,iup*...
                 (2*mshift+1)-(iup-1))
             ibangon = (iup*mshift+1)-iSTA13+iSTA12;
             if ibangon >= 1 && ibangon<=iup*(2*mshift+1)
-                xcmaxcon=interpstack12n(iSTA12)+interpstack13n(iSTA13)+interpstack32n(ibangon);
+                xcmaxcon=interpsta12n(iSTA12)+interpsta13n(iSTA13)+interpsta32n(ibangon);
                 if xcmaxcon > xcmaxconprev
                     xcmaxconprev=xcmaxcon;
                     iSTA12bang=iSTA12;
@@ -139,10 +139,10 @@ else
     %%% will result in the max xcmaxcon and corresponding iSTA12,
     %%% iSTA13, and save them into xcmaxconprev, iSTA12bang and iSTA13bang
     iSTA32bang=(iup*mshift+1)-iSTA13bang+iSTA12bang;
-    if abs(iSTA12bang-imaxinterpstack12) <= loffmax*iup && ...
-       abs(iSTA13bang-imaxinterpstack13) <= loffmax*iup && ...
-       abs(iSTA32bang-imaxinterpstack32) <= loffmax*iup && ...
-       interpstack12n(iSTA12bang)+interpstack13n(iSTA13bang)+interpstack32n(iSTA32bang) >= ...
+    if abs(iSTA12bang-imaxinterpsta12) <= loffmax*iup && ...
+       abs(iSTA13bang-imaxinterpsta13) <= loffmax*iup && ...
+       abs(iSTA32bang-imaxinterpsta32) <= loffmax*iup && ...
+       interpsta12n(iSTA12bang)+interpsta13n(iSTA13bang)+interpsta32n(iSTA32bang) >= ...
        3*ccmin
    
         off12=(iSTA12bang-(iup*mshift+1))/iup;
@@ -151,7 +151,7 @@ else
                 
         %%% xcmaxAVEnbang is added by Chao, to distinguish from
         %%% xcmaxAVEn, because it is max average CC coef
-        cc=(interpstack12n(iSTA12bang)+interpstack13n(iSTA13bang)+interpstack32n(iSTA32bang))/3;
+        cc=(interpsta12n(iSTA12bang)+interpsta13n(iSTA13bang)+interpsta32n(iSTA32bang))/3;
 %     end
 %     if off13-off12+off32 ~=0
     else

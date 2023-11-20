@@ -307,7 +307,8 @@ noistd = 0; %noise-free
 synth=noistd*(randn(winlen+greenlen+2*10,nsta)-0.5); %+2*10 a little extra, for jiggering 2nd & 3rd stations.% for ista=1:nsta
 
 nouts=length(writes);
-seed=round(writes(1)/5e3); %for random number generator
+seed=round(writes(4)/5e3); %for random number generator
+% seed=10;
 
 %%%specify distribution for source location  
 % distrloc = 'custompdf'; %using a custom PDF function

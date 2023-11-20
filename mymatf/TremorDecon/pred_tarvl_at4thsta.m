@@ -15,6 +15,7 @@ function [tarvl4,off14]=pred_tarvl_at4thsta(stanm,off12,off13,tarvl1,off1i)
 % Last modified date:   2022/10/04
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+defval('tarvl1',[]);
 defval('off1i',0);
 
 %load the plane fitting model 
@@ -45,12 +46,16 @@ off14 = round(off14mod(idx,1).*off12 + off14mod(idx,2).*off13 + off14mod(idx,3))
 %calibrate for the waveform prealignment, if any
 off14 = off14 - off1i*ones(size(off14)); 
 
-%the arrival time at 4th sta is just arrival time at 1st sta minus the off14
-%because, off14 = tarvl1-tarvl4, so if off14>0, sta4 needs to be shifted to the right to align with
-%sta1
-%This also implies that, if 'off1i' is not zero, say >0, ie., the 4th sta trace has been prealigned
-%with 1st sta, 'tarvl4' would be larger, ie., tarvl4 = tarvl4 + off1i
-tarvl4 = tarvl1 - off14;
+if ~isempty(tarvl1)
+  %the arrival time at 4th sta is just arrival time at 1st sta minus the off14
+  %because, off14 = tarvl1-tarvl4, so if off14>0, sta4 needs to be shifted to the right to align with
+  %sta1
+  %This also implies that, if 'off1i' is not zero, say >0, ie., the 4th sta trace has been prealigned
+  %with 1st sta, 'tarvl4' would be larger, ie., tarvl4 = tarvl4 + off1i
+  tarvl4 = tarvl1 - off14;
+else
+  tarvl4 = [];
+end
 
 % keyboard
 

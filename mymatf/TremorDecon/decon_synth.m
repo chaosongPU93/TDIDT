@@ -30,8 +30,8 @@ clc
 close all
 
 %%%Flag to indicate if it is necessary to recalculate everything
-flagrecalc = 0;
-% flagrecalc = 1;
+% flagrecalc = 0;
+flagrecalc = 1;
 
 if ~flagrecalc
   load('rst_decon_synth.mat');
@@ -383,7 +383,7 @@ else
   % timetype = 'tori';
   
   %%%flag for validating if ground truth of sources can recover the record
-  % testsrcflag = 1;
+%   testsrcflag = 1;
   testsrcflag = 0;
   
   %%%flag for validing if the spectral shapes of data and templates are similar
@@ -395,11 +395,11 @@ else
   pltdataflag = 0;
   
   %%%flag for plot the ground truth distribution
-  % pltgtflag = 1;
+%   pltgtflag = 1;
   pltgtflag = 0;
   
   %%%flag for plot the decon src distribution after grouping
-  % pltsrcflag1 = 1;
+%   pltsrcflag1 = 1;
   pltsrcflag1 = 0;
   
   %%%flag for plot the decon src distribution after removing 2ndary src
@@ -501,7 +501,8 @@ else
       skiplen=greenlen;
       %%%Here the noise is 'uniform' in time!
       % noistd = 5e-2;
-      noistd = 2.0e-4;
+%       noistd = 2.0e-4;
+      noistd = 0;
       synth=noistd*(randn(winlen+greenlen+2*10,nsta)-0.5); %+2*10 a little extra, for jiggering 2nd & 3rd stations.% for ista=1:nsta
       
       %% testing, extract and validate the added impulses of template
@@ -662,12 +663,13 @@ else
         [mcoef(ista-3),off1i(ista)] = xcorrmax(optcc(:,1), optcc(:,ista), msftadd, 'coeff');
         mlag(ista-3) = off1i(ista);
       end
-      
+           
       %if you want to avoid the case when the alignment is way off the centroid 
       %by chance while the saturation level is low, you can force it to be the 
-      %an average location, this reference value is from min region size & max
-      %saturation
-      off1i = [0 2 2 -4];
+      %an average location, this reference value is from the abs location of the
+      %the centroid (0.2,0.2), and prediction of off14 from plane fit model
+      off1i(2:3) = [2 2];
+      [~,off1i(4)] = pred_tarvl_at4thsta(stas(4,:),off1i(2),off1i(3));
       
       %%%Align and compute the RCC based on the entire win, and take that as the input signal!
       optdat = [];  % win segment of interest
@@ -719,17 +721,17 @@ else
       if pltdataflag
         figure; hold on
         lsig = size(sigsta,1);
-        if nsta == 3
+%         if nsta == 3
           plot((1:lsig)/sps,sigsta(:,1),'r');
           plot((1:lsig)/sps,sigsta(:,2),'b');
           plot((1:lsig)/sps,sigsta(:,3),'k');
-        else
-          color = jet(nsta);
-          for ista = 1: nsta
-            p(ista)=plot((1:lsig)/sps,sigsta(:,ista),'Color',color(ista,:));
-            %       label{i}=stas(i,:);
-          end
-        end
+%         else
+%           color = jet(nsta);
+%           for ista = 1: nsta
+%             p(ista)=plot((1:lsig)/sps,sigsta(:,ista),'Color',color(ista,:));
+%             %       label{i}=stas(i,:);
+%           end
+%         end
         ax = gca;
         axsym(ax);
         plot((1:lsig)/sps,rcc*ax.YLim(2),'o','color',[.6 .6 .6],'markersize',2);
@@ -738,7 +740,7 @@ else
         legend(p,stas);
       end
       
-      %% ground truth of conrtibuting sources
+      %% ground truth of conrtibuting sources AFTER alignment
       lsig = size(STAopt,1); %length of original synthetics
       synsrcgtsta = cell(nsta,1);  %sources whose zero-crossing with time range, [indtarvl rnoff12 rnoff13 amp]
       for ista = 1: nsta
@@ -817,7 +819,7 @@ else
         ax=gca;
         [ax,torispl,mamp] = plt_decon_imp_scatter(ax,impgt,xran,yran,cran,offxran,offyran,...
           sps,50,'mean','tarvl');
-        scatter(ax,off1i(2),off1i(3),20,'ks','filled','MarkerEdgeColor','k');
+        scatter(ax,off1i(2),off1i(3),50,'ks','filled','MarkerEdgeColor','k');
         title(ax,'Ground truth');
         
         %plot the transformed ground truth source map locations
@@ -830,6 +832,7 @@ else
         [ax] = plt_decon_imp_scatter_space(ax,impgt,xran,yran,cran,offxran,...
           offyran,sps,50,ftrans,'mean','tarvl');
         plot(ax,xcut,ycut,'k-','linew',2);
+        scatter(ax,loc0(1),loc0(2),50,'ks','filled','MarkerEdgeColor','k');
         title(ax,'Ground truth');
         
         %%%plot the cumulative density and summed amp of detections
@@ -837,6 +840,7 @@ else
         [f] = plt_sum_pixel(density1d,ampgtsum1d,[-4 4],[-4 4],20,cstr,'o','linear');
         hold(f.ax(1),'on');
         plot(f.ax(1),xcut,ycut,'k-','linew',2);
+        scatter(f.ax(1),loc0(1),loc0(2),50,'ks','filled','MarkerEdgeColor','k');
         hold(f.ax(2),'on');
         plot(f.ax(2),xcut,ycut,'k-','linew',2);
         supertit(f.ax,'Ground truth');
