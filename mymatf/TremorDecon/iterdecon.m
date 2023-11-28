@@ -236,8 +236,8 @@ ampnoiwt = ampnoi*median(rcc); % amp of CC between noise and wavelet weighted by
 % while rccimp>prctile(rcc,100-68) && nit<nit_max
 % while rccimp>median(rcc) && nit<nit_max  
 % while rccimp>medrccpeak && nit<nit_max 
-while mwtcoef>medwtcoef && nit<nit_max
-% while mwtcoef>medwtcoef   %if discard hard limit on max num of iters
+% while mwtcoef>medwtcoef && nit<nit_max
+while mwtcoef>medwtcoef   %if discard hard limit on max num of iters
   
 % while max(abs(predchg))>mad(noi) && nimp<nimp_max
 % while (dres>dres_min || mfit>mfit_min) && nit<nit_max

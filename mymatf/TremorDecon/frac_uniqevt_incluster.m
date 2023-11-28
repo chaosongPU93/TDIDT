@@ -93,24 +93,30 @@ for m = 1:mmax
   
 end
 
-for m = 1:mmax
-  dtcut = 0.25*m+0.125;
-  fprintf('%d clusters of %d consecutive events (%d/%d unique) w/i %.3f s \n',...
-    ndcutpairall(m,1), m+1, ndcutsrc2all(m,1), sum(nsrc), dtcut);
-end
+mmaxzero = find(ndcutsrc2all==0,1);
+
+% for m = 1:mmaxzero
+%   dtcut = 0.25*m+0.125;
+%   fprintf('%d clusters of %d consecutive events (%d/%d unique) w/i %.3f s \n',...
+%     ndcutpairall(m,1), m+1, ndcutsrc2all(m,1), sum(nsrc), dtcut);
+% end
+
 
 fracsrc2all = [100; fracsrc2all];
 fprintf('%.3f \n',fracsrc2all);
 dfracsrc2all = fracsrc2all(1:end-1) - fracsrc2all(2:end);
 fprintf('%.3f \n',dfracsrc2all);
 
+fracsrc2all = fracsrc2all(1:mmaxzero+1);
+dfracsrc2all = dfracsrc2all(1:mmaxzero);
+
 f=initfig;
 ax=f.ax(1); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
-plot(ax,0:1:mmax,fracsrc2all,'ko-','linew',1,'markersize',4);
-plot(ax,1:mmax,dfracsrc2all,'ro-','linew',1,'markersize',4);
+plot(ax,0:1:mmaxzero,fracsrc2all,'ko-','linew',1,'markersize',4);
+plot(ax,1:mmaxzero,dfracsrc2all,'ro-','linew',1,'markersize',4);
 xlabel(ax,'m');
 ylabel(ax,'Frac of srcs');
 title(ax,'Frac of srcs in cluster of N & N-m whose diff time w/i 0.25*m+0.125 s');
 legend(ax,'inclusive','exclusive');
-
+xlim(ax,[0 mmax]);
 

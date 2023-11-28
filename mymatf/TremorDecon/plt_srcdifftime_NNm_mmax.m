@@ -1,4 +1,4 @@
-function [f,cnt,Nn,Nnn,frac,fracn,ampplt,dtarvlplt,amppltn,dtarvlpltn]=...
+function [f,cnt,Nn,Nnn,frac,fracn,dtarvlplt,dtarvlpltn,mmaxnonzero,mmaxnonzeron]=...
   plt_srcdifftime_NNm_mmax(f,nbst,imp,nsrc,impn,nsrcn,mmax,sps,typepltnoi)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % [f,cnt,Nn,Nnn,frac,fracn,ampplt,dtarvlplt,amppltn,dtarvlpltn]=...
@@ -18,7 +18,6 @@ function [f,cnt,Nn,Nnn,frac,fracn,ampplt,dtarvlplt,amppltn,dtarvlpltn]=...
 % Last modified date:   2023/11/04
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-color = jet(mmax);
 if mmax < 3
   xran = [0 2];
 else
@@ -26,9 +25,28 @@ else
 end
 for m = 1:mmax
   dtcut = 0.25*m+0.125;
-  [ampplt,dtarvlplt]=med_amp_incluster(nbst,imp,nsrc,m);
-  [amppltn,dtarvlpltn]=med_amp_incluster(nbst,impn,nsrcn,m);
+  [~,dtarvlplt]=med_amp_incluster(nbst,imp,nsrc,m);
+  [~,dtarvlpltn]=med_amp_incluster(nbst,impn,nsrcn,m);
+  frac(m) = sum(dtarvlplt/sps<=dtcut)/length(dtarvlplt);
+  if typepltnoi == 1
+    fracn(m) = sum(dtarvlpltn/sps<=dtcut)/length(dtarvlpltn);
+  elseif typepltnoi == 2
+    fracn(m) = (sum(dtarvlplt/sps<=dtcut)-sum(dtarvlpltn/sps<=dtcut)) / ...
+      (length(dtarvlplt)-length(dtarvlpltn));
+  end
+end
+mmaxnonzero = find(frac==0,1)-1;
+mmaxnonzeron = find(fracn==0,1)-1;
+frac = frac(1: mmaxnonzero);
+fracn = fracn(1: mmaxnonzeron);
 
+color = jet(mmaxnonzero);
+
+%for data
+for m = 1:mmaxnonzero
+  dtcut = 0.25*m+0.125;
+  [~,dtarvlplt]=med_amp_incluster(nbst,imp,nsrc,m);
+  
   %%%distribution of diff time
   binwdt = 0.05;
   nx = round(xran(2)/binwdt)+1;
@@ -36,13 +54,10 @@ for m = 1:mmax
   cnt = xran(1): binwdt: xran(2);
   N=histcounts(dtarvlplt/sps,edges,'normalization','count');
   Nn = N./length(dtarvlplt);
-  frac(m) = sum(dtarvlplt/sps<=dtcut)/length(dtarvlplt);
-  N=histcounts(dtarvlpltn/sps,edges,'normalization','count');
-  Nnn = N./length(dtarvlplt);
   ax=f.ax(1); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
   p(m) = plot(ax,cnt,Nn,'-','Color',color(m,:),'linew',1);
   label{m} = sprintf('m=%d',m);
-  text(ax,0.95,0.7-0.04*m,sprintf('Frac w/i %.3f s: %.2f \n',dtcut,frac(m)),'HorizontalAlignment','right',...
+  text(ax,0.95,0.7-0.04*m,sprintf('Frac w/i %.3f s: %.3f \n',dtcut,frac(m)),'HorizontalAlignment','right',...
     'Units','normalized','FontSize',8);
   ylabel(ax,'Normalized count');
   xlabel(ax,sprintf('Diff. arrival between sources N and N-m (s)'));
@@ -52,19 +67,33 @@ for m = 1:mmax
   longticks(ax,2);
   title(ax,'Data');
   hold(ax,'off');
+  legend(ax,p,label,'NumColumns',ceil(mmaxnonzero/5));
+end
 
+%for noise, or data-noise
+p = []; label = [];
+for m = 1:mmaxnonzeron
+  dtcut = 0.25*m+0.125;
+  [~,dtarvlplt]=med_amp_incluster(nbst,imp,nsrc,m);
+  [~,dtarvlpltn]=med_amp_incluster(nbst,impn,nsrcn,m);
+  
+  binwdt = 0.05;
+  edges = xran(1)-binwdt/2: binwdt: xran(2)+binwdt/2;
+  cnt = xran(1): binwdt: xran(2);
+  N=histcounts(dtarvlplt/sps,edges,'normalization','count');
+  Nn = N./length(dtarvlplt);
+  N=histcounts(dtarvlpltn/sps,edges,'normalization','count');
+  Nnn = N./length(dtarvlplt);
   ax=f.ax(2); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
   if typepltnoi == 1
-    fracn(m) = sum(dtarvlpltn/sps<=dtcut)/length(dtarvlpltn);
-    plot(ax,cnt,Nnn,'-','Color',color(m,:),'linew',1);
+    p(m) = plot(ax,cnt,Nnn,'-','Color',color(m,:),'linew',1);
     title(ax,'Synthetic noise');
   elseif typepltnoi == 2
-    fracn(m) = (sum(dtarvlplt/sps<=dtcut)-sum(dtarvlpltn/sps<=dtcut)) / ...
-      (length(dtarvlplt)-length(dtarvlpltn));
-    plot(ax,cnt,Nn-Nnn,'-','Color',color(m,:),'linew',1);%
+    p(m) = plot(ax,cnt,Nn-Nnn,'-','Color',color(m,:),'linew',1);%
     title(ax,'Data - Synthetic noise');
   end
-  text(ax,0.95,0.7-0.04*m,sprintf('Frac w/i %.3f s: %.2f \n',dtcut,fracn(m)),'HorizontalAlignment','right',...
+  label{m} = sprintf('m=%d',m);
+  text(ax,0.95,0.7-0.04*m,sprintf('Frac w/i %.3f s: %.3f \n',dtcut,fracn(m)),'HorizontalAlignment','right',...
     'Units','normalized','FontSize',8);
   ylabel(ax,'Normalized count');
   xlabel(ax,sprintf('Diff. arrival between sources N and N-m (s)'));
@@ -72,6 +101,6 @@ for m = 1:mmax
   ylim(ax,yran);
   longticks(ax,2);
   hold(ax,'off');
-
+  legend(ax,p,label,'NumColumns',ceil(mmaxnonzeron/5));
 end
-legend(f.ax(1),p,label,'NumColumns',3);
+

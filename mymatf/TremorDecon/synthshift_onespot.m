@@ -30,8 +30,8 @@ clc
 close all
 
 %%%Flag to indicate if it is necessary to recalculate everything
-% flagrecalc = 0;
-flagrecalc = 1;
+flagrecalc = 0;
+% flagrecalc = 1;
 
 if ~flagrecalc
   load('rst_synth_onespot.mat');
@@ -256,7 +256,7 @@ else
   spread = range(greenf);   % range of the amp of template
   
   %%%plot the unfiltered and filtered templates
-  plt_templates(green,greenf,stas,[],[],lowlet,hiwlet,sps);
+%   plt_templates(green,greenf,stas,[],[],lowlet,hiwlet,sps);
   
   %just the filtered templates
   % plt_templates_bp(greenf,stas,lowlet,hiwlet,sps);
@@ -295,8 +295,8 @@ else
   %avoid checking for subscript overrrun.  When "synths" are written from "synth" in the
   %subroutine, Greenlen from the start and end will not be written.
   fracelsew=0; %0.25 %0.5; %0.6; %The ratio of elsewhere events to local events.  Zero for Discrete Ide.
-  nsat=[0.1 0.4 1 2 4 10 20 40 100];  % times of saturation
-  % nsat=[95 100 200];  % times of saturation
+  nsat=[0.4 1 2 4 10 20 40 100];  % times of saturation
+%   nsat=[0.05];  % times of saturation
   nnsat = length(nsat);
   writes=round(nsat*satn) %how many templates to throw in, under different degrees of saturation
   
@@ -304,6 +304,7 @@ else
   
   nouts=length(writes);
   seed=round(writes(4)/5e3); %for random number generator
+%   seed=2;
   
   %%%specify which time is uniform in time
   % timetype = 'tarvl';
@@ -323,8 +324,8 @@ else
 %   pltsynflag = 1;
   
   %%%whether to plot to check the new synthetics with added noise
-%   pltnewsynflag = 0;
-  pltnewsynflag = 1;
+  pltnewsynflag = 0;
+%   pltnewsynflag = 1;
   
   %%%specify if forcing a min speration of arrival time for 2 events from the same spot
   % forcesep = 1;
@@ -414,18 +415,19 @@ else
   
   tmpgrid = xygrid;
   tmpgrid(:,1:2)=round(sps/40*tmpgrid(:,1:2)); % *4 to get to 160 sps from 40.
-  insat = 2;  %which saturation to look at
-  n=writes(insat);
-  a = squeeze(sources(1:n,:,insat));
-  b = a(any(a,2),:);
-  source=b;
-  off = tmpgrid(source(:,2),1:2); %note that 'tmpgrid' has the desired sps
-  [~,off(:,3)] = pred_tarvl_at4thsta(stas(4,:),off(:,1),off(:,2));
+  
+%   insat = 2;  %which saturation to look at
+%   n=writes(insat);
+%   a = squeeze(sources(1:n,:,insat));
+%   b = a(any(a,2),:);
+%   source=b;
+%   off = tmpgrid(source(:,2),1:2); %note that 'tmpgrid' has the desired sps
+%   [~,off(:,3)] = pred_tarvl_at4thsta(stas(4,:),off(:,1),off(:,2));
   
   %% compose new synthetic waveform and carry out deconvolution
   %%%flag for validating if ground truth of sources can recover the record
-  testsrcflag = 1;
-%   testsrcflag = 0;
+%   testsrcflag = 1;
+  testsrcflag = 0;
   
   %%%flag for validing if the spectral shapes of data and templates are similar
   % testfreqflag = 1;
@@ -436,20 +438,20 @@ else
   pltdataflag = 0;
   
   %%%flag for plot the ground truth distribution
-  pltgtflag = 1;
-  % pltgtflag = 0;
+%   pltgtflag = 1;
+  pltgtflag = 0;
   
   %%%flag for plot the decon src distribution after grouping
 %   pltsrcflag1 = 1;
   pltsrcflag1 = 0;
   
   %%%flag for plot the decon src distribution after removing 2ndary src
-  pltsrcflag2 = 1;
-%   pltsrcflag2 = 0;
+%   pltsrcflag2 = 1;
+  pltsrcflag2 = 0;
   
   %%%flag for plot the decon src distribution after checking at 4th stas
-  pltsrcflag3 = 1;
-%   pltsrcflag3 = 0;
+%   pltsrcflag3 = 1;
+  pltsrcflag3 = 0;
   
 %   %%%%%%%%%%%%% params of synthetics from diff sat levels and region sizes %%%%%%%%%%%%
 %   %%%specify shape of the source region
@@ -696,16 +698,16 @@ else
           indst = 1;  % starting index of the simulated signal to test
           inded = wlensecb*sps+indst-1; % ending index of the simulated signal to test
           source = synsrc;
-%           if ista == 1
+          if ista == 1
             greenst = synsrcstind; % the starting index of each added template, context of full length
-%           elseif ista <=3
-%             %ind - rnoff is the arrival time in index at sta 2 and 3
-%             %note the sign here, if off12 >0, move 2 to the right to align with 1, meaning that 2 is
-%             %earlier than 1, ie., tarvl2 < tarvl1. Be consistent all the time
-%             greenst = synsrcstind-source(:, ista);
-%           else
-%             greenst = pred_tarvl_at4thsta(stas(ista,:),source(:,2),source(:,3),source(:,1));
-%           end
+          elseif ista <=3
+            %ind - rnoff is the arrival time in index at sta 2 and 3
+            %note the sign here, if off12 >0, move 2 to the right to align with 1, meaning that 2 is
+            %earlier than 1, ie., tarvl2 < tarvl1. Be consistent all the time
+            greenst = synsrcstind-source(:, ista);
+          else
+            greenst = pred_tarvl_at4thsta(stas(ista,:),source(:,2),source(:,3),source(:,1));
+          end
           %%%you don't need all impulses, only some of them contribute to the length of truncated record
           %%%cut out the green indice and sources that contribute
           %%%Note that some zero-crossings might appear later than 'indedsig', but the corresponding start
@@ -839,12 +841,13 @@ else
         [mcoef(ista-3),off1i(ista)] = xcorrmax(optcc(:,1), optcc(:,ista), msftadd, 'coeff');
         mlag(ista-3) = off1i(ista);
       end
-      keyboard
+%       keyboard
       %if you want to avoid the case when the alignment is way off the centroid 
       %by chance while the saturation level is low, you can force it to be the 
-      %an average location, this reference value is from min region size & max
-      %saturation
-      off1i = [0 2 2 -4];
+      %an average location, this reference value is from the abs location of the
+      %the centroid (0.2,0.2), and prediction of off14 from plane fit model
+      off1i(2:3) = [2 2];
+      [~,off1i(4)] = pred_tarvl_at4thsta(stas(4,:),off1i(2),off1i(3));
       
       %%%Align and compute the RCC based on the entire win, and take that as the input signal!
       optdat = [];  % win segment of interest
@@ -978,7 +981,7 @@ else
       [impgtloc, ~] = off2space002(density1d(:,1:2),sps,ftrans,0); % 8 cols, format: dx,dy,lon,lat,dep,ttrvl,off12,off13
       density1d = [impgtloc(:,1:2) density1d(:,3)];
       ampgtsum1d = sortrows([impgtloc(:,1:2) ampgtsum], 3);
-      keyboard
+%       keyboard
       %%%if you want to plot the ground truth
       if pltgtflag
         %plot the ground truth source offset
@@ -1041,7 +1044,7 @@ else
         % xlim(ax,xran); xticks(ax,xran(1): 1 : xran(2));
         % ylim(ax,yran); yticks(ax,yran(1): 1 : yran(2));
       end
-      keyboard
+%       keyboard
       
       %% independent deconvolution at each station
       %%%finalize the signal, noise, and template (Green's function)
@@ -1319,22 +1322,26 @@ else
         ampsum1d = sortrows([imploc(:,1:2) ampsum], 3);
         cstr = {'# detections / pixel'; 'amp sum / pixel'};
         [f] = plt_sum_pixel(density1d,ampsum1d,[-4 4],[-4 4],20,cstr,'o','linear');
+        text(f.ax(1),0.98,0.15,sprintf('%d; %.2f located at the ground truth',...
+          sum(impindepst(:,7)==2&impindepst(:,8)==2),...
+          sum(impindepst(:,7)==2&impindepst(:,8)==2)/size(impindepst,1)),...
+          'Units','normalized','HorizontalAlignment','right','FontSize',9);
         supertit(f.ax,'Secondary sources removed');
         
-        %distribution of amp, statistically and in space
-        f = initfig(10,5,1,2); %initialize fig
-        ax=f.ax(1); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
-        plot(ax,(1:length(ampgtsum1d))/length(ampgtsum1d),ampgtsum1d(:,3),'ko-','markersize',3);
-        plot(ax,(1:length(ampsum1d))/length(ampsum1d),ampsum1d(:,3),'ro-','markersize',3);
-        xlabel(ax,'sorted loc index');
-        ylabel(ax,'amp at pixel');
-        ax=f.ax(2); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
-        histogram(ax,ampgtsum1d(:,3),'facecolor','k');
-        histogram(ax,ampsum1d(:,3),'facecolor','r');
-        plot(ax,[median(ampsum1d(:,3)) median(ampsum1d(:,3))],ax.YLim,'b--');
-        ylabel(ax,'count');
-        xlabel(ax,'amp at pixel');
-        supertit(f.ax,'Secondary sources removed');
+%         %distribution of amp, statistically and in space
+%         f = initfig(10,5,1,2); %initialize fig
+%         ax=f.ax(1); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
+%         plot(ax,(1:length(ampgtsum1d))/length(ampgtsum1d),ampgtsum1d(:,3),'ko-','markersize',3);
+%         plot(ax,(1:length(ampsum1d))/length(ampsum1d),ampsum1d(:,3),'ro-','markersize',3);
+%         xlabel(ax,'sorted loc index');
+%         ylabel(ax,'amp at pixel');
+%         ax=f.ax(2); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
+%         histogram(ax,ampgtsum1d(:,3),'facecolor','k');
+%         histogram(ax,ampsum1d(:,3),'facecolor','r');
+%         plot(ax,[median(ampsum1d(:,3)) median(ampsum1d(:,3))],ax.YLim,'b--');
+%         ylabel(ax,'count');
+%         xlabel(ax,'amp at pixel');
+%         supertit(f.ax,'Secondary sources removed');
         
         if ~isempty(dprojxy)
           nsep = 1;
@@ -1485,6 +1492,7 @@ else
       [~,dprojxy2all] = srcdistall(tarvlsplst,projxy,[0 2*sps]);
       mprojx32all(insat,iperc) = median(abs(dprojxy2all(:,1))); %median dist along min-scatter to all sources after 2nd src removal
       
+      %%
       %%%if you want to plot the deconvolved sources
       if pltsrcflag3
         %plot the scatter of offsets, accounting for prealignment offset, == true offset
@@ -1525,6 +1533,10 @@ else
         ampsum1d = sortrows([imploc(:,1:2) ampsum], 3);
         cstr = {'# detections / pixel'; 'amp sum / pixel'};
         [f] = plt_sum_pixel(density1d,ampsum1d,[-4 4],[-4 4],20,cstr,'o','linear');
+        text(f.ax(1),0.98,0.15,sprintf('%d; %.2f located at the ground truth',...
+          sum(impindepst(:,7)==2&impindepst(:,8)==2),...
+          sum(impindepst(:,7)==2&impindepst(:,8)==2)/size(impindepst,1)),...
+          'Units','normalized','HorizontalAlignment','right','FontSize',9);
         supertit(f.ax,'Checkd at 4th stas');
               
         % f = initfig(5,5,1,1); %initialize fig
@@ -1666,9 +1678,13 @@ for iperc = 1: ntrial
       'HorizontalAlignment','right','FontSize',9);
     text(ax,0.02,0.05,sprintf('%.2f',mprojx22all(insat,iperc)),'Units','normalized',...
       'HorizontalAlignment','left');
+    text(ax,0.98,0.15,sprintf('%d; %.2f',...
+      sum(impindepst(:,7)==2&impindepst(:,8)==2),...
+      sum(impindepst(:,7)==2&impindepst(:,8)==2)/size(impindepst,1)),...
+      'Units','normalized','HorizontalAlignment','right','FontSize',9);
+
     
-    
-    impindepst = imp4th{insat,iperc};
+%     impindepst = imp4th{insat,iperc};
     
     % %plot the scatter of sources in terms of rela locations
     % xran = [-4 4];
@@ -1683,44 +1699,48 @@ for iperc = 1: ntrial
     % text(ax,0.98,0.95,sprintf('Satur=%.1f',nsat(insat)),'Units','normalized',...
     %       'HorizontalAlignment','right');
     
-    %plot the cumulative density and summed amp of detections
-    density1d = density_pixel(impindepst(:,7),impindepst(:,8));
-    [imploc, ~] = off2space002(density1d(:,1:2),sps,ftrans,0); % 8 cols, format: dx,dy,lon,lat,dep,ttrvl,off12,off13
-    density1d = [imploc(:,1:2) density1d(:,3)];
-    xran = [-4 4];
-    yran = [-4 4];
-    ax=f2.ax(insat);
-    hold(ax,'on'); ax.Box = 'on'; grid(ax, 'on');
-    dum = density1d;
-    dum(dum(:,3)>1, :) = [];
-    if strcmp(scale,'log')
-      dum(:,3) = log10(dum(:,3));
-    end
-    scatter(ax,dum(:,1),dum(:,2),10,dum(:,3),'linew',0.2);  %, 'MarkerEdgeColor', 'w')
-    dum = sortrows(density1d,3);
-    dum(dum(:,3)==1, :) = [];
-    if strcmp(scale,'log')
-      dum(:,3) = log10(dum(:,3));
-    end
-    scatter(ax,dum(:,1),dum(:,2),10,dum(:,3),'filled','MarkerEdgeColor','none');
-    colormap(ax,flipud(colormap(ax,'kelicol')));
-    c=colorbar(ax,'SouthOutside');
-    ax.CLim(2) = prctile(dum(:,3),99);
-    if strcmp(scale,'log')
-      c.Label.String = strcat('log_{10}(# of detections)');
-    elseif strcmp(scale,'linear')
-      c.Label.String = '# of detections';
-    end
-    axis(ax,'equal');
-    axis(ax,[xran yran]);
-    ax.GridLineStyle = '--';
-    ax.XAxisLocation = 'top';
-    text(ax,0.98,0.95,sprintf('Satur=%.1f',nsat(insat)),'Units','normalized',...
-      'HorizontalAlignment','right');
-    text(ax,0.98,0.05,sprintf('%d events',size(impindepst,1)),'Units','normalized',...
-      'HorizontalAlignment','right','FontSize',9);
-    text(ax,0.02,0.05,sprintf('%.2f',mprojx32all(insat,iperc)),'Units','normalized',...
-      'HorizontalAlignment','left');
+%     %plot the cumulative density and summed amp of detections
+%     density1d = density_pixel(impindepst(:,7),impindepst(:,8));
+%     [imploc, ~] = off2space002(density1d(:,1:2),sps,ftrans,0); % 8 cols, format: dx,dy,lon,lat,dep,ttrvl,off12,off13
+%     density1d = [imploc(:,1:2) density1d(:,3)];
+%     xran = [-4 4];
+%     yran = [-4 4];
+%     ax=f2.ax(insat);
+%     hold(ax,'on'); ax.Box = 'on'; grid(ax, 'on');
+%     dum = density1d;
+%     dum(dum(:,3)>1, :) = [];
+%     if strcmp(scale,'log')
+%       dum(:,3) = log10(dum(:,3));
+%     end
+%     scatter(ax,dum(:,1),dum(:,2),10,dum(:,3),'linew',0.2);  %, 'MarkerEdgeColor', 'w')
+%     dum = sortrows(density1d,3);
+%     dum(dum(:,3)==1, :) = [];
+%     if strcmp(scale,'log')
+%       dum(:,3) = log10(dum(:,3));
+%     end
+%     scatter(ax,dum(:,1),dum(:,2),10,dum(:,3),'filled','MarkerEdgeColor','none');
+%     colormap(ax,flipud(colormap(ax,'kelicol')));
+%     c=colorbar(ax,'SouthOutside');
+%     ax.CLim(2) = prctile(dum(:,3),99);
+%     if strcmp(scale,'log')
+%       c.Label.String = strcat('log_{10}(# of detections)');
+%     elseif strcmp(scale,'linear')
+%       c.Label.String = '# of detections';
+%     end
+%     axis(ax,'equal');
+%     axis(ax,[xran yran]);
+%     ax.GridLineStyle = '--';
+%     ax.XAxisLocation = 'top';
+%     text(ax,0.98,0.95,sprintf('Satur=%.1f',nsat(insat)),'Units','normalized',...
+%       'HorizontalAlignment','right');
+%     text(ax,0.98,0.05,sprintf('%d events',size(impindepst,1)),'Units','normalized',...
+%       'HorizontalAlignment','right','FontSize',9);
+%     text(ax,0.02,0.05,sprintf('%.2f',mprojx32all(insat,iperc)),'Units','normalized',...
+%       'HorizontalAlignment','left');
+%     text(ax,0.98,0.15,sprintf('%d; %.2f',...
+%       sum(impindepst(:,7)==2&impindepst(:,8)==2),...
+%       sum(impindepst(:,7)==2&impindepst(:,8)==2)/size(impindepst,1)),...
+%       'Units','normalized','HorizontalAlignment','right','FontSize',9);
     
   end %loop end for saturation level
 end %loop end for noise level
@@ -1754,6 +1774,16 @@ for iperc = 1: ntrial
 end
 label{ntrial+1} = 'data';
 f=plt_deconpk_rat_stat(f,nsat,label,msrcampr,madsrcampr);
+mamprdata = [5.5701e-02; 6.6249e-02; 7.6967e-03]; %from real data
+madamprdata = [1.8293e-01; 1.8350e-01; 1.7420e-01];
+for i = 1: 3
+  ax=f.ax(i); hold(ax,'on');
+  plot(ax,log10(nsat),mamprdata(i)*ones(nnsat,1),'k--');
+end
+for i = 4: 3+3
+  ax=f.ax(i); hold(ax,'on');
+  plot(ax,log10(nsat),madamprdata(i-3)*ones(nnsat,1),'k--');  
+end
 stit = supertit(f.ax,'Secondary sources removed');
 movev(stit,0.3);
 % ylim(f.ax(4:end),[0 0.3]);
@@ -1777,7 +1807,7 @@ ylim(f.ax(5:end),[0 0.3]);
 %%%%%%%%% or only plot the median & mad for each sat and noise
 
 
-%% consecutive dist along min-scatter VS saturation rate & region size
+%% summarize consecutive dist along min-scatter VS saturation rate & region size
 f = initfig(8,5,1,2); %initialize fig
 color = jet(ntrial);
 ax=f.ax(1); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
@@ -1785,7 +1815,7 @@ for iperc = 1: ntrial
   p(iperc) = plot(ax,log10(nsat),mprojx22all(:,iperc),'-o','markersize',4,'color',color(iperc,:));
   label{iperc} = sprintf('noise=%.1f',perctrial(iperc));
 end
-p(ntrial+1) = plot(ax,log10(nsat),0.50*ones(nnsat,1),'k--');
+p(ntrial+1) = plot(ax,log10(nsat),0.50*ones(nnsat,1),'k--');  %this is from data
 label{ntrial+1} = 'data';
 legend(ax,p,label);
 title(ax,'Secondary sources removed');
@@ -1798,7 +1828,7 @@ ax=f.ax(2); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
 for iperc = 1: ntrial
   plot(ax,log10(nsat),mprojx32all(:,iperc),'-o','markersize',4,'color',color(iperc,:));
 end
-plot(ax,log10(nsat),0.45*ones(nnsat,1),'k--');
+plot(ax,log10(nsat),0.45*ones(nnsat,1),'k--');  %this is from data
 ylim(ax,yran);
 title(ax,'Checkd at 4th stas');
 

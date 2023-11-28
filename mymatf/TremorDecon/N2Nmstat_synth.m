@@ -50,7 +50,7 @@ rmse = planefit.gof{4}.rmse;
 offmax = round(2.0*rmse);
 
 %flag to decide which type of synthetics to use
-singleflag = 1;
+singleflag = 0;
 if ~singleflag  %%%synthetics from different region sizes and saturation levels  
   savefile = 'rst_decon_synth.mat';
   ttstr1 = {'Noise-free syn, '};
@@ -63,12 +63,28 @@ else  %%%synthetics from different noise and saturation levels, sources at a sin
   nrounds = ntrial;
 end
 
+%%%load data
+savefile = 'deconv_stats4th_allbstsig.mat';
+load(strcat(rstpath, '/MAPS/',savefile));
+
 %%
 %%%param for secondary sources removed
 ttstr2 = '2ndary removed';
 fnsuffix = [];
 impplt = imp;
 denom = 18275;
+
+%below from data for reference
+locxyprojall = allbstsig.locxyprojall;
+tarvlsplstall = allbstsig.impindepall(:,1);
+nsrc = allbstsig.nsrc;
+imp = allbstsig.impindepall;
+locxyprojalln = allbstnoi.locxyprojall;
+tarvlsplstalln = allbstnoi.impindepall(:,1);
+nsrcn = allbstnoi.nsrcraw;
+impn = allbstnoi.impindepall;
+supertstr = 'Secondary sources removed';
+fnsuffix = [];
 % %%%param for further checked at KLNB
 % ttstr2 = 'Checked at KLNB';
 % fnsuffix = '4th';
@@ -94,7 +110,7 @@ end
 [f,Nn,frac]=plt_difftime_NNm_syn(f,impplt,mmax,nsat,nrounds,label,sps,m);
 keyboard
 
-%%%summarize the whole catalog, diff arrival time and fractions
+%%%summarize the whole catalog, only fractions
 f = initfig(4,5,1,1); %initialize fig
 tit=supertit(f.ax,supertstr);
 movev(tit,0.2);

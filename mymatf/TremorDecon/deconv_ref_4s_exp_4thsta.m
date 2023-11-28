@@ -180,115 +180,114 @@ keyboard
 % bstnoi = allbstnoi;
 % keyboard
  
-%% a specific plot for Allan's presentation, similar to last fig of AGU2022 poster
-% %%%param for secondary sources removed
-% %data
-% locxyprojall = allbstsig.locxyprojall;
-% tarvlsplstall = allbstsig.impindepall(:,1);
-% nsrc = allbstsig.nsrc;
-% dtarvlnn1 = allbstsig.dtarvlnn1all;
-% dtarvlnn2 = allbstsig.dtarvlnn2all;
-% dtarvlnn3 = allbstsig.dtarvlnn3all;
-% dtarvlnn4 = allbstsig.dtarvlnn4all;
-% dtarvlnn5 = allbstsig.dtarvlnn5all;
-% imp = allbstsig.impindepall;
-% dt2all = allbstsig.dt2allbst;
-% dist2all = allbstsig.dist2allbst;
-% dloc2all = allbstsig.dloc2allbst;
-% dneloc{1,1} = allbstsig.distarvlnn1all(:,2:3);
-% dneloc{2,1} = allbstsig.distarvlnn2all(:,2:3);
-% dneloc{3,1} = allbstsig.distarvlnn3all(:,2:3);
-% dneloc{4,1} = allbstsig.distarvlnn4all(:,2:3);
-% dneloc{5,1} = allbstsig.distarvlnn5all(:,2:3);
-% eucdist{1,1} = allbstsig.distarvlnn1all(:,1);
-% eucdist{2,1} = allbstsig.distarvlnn2all(:,1);
-% eucdist{3,1} = allbstsig.distarvlnn3all(:,1);
-% eucdist{4,1} = allbstsig.distarvlnn4all(:,1);
-% eucdist{5,1} = allbstsig.distarvlnn5all(:,1);
-% dtarvl{1,1} = allbstsig.dtarvlnn1all;
-% dtarvl{2,1} = allbstsig.dtarvlnn2all;
-% dtarvl{3,1} = allbstsig.dtarvlnn3all;
-% dtarvl{4,1} = allbstsig.dtarvlnn4all;
-% dtarvl{5,1} = allbstsig.dtarvlnn5all;
-% srcamprall = allbstsig.srcamprall;
-% %noise
-% locxyprojalln = allbstnoi.locxyprojall;
-% tarvlsplstalln = allbstnoi.impindepall(:,1);
-% nsrcn = allbstnoi.nsrc;
-% dtarvlnn1n = allbstnoi.dtarvlnn1all;
-% dtarvlnn2n = allbstnoi.dtarvlnn2all;
-% dtarvlnn3n = allbstnoi.dtarvlnn3all;
-% dtarvlnn4n = allbstnoi.dtarvlnn4all;
-% dtarvlnn5n = allbstnoi.dtarvlnn5all;
-% impn = allbstnoi.impindepall;
-% dt2alln = allbstnoi.dt2allbst;
-% dist2alln = allbstnoi.dist2allbst;
-% dloc2alln = allbstnoi.dloc2allbst;
-% dnelocn{1,1} = allbstnoi.distarvlnn1all(:,2:3);
-% dnelocn{2,1} = allbstnoi.distarvlnn2all(:,2:3);
-% dnelocn{3,1} = allbstnoi.distarvlnn3all(:,2:3);
-% dnelocn{4,1} = allbstnoi.distarvlnn4all(:,2:3);
-% dnelocn{5,1} = allbstnoi.distarvlnn5all(:,2:3);
-% eucdistn{1,1} = allbstnoi.distarvlnn1all(:,1);
-% eucdistn{2,1} = allbstnoi.distarvlnn2all(:,1);
-% eucdistn{3,1} = allbstnoi.distarvlnn3all(:,1);
-% eucdistn{4,1} = allbstnoi.distarvlnn4all(:,1);
-% eucdistn{5,1} = allbstnoi.distarvlnn5all(:,1);
-% dtarvln{1,1} = allbstnoi.dtarvlnn1all;
-% dtarvln{2,1} = allbstnoi.dtarvlnn2all;
-% dtarvln{3,1} = allbstnoi.dtarvlnn3all;
-% dtarvln{4,1} = allbstnoi.dtarvlnn4all;
-% dtarvln{5,1} = allbstnoi.dtarvlnn5all;
-% srcampralln = allbstnoi.srcamprall;
-% supertstr = 'Secondary sources removed';
-% fnsuffix = [];
-
-%%%param for further checked at KLNB
+%% params for loading data
+%%%param for secondary sources removed
 %data
-locxyprojall = allbstsig.locxyproj4thall;
-tarvlsplstall = allbstsig.impindep4thall(:,1);
-nsrc = allbstsig.nsrc4th;
-dtarvlnn1 = allbstsig.dtarvlnn14thall;
-dtarvlnn2 = allbstsig.dtarvlnn24thall;
-dtarvlnn3 = allbstsig.dtarvlnn34thall;
-imp = allbstsig.impindep4thall;
-dt2all = allbstsig.dt2all4thbst;
-dist2all = allbstsig.dist2all4thbst;
-dloc2all = allbstsig.dloc2all4thbst;
-dneloc{1,1} = allbstsig.distarvlnn14thall(:,2:3);
-dneloc{2,1} = allbstsig.distarvlnn24thall(:,2:3);
-dneloc{3,1} = allbstsig.distarvlnn34thall(:,2:3);
-eucdist{1,1} = allbstsig.distarvlnn14thall(:,1);
-eucdist{2,1} = allbstsig.distarvlnn24thall(:,1);
-eucdist{3,1} = allbstsig.distarvlnn34thall(:,1);
-dtarvl{1,1} = allbstsig.dtarvlnn14thall;
-dtarvl{2,1} = allbstsig.dtarvlnn24thall;
-dtarvl{3,1} = allbstsig.dtarvlnn34thall;
-srcamprall = allbstsig.srcampr4thall;
+locxyprojall = allbstsig.locxyprojall;
+tarvlsplstall = allbstsig.impindepall(:,1);
+nsrc = allbstsig.nsrc;
+dtarvlnn1 = allbstsig.dtarvlnn1all;
+dtarvlnn2 = allbstsig.dtarvlnn2all;
+dtarvlnn3 = allbstsig.dtarvlnn3all;
+dtarvlnn4 = allbstsig.dtarvlnn4all;
+dtarvlnn5 = allbstsig.dtarvlnn5all;
+imp = allbstsig.impindepall;
+dt2all = allbstsig.dt2allbst;
+dist2all = allbstsig.dist2allbst;
+dloc2all = allbstsig.dloc2allbst;
+dneloc{1,1} = allbstsig.distarvlnn1all(:,2:3);
+dneloc{2,1} = allbstsig.distarvlnn2all(:,2:3);
+dneloc{3,1} = allbstsig.distarvlnn3all(:,2:3);
+dneloc{4,1} = allbstsig.distarvlnn4all(:,2:3);
+dneloc{5,1} = allbstsig.distarvlnn5all(:,2:3);
+eucdist{1,1} = allbstsig.distarvlnn1all(:,1);
+eucdist{2,1} = allbstsig.distarvlnn2all(:,1);
+eucdist{3,1} = allbstsig.distarvlnn3all(:,1);
+eucdist{4,1} = allbstsig.distarvlnn4all(:,1);
+eucdist{5,1} = allbstsig.distarvlnn5all(:,1);
+dtarvl{1,1} = allbstsig.dtarvlnn1all;
+dtarvl{2,1} = allbstsig.dtarvlnn2all;
+dtarvl{3,1} = allbstsig.dtarvlnn3all;
+dtarvl{4,1} = allbstsig.dtarvlnn4all;
+dtarvl{5,1} = allbstsig.dtarvlnn5all;
+srcamprall = allbstsig.srcamprall;
 %noise
-locxyprojalln = allbstnoi.locxyproj4thall;
-tarvlsplstalln = allbstnoi.impindep4thall(:,1);
-nsrcn = allbstnoi.nsrc4th;
-dtarvlnn1n = allbstnoi.dtarvlnn14thall;
-dtarvlnn2n = allbstnoi.dtarvlnn24thall;
-dtarvlnn3n = allbstnoi.dtarvlnn34thall;
-impn = allbstnoi.impindep4thall;
-dt2alln = allbstnoi.dt2all4thbst;
-dist2alln = allbstnoi.dist2all4thbst;
-dloc2alln = allbstnoi.dloc2all4thbst;
-dnelocn{1,1} = allbstnoi.distarvlnn14thall(:,2:3);
-dnelocn{2,1} = allbstnoi.distarvlnn24thall(:,2:3);
-dnelocn{3,1} = allbstnoi.distarvlnn34thall(:,2:3);
-eucdistn{1,1} = allbstnoi.distarvlnn14thall(:,1);
-eucdistn{2,1} = allbstnoi.distarvlnn24thall(:,1);
-eucdistn{3,1} = allbstnoi.distarvlnn34thall(:,1);
-dtarvln{1,1} = allbstnoi.dtarvlnn14thall;
-dtarvln{2,1} = allbstnoi.dtarvlnn24thall;
-dtarvln{3,1} = allbstnoi.dtarvlnn34thall;
-srcampralln = allbstnoi.srcampr4thall;
-supertstr = 'Further checked at KLNB';
-fnsuffix = '4th';
+locxyprojalln = allbstnoi.locxyprojall;
+tarvlsplstalln = allbstnoi.impindepall(:,1);
+nsrcn = allbstnoi.nsrc;
+dtarvlnn1n = allbstnoi.dtarvlnn1all;
+dtarvlnn2n = allbstnoi.dtarvlnn2all;
+dtarvlnn3n = allbstnoi.dtarvlnn3all;
+dtarvlnn4n = allbstnoi.dtarvlnn4all;
+dtarvlnn5n = allbstnoi.dtarvlnn5all;
+impn = allbstnoi.impindepall;
+dt2alln = allbstnoi.dt2allbst;
+dist2alln = allbstnoi.dist2allbst;
+dloc2alln = allbstnoi.dloc2allbst;
+dnelocn{1,1} = allbstnoi.distarvlnn1all(:,2:3);
+dnelocn{2,1} = allbstnoi.distarvlnn2all(:,2:3);
+dnelocn{3,1} = allbstnoi.distarvlnn3all(:,2:3);
+dnelocn{4,1} = allbstnoi.distarvlnn4all(:,2:3);
+dnelocn{5,1} = allbstnoi.distarvlnn5all(:,2:3);
+eucdistn{1,1} = allbstnoi.distarvlnn1all(:,1);
+eucdistn{2,1} = allbstnoi.distarvlnn2all(:,1);
+eucdistn{3,1} = allbstnoi.distarvlnn3all(:,1);
+eucdistn{4,1} = allbstnoi.distarvlnn4all(:,1);
+eucdistn{5,1} = allbstnoi.distarvlnn5all(:,1);
+dtarvln{1,1} = allbstnoi.dtarvlnn1all;
+dtarvln{2,1} = allbstnoi.dtarvlnn2all;
+dtarvln{3,1} = allbstnoi.dtarvlnn3all;
+dtarvln{4,1} = allbstnoi.dtarvlnn4all;
+dtarvln{5,1} = allbstnoi.dtarvlnn5all;
+srcampralln = allbstnoi.srcamprall;
+supertstr = 'Secondary sources removed';
+fnsuffix = [];
 
+% %%%param for further checked at KLNB
+% %data
+% locxyprojall = allbstsig.locxyproj4thall;
+% tarvlsplstall = allbstsig.impindep4thall(:,1);
+% nsrc = allbstsig.nsrc4th;
+% dtarvlnn1 = allbstsig.dtarvlnn14thall;
+% dtarvlnn2 = allbstsig.dtarvlnn24thall;
+% dtarvlnn3 = allbstsig.dtarvlnn34thall;
+% imp = allbstsig.impindep4thall;
+% dt2all = allbstsig.dt2all4thbst;
+% dist2all = allbstsig.dist2all4thbst;
+% dloc2all = allbstsig.dloc2all4thbst;
+% dneloc{1,1} = allbstsig.distarvlnn14thall(:,2:3);
+% dneloc{2,1} = allbstsig.distarvlnn24thall(:,2:3);
+% dneloc{3,1} = allbstsig.distarvlnn34thall(:,2:3);
+% eucdist{1,1} = allbstsig.distarvlnn14thall(:,1);
+% eucdist{2,1} = allbstsig.distarvlnn24thall(:,1);
+% eucdist{3,1} = allbstsig.distarvlnn34thall(:,1);
+% dtarvl{1,1} = allbstsig.dtarvlnn14thall;
+% dtarvl{2,1} = allbstsig.dtarvlnn24thall;
+% dtarvl{3,1} = allbstsig.dtarvlnn34thall;
+% srcamprall = allbstsig.srcampr4thall;
+% %noise
+% locxyprojalln = allbstnoi.locxyproj4thall;
+% tarvlsplstalln = allbstnoi.impindep4thall(:,1);
+% nsrcn = allbstnoi.nsrc4th;
+% dtarvlnn1n = allbstnoi.dtarvlnn14thall;
+% dtarvlnn2n = allbstnoi.dtarvlnn24thall;
+% dtarvlnn3n = allbstnoi.dtarvlnn34thall;
+% impn = allbstnoi.impindep4thall;
+% dt2alln = allbstnoi.dt2all4thbst;
+% dist2alln = allbstnoi.dist2all4thbst;
+% dloc2alln = allbstnoi.dloc2all4thbst;
+% dnelocn{1,1} = allbstnoi.distarvlnn14thall(:,2:3);
+% dnelocn{2,1} = allbstnoi.distarvlnn24thall(:,2:3);
+% dnelocn{3,1} = allbstnoi.distarvlnn34thall(:,2:3);
+% eucdistn{1,1} = allbstnoi.distarvlnn14thall(:,1);
+% eucdistn{2,1} = allbstnoi.distarvlnn24thall(:,1);
+% eucdistn{3,1} = allbstnoi.distarvlnn34thall(:,1);
+% dtarvln{1,1} = allbstnoi.dtarvlnn14thall;
+% dtarvln{2,1} = allbstnoi.dtarvlnn24thall;
+% dtarvln{3,1} = allbstnoi.dtarvlnn34thall;
+% srcampralln = allbstnoi.srcampr4thall;
+% supertstr = 'Further checked at KLNB';
+% fnsuffix = '4th';
 
 dtarvlplt = dtarvlnn1;
 dtarvlpltn = dtarvlnn1n;
@@ -523,6 +522,10 @@ tit=supertit(f3.ax,supertstr);
 movev(tit,0.2);
 [f3.ax(1:4),mampr,madampr] = plt_deconpk_rat_comb4th(f3.ax(1:4),srcamprall,imp,'b','hist');
 [f3.ax(1:4),mamprn,madamprn] = plt_deconpk_rat_comb4th(f3.ax(1:4),srcampralln,impn,'r','hist');
+
+keyboard
+
+
 
 %%
 %%%the direct/scaled deconvolved pos/neg source peak ratio between all station pairs, for each

@@ -61,11 +61,11 @@ load(strcat(rstpath, '/MAPS/',savefile));
 %%%param for secondary sources removed
 locxyprojall = allbstsig.locxyprojall;
 tarvlsplstall = allbstsig.impindepall(:,1);
-nsrc = allbstsig.nsrcraw;
+nsrc = allbstsig.nsrc;
 imp = allbstsig.impindepall;
 locxyprojalln = allbstnoi.locxyprojall;
 tarvlsplstalln = allbstnoi.impindepall(:,1);
-nsrcn = allbstnoi.nsrcraw;
+nsrcn = allbstnoi.nsrc;
 impn = allbstnoi.impindepall;
 supertstr = 'Secondary sources removed';
 fnsuffix = [];
@@ -93,17 +93,17 @@ fnsuffix = [];
 % %%%param for further checked at KLNB
 % locxyprojall = allbstsig.locxyproj4thall;
 % tarvlsplstall = allbstsig.impindep4thall(:,1);
-% nsrc = allbstsig.nsrc;
+% nsrc = allbstsig.nsrc4th;
 % imp = allbstsig.impindep4thall;
 % locxyprojalln = allbstnoi.locxyproj4thall;
 % tarvlsplstalln = allbstnoi.impindep4thall(:,1);
-% nsrcn = allbstnoi.nsrc;
+% nsrcn = allbstnoi.nsrc4th;
 % impn = allbstnoi.impindep4thall;
 % supertstr = 'Further checked at KLNB';
 % fnsuffix = '4th';
 
-% typepltnoi = 1; %plot noise
-typepltnoi = 2; %plot data -noise
+typepltnoi = 1; %plot noise
+% typepltnoi = 2; %plot data -noise
 
 keyboard
 
@@ -116,16 +116,16 @@ nbst = size(trange,1);
 
 % keyboard
 
-%% for a few m, bin by median amp for all events within N&N-m, fraction of diff time measurements w/i dtcut  
+%% for a few m, diff time distribution between N&N-m, and fraction w/i dtcut  
 f1 = initfig(10,4.5,1,2); %initialize fig
 tit=supertit(f1.ax,strcat({'Diff. arrival between N & N-m, '},supertstr));
 movev(tit,0.3);
 mmax = 15;
 nbst = size(trange,1);
-[f,cnt,Nn,Nnn,frac,fracn,ampdt,dtarvl,ampdtn,dtarvln]=...
+[f,cnt,Nn,Nnn,frac,fracn,dtarvl,dtarvln,mmaxnonzero,mmaxnonzeron]=...
   plt_srcdifftime_NNm_mmax(f1,nbst,imp,nsrc,impn,nsrcn,mmax,sps,typepltnoi);
 
-%%
+%% for a few m, bin by median amp for all events within N&N-m, fraction of diff time measurements w/i dtcut  
 f2 = initfig(10,9,2,2); %initialize fig
 tit=supertit(f2.ax,strcat({'Diff. arrival between N & N-m, binned by amp, '},supertstr));
 movev(tit,0.2);

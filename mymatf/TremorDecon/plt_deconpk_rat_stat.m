@@ -27,7 +27,7 @@ for itrial = 1: ntrial
       p(itrial) = plot(ax,log10(nsat),mip(:,i),'-','marker',symbol(i,:),'markersize',4,...
         'color',color(itrial,:));
 %       label{itrial} = sprintf('noise=%.1f',trial(itrial));
-      ylabel(ax,'Mean of amp ratio');
+      ylabel(ax,'Median of amp ratio');
       xlabel(ax,'log_{10}(Saturation)');
       title(ax,'PGC/SSIB');
     else

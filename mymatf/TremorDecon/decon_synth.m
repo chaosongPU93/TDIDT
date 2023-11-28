@@ -30,8 +30,8 @@ clc
 close all
 
 %%%Flag to indicate if it is necessary to recalculate everything
-% flagrecalc = 0;
-flagrecalc = 1;
+flagrecalc = 0;
+% flagrecalc = 1;
 
 if ~flagrecalc
   load('rst_decon_synth.mat');
@@ -1631,6 +1631,16 @@ for ireg = 1: nreg
 end
 label{nreg+1} = 'data';
 f=plt_deconpk_rat_stat(f,nsat,label,msrcampr,madsrcampr);
+mamprdata = [5.5701e-02; 6.6249e-02; 7.6967e-03]; %from real data
+madamprdata = [1.8293e-01; 1.8350e-01; 1.7420e-01];
+for i = 1: 3
+  ax=f.ax(i); hold(ax,'on');
+  plot(ax,log10(nsat),mamprdata(i)*ones(nnsat,1),'k--');
+end
+for i = 4: 3+3
+  ax=f.ax(i); hold(ax,'on');
+  plot(ax,log10(nsat),madamprdata(i-3)*ones(nnsat,1),'k--');  
+end
 stit = supertit(f.ax,'Secondary sources removed');
 movev(stit,0.3);
 ylim(f.ax(4:end),[0 0.3]);
@@ -1663,7 +1673,7 @@ for ireg = 1: nreg
   p(ireg) = plot(ax,log10(nsat),mprojx22all(:,ireg),'-o','markersize',4,'color',color(ireg,:));
   label{ireg} = sprintf('a/2=%.2f,b/2=%.2f',semia(ireg),semib(ireg));
 end
-p(nreg+1) = plot(ax,log10(nsat),0.50*ones(nnsat,1),'k--');
+p(nreg+1) = plot(ax,log10(nsat),0.50*ones(nnsat,1),'k--');  %this is from data
 label{nreg+1} = 'data';
 legend(ax,p,label);
 title(ax,'Secondary sources removed');
@@ -1677,7 +1687,7 @@ for ireg = 1: nreg
   % plot(ax,log10(nsat),mprojx3nn1(:,ireg),'-o','markersize',4,'color',color(ireg,:));
   plot(ax,log10(nsat),mprojx32all(:,ireg),'-o','markersize',4,'color',color(ireg,:));
 end
-plot(ax,log10(nsat),0.45*ones(nnsat,1),'k--');
+plot(ax,log10(nsat),0.45*ones(nnsat,1),'k--');  %this is from data
 title(ax,'Checkd at 4th stas');
 ylim(ax,yran);
 
