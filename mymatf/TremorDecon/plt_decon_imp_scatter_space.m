@@ -127,6 +127,7 @@ ylabel(ax,'N (km)','FontSize',11);
 axis(ax, 'equal');
 xlim(ax,xran); xticks(ax,xran(1): 1 : xran(2));
 ylim(ax,yran); yticks(ax,yran(1): 1 : yran(2));
+longticks(ax,2);
 % pos = ax.Position;
 % c.Position = [pos(1)+pos(3)+0.02, pos(2), 0.03, pos(4)];
 

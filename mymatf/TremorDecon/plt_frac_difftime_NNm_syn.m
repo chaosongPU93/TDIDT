@@ -1,4 +1,4 @@
-function [f,frac]=plt_frac_difftime_NNm_syn(f,impplt,mmax,nsat,nrounds,label,sps,m)
+function [f,frac]=plt_frac_difftime_NNm_syn(f,impplt,mmax,nsat,nround,label,sps,m,ref)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % [f,frac]=plt_frac_difftime_NNm_syn(f,impplt,mmax,nsat,nrounds,label,sps,m)
 %
@@ -14,15 +14,10 @@ function [f,frac]=plt_frac_difftime_NNm_syn(f,impplt,mmax,nsat,nrounds,label,sps
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 defval('m',1);
-
-if m < 3
-  xran = [0 2];
-else
-  xran = [0 2*ceil(0.25*m+0.125)];
-end
+defval('ref',[]);
 
 nnsat = length(nsat);
-color = jet(nrounds);
+color = jet(nround);
 dtcut = 0.25*m+0.125;
   
 %%%loop for saturation level
@@ -30,7 +25,7 @@ for insat = 1: nnsat
   disp(nsat(insat));
   
   %%%loop for region size or noise level
-  for iround = 1: nrounds
+  for iround = 1: nround
     impi = impplt{insat,iround};
     nsrc = size(impi,1);
     
@@ -48,9 +43,14 @@ end
 
 ax=f.ax(1); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
 %%%loop for region size
-for iround = 1: nrounds
+for iround = 1: nround
   p(iround) = plot(ax,log10(nsat),frac(:,iround),'-o','markersize',4,'color',color(iround,:));
 end
+if ~isempty(ref)
+  fracd = ref(:,m)*ones(1,nnsat);
+  p(nround+1) = plot(ax,log10(nsat),fracd,'k--','LineWidth',1);
+end
+
 legend(ax,p,label);
 xlabel(ax,'log_{10}(Saturation)');
 ylabel(ax,sprintf('Frac. of diff. arrival w/i %.3f s',dtcut));

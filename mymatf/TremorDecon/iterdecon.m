@@ -229,7 +229,7 @@ ampnoiwt = ampnoi*median(rcc); % amp of CC between noise and wavelet weighted by
 % while LOOPCON
 
 %%% while loop for iterative deconvolution
-% while nit<nit_max
+while nit<nit_max
 % while dres>dres_min && nit<nit_max
 % while amp>ampnoin && nit<nit_max % compare the newest max CC of res and wlet with CC of noise and wlet, all normalized by wlet 
 % while mad(res)>mad(noi) && nimp<nimp_max
@@ -237,7 +237,7 @@ ampnoiwt = ampnoi*median(rcc); % amp of CC between noise and wavelet weighted by
 % while rccimp>median(rcc) && nit<nit_max  
 % while rccimp>medrccpeak && nit<nit_max 
 % while mwtcoef>medwtcoef && nit<nit_max
-while mwtcoef>medwtcoef   %if discard hard limit on max num of iters
+% while mwtcoef>medwtcoef   %if discard hard limit on max num of iters
   
 % while max(abs(predchg))>mad(noi) && nimp<nimp_max
 % while (dres>dres_min || mfit>mfit_min) && nit<nit_max

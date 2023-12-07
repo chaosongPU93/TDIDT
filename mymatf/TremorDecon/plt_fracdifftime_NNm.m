@@ -1,5 +1,5 @@
 function [f,Nn,fracm,ampbincntm,Nnn,fracnm,ampbinncntm]=...
-  plt_fracdifftime_NNm(f,ampplt,dtarvlplt,amppltn,dtarvlpltn,dtcut,sps,typepltnoi,m)
+  plt_fracdifftime_NNm(f,ampplt,dtarvlplt,amppltn,dtarvlpltn,sps,typepltnoi,m,nbin)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % [f,Nn,fracm,ampbincntm,Nnn,fracnm,ampbinncntm]=...
 %   plt_fracdifftime_NNm(f,ampplt,dtarvlplt,amppltn,dtarvlpltn,dtcut,sps,typepltnoi,m)
@@ -19,7 +19,9 @@ function [f,Nn,fracm,ampbincntm,Nnn,fracnm,ampbinncntm]=...
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 defval('m',1);
+defval('nbin',5);
 
+dtcut = 0.25*m+0.125;
 if m < 3
   xran = [0 2];
 else
@@ -53,7 +55,7 @@ ax=f.ax(1); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
 % %%%%%%%%%% if bin by amp with a equal width
 
 %%%%%%%%%% if bin by amp with a equal number
-nbin = 5;
+% nbin = 5;
 [ampbin,indbin,n] = binxeqnum(ampplt,nbin);
 color = jet(nbin);
 % color = gray(nbin+1);
@@ -98,7 +100,7 @@ p(nbin+1)=plot(ax,cnt,Nnm,'k-','LineWidth',1.5);
 label{nbin+1} = sprintf('mean');  %median
 legend(ax,p,label);
 ylabel(ax,'Normalized count');
-xlabel(ax,sprintf('Diff. arrival between sources N and N-%d (s)',m));
+xlabel(ax,sprintf('Arrival time difference N to N-%d (s)',m));
 xlim(ax,xran);
 if m == 1
   yran = [0 0.2];
@@ -180,7 +182,7 @@ elseif typepltnoi == 2
   p(nbin+1)=plot(ax,cnt,Nnm-Nnnm,'k-','LineWidth',1.5);
 end
 ylabel(ax,'Normalized count');
-xlabel(ax,sprintf('Diff. arrival between sources N and N-%d (s)',m));
+xlabel(ax,sprintf('Arrival time difference N to N-%d (s)',m));
 xlim(ax,xran);
 ylim(ax,yran);
 longticks(ax,2);
@@ -189,9 +191,9 @@ hold(ax,'off');
 
 ax=f.ax(3); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
 % plot(ax,ampbincnt,dtarvlimed,'k-'); %if bin by amp with a equal width
-% p1=plot(ax,log(ampbincnt),dtarvlimed1,'k-');  %if bin by amp with a equal number
-% p2=plot(ax,log(ampbincnt),dtarvlimed2,'k--'); 
-% p3=plot(ax,log(ampbincnt),dtarvlimed,'k-.'); 
+% p1=plot(ax,log10(ampbincnt),dtarvlimed1,'k-');  %if bin by amp with a equal number
+% p2=plot(ax,log10(ampbincnt),dtarvlimed2,'k--'); 
+% p3=plot(ax,log10(ampbincnt),dtarvlimed,'k-.'); 
 % if nsep==1
 %   yran=[0.25 0.75];
 %   % yran=[0.1 0.5];
@@ -205,28 +207,28 @@ ax=f.ax(3); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
 % %   legend(ax,[p1 p2 p3],'w/i 1.5 s','w/i 1.625 s','all');
 % end
 yran=[0 1];
-plot(ax,log(ampbincntm),fracm,'k-','linew',1,'marker','o','markersize',4,'markerfacec','k');
+plot(ax,log10(ampbincntm),fracm,'k-','linew',1,'marker','o','markersize',4,'markerfacec','k');
 xlabel(ax,'Median log_{10}{amp}');
 % ylabel(ax,'Median diff. arrival (s)');
-ylabel(ax,sprintf('Frac. of diff. arrival w/i %.3f s',dtcut));
+ylabel(ax,sprintf('Fraction w/i %.3f s',dtcut));
 ylim(ax,yran);
 title(ax,'Data');
 
 ax=f.ax(4); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
 % plot(ax,ampbinncnt,dtarvlinmed,'k-');
-% plot(ax,log(ampbinncnt),dtarvlinmed1,'k-');
-% plot(ax,log(ampbinncnt),dtarvlinmed2,'k--'); 
-% plot(ax,log(ampbinncnt),dtarvlinmed,'k-.');
+% plot(ax,log10(ampbinncnt),dtarvlinmed1,'k-');
+% plot(ax,log10(ampbinncnt),dtarvlinmed2,'k--'); 
+% plot(ax,log10(ampbinncnt),dtarvlinmed,'k-.');
 if typepltnoi == 1 
-  plot(ax,log(ampbinncntm),fracnm,'k-','linew',1,'marker','o','markersize',4,'markerfacec','k');
+  plot(ax,log10(ampbinncntm),fracnm,'k-','linew',1,'marker','o','markersize',4,'markerfacec','k');
   title(ax,'Synthetic noise');
 elseif typepltnoi == 2 
-  plot(ax,log(ampbincntm),fracnm,'k-','linew',1,'marker','o','markersize',4,'markerfacec','k');
+  plot(ax,log10(ampbincntm),fracnm,'k-','linew',1,'marker','o','markersize',4,'markerfacec','k');
   title(ax,'Data - Synthetic noise');
 end
 xlabel(ax,'Median log_{10}{amp}');
 % ylabel(ax,'Median diff. arrival (s)');
-ylabel(ax,sprintf('Frac. of diff. arrival w/i %.3f s',dtcut));
+ylabel(ax,sprintf('Fraction w/i %.3f s',dtcut));
 ylim(ax,yran);
 
-
+% keyboard

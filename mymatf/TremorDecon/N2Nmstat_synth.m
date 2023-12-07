@@ -55,17 +55,22 @@ if ~singleflag  %%%synthetics from different region sizes and saturation levels
   savefile = 'rst_decon_synth.mat';
   ttstr1 = {'Noise-free syn, '};
   load(savefile);
-  nrounds = nreg;
+  nround = nreg;
 else  %%%synthetics from different noise and saturation levels, sources at a single spot
   savefile = 'rst_synth_onespot.mat';
   ttstr1 = {'Single-spot syn, '};
   load(savefile);
-  nrounds = ntrial;
+  nround = ntrial;
 end
 
 %%%load data
 savefile = 'deconv_stats4th_allbstsig.mat';
 load(strcat(rstpath, '/MAPS/',savefile));
+savefile = 'deconv_stats4th_allbstnoi.mat';
+load(strcat(rstpath, '/MAPS/',savefile));
+nbst = size(trange,1);
+sps = 160;
+
 
 %%
 %%%param for secondary sources removed
@@ -75,46 +80,52 @@ impplt = imp;
 denom = 18275;
 
 %below from data for reference
-locxyprojall = allbstsig.locxyprojall;
-tarvlsplstall = allbstsig.impindepall(:,1);
-nsrc = allbstsig.nsrc;
-imp = allbstsig.impindepall;
-locxyprojalln = allbstnoi.locxyprojall;
-tarvlsplstalln = allbstnoi.impindepall(:,1);
-nsrcn = allbstnoi.nsrcraw;
+locxyprojalld = allbstsig.locxyprojall;
+tarvlsplstalld = allbstsig.impindepall(:,1);
+nsrcd = allbstsig.nsrc;
+impd = allbstsig.impindepall;
+nsrcn = allbstnoi.nsrc;
 impn = allbstnoi.impindepall;
-supertstr = 'Secondary sources removed';
-fnsuffix = [];
+
 % %%%param for further checked at KLNB
 % ttstr2 = 'Checked at KLNB';
 % fnsuffix = '4th';
 % impplt = imp4th;
 % denom = 10547;
 
-mmax=5;
+mmax=15;
 m=1;
 supertstr = strcat(ttstr1,ttstr2);
 
 %% summarize the whole catalog, diff arrival time and fractions
+
+[~,cntd,Nnd,~,fracd,~,mmaxnonzero,mmaxnonzeron]=...
+  plt_srcdifftime_NNm_mmax([],nbst,impd,nsrcd,impn,nsrcn,mmax,sps,1,0);
+
 f = initfig(15,8,2,round(nnsat/2)); %initialize fig
 tit=supertit(f.ax,supertstr);
 movev(tit,0.2);
 label = [];
-for iround = 1: nrounds
+for iround = 1: nround
   if ~singleflag
     label{iround} = sprintf('a/2=%.2f,b/2=%.2f',semia(iround),semib(iround));
   else
     label{iround} = sprintf('noise=%.1f',perctrial(iround));
   end
 end
-[f,Nn,frac]=plt_difftime_NNm_syn(f,impplt,mmax,nsat,nrounds,label,sps,m);
+label{nround+1} = 'Data';
+ref = Nnd;
+
+[f,Nn,frac]=plt_difftime_NNm_syn(f,impplt,mmax,nsat,nround,label,sps,m,ref);
 keyboard
 
+%%
 %%%summarize the whole catalog, only fractions
 f = initfig(4,5,1,1); %initialize fig
 tit=supertit(f.ax,supertstr);
 movev(tit,0.2);
-[f,frac]=plt_frac_difftime_NNm_syn(f,impplt,mmax,nsat,nrounds,label,sps,m);
+ref = fracd;
+[f,frac]=plt_frac_difftime_NNm_syn(f,impplt,mmax,nsat,nround,label,sps,m,ref);
 
 keyboard
 
@@ -124,7 +135,7 @@ keyboard
 for insat = 1: nnsat
   disp(nsat(insat));
 
-  for iround = 1: nrounds
+  for iround = 1: nround
     f = initfig(12,4,1,2); %initialize fig
     tit=supertit(f.ax,supertstr);
     movev(tit,0.3);
@@ -147,13 +158,15 @@ f = initfig(15,8,2,round(nnsat/2)); %initialize fig
 tit=supertit(f.ax,strcat(supertstr, sprintf(', N & N-%d',m)));
 movev(tit,0.2);
 [f,ampbincnt,fraci,dtarvlplt,ampplt] = ...
-  plt_fracdifftime_NNm_syn_binamp(f,impplt,mmax,nsat,nrounds,label,sps,m,nbin);
+  plt_fracdifftime_NNm_syn_binamp(f,impplt,mmax,nsat,nround,label,sps,m,nbin);
 
 keyboard
 
 
 %% fraction of event pairs w/i a diff time cut, and fraction of all catalog
-mmax = 10;
+mmax = 15;
+[fracsrc2alld, dfracsrc2alld,mmaxzero]=frac_uniqevt_incluster(nbst,impd,nsrcd,mmax,sps,0);
+
 f1 = initfig(15,8,2,round(nnsat/2)); %initialize fig
 tit=supertit(f1.ax,strcat(supertstr,...
   {', inclusive Frac of srcs in cluster of N & N-m whose diff time w/i 0.25*m+0.125 s'}));
@@ -165,18 +178,26 @@ tit=supertit(f2.ax,strcat(supertstr,...
 movev(tit,0.2);
 
 label = [];
-for iround = 1: nrounds
+for iround = 1: nround
   if ~singleflag
     label{iround} = sprintf('a/2=%.2f,b/2=%.2f',semia(iround),semib(iround));
   else
     label{iround} = sprintf('noise=%.1f',perctrial(iround));
   end
 end
+label{nround+1} = 'Data';
 
-[f1,f2,fracsrc2all,dfracsrc2all]=frac_uniqevt_incluster_syn(f1,f2,impplt,mmax,nsat,nrounds,label,sps);
+ref{1} = fracsrc2alld;
+ref{2} = dfracsrc2alld;
+[f1,f2,fracsrc2all,dfracsrc2all]=frac_uniqevt_incluster_syn(f1,f2,impplt,mmax,nsat,nround,label,sps,ref);
+
+for iround = 1: nround
+  ax=f1.ax(iround);
+  p1(nround+1)=plot(ax,0:1:mmaxzero,fracsrc2alld,'ko-','linew',1,'markersize',4);
+end
+legend(f1.ax(1),p1,label);
+
 keyboard
-
-
 
 
 

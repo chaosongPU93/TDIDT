@@ -111,28 +111,71 @@ keyboard
 mmax = 15;
 nbst = size(trange,1);
 
-[fracsrc2all, dfracsrc2all, f]=frac_uniqevt_incluster(nbst,imp,nsrc,mmax,sps);
-[fracsrc2alln, dfracsrc2alln, f]=frac_uniqevt_incluster(nbst,impn,nsrcn,mmax,sps);
+[fracsrc2all, dfracsrc2all,mmaxzero, f]=frac_uniqevt_incluster(nbst,imp,nsrc,mmax,sps);
+[fracsrc2alln, dfracsrc2alln,mmaxzeron, f]=frac_uniqevt_incluster(nbst,impn,nsrcn,mmax,sps);
+dfracsrc2alldmn = dfracsrc2all - dfracsrc2alln;
+% f=initfig;
+% ax=f.ax(1); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
+% plot(ax,1:mmaxzero,dfracsrc2alldmn(1:mmaxzero),'ro-','linew',1,'markersize',4);
+% xlabel(ax,'m');
+% ylabel(ax,'Frac of srcs');
+% title(ax,'Frac of srcs in cluster of N & N-m whose diff time w/i 0.25*m+0.125 s');
+% legend(ax,'exclusive, data - synthetic noise');
+% xlim(ax,[0 mmax]);
 
 % keyboard
 
 %% for a few m, diff time distribution between N&N-m, and fraction w/i dtcut  
+mmax = 15;
+nbst = size(trange,1);
 f1 = initfig(10,4.5,1,2); %initialize fig
 tit=supertit(f1.ax,strcat({'Diff. arrival between N & N-m, '},supertstr));
 movev(tit,0.3);
-mmax = 15;
-nbst = size(trange,1);
-[f,cnt,Nn,Nnn,frac,fracn,dtarvl,dtarvln,mmaxnonzero,mmaxnonzeron]=...
+[f1,cnt,Nn,Nnn,frac,fracn,mmaxnonzero,mmaxnonzeron]=...
   plt_srcdifftime_NNm_mmax(f1,nbst,imp,nsrc,impn,nsrcn,mmax,sps,typepltnoi);
 
-%% for a few m, bin by median amp for all events within N&N-m, fraction of diff time measurements w/i dtcut  
-f2 = initfig(10,9,2,2); %initialize fig
+%% for a few m, bin by median amp for all events within N&N-m, fraction of unique events w/i dtcut  
+mmax = 15;
+nbst = size(trange,1);
+scale = 'linear';
+% scale = 'log';
+if strcmp(scale,'linear')
+  widin=10; htin=5; nrow=1; ncol=2;
+elseif strcmp(scale,'log')
+  widin=5; htin=5; nrow=1; ncol=1;
+end
+f2 = initfig(widin,htin,nrow,ncol); %initialize fig
+xran = [0.15 0.9]; yran = [0.15 0.9];
+xsep = 0.05; ysep = 0.05;
+optaxpos(f2,nrow,ncol,xran,yran,xsep,ysep);
+
 tit=supertit(f2.ax,strcat({'Diff. arrival between N & N-m, binned by amp, '},supertstr));
 movev(tit,0.2);
-[f2,ampbincnt,Nbn,fracb,Nbnn,fracbn]=...
-  plt_fracdifftime_NNm_mmax(f2,nbst,imp,nsrc,impn,nsrcn,mmax,sps,typepltnoi);
-
+[f2,ampbincnt,fracevtb,fracevtbn]=...
+  plt_fracevt_NNm_mmax(f2,nbst,imp,nsrc,impn,nsrcn,mmax,sps,typepltnoi,scale);
 keyboard
+
+%% for a few m, bin by median amp for all events within N&N-m, fraction of diff time measurements w/i dtcut  
+mmax = 5;
+nbst = size(trange,1);
+scale = 'linear';
+% scale = 'log';
+if strcmp(scale,'linear')
+  widin=10; htin=4.5; nrow=1; ncol=2;
+elseif strcmp(scale,'log')
+  widin=5; htin=4.5; nrow=1; ncol=1;
+end
+f2 = initfig(widin,htin,nrow,ncol); %initialize fig
+xran = [0.15 0.9]; yran = [0.15 0.9];
+xsep = 0.05; ysep = 0.05;
+optaxpos(f2,nrow,ncol,xran,yran,xsep,ysep);
+
+[f,ampbincnt,Nbnall,fracdtb,Nbnnall,fracdtbn]=...
+  plt_fracdt_NNm_mmax(f2,nbst,imp,nsrc,impn,nsrcn,mmax,sps,typepltnoi,scale);
+keyboard
+
+orient(f.fig,'landscape');
+print(f.fig,'-dpdf',strcat('/home/chaosong/Pictures/agu2023s2f3.pdf'));
 
 
 %% for a certain m, similar plots for N & N-m pairs 
@@ -154,21 +197,21 @@ tit=supertit(f2.ax,supertstr);
 movev(tit,0.2);
 
 [f1,f2,Nn,frac,Nnn,fracn,fracdif]=...
-  plt_difftime_NNm(f1,f2,dtarvlplt,dtarvlpltn,dtcut,sps,typepltnoi,m);
+  plt_difftime_NNm(f1,f2,dtarvlplt(:,1),dtarvlpltn(:,1),sps,typepltnoi,m);
 
 %%
 %%%Bin by amp, then plot diff time distribution, and frac w/i some 'dtcut'
-f = initfig(12,8,2,2); %initialize fig
-tit=supertit(f.ax,supertstr);
-movev(tit,0.2);
+f = initfig(10,8,2,2); %initialize fig
+% tit=supertit(f.ax,supertstr);
+% movev(tit,0.2);
+nbin = 10;
 [f,Nn,fracm,ampbincntm,Nnn,fracnm,ampbinncntm]=...
-  plt_fracdifftime_NNm(f,ampplt,dtarvlplt,amppltn,dtarvlpltn,dtcut,sps,typepltnoi,m);
-
+  plt_fracdifftime_NNm(f,ampplt(:,1),dtarvlplt(:,1),amppltn(:,1),...
+  dtarvlpltn(:,1),sps,typepltnoi,m,nbin);
 keyboard
 
 orient(f.fig,'landscape');
-fname = strcat(sprintf('nn%d%dbinsdifftime',m,nbin),fnsuffix,'.pdf');
-print(f.fig,'-dpdf','-fillpage',strcat('/home/chaosong/Pictures/',fname));
+print(f.fig,'-dpdf',strcat('/home/chaosong/Pictures/agu2023s2f2.pdf'));
 
 %%
 % %%%abs distance along min-rmse direction between each source and all others whose arrival 

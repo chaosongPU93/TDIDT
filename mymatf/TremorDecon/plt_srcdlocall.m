@@ -13,19 +13,19 @@ function f=plt_srcdlocall(dloc2all,binw,disttype)
 defval('binw',1);
 defval('disttype','spl');
 
-widin = 8;  % maximum width allowed is 8.5 inches
+widin = 6;  % maximum width allowed is 8.5 inches
 if strcmp(disttype,'spl')
   nrow = 3;
   htin = 9;   % maximum height allowed is 11 inches
 elseif strcmp(disttype,'km')
   nrow = 2;
-  htin = 6;   % maximum height allowed is 11 inches
+  htin = 6.5;   % maximum height allowed is 11 inches
 end
 ncol = 2;
 f = initfig(widin,htin,nrow,ncol); %initialize fig
 
-xran = [0.1 0.96]; yran = [0.06 0.96];
-xsep = 0.1; ysep = 0.08;
+xran = [0.1 0.96]; yran = [0.1 0.96];
+xsep = 0.09; ysep = 0.1;
 optaxpos(f,nrow,ncol,xran,yran,xsep,ysep);
 
 if strcmp(disttype,'spl')
@@ -52,6 +52,8 @@ elseif strcmp(disttype,'km')
   ylabel(ax,'Count per km');
 end
 axsym(ax,1);
+ax.YAxis.Exponent = 4;
+longticks(ax,2);
 hold(ax,'off');
 
 ax=f.ax(2);
@@ -67,7 +69,7 @@ end
 % bar(ax,cnt(1:end-1),Nn,1,'stacked','k','facea',0.6);
 stairs(ax,edges,[Nn Nn(end)],'k','LineWidth',1);
 plot(ax,[median(abs(dloc2all(:,1))) median(abs(dloc2all(:,1)))],ax.YLim,'r--','linew',2);
-text(ax,0.98,0.95,sprintf('med=%.2f',median(abs(dloc2all(:,1)))),'Units','normalized',...
+text(ax,0.98,0.95,sprintf('med=%.2f km',median(abs(dloc2all(:,1)))),'Units','normalized',...
   'HorizontalAlignment','right');
 if strcmp(disttype,'spl')
   xlabel(ax,'Abs diff off12 (samples)');
@@ -76,6 +78,8 @@ elseif strcmp(disttype,'km')
   xlabel(ax,'Abs diff E loc (km)');
   ylabel(ax,'Count per km');
 end
+ax.YAxis.Exponent = 4;
+longticks(ax,2);
 hold(ax,'off');
 
 ax=f.ax(3);
@@ -95,6 +99,8 @@ elseif strcmp(disttype,'km')
   ylabel(ax,'Count per km');
 end
 axsym(ax,1);
+ax.YAxis.Exponent = 3;
+longticks(ax,2);
 hold(ax,'off');
 
 ax=f.ax(4);
@@ -110,7 +116,7 @@ end
 % bar(ax,cnt(1:end-1),Nn,1,'stacked','k','facea',0.6);
 stairs(ax,edges,[Nn Nn(end)],'k','LineWidth',1);
 plot(ax,[median(abs(dloc2all(:,2))) median(abs(dloc2all(:,2)))],ax.YLim,'r--','linew',2);
-text(ax,0.98,0.95,sprintf('med=%.2f',median(abs(dloc2all(:,2)))),'Units','normalized',...
+text(ax,0.98,0.95,sprintf('med=%.2f km',median(abs(dloc2all(:,2)))),'Units','normalized',...
   'HorizontalAlignment','right');
 if strcmp(disttype,'spl')
   xlabel(ax,'Abs diff off13 (samples)');
@@ -119,6 +125,8 @@ elseif strcmp(disttype,'km')
   xlabel(ax,'Abs diff N loc (km)');
   ylabel(ax,'Count per km');
 end
+ax.YAxis.Exponent = 4;
+longticks(ax,2);
 hold(ax,'off');
 
 if strcmp(disttype,'spl')

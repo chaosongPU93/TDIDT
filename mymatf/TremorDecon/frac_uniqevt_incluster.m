@@ -1,4 +1,4 @@
-function [fracsrc2all,dfracsrc2all,f]=frac_uniqevt_incluster(nbst,imp,nsrc,mmax,sps)
+function [fracsrc2all,dfracsrc2all,mmaxzero,f]=frac_uniqevt_incluster(nbst,imp,nsrc,mmax,sps,pltflag)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % [fracsrc2all,dfracsrc2all,f]=frac_uniqevt_incluster(nbst,imp,nsrc,mmax,sps)
 %
@@ -16,6 +16,8 @@ function [fracsrc2all,dfracsrc2all,f]=frac_uniqevt_incluster(nbst,imp,nsrc,mmax,
 % First created date:   2023/11/03
 % Last modified date:   2023/11/03
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+defval('pltflag',1);
 
 fracsrc2all = [];
 for m = 1:mmax
@@ -80,20 +82,24 @@ for m = 1:mmax
     indcontuni{i,1} = unique(tmp,'rows','stable');
   end
   
-  imppairunia = cat(1,imppairuni{:});
-  ndcutsrcall = sum(ndcutsrc);
-  fracsrcall = ndcutsrcall/sum(nsrc)*100;
+%   imppairunia = cat(1,imppairuni{:});
+%   ndcutsrcall = sum(ndcutsrc);
+%   fracsrcall = ndcutsrcall/sum(nsrc)*100;
   
   impcontunia = cat(1,impcontuni{:});
   ndcutsrc2all(m,1) = sum(ndcutsrc2);
   fracsrc2all(m,1) = ndcutsrc2all(m,1)/sum(nsrc)*100;
   
-  ndcutpairall(m,1) = sum(ndcutpair);
-  fracpairall = ndcutpairall(m,1)/sum(nsrcsep)*100;
+%   ndcutpairall(m,1) = sum(ndcutpair);
+%   fracpairall = ndcutpairall(m,1)/sum(nsrcsep)*100;
   
 end
 
 mmaxzero = find(ndcutsrc2all==0,1);
+if isempty(mmaxzero)  %if the trial mmax is not big enough to exhaust the list
+  mmaxzero = mmax;
+  warning('mmax is not big enough, better increase it');
+end
 
 % for m = 1:mmaxzero
 %   dtcut = 0.25*m+0.125;
@@ -107,16 +113,20 @@ fprintf('%.3f \n',fracsrc2all);
 dfracsrc2all = fracsrc2all(1:end-1) - fracsrc2all(2:end);
 fprintf('%.3f \n',dfracsrc2all);
 
-fracsrc2all = fracsrc2all(1:mmaxzero+1);
-dfracsrc2all = dfracsrc2all(1:mmaxzero);
+% fracsrc2all = fracsrc2all(1:mmaxzero+1);
+% dfracsrc2all = dfracsrc2all(1:mmaxzero);
 
-f=initfig;
-ax=f.ax(1); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
-plot(ax,0:1:mmaxzero,fracsrc2all,'ko-','linew',1,'markersize',4);
-plot(ax,1:mmaxzero,dfracsrc2all,'ro-','linew',1,'markersize',4);
-xlabel(ax,'m');
-ylabel(ax,'Frac of srcs');
-title(ax,'Frac of srcs in cluster of N & N-m whose diff time w/i 0.25*m+0.125 s');
-legend(ax,'inclusive','exclusive');
-xlim(ax,[0 mmax]);
+if pltflag
+  f=initfig;
+  ax=f.ax(1); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
+  plot(ax,0:1:mmaxzero,fracsrc2all(1:mmaxzero+1),'ko-','linew',1,'markersize',4);
+  plot(ax,1:mmaxzero,dfracsrc2all(1:mmaxzero),'ro-','linew',1,'markersize',4);
+  xlabel(ax,'m');
+  ylabel(ax,'Frac of srcs');
+  title(ax,'Frac of srcs in cluster of N & N-m whose diff time w/i 0.25*m+0.125 s');
+  legend(ax,'inclusive','exclusive');
+  xlim(ax,[0 mmax]);
+else
+  f=[];
+end
 

@@ -13,8 +13,8 @@ function varargout = optaxpos(f,nrow,ncol,xran,yran,xsep,ysep)
 % Last modified date:   2021/11/29
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-defval('xran',[0.1 0.9]);
-defval('yran',[0.1 0.9]);
+defval('xran',[0.1 0.95]);
+defval('yran',[0.1 0.95]);
 defval('xsep',0.05);
 defval('ysep',0.05);
 

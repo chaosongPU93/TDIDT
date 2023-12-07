@@ -53,9 +53,16 @@ if strcmp(scale,'log')
 elseif strcmp(scale,'linear')
   c.Label.String = cstr{1};  
 end
-axis(ax,[xran yran],'equal');
+axis(ax, 'equal');
 ax.GridLineStyle = '--';
 ax.XAxisLocation = 'top';
+xlim(ax,xran);
+ylim(ax,yran);
+% xticks(ax,xran(1):5:xran(2));
+% yticks(ax,yran(1):5:yran(2));
+xlabel(ax,'E (km)','fontsize',11);
+ylabel(ax,'N (km)','fontsize',11);
+hold(ax,'off');
 
 if ~isempty(sumz1d)
   %sum of some quantity
@@ -77,8 +84,15 @@ if ~isempty(sumz1d)
   elseif strcmp(scale,'linear')
     c.Label.String = cstr{2};  
   end
-  axis(ax,[xran yran],'equal');
+  axis(ax, 'equal');
   ax.GridLineStyle = '--';
   ax.XAxisLocation = 'top';
+  xlim(ax,xran);
+  ylim(ax,yran);
+  % xticks(ax,xran(1):5:xran(2));
+  % yticks(ax,yran(1):5:yran(2));
+  xlabel(ax,'E (km)','fontsize',11);
+  ylabel(ax,'N (km)','fontsize',11);
+  hold(ax,'off');
 end
 

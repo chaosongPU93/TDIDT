@@ -225,6 +225,7 @@ bostcati(:,13) = mag2moment(bostcati(:,11));
 % bostcati = bostcati(bostcati(:,1)==2,:);
 % bostcato = bostcato(bostcato(:,1)~=2 & bostcato(:,1)~=47 & bostcato(:,1)~=246,:);
 
+keyboard
 
 %% plot to see if 002 and 246 are still strongly overlapping
 % aaa = unique(bostcati(:,1));
@@ -386,8 +387,8 @@ savefile = 'deconv_stats4th_allbstsig.mat';
 allsig = load(strcat(rstpath, '/MAPS/',savefile));
 imp = allsig.allbstsig.impindepall;
 imp4th = allsig.allbstsig.impindep4thall;
-nsrc = allsig.allbstsig.nsrcraw;
-nsrc4th = allsig.allbstsig.nsrc;
+nsrc = allsig.allbstsig.nsrc;
+nsrc4th = allsig.allbstsig.nsrc4th;
 rccbst = allsig.allbstsig.rccbst; %cat rcc
 off1iwk = allsig.allbstsig.off1iwk; %alignment center of each subwin
 off1ik = allsig.allbstsig.off1i;  %alignment of whole win
@@ -415,8 +416,8 @@ savefile = 'deconv_stats4th_allbstnoi.mat';
 allnoi = load(strcat(rstpath, '/MAPS/',savefile));
 impn = allnoi.allbstnoi.impindepall;
 impn4th = allnoi.allbstnoi.impindep4thall;
-nsrcn = allnoi.allbstnoi.nsrcraw;
-nsrcn4th = allnoi.allbstnoi.nsrc;
+nsrcn = allnoi.allbstnoi.nsrc;
+nsrcn4th = allnoi.allbstnoi.nsrc4th;
 rccbstn = allnoi.allbstnoi.rccbst;
 off1iwkn = allnoi.allbstnoi.off1iwk;
 off1ikn = allnoi.allbstnoi.off1i;

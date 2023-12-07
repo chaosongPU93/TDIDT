@@ -1,4 +1,4 @@
-function [f,Nn,frac]=plt_difftime_NNm_syn(f,impplt,mmax,nsat,nrounds,label,sps,m)
+function [f,Nn,frac]=plt_difftime_NNm_syn(f,impplt,mmax,nsat,nround,label,sps,m,ref)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % [f,Nn,frac]=plt_difftime_NNm_syn(f,impplt,mmax,nsat,nrounds,label,sps,m)
 %
@@ -14,15 +14,20 @@ function [f,Nn,frac]=plt_difftime_NNm_syn(f,impplt,mmax,nsat,nrounds,label,sps,m
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 defval('m',1);
+defval('ref',[]);
 
 if m < 3
   xran = [0 2];
 else
   xran = [0 2*ceil(0.25*m+0.125)];
 end
-
+binwdt = 0.05;
+nx = round(xran(2)/binwdt)+1;
+edges = xran(1)-binwdt/2: binwdt: xran(2)+binwdt/2;
+cnt = xran(1): binwdt: xran(2);
+  
 nnsat = length(nsat);
-color = jet(nrounds);
+color = jet(nround);
 dtcut = 0.25*m+0.125;
  
 %%%loop for saturation level
@@ -30,18 +35,13 @@ for insat = 1: nnsat
   disp(nsat(insat));
   
   ax=f.ax(insat); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
-  binwdt = 0.05;
   if m == 1
     yran = [0 0.2];
   elseif m == 2
     yran = [0 0.06];
   end
-  nx = round(xran(2)/binwdt)+1;
-  edges = xran(1)-binwdt/2: binwdt: xran(2)+binwdt/2;
-  cnt = xran(1): binwdt: xran(2);
-  
   %%%loop for region size or noise level
-  for iround = 1: nrounds
+  for iround = 1: nround
     impi = impplt{insat,iround};
     nsrc = size(impi,1);
     
@@ -64,6 +64,10 @@ for insat = 1: nnsat
     %   label{iround} = sprintf('noise=%.1f',perctrial(iround));
     % end
 
+  end
+  if ~isempty(ref)
+    Nnd = ref(:,m);
+    p(nround+1) = plot(ax,cnt,Nnd(1:length(cnt)),'k--','LineWidth',1);
   end
   %   text(ax,0.95,0.85,sprintf('Fraction w/i %.3f s: %.2f',dtcut,frac),'HorizontalAlignment','right',...
   %     'Units','normalized','FontSize',12);

@@ -1,6 +1,6 @@
 % analyze_synth.m
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% --This script aims to do some synthetics to the synthetic seismograms other
+% --This script aims to do some analysis to the synthetic seismograms other
 % than deconvolution that is done particularly in 'decon_synth.m', to be 
 % compared to real data. 
 %

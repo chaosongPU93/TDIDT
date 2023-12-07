@@ -28,8 +28,6 @@ elseif isequal(binmethod,'pixel')
 end
 defval('msizelf',2.5*msizehf);
 
-[scrsz, res] = pixelperinch(1);
-
 nrow = 1;
 ncol = (~isempty(hfplt))+(~isempty(lfplt));
 widin = 4*ncol;  % maximum width allowed is 8.5 inches
@@ -85,9 +83,10 @@ if ~isempty(hfplt)
   scatter(ax,dum(:,1),dum(:,2),msizehf,dum(:,3),marker,'filled','MarkerEdgeColor','none');  %, 
 %   scatter(ax,dum(:,1),dum(:,2), msizehf, dum(:,3)/normalizer,marker,'filled','MarkerEdgeColor','none');  %, 
   % imagesc(ax,[xran(1)+0.5*dx xran(end)-0.5*dx], [yran(1)+0.5*dy yran(end)-0.5*dy], density2d');
-  oldc = colormap(ax,'kelicol');
-  newc = flipud(oldc);
-  colormap(ax,newc);
+  colormap(ax,'jet');
+%   oldc = colormap(ax,'kelicol');
+%   newc = flipud(oldc);
+%   colormap(ax,newc);
   % colormap(ax, flipud(oldcmap) );
   c=colorbar(ax,'SouthOutside');
   pos = ax.Position;
@@ -105,8 +104,8 @@ if ~isempty(hfplt)
 %      'EdgeColor','k','Margin',2);
 % text(ax,0.85,0.8,'HF','FontSize',12,'unit','normalized','horizontalalignment','center');
 %   text(ax,0.04,0.93,'a','FontSize',11,'unit','normalized','EdgeColor','k','Margin',2);
-  text(ax,0.5,0.05,strcat(num2str(length(hfplt(:,1))),{' detections'}),'FontSize',10,'unit','normalized',...
-      'horizontalalignment','center');
+  text(ax,0.98,0.05,strcat(num2str(length(hfplt(:,1))),{' detections'}),'FontSize',10,'unit','normalized',...
+      'horizontalalignment','right');
   %%%Add contour lines if needed  
   if contourflag
     [xyzgridpad,xgrid,ygrid,zgrid,ind2] = zeropadmat2d(density1d,xran(1):1:xran(2),yran(1):1:yran(2));
@@ -132,6 +131,7 @@ ylim(ax,yran);
 % yticks(ax,yran(1):5:yran(2));
 xlabel(ax,'E (km)','fontsize',11);
 ylabel(ax,'N (km)','fontsize',11);
+longticks(ax,2);
 hold(ax,'off');
 
 % subplot 2 of figure i
@@ -168,9 +168,10 @@ if ~isempty(lfplt)
   scatter(ax,dum(:,1),dum(:,2),msizelf,dum(:,3),marker,'filled');  %, 'MarkerEdgeColor', 'w')
 %   scatter(ax,dum(:,1),dum(:,2), msizelf, dum(:,3)/normalizer,marker,'filled');  %, 'MarkerEdgeColor', 'w')
   % imagesc(ax,[xran(1)+0.5*dx xran(end)-0.5*dx], [yran(1)+0.5*dy yran(end)-0.5*dy], density2d');
-  oldc = colormap(ax,'kelicol');
-  newc = flipud(oldc);
-  colormap(ax,newc);
+  colormap(ax,'jet');
+%   oldc = colormap(ax,'kelicol');
+%   newc = flipud(oldc);
+%   colormap(ax,newc);
   c=colorbar(ax,'SouthOutside');
   pos = ax.Position;
   c.Position = [pos(1), pos(2)-0.03, pos(3), 0.02];
@@ -182,9 +183,9 @@ if ~isempty(lfplt)
 %      'EdgeColor','k','Margin',2);
 % text(ax,0.85,0.8,'LF','FontSize',12,'unit','normalized','horizontalalignment','center');
 %   text(ax,0.04,0.93,'b','FontSize',11,'unit','normalized','EdgeColor','k','Margin',2);
-  text(ax,0.5,0.05,strcat(num2str(length(lfplt(:,1))),{' detections'}),'FontSize',10,'unit','normalized',...
-      'horizontalalignment','center');
-    %%%Add contour lines if needed  
+  text(ax,0.98,0.05,strcat(num2str(length(lfplt(:,1))),{' detections'}),'FontSize',10,'unit','normalized',...
+      'horizontalalignment','right');
+  %%%Add contour lines if needed  
   if contourflag
     [xyzgridpad,xgrid,ygrid,zgrid,ind2] = zeropadmat2d(density1d,xran(1):1:xran(2),yran(1):1:yran(2));
     zgridgf = imgaussfilt(zgrid, 1);  %smooth it a bit
@@ -208,5 +209,6 @@ if ~isempty(lfplt)
 %   yticks(ax,yran(1):5:yran(2));
   xlabel(ax,'E (km)','fontsize',11);
   ylabel(ax,'N (km)','fontsize',11);
+  longticks(ax,2);
   hold(ax,'off');
 end

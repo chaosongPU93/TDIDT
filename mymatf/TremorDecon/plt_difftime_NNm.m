@@ -1,5 +1,5 @@
 function [f1,f2,Nn,frac,Nnn,fracn,fracdif]=...
-  plt_difftime_NNm(f1,f2,dtarvlplt,dtarvlpltn,dtcut,sps,typepltnoi,m)
+  plt_difftime_NNm(f1,f2,dtarvlplt,dtarvlpltn,sps,typepltnoi,m)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % [f,Nn,frac,Nnn,fracn,fracdif]=...
 %   plt_difftime_NNm(f,dtarvlplt,dtarvlpltn,dtcut,sps,m)
@@ -19,14 +19,14 @@ function [f1,f2,Nn,frac,Nnn,fracn,fracdif]=...
 defval('m',1);
 
 %%%summarize the whole catalog, diff arrival time and fractions
-binwdt = 0.05;
-% dtcut = 0.25*nsep+0.125;
+dtcut = 0.25*m+0.125;
 if m < 3
   xran = [0 2];
 else
   xran = [0 2*ceil(dtcut)];
 end
 
+binwdt = 0.05;
 nx = round(xran(2)/binwdt)+1;
 edges = xran(1)-binwdt/2: binwdt: xran(2)+binwdt/2;
 cnt = xran(1): binwdt: xran(2);

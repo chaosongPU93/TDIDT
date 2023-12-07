@@ -39,4 +39,13 @@ for isub = 1:nrow*ncol
     f.ax(isub) = subplot(nrow,ncol,isub);
     f.ax(isub).Box = 'on';
 %     grid(f.ax(isub),'on');
+%     f.ax(isub).YAxis.Exponent = 3;
 end
+
+xran = [0.1 0.96]; yran = [0.1 0.96];
+xsep = 0.1; ysep = 0.1;
+optaxpos(f,nrow,ncol,xran,yran,xsep,ysep);
+
+
+
+

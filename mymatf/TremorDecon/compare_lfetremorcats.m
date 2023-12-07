@@ -234,6 +234,26 @@ impn1win4th = allnoi1win.allbstnoi.impindep4thall;
 [implocn1win, ~] = off2space002(impn1win(:,7:8),sps,ftrans,0); % 8 cols, format: dx,dy,lon,lat,dep,ttrvl,off12,off13
 [implocn1win4th, ~] = off2space002(impn1win4th(:,7:8),sps,ftrans,0); % 8 cols, format: dx,dy,lon,lat,dep,ttrvl,off12,off13
 
+%% for agu 2023
+%plot the cumulative density map, binning by pixel, ie., each unique detection         
+xran = [-6 4];
+yran = [-4 4];
+[f] = plt_cumulative_density(hfall,imploc,xran,yran,'pixel',6,6);          
+% supertit(f.ax, 'Density binned by pixel');
+hold(f.ax(1),'on');
+plot(f.ax(1),xcut,ycut,'k-','LineWidth',1.5);
+scatter(f.ax(1),0.2,0.2,10,'k','LineWidth',1);
+text(f.ax(1),0.95,0.95,'Tremor','Units','normalized',...
+'HorizontalAlignment','right','FontSize',10,'FontWeight','bold');
+hold(f.ax(2),'on');
+plot(f.ax(2),xcut,ycut,'k-','LineWidth',1.5);
+text(f.ax(2),0.95,0.95,'LFE','Units','normalized',...
+'HorizontalAlignment','right','FontSize',10,'FontWeight','bold');
+% caxis(f2.ax,[0 1.4]);
+orient(f.fig,'landscape');
+print(f.fig,'-dpdf','-fillpage',strcat('/home/chaosong/Pictures/agu2023s2f6.pdf'));
+
+
 %% Comparison of cumulative density in relative locations
 %plot the cumulative density map, binning by pixel, ie., each unique detection         
 xran = [-6 6];

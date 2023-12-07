@@ -1,4 +1,5 @@
-function [f1,f2,frac,dfrac]=frac_uniqevt_incluster_syn(f1,f2,impplt,mmax,nsat,nrounds,label,sps)
+function [f1,f2,frac,dfrac] = ...
+  frac_uniqevt_incluster_syn(f1,f2,impplt,mmax,nsat,nrounds,label,sps,ref)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % [fracsrc2all,dfracsrc2all,f]=frac_uniqevt_incluster_syn(nbst,imp,nsrc,mmax,sps)
 %
@@ -16,6 +17,7 @@ function [f1,f2,frac,dfrac]=frac_uniqevt_incluster_syn(f1,f2,impplt,mmax,nsat,nr
 % First created date:   2023/11/03
 % Last modified date:   2023/11/03
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+defval('ref',[]);
 
 nnsat = length(nsat);
 color = jet(nrounds);
@@ -114,6 +116,12 @@ for insat = 1: nnsat
     hold(ax,'on'); ax.Box='on'; grid(ax,'on');
     p2(iround) = plot(ax,1:mmax,dfrac(:,iround),'o-','linew',1,'markersize',4,'color',color(iround,:));
     ylim(ax,[0 100]);
+  end
+  if ~isempty(ref)
+    fracsrc2alld = ref{1};
+    dfracsrc2alld = ref{1};
+    p1(nrounds+1)=plot(f1.ax(insat),0:1:length(fracsrc2alld)-1,fracsrc2alld,'ko-','linew',1,'markersize',4);
+    p2(nrounds+1)=plot(f2.ax(insat),1:1:length(dfracsrc2alld),dfracsrc2alld,'ko-','linew',1,'markersize',4);
   end
   text(f1.ax(insat),0.98,0.3,sprintf('Satur=%.1f',nsat(insat)),'Units','normalized',...
     'HorizontalAlignment','right');

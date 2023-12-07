@@ -21,17 +21,16 @@ for i = 1: size(srcamprall,2)
 
   %hist of direct amp ratios
   % ax = f.ax(i);
-  ax = axall(i);
-  hold(ax,'on');  
-  grid(ax,'on');
+  ax = axall(i); hold(ax,'on'); grid(ax,'on'); ax.Box = 'on';
   mampr(i,1) = median(log10(srcamprall(:,i)));
   madampr(i,1) =  mad(log10(srcamprall(:,i)),1);
   histogram(ax,log10(srcamprall(:,i)),'FaceColor',color,'Normalization','count','BinWidth',0.05);
-  plot(ax,[median(log10(srcamprall(:,i))) median(log10(srcamprall(:,i)))],ax.YLim,'--',...
-    'color',color,'linew',1);
-  errorbar(ax,median(log10(srcamprall(:,i))), 0.9*ax.YLim(2), mad(log10(srcamprall(:,i)),1),...
+  yran = ax.YLim;
+  plot(ax,[median(log10(srcamprall(:,i))) median(log10(srcamprall(:,i)))],yran,'--',...
+    'color',color,'linew',1.5);
+  errorbar(ax,median(log10(srcamprall(:,i))), abs_loc_on_axis(ax.YLim,0.95), mad(log10(srcamprall(:,i)),1),...
     mad(log10(srcamprall(:,i)),1),'horizontal','o',...
-    'color',color,'linewidth',0.8,'CapSize',5,'MarkerSize',0.5);
+    'color',color,'linewidth',1.5,'CapSize',5,'MarkerSize',0.5);
 %   text(ax,0.95,0.9,sprintf('med=%.2f; MAD=%.2f',median(srcamprall(:,i)),mad(srcamprall(:,i), 1)),...
 %     'Units','normalized','HorizontalAlignment','right');  %note here is linear scale
   if i==1
@@ -46,6 +45,10 @@ for i = 1: size(srcamprall,2)
     xlabel(ax,'log_{10}{src amp ratio PGC/KLNB}');
   end
   xlim(ax,[-1 1]);
+  ylim(ax,yran);
+  ax.YAxis.Exponent = 2;
+  longticks(ax,2);
+  hold(ax,'off');
 
 %   keyboard
   if strcmp(flag,'both')
@@ -71,6 +74,9 @@ for i = 1: size(srcamprall,2)
       ylabel(ax,'log_{10}{src amp at KLNB}');
     end
     axis(ax,'equal');
+    longticks(ax,2);
+    hold(ax,'off');
+
   end
 
 end

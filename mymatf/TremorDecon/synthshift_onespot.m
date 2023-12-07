@@ -35,6 +35,8 @@ flagrecalc = 0;
 
 if ~flagrecalc
   load('rst_synth_onespot.mat');
+%   load('rst_synth_onespotnitm8500.mat');
+%   load('rst_synth_onespotmedwtcoef.mat');  
 else
   %% for easy testing
   defval('normflag',0); %whether to normalize templates
@@ -257,6 +259,7 @@ else
   
   %%%plot the unfiltered and filtered templates
 %   plt_templates(green,greenf,stas,[],[],lowlet,hiwlet,sps);
+  plt_templates(green(:,1:3),greenf(:,1:3),stas(1:3,:),[],[],lowlet,hiwlet,sps);
   
   %just the filtered templates
   % plt_templates_bp(greenf,stas,lowlet,hiwlet,sps);
@@ -320,12 +323,12 @@ else
   ftrans = 'interpchao';
   
   %%%whether to plot to check the synthetics
-  pltsynflag = 0;
-%   pltsynflag = 1;
+%   pltsynflag = 0;
+  pltsynflag = 1;
   
   %%%whether to plot to check the new synthetics with added noise
-  pltnewsynflag = 0;
-%   pltnewsynflag = 1;
+%   pltnewsynflag = 0;
+  pltnewsynflag = 1;
   
   %%%specify if forcing a min speration of arrival time for 2 events from the same spot
   % forcesep = 1;
@@ -572,45 +575,55 @@ else
       xnoi = xnoi .* median(env) ./ median(envn);
       median(env) - median(envelope(detrend(xnoi)))
       
+      %%
       if pltnewsynflag
-        figure
-        subplot(311)
-        plot((1:size(optseg,1))/sps,optseg(:,1),'r','linew',1); hold on
-        plot((1:size(optseg,1))/sps,optseg(:,2),'b','linew',1);
-        plot((1:size(optseg,1))/sps,optseg(:,3),'k','linew',1);
-        text(0.95,0.9,sprintf('syn from sat: %.1f',nsat(insat)),'Units','normalized',...
+        [f] = initfig(8,5,3,1);
+        optaxpos(f,3,1,[],[],[],0.06);
+        ax = f.ax(1); hold(ax,'on'); ax.Box = 'on';
+        plot(ax,(1:size(optseg,1))/sps,optseg(:,1),'r','linew',1); hold on
+        plot(ax,(1:size(optseg,1))/sps,optseg(:,2),'b','linew',1);
+        plot(ax,(1:size(optseg,1))/sps,optseg(:,3),'k','linew',1);
+        text(ax,0.98,0.9,sprintf('syn from sat: %.1f',nsat(insat)),'Units','normalized',...
           'HorizontalAlignment','right');
         %       xlabel('Samples at 160 sps');
-        xlabel('Time (s)');
-        ylabel('Amplitude');
-        xlim([0 size(optseg,1)]/sps);
-        ax = gca; yran = ax.YLim;      
+%         xlabel('Time (s)');
+%         ylabel('Amplitude');
+%         xlim([0 size(optseg,1)]/sps);
+        xran = [2 27];
+        xlim(ax,xran);
+        axranexp(ax,6,10);
+        yran = ax.YLim; 
+        longticks(ax,4);
   %       ylim([-1.2 1.2]);
 
-        subplot(312)
-        plot((1:size(optseg,1))/sps,xnoi(:,1),'r','linew',1); hold on
-        plot((1:size(optseg,1))/sps,xnoi(:,2),'b','linew',1);
-        plot((1:size(optseg,1))/sps,xnoi(:,3),'k','linew',1);
-        text(0.95,0.9,'100% assembled noise','Units','normalized','HorizontalAlignment','right');
+        ax = f.ax(2); hold(ax,'on'); ax.Box = 'on';
+        plot(ax,(1:size(optseg,1))/sps,xnoi(:,1),'r','linew',1); hold on
+        plot(ax,(1:size(optseg,1))/sps,xnoi(:,2),'b','linew',1);
+        plot(ax,(1:size(optseg,1))/sps,xnoi(:,3),'k','linew',1);
+        text(ax,0.98,0.9,'100% assembled noise','Units','normalized','HorizontalAlignment','right');
         %       xlabel('Samples at 160 sps');
-        xlabel('Time (s)');
-        ylabel('Amplitude');
-        xlim([0 size(optseg,1)]/sps);
-        ylim(yran);
-
-        subplot(313)
-        plot((1:size(optseg,1))/sps,optseg(:,1)+xnoi(:,1),'r','linew',1); hold on
-        plot((1:size(optseg,1))/sps,optseg(:,2)+xnoi(:,2),'b','linew',1);
-        plot((1:size(optseg,1))/sps,optseg(:,3)+xnoi(:,3),'k','linew',1);
-        text(0.95,0.9,'syn + 100% noise','Units','normalized','HorizontalAlignment','right');
+%         xlabel('Time (s)');
+%         ylabel('Amplitude');
+%         xlim([0 size(optseg,1)]/sps);
+        xlim(ax,xran);
+        ylim(ax,yran);
+        longticks(ax,4);
+        
+        ax = f.ax(3); hold(ax,'on'); ax.Box = 'on';
+        plot(ax,(1:size(optseg,1))/sps,optseg(:,1)+xnoi(:,1),'r','linew',1); hold on
+        plot(ax,(1:size(optseg,1))/sps,optseg(:,2)+xnoi(:,2),'b','linew',1);
+        plot(ax,(1:size(optseg,1))/sps,optseg(:,3)+xnoi(:,3),'k','linew',1);
+        text(ax,0.98,0.9,'syn + 100% noise','Units','normalized','HorizontalAlignment','right');
         %       xlabel('Samples at 160 sps');
-        xlabel('Time (s)');
-        ylabel('Amplitude');
-        xlim([0 30]);
-        ylim(yran);
+        xlabel(ax,'Time (s)','FontSize',10);
+        ylabel(ax,'Amplitude','FontSize',10);
+%         xlim([0 30]);
+        xlim(ax,xran);
+        ylim(ax,yran);
+        longticks(ax,4);
       end
 %       keyboard
-      
+      %%
       %some percent of assembled noise
       noiseg = xnoi .*perc;
     
@@ -842,6 +855,7 @@ else
         mlag(ista-3) = off1i(ista);
       end
 %       keyboard
+
       %if you want to avoid the case when the alignment is way off the centroid 
       %by chance while the saturation level is low, you can force it to be the 
       %an average location, this reference value is from the abs location of the
@@ -1063,15 +1077,19 @@ else
         width = 2.5;  % width for Gaussian filter
         dres_min = 0.5;  % tolerance, percentage change in residual per iteration
         mfit_min = 5e-1;  % tolerance, norm of the residual/misfit
-        tdura = 0.4;  % estimate from the broadband template from fam 002
         tlen = ceil(lsig/sps);
-        nit_max = round(1.5*1/tdura*tlen*nsat(insat));  % max numer of iterations
-        nimp_max = round(1/tdura*tlen*nsat(insat));%a single peak is ~20 samples wide; maybe a little less (at 100 sps). ~0.4s, 1/0.4=2.5
+%         tdura = 0.4;  % estimate from the broadband template from fam 002
+%         nit_max = round(1.5*1/tdura*tlen*nsat(insat));  % max numer of iterations
+%         nimp_max = round(1/tdura*tlen*nsat(insat));%a single peak is ~20 samples wide; maybe a little less (at 100 sps). ~0.4s, 1/0.4=2.5
+        tdura = 0.25; 
+%         nit_max = round(1.5*1/tdura*(tlen));  % max numer of iterations
+        nit_max = 8500;
+        nimp_max = round(1/tdura*(tlen));%a single peak is ~20 samples wide; maybe a little less (at 100 sps). ~0.4s, 1/0.4=2.5
         fpltit = 0;  % plot flag for each iteration
         fpltend = 0;  % plot flag for the final iteration
         fpltchk = 0; % plot flag for intermediate computations
         
-        [sigdecon(:,ista),pred(:,ista),res,dresit,mfitit,ampit{ista},nit,fighdl] = ...
+        [sigdecon(:,ista),pred(:,ista),res,dresit,mfitit,ampit{ista},nit(ista),fighdl] = ...
           iterdecon(sig,wlet,rcc,noi,[],dt,twlet,width,dres_min,mfit_min,nit_max,nimp_max,...
           fpltit,fpltend,fpltchk);
         
@@ -1082,7 +1100,7 @@ else
           hold(ax,'off');
         end
         
-        nit
+        nitsyn{insat,iperc} = nit;
         
       end
       
@@ -1602,9 +1620,16 @@ else
     
   end %loop end for percent of noise
   
-  save('rst_synth_onespot.mat');
+%   save('rst_synth_onespot.mat');
+  save('rst_synth_onespotnitm8500.mat');
+%   save('rst_synth_onespotmedwtcoef.mat');
   
 end %if need to recalculate
+
+%%%load data
+savefile = 'deconv_stats4th_allbstsig.mat';
+load(strcat(rstpath, '/MAPS/',savefile));
+
 keyboard
 
 %%
@@ -1745,6 +1770,109 @@ for iperc = 1: ntrial
   end %loop end for saturation level
 end %loop end for noise level
 
+%% num of detections VS saturation rate & region size
+for iperc = 1: ntrial
+  for insat = 1: nnsat    
+    nsrcm(insat,iperc) = nsrc{insat,iperc};
+    nsrc4thm(insat,iperc) = nsrc4th{insat,iperc};
+    nit = nitsyn{insat,iperc};
+    nitmin(insat,iperc) = min(nit);
+  end
+end
+
+f = initfig(10.5,4,1,3); %initialize fig
+optaxpos(f,1,3,[],[],0.06);
+color = jet(ntrial);
+ax=f.ax(1); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
+for iperc = 1: ntrial
+  plot(ax,log10(nsat),nitmin(:,iperc),'-o','Color',color(iperc,:),...
+    'markersize',4,'MarkerFaceColor',color(iperc,:),...
+    'MarkerEdgeColor',color(iperc,:),'LineWidth',1);
+end
+xlabel(ax,'log_{10}(Saturation)');
+ylabel(ax,'Number of iterations');
+% yran = [0 1];
+% ylim(ax,yran);
+longticks(ax,2);
+hold(ax,'off');
+
+ax=f.ax(2); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
+for iperc = 1: ntrial
+  p(iperc) = plot(ax,log10(nsat),nsrcm(:,iperc),'-o','Color',color(iperc,:),...
+    'markersize',4,'MarkerFaceColor',color(iperc,:),...
+    'MarkerEdgeColor',color(iperc,:),'LineWidth',1);
+  label{iperc} = sprintf('noise=%.1f',perctrial(iperc));
+end
+legend(ax,p,label,'NumColumns',2,'Location','south');
+% title(ax,'Secondary sources removed');
+xlabel(ax,'log_{10}(Saturation)');
+ylabel(ax,'Number of detections');
+yran = [6e2 2.2e3];
+ylim(ax,yran);
+% yran = ax.YLim;
+longticks(ax,2);
+ax.YAxis.Exponent = 3;
+hold(ax,'off');
+
+ax=f.ax(3); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
+for iperc = 1: ntrial
+  plot(ax,log10(nsat),nsrc4thm(:,iperc),'-o','Color',color(iperc,:),...
+    'markersize',4,'MarkerFaceColor',color(iperc,:),...
+    'MarkerEdgeColor',color(iperc,:),'LineWidth',1);
+end
+% title(ax,'Secondary sources removed');
+xlabel(ax,'log_{10}(Saturation)');
+ylabel(ax,'Number of detections');
+% yran = [0 1];
+ylim(ax,yran);
+longticks(ax,2);
+ax.YAxis.Exponent = 3;
+hold(ax,'off');
+
+
+%% summarize consecutive dist along min-scatter VS saturation rate & region size
+f = initfig(8,4.5,1,2); %initialize fig
+color = jet(ntrial);
+ax=f.ax(1); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
+for iperc = 1: ntrial
+%   p(iperc) = plot(ax,log10(nsat),mprojx22all(:,iperc),'-o','markersize',4,'color',color(iperc,:));
+  p(iperc) = plot(ax,log10(nsat),mprojx22all(:,iperc),'-','Color',color(iperc,:),'linew',1);
+  scatter(ax,log10(nsat),mprojx22all(:,iperc),nsrcm(:,iperc)/50,color(iperc,:),'filled');
+  label{iperc} = sprintf('noise=%.1f',perctrial(iperc));
+end
+p(ntrial+1) = plot(ax,log10(nsat),0.50*ones(nnsat,1),'k--');  %this is from data
+label{ntrial+1} = 'Data';
+legend(ax,p,label,'NumColumns',2,'Location','south');
+% title(ax,'Secondary sources removed');
+xlabel(ax,'log_{10}(Saturation)');
+ylabel(ax,'Distance (km)');
+yran = [0 1];
+ylim(ax,yran);
+longticks(ax,2);
+hold(ax,'off');
+
+ax=f.ax(2); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
+for iperc = 1: ntrial
+%   plot(ax,log10(nsat),mprojx32all(:,iperc),'-o','markersize',4,'color',color(iperc,:));
+  plot(ax,log10(nsat),mprojx32all(:,iperc),'-','Color',color(iperc,:),'linew',1);
+  scatter(ax,log10(nsat),mprojx32all(:,iperc),nsrc4thm(:,iperc)/50,color(iperc,:),'filled');
+end
+plot(ax,log10(nsat),0.45*ones(nnsat,1),'k--');  %this is from data
+ylim(ax,yran);
+% title(ax,'Checkd at 4th stas');
+longticks(ax,2);
+hold(ax,'off');
+
+% ax=f.ax(3); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
+% for iperc = 1: ntrial
+%   plot(ax,log10(nsat),mprojx12all(:,iperc),'-o','markersize',4,'color',color(iperc,:));
+% end
+% title(ax,'Grouped Total');
+% ylim(ax,yran);
+
+stit = supertit(f.ax,'Med. dist. along min-error direc from each to all others w/i 2 s');
+movev(stit,0.4);
+
 %% Summary of amplitude ratio
 % %%%%%%%%% you can choose to plot the actual histogram for each sat and noise
 % %%%loop for noise level
@@ -1769,78 +1897,44 @@ end %loop end for noise level
 
 %%%%%%%%% or only plot the median & mad for each sat and noise
 f = initfig(12,8,2,3); %initialize fig
+orient(f.fig,'landscape');
+optaxpos(f,2,3,[],[],0.05,0.08);
 for iperc = 1: ntrial 
   label{iperc} = sprintf('noise=%.1f',perctrial(iperc));
 end
-label{ntrial+1} = 'data';
-f=plt_deconpk_rat_stat(f,nsat,label,msrcampr,madsrcampr);
-mamprdata = [5.5701e-02; 6.6249e-02; 7.6967e-03]; %from real data
-madamprdata = [1.8293e-01; 1.8350e-01; 1.7420e-01];
-for i = 1: 3
-  ax=f.ax(i); hold(ax,'on');
-  plot(ax,log10(nsat),mamprdata(i)*ones(nnsat,1),'k--');
+label{ntrial+1} = 'Data';
+srcampralld = allbstsig.srcamprall;  %using reference from real data
+for i = 1: size(srcampralld,2)
+  mamprd(i,1) = median(log10(srcampralld(:,i)));
+  madamprd(i,1) =  mad(log10(srcampralld(:,i)),1);
 end
-for i = 4: 3+3
-  ax=f.ax(i); hold(ax,'on');
-  plot(ax,log10(nsat),madamprdata(i-3)*ones(nnsat,1),'k--');  
-end
-stit = supertit(f.ax,'Secondary sources removed');
-movev(stit,0.3);
-% ylim(f.ax(4:end),[0 0.3]);
+ref{1} = mamprd;
+ref{2} = madamprd;
+f=plt_deconpk_rat_stat(f,nsat,label,msrcampr,madsrcampr,ref);
+% stit = supertit(f.ax,'Secondary sources removed');
+% movev(stit,0.3);
+ylim(f.ax(4:end),[0 0.3]);
 xlim(f.ax(:),[-0.5 2]);
+print(f.fig,'-dpdf','-bestfit','/home/chaosong/Pictures/agu2023s2f7.pdf');
 
 f = initfig(15,8,2,4); %initialize fig
-f=plt_deconpk_rat_stat(f,nsat,label,msrcampr4th,madsrcampr4th);
-mamprdata4th = [6.8295e-02; 7.3471e-02; 5.1263e-03; 4.2474e-02]; %from real data
-madamprdata4th = [1.8660e-01; 1.8949e-01; 1.7845e-01; 1.7115e-01];
-for i = 1: nsta
-  ax=f.ax(i); hold(ax,'on');
-  plot(ax,log10(nsat),mamprdata4th(i)*ones(nnsat,1),'k--');
+orient(f.fig,'landscape');
+optaxpos(f,2,3,[],[],0.05,0.08);
+srcampralld = allbstsig.srcampr4thall;  %using reference from real data
+for i = 1: size(srcampralld,2)
+  mamprd(i,1) = median(log10(srcampralld(:,i)));
+  madamprd(i,1) =  mad(log10(srcampralld(:,i)),1);
 end
-for i = nsta+1: nsta+nsta
-  ax=f.ax(i); hold(ax,'on');
-  plot(ax,log10(nsat),madamprdata4th(i-nsta)*ones(nnsat,1),'k--');  
-end
+ref{1} = mamprd;
+ref{2} = madamprd;
+f=plt_deconpk_rat_stat(f,nsat,label,msrcampr4th,madsrcampr4th,ref);
 stit = supertit(f.ax,'Checkd at 4th stas');
 movev(stit,0.3);
-ylim(f.ax(5:end),[0 0.3]);
+% ylim(f.ax(5:end),[0 0.3]);
+xlim(f.ax(:),[-0.5 2]);
 %%%%%%%%% or only plot the median & mad for each sat and noise
 
 
-%% summarize consecutive dist along min-scatter VS saturation rate & region size
-f = initfig(8,5,1,2); %initialize fig
-color = jet(ntrial);
-ax=f.ax(1); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
-for iperc = 1: ntrial
-  p(iperc) = plot(ax,log10(nsat),mprojx22all(:,iperc),'-o','markersize',4,'color',color(iperc,:));
-  label{iperc} = sprintf('noise=%.1f',perctrial(iperc));
-end
-p(ntrial+1) = plot(ax,log10(nsat),0.50*ones(nnsat,1),'k--');  %this is from data
-label{ntrial+1} = 'data';
-legend(ax,p,label);
-title(ax,'Secondary sources removed');
-xlabel(ax,'log_{10}(Saturation)');
-ylabel(ax,'Distance (km)');
-yran = [0 1];
-ylim(ax,yran);
-
-ax=f.ax(2); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
-for iperc = 1: ntrial
-  plot(ax,log10(nsat),mprojx32all(:,iperc),'-o','markersize',4,'color',color(iperc,:));
-end
-plot(ax,log10(nsat),0.45*ones(nnsat,1),'k--');  %this is from data
-ylim(ax,yran);
-title(ax,'Checkd at 4th stas');
-
-% ax=f.ax(3); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
-% for iperc = 1: ntrial
-%   plot(ax,log10(nsat),mprojx12all(:,iperc),'-o','markersize',4,'color',color(iperc,:));
-% end
-% title(ax,'Grouped Total');
-% ylim(ax,yran);
-
-stit = supertit(f.ax,'Med. dist. along min-error direc from each to all others w/i 2 s');
-movev(stit,0.4);
 
 
 

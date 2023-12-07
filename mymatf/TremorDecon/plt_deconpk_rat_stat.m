@@ -1,4 +1,4 @@
-function f=plt_deconpk_rat_stat(f,nsat,label,msrcampr,madsrcampr)
+function f=plt_deconpk_rat_stat(f,nsat,label,msrcampr,madsrcampr,ref,sybsize)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % axall=plt_deconpk_rat_stat(axall,stat)
 %
@@ -13,6 +13,9 @@ function f=plt_deconpk_rat_stat(f,nsat,label,msrcampr,madsrcampr)
 % First created date:   2023/10/18
 % Last modified date:   2023/10/18 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+defval('ref',[]);
+defval('sybsize',[]);
+
 nnsat = size(msrcampr,1);
 ntrial = size(msrcampr,2);
 color = jet(ntrial);
@@ -24,21 +27,31 @@ for itrial = 1: ntrial
   for i = 1: nsta
     ax=f.ax(i); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
     if i == 1
-      p(itrial) = plot(ax,log10(nsat),mip(:,i),'-','marker',symbol(i,:),'markersize',4,...
-        'color',color(itrial,:));
+      if isempty(sybsize)
+        p(itrial) = plot(ax,log10(nsat),mip(:,i),'-','marker',symbol(i,:),'markersize',4,...
+          'color',color(itrial,:));
+      else
+        p(itrial) = plot(ax,log10(nsat),mip(:,i),'-','color',color(itrial,:),'linew',1);
+        scatter(ax,log10(nsat),mip(:,i),sybsize(:,i),color(itrial,:),...
+          symbol(i,:),'filled');
+      end
 %       label{itrial} = sprintf('noise=%.1f',trial(itrial));
-      ylabel(ax,'Median of amp ratio');
+      ylabel(ax,'Median of log_{10}(amp ratio)');
       xlabel(ax,'log_{10}(Saturation)');
-      title(ax,'PGC/SSIB');
     else
-      plot(ax,log10(nsat),mip(:,i),'-','marker',symbol(i,:),'markersize',4,...
-        'color',color(itrial,:));
-      if i==2
-        title(ax,'PGC/SILB');
-      elseif i==3
-        title(ax,'SSIB/SILB');
-      elseif i==4
-        title(ax,'PGC/KLNB');
+      if isempty(sybsize)
+        plot(ax,log10(nsat),mip(:,i),'-','marker',symbol(i,:),'markersize',4,...
+          'color',color(itrial,:));
+      else
+        plot(ax,log10(nsat),mip(:,i),'-','color',color(itrial,:),'linew',1);
+        scatter(ax,log10(nsat),mip(:,i),sybsize(:,i),color(itrial,:),...
+          symbol(i,:),'filled');
+      end  
+    end
+    if itrial == ntrial
+      if ~isempty(ref)
+        mamprd = ref{1};
+        p(ntrial+1) = plot(ax,log10(nsat),mamprd(i)*ones(nnsat,1),'k--');
       end
     end
     yran = [-0.1 0.1];
@@ -48,23 +61,46 @@ for itrial = 1: ntrial
   
   for i = nsta+1: nsta+nsta
     ax=f.ax(i); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
-    plot(ax,log10(nsat),madip(:,i-nsta),'-','marker',symbol(i-nsta,:),'markersize',4,...
-      'color',color(itrial,:));
-    if i == nsta+1
-      ylabel(ax,'MAD of amp ratio');
-      xlabel(ax,'log_{10}(Saturation)');
-      title(ax,'PGC/SSIB');
-    elseif i==nsta+2
-      title(ax,'PGC/SILB');
-    elseif i==nsta+3
-      title(ax,'SSIB/SILB');
-    elseif i==nsta+4
-      title(ax,'PGC/KLNB');
+    if isempty(sybsize)
+      plot(ax,log10(nsat),madip(:,i-nsta),'-','marker',symbol(i-nsta,:),'markersize',4,...
+        'color',color(itrial,:));
+    else
+      plot(ax,log10(nsat),madip(:,i-nsta),'-','color',color(itrial,:),'linew',1);
+      scatter(ax,log10(nsat),madip(:,i-nsta),sybsize(:,i-nsta),color(itrial,:),...
+        symbol(i-nsta,:),'filled');
     end
-    yran = [0 0.2];
+    if i == nsta+1
+      ylabel(ax,'MAD of log_{10}(amp ratio)');
+      xlabel(ax,'log_{10}(Saturation)');
+    end
+    if itrial == ntrial
+      if ~isempty(ref)
+        madamprd = ref{2};
+        plot(ax,log10(nsat),madamprd(i-nsta)*ones(nnsat,1),'k--');
+      end
+    end
+    yran = [0 0.3];
     ylim(ax,yran);
     longticks(ax,2);
   end
 end
-legend(f.ax(1),p,label);
-
+legend(f.ax(1),p,label,'NumColumns',2,'Location','north');
+legend(f.ax(4),p,label,'NumColumns',2,'Location','north');
+  text(f.ax(1),0.98,0.1,'PGC/SSIB','HorizontalAlignment','right',...
+    'Units','normalized');
+  text(f.ax(1+nsta),0.98,0.05,'PGC/SSIB','HorizontalAlignment','right',...
+    'Units','normalized');
+  text(f.ax(2),0.98,0.05,'PGC/SILB','HorizontalAlignment','right',...
+    'Units','normalized');
+  text(f.ax(2+nsta),0.98,0.05,'PGC/SILB','HorizontalAlignment','right',...
+    'Units','normalized');
+  text(f.ax(3),0.98,0.05,'SSIB/SILB','HorizontalAlignment','right',...
+    'Units','normalized');
+  text(f.ax(3+nsta),0.98,0.05,'SSIB/SILB','HorizontalAlignment','right',...
+    'Units','normalized');
+if nsta == 4
+  text(f.ax(4),0.98,0.05,'PGC/KLNB','HorizontalAlignment','right',...
+    'Units','normalized');
+  text(f.ax(4+nsta),0.98,0.05,'PGC/KLNB','HorizontalAlignment','right',...
+    'Units','normalized');  
+end

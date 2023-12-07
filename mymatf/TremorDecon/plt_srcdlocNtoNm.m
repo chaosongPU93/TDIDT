@@ -14,19 +14,19 @@ function f=plt_srcdlocNtoNm(dlocxy,binw,disttype)
 defval('binw',1);
 defval('disttype','spl');
 
-widin = 8;  % maximum width allowed is 8.5 inches
+widin = 6;  % maximum width allowed is 8.5 inches
 if strcmp(disttype,'spl')
   nrow = 3;
   htin = 9;   % maximum height allowed is 11 inches
 elseif strcmp(disttype,'km')
   nrow = 2;
-  htin = 6;   % maximum height allowed is 11 inches
+  htin = 6.5;   % maximum height allowed is 11 inches
 end
 ncol = 2;
 f = initfig(widin,htin,nrow,ncol); %initialize fig
 
-xran = [0.1 0.96]; yran = [0.06 0.96];
-xsep = 0.1; ysep = 0.08;
+xran = [0.1 0.96]; yran = [0.1 0.96];
+xsep = 0.09; ysep = 0.1;
 optaxpos(f,nrow,ncol,xran,yran,xsep,ysep);
 
 m = size(dlocxy,1);
@@ -37,7 +37,7 @@ if strcmp(disttype,'spl')
 elseif strcmp(disttype,'km')
   X = -5:binw:5;
 end
-supertit(f.ax(1:ncol),'Between different source pairs');
+% supertit(f.ax(1:ncol),'Between different source pairs');
 
 ax=f.ax(1);
 hold(ax,'on'); ax.Box = 'on'; grid(ax,'on');
@@ -62,6 +62,8 @@ elseif strcmp(disttype,'km')
 end
 axsym(ax,1);
 % xlim(ax,[-50 50]);
+ax.YAxis.Exponent = 3;
+longticks(ax,2);
 hold(ax,'off');
 
 ax=f.ax(2);
@@ -78,7 +80,7 @@ for i = m:-1:1
   end
   p(i)=stairs(ax,edges,[Nn Nn(end)],'color',color(i,:),'LineWidth',1);
   plot(ax,[median(abs(aa(:,1))) median(abs(aa(:,1)))],ax.YLim,'--','Color',color(i,:));
-  text(ax,0.98,0.5-i*0.05,sprintf('med=%.2f',median(abs(aa(:,1)))),'Units','normalized',...
+  text(ax,0.98,0.5-i*0.05,sprintf('med=%.2f km',median(abs(aa(:,1)))),'Units','normalized',...
     'HorizontalAlignment','right'); %,'Color',color(i,:)
   label{i} = sprintf('N and N-%d',i);
 end
@@ -91,6 +93,8 @@ elseif strcmp(disttype,'km')
 end
 legend(ax,p,label);
 ax.XLim(1) = -binw;
+ax.YAxis.Exponent = 4;
+longticks(ax,2);
 hold(ax,'off');
 
 ax=f.ax(3);
@@ -116,6 +120,8 @@ elseif strcmp(disttype,'km')
 end
 axsym(ax,1);
 % xlim(ax,[-50 50]);
+ax.YAxis.Exponent = 3;
+longticks(ax,2);
 hold(ax,'off');
 
 ax=f.ax(4);
@@ -132,7 +138,7 @@ for i = m:-1:1
   end
   stairs(ax,edges,[Nn Nn(end)],'color',color(i,:),'LineWidth',1);
   plot(ax,[median(abs(aa(:,2))) median(abs(aa(:,2)))],ax.YLim,'--','Color',color(i,:));
-  text(ax,0.98,0.5-i*0.05,sprintf('med=%.2f',median(abs(aa(:,2)))),'Units','normalized',...
+  text(ax,0.98,0.5-i*0.05,sprintf('med=%.2f km',median(abs(aa(:,2)))),'Units','normalized',...
     'HorizontalAlignment','right'); %,'Color',color(i,:)
 end
 if strcmp(disttype,'spl')
@@ -143,6 +149,8 @@ elseif strcmp(disttype,'km')
   ylabel(ax,'Count per km');
 end
 ax.XLim(1) = -binw;
+ax.YAxis.Exponent = 3;
+longticks(ax,2);
 hold(ax,'off');
 
 if strcmp(disttype,'spl')
@@ -163,6 +171,7 @@ if strcmp(disttype,'spl')
   xlabel(ax,'Diff off23 (samples)');
   ylabel(ax,'Count per sample');
   axsym(ax,1);
+  longticks(ax,2);
   hold(ax,'off');
 
   ax=f.ax(6);
@@ -185,6 +194,7 @@ if strcmp(disttype,'spl')
   xlabel(ax,'Abs diff off23 (samples)');
   ylabel(ax,'Count per sample');
   ax.XLim(1) = -binw;
+  longticks(ax,2);
   hold(ax,'off');
 end
 
