@@ -33,10 +33,19 @@ close all
 flagrecalc = 0;
 % flagrecalc = 1;
 
+tdura = 0.25;  %must be consistent with what synthetics actually used
+% tdura = 0.4;
+
 if ~flagrecalc
-  load('rst_decon_synth.mat');
+  if tdura == 0.25
+    %   load(strcat('rst_decon_synth','_td',num2str(tdura),'.mat'));
+    %   load(strcat('rst_decon_synthnitm8500','_td',num2str(tdura),'.mat'));
+    load(strcat('rst_decon_synthmedwtcoef','_td',num2str(tdura),'.mat'));
+  elseif tdura == 0.4
+%   load('rst_decon_synth.mat');
 %   load('rst_decon_synthnitm8500.mat');
-%   load('rst_decon_synthmedwtcoef.mat');
+    load('rst_decon_synthmedwtcoef.mat');
+  end
 
 else
   %% for easy testing
@@ -435,7 +444,7 @@ else
   imp4th = cell(nnsat,nreg);
   
   %%%loop for region size
-  for ireg = 3: nreg
+  for ireg = 1: nreg
     % ireg = 3;
     disp(semia(ireg));
     disp(semib(ireg));
@@ -471,11 +480,18 @@ else
       %   insat = 1;
       disp(nsat(insat));
       
-      %%%load synthetics of certain saturation level
-      STAopt = load(strcat(workpath,fname,num2str(nsat(insat))));
-      
-      %%%load sources
-      synsrc = load(strcat(workpath,fname,num2str(nsat(insat)),'_sources'));
+      if tdura == 0.25
+        %%%load synthetics of certain saturation level
+        STAopt = load(strcat(workpath,fname,num2str(nsat(insat)),'tdura',num2str(tdura)));
+        %%%load sources
+        synsrc = load(strcat(workpath,fname,num2str(nsat(insat)),'tdura',num2str(tdura),'_sources'));
+        %%%load starting indices of added sources at sta 1
+        synsrcstind = load(strcat(workpath,fname,num2str(nsat(insat)),'tdura',num2str(tdura),'_stind'));      
+      elseif tdura == 0.4
+        STAopt = load(strcat(workpath,fname,num2str(nsat(insat))));
+        synsrc = load(strcat(workpath,fname,num2str(nsat(insat)),'_sources'));   
+        synsrcstind = load(strcat(workpath,fname,num2str(nsat(insat)),'_stind')); 
+      end
       
       % %just to check if it is actually uniform in space
       % figure
@@ -491,10 +507,6 @@ else
         [loc, indinput] = off2space002(synsrc(:,2:3),sps,ftrans,0);
         synsrc = [synsrc(:,1) loc(:,1:4) ones(length(loc),1)];  %[indtarvl, off12, off13, loce, locn, amp]
       end
-      % keyboard
-      %%%load starting indices of added sources at sta 1
-      synsrcstind = load(strcat(workpath,fname,num2str(nsat(insat)),'_stind'));
-      
       % keyboard
       
       %%%some params related to the synthetics setting
@@ -809,16 +821,18 @@ else
       density1d = [impgtloc(:,1:2) density1d(:,3)];
       ampgtsum1d = sortrows([impgtloc(:,1:2) ampgtsum], 3);
       
-%       %% ONLY for AGU2023
-%       xran = [-6 4];
-%       yran = [-4 4];
-%       f=agu23diffregsize(xran,yran);
-%       %plot the cumulative density map, binning by pixel, ie., each unique detection 
-%       [aa, ~] = off2space002(impgt(:,7:8),sps,ftrans,0);
-%       [f] = plt_cumulative_density(aa,[],xran,yran,'pixel',6,6);          
-%       hold(f.ax(1),'on');
-%       plot(f.ax(1),xcut,ycut,'k-','LineWidth',1.5);
-%       scatter(f.ax(1),0.2,0.2,10,'k','LineWidth',1);
+      %% ONLY for AGU2023
+      xran = [-6 4];
+      yran = [-4 4];
+      f=agu23diffregsize(xran,yran);
+      %plot the cumulative density map, binning by pixel, ie., each unique detection 
+      [aa, ~] = off2space002(impgt(:,7:8),sps,ftrans,0);
+      [f] = plt_cumulative_density(aa,[],xran,yran,'pixel',6,6);          
+      hold(f.ax(1),'on');
+      plot(f.ax(1),xcut,ycut,'k-','LineWidth',1.5);
+      scatter(f.ax(1),0.2,0.2,10,'k','LineWidth',1);
+      text(f.ax(1),0.98,0.9,sprintf('Satur=%.1f',nsat(insat)),'Units','normalized',...
+          'HorizontalAlignment','right');
       
       %%
       %%%if you want to plot the ground truth
@@ -912,9 +926,9 @@ else
 %         tdura = 0.4;  % estimate from the broadband template from fam 002
 %         nit_max = round(1.5*1/tdura*tlen*nsat(insat));  % max numer of iterations
 %         nimp_max = round(1/tdura*tlen*nsat(insat));%a single peak is ~20 samples wide; maybe a little less (at 100 sps). ~0.4s, 1/0.4=2.5
-        tdura = 0.25; 
-%         nit_max = round(1.5*1/tdura*(tlen));  % max numer of iterations
-        nit_max = 8500;
+%         tdura = 0.25; 
+        nit_max = round(1.5*1/tdura*(tlen));  % max numer of iterations
+%         nit_max = 8500;
         nimp_max = round(1/tdura*(tlen));%a single peak is ~20 samples wide; maybe a little less (at 100 sps). ~0.4s, 1/0.4=2.5
         fpltit = 0;  % plot flag for each iteration
         fpltend = 0;  % plot flag for the final iteration
@@ -1462,9 +1476,15 @@ else
     
   end %loop end for src region size
   
-%   save('rst_decon_synth.mat');
-%   save('rst_decon_synthnitm8500.mat');
-  save('rst_decon_synthmedwtcoef.mat');
+  if tdura == 0.25
+    %   save(strcat('rst_decon_synth','_td',num2str(tdura),'.mat'));
+    %   save(strcat('rst_decon_synthnitm8500','_td',num2str(tdura),'.mat'));
+    save(strcat('rst_decon_synthmedwtcoef','_td',num2str(tdura),'.mat'));
+  elseif tdura == 0.4 
+    %   save('rst_decon_synth.mat');
+    %   save('rst_decon_synthnitm8500.mat');
+    save('rst_decon_synthmedwtcoef.mat');
+  end
   
 end %if need to recalculate
 
@@ -1703,12 +1723,13 @@ for ireg = 1: nreg
 %   p(ireg) = plot(ax,log10(nsat),mprojx22all(:,ireg),'-o','markersize',4,...
 %     'color',color(ireg,:),'filled');
   p(ireg) = plot(ax,log10(nsat),mprojx22all(:,ireg),'-','Color',color(ireg,:),'linew',1);
-  scatter(ax,log10(nsat),mprojx22all(:,ireg),nsrcm(:,ireg)/50,color(ireg,:),'filled');
+  scatter(ax,log10(nsat),mprojx22all(:,ireg),nsrcm(:,ireg)/50,color(ireg,:),...
+    'filled','MarkerEdgeColor','k');
   label{ireg} = sprintf('a=%.1f, b=%.1f',2*semia(ireg),2*semib(ireg));
 end
-p(nreg+1) = plot(ax,log10(nsat),0.50*ones(nnsat,1),'k--');  %this is from data
+p(nreg+1) = plot(ax,log10(nsat),0.50*ones(nnsat,1),'k--','linew',1);  %this is from data
 label{nreg+1} = 'Data';
-legend(ax,p,label,'NumColumns',2,'Location','south');
+% legend(ax,p,label,'NumColumns',2,'Location','south');
 % title(ax,'Secondary sources removed');
 xlabel(ax,'log_{10}(Saturation)');
 ylabel(ax,'Distance (km)');
@@ -1723,9 +1744,10 @@ for ireg = 1: nreg
 %   plot(ax,log10(nsat),mprojx32all(:,ireg),'-o','markersize',4,...
 %     'color',color(ireg,:),'filled');
   plot(ax,log10(nsat),mprojx32all(:,ireg),'-','Color',color(ireg,:),'linew',1);
-  scatter(ax,log10(nsat),mprojx32all(:,ireg),nsrc4thm(:,ireg)/50,color(ireg,:),'filled');
+  scatter(ax,log10(nsat),mprojx32all(:,ireg),nsrc4thm(:,ireg)/50,color(ireg,:),...
+    'filled','MarkerEdgeColor','k');
 end
-plot(ax,log10(nsat),0.45*ones(nnsat,1),'k--');  %this is from data
+plot(ax,log10(nsat),0.45*ones(nnsat,1),'k--','linew',1);  %this is from data
 % title(ax,'Checkd at 4th stas');
 ylim(ax,yran);
 longticks(ax,2);
@@ -1739,8 +1761,8 @@ hold(ax,'off');
 % title(ax,'Grouped Total');
 % ylim(ax,yran);
 
-stit = supertit(f.ax,'Med. dist. along min-error direc from each to all others w/i 2 s');
-movev(stit,0.4);
+% stit = supertit(f.ax,'Med. dist. along min-error direc from each to all others w/i 2 s');
+% movev(stit,0.4);
 
 % keyboard
 

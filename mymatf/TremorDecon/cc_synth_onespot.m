@@ -1,4 +1,4 @@
-% analyze_synth.m
+% cc_synth_onespot.m
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % --This script aims to do some analysis to the synthetic seismograms other
 % than deconvolution that is done particularly in 'decon_synth.m', to be
@@ -358,120 +358,224 @@ spreadf = range(greenf);
 %just the filtered templates
 % plt_templates_bp(greenf,stas,lowlet,hiwlet,sps);
 
-
-%% load synthetic seismograms
-%%%specify distribution for source location
-distr='UN';  % uniform distribution
+%% generate synthetic sources
+%%%Specify the amplitude-frequency (counts) distribution
+distr='UN'  % uniform distribution
 
 %%%specify distribution for source location
 % distrloc = 'custompdf'; %using a custom PDF function
 distrloc = 'uniform'; %uniformly random in a specified region,
 
+Twin=0.5*3600+3+2*ceil(greenlen/sps); %Early and late portions will be deleted. Twin includes only the early portion. In seconds.
+winlen=Twin*sps+1;
+%   winlen = size(xnoi,1)+greenlen-1;
+%   Twin = winlen/sps;
+skiplen=greenlen;
+%%%for the duration of templates, there are several options
+%%%1. (ppeak-npeak)*2 of the bb template: 44;54;38
+%%%2. direct eyeballing for between zerocrossings: ~65
+%%%3. binned peak-to-peak separation for decently saturated unfiltered synthetics: ~37
+%%%4. similar to 3, but synthetics are filtered first: ~37
+% tdura = 0.4;  % duration from Chao's broadband template, width is about 795-730=65 spls at 160 hz
+satn=1/tdura*Twin   % if just saturated, how many templates can be fit in? a single peak is ~20 samples wide; maybe a little less (at 100 sps).
+%Twin is window duration in seconds. Events can fall within Twin of
+%the start, but the synthetics will go to Twin*(sample rate)+Greenlen to
+%avoid checking for subscript overrrun.  When "synths" are written from "synth" in the
+%subroutine, Greenlen from the start and end will not be written.
 fracelsew=0; %0.25 %0.5; %0.6; %The ratio of elsewhere events to local events.  Zero for Discrete Ide.
+nsat=[0.4 1 2 4 10 20 40 100];  % times of saturation
+%   nsat=[0.05];  % times of saturation
+nnsat = length(nsat);
+writes=round(nsat*satn) %how many templates to throw in, under different degrees of saturation
+
+synth=zeros(winlen+greenlen,nsta);
+
+nouts=length(writes);
+seed=round(writes(4)/5e3); %for random number generator
+%   seed=2;
+
+%%%specify which time is uniform in time
+% timetype = 'tarvl';
+timetype = 'tori';
 
 %%%specify if considering the physical size of each source
 % physicalsize = 1;
 physicalsize = 0;
-
-%%%diameter of physical size
-if physicalsize
-  diam=0.15;% 0.5; %0.6; %
-else
-  diam=0;
-end
-
-%%%specify shape of the source region
-srcregion='ellipse';
-% srcregion='rectangle';
-% srcregion='circle';
-
-%variation of source region size
-if strcmp(srcregion,'ellipse')
-  semia = 1.75*(0.6:0.2:2.0);
-  semib = 1.25*(0.6:0.2:2.0);
-  nreg = length(semia);
-end
 
 %%%specify regime for transformation from time offset to map location
 % ftrans = 'interpArmb';
 % ftrans = 'interpArmbreloc';
 ftrans = 'interpchao';
 
+%%%whether to plot to check the synthetics
+%   pltsynflag = 0;
+pltsynflag = 1;
+
+%%%whether to plot to check the new synthetics with added noise
+%   pltnewsynflag = 0;
+pltnewsynflag = 1;
+
 %%%specify if forcing a min speration of arrival time for 2 events from the same spot
 % forcesep = 1;
 forcesep = 0;
+
+b=999. %>150 for uniform size distribution
+
+%which location transformation to use
+if strcmp(ftrans,'interpArmb')
+  xygrid=load('xygridArmb'); %Made from /ARMMAP/MAPS/2021/interpgrid.m; format PGSS, PGSI, dx, dy
+  size(xygrid) %this grid is 40 sps!
+elseif strcmp(ftrans,'interpArmbreloc') || strcmp(ftrans,'interpchao')
+  [loc, indinput] = off2space002([],sps,ftrans,0);
+  % loc has 8 cols, format: dx,dy,lon,lat,dep,ttrvl,off12,off13
+  iup = sps/40;
+  %     xygrid(:,3)=griddata(loc(:,7)/iup,loc(:,8)/iup,loc(:,1),xygrid(:,1),xygrid(:,2));
+  %     xygrid(:,4)=griddata(loc(:,7)/iup,loc(:,8)/iup,loc(:,2),xygrid(:,1),xygrid(:,2));
+  xygrid = [loc(:,7)/iup,loc(:,8)/iup,loc(:,1),loc(:,2)];
+end
+
+%choose only one spot
+%   xygrid = xygrid(xygrid(:,1)==0 & xygrid(:,2)==0, :); %use [0,0]
+xygrid = xygrid(xygrid(:,1)==2/iup & xygrid(:,2)==2/iup, :);  %use [2,2]
+
+diam=0;
+
+[synths,mommax,sources,greensts]=csplaw3c(writes,winlen,skiplen,synth,green,b,...
+  xygrid,sps,fracelsew,seed,timetype,ftrans,stas);
+
+tmpgrid = xygrid;
+tmpgrid(:,1:2)=round(sps/40*tmpgrid(:,1:2)); % *4 to get to 160 sps from 40.
+
+%   insat = 2;  %which saturation to look at
+%   n=writes(insat);
+%   a = squeeze(sources(1:n,:,insat));
+%   b = a(any(a,2),:);
+%   source=b;
+%   off = tmpgrid(source(:,2),1:2); %note that 'tmpgrid' has the desired sps
+%   [~,off(:,3)] = pred_tarvl_at4thsta(stas(4,:),off(:,1),off(:,2));
+
+%% compose new synthetic waveform and carry out deconvolution
+%%%flag for validating if ground truth of sources can recover the record
+%   testsrcflag = 1;
+testsrcflag = 0;
 
 %%%flag for validing if the spectral shapes of data and templates are similar
 % testfreqflag = 1;
 testfreqflag = 0;
 
-%times of saturation
-nsat=[0.4 1 2 4 10 20 40 100];
-% nsat=[0.4 2 10];
-nnsat = length(nsat);
+%%%flag for plot the data
+%   pltdataflag = 1;
+pltdataflag = 0;
 
-%%%loop for region size
-for ireg = 1: nreg
-  % ireg = 8;
-  disp(semia(ireg));
-  disp(semib(ireg));
+%%%flag for plot the ground truth distribution
+%   pltgtflag = 1;
+pltgtflag = 0;
+
+%%%flag for plot the decon src distribution after grouping
+%   pltsrcflag1 = 1;
+pltsrcflag1 = 0;
+
+%%%flag for plot the decon src distribution after removing 2ndary src
+%   pltsrcflag2 = 1;
+pltsrcflag2 = 0;
+
+%%%flag for plot the decon src distribution after checking at 4th stas
+%   pltsrcflag3 = 1;
+pltsrcflag3 = 0;
+
+%different percent of noise
+perctrial = 0.1*(0:2:16)';
+ntrial = length(perctrial);
+
+impgrp = cell(nnsat,ntrial);
+imp = cell(nnsat,ntrial);
+imp4th = cell(nnsat,ntrial);
+
+%%%loop for noise level
+for iperc = 1: ntrial
   
-  %params of limited source region, subject to variation!
-  if strcmp(srcregion,'circle')
-    shiftor=[0.2 0.2]; %(in km) %center of the same ellipse of my 4-s catalog
-    radi=1.25; %radius
-    [xcut,ycut] = circle_chao(shiftor(1),shiftor(2),radi,0.01);
-  elseif strcmp(srcregion,'ellipse')
-    xaxis = semia(ireg);
-    yaxis = semib(ireg);
-    % xaxis=1.75; %axis length of the same ellipse of my 4-s catalog
-    % yaxis=1.25;
-    shiftor=[0.2 0.2]; %(in km) %center of the same ellipse of my 4-s catalog
-    [xcut,ycut] = ellipse_chao(shiftor(1),shiftor(2),xaxis,yaxis,0.01,45,shiftor);
-  end
+  perc = perctrial(iperc);
+  disp(perc);
   
-  %%%file name prefix of synthetics
-  if strcmp(srcregion,'ellipse')
-    fname = ['/synthetics/STAS.',distr,'.',int2str(sps),'sps.',srcregion(1:3),'_',...
-      num2str(xaxis),'-',num2str(yaxis),'.diam',num2str(diam),'.else',num2str(fracelsew,2),...
-      'nsat'];
-  elseif strcmp(srcregion,'circle')
-    fname = ['/synthetics/STAS.',distr,'.',int2str(sps),'sps.',srcregion(1:3),...
-      '_',num2str(radi),'.diam',num2str(diam),'.else',num2str(fracelsew,2),...
-      'nsat'];
-  end
-  % fname = '/synthetics/STAS.UN.160sps.ell_2-1.25.diam0.3.else0nsat';
+  synnew = synths;  %time, station, sat
   
   %%%loop for saturation level
-  % tic
   for insat = 1: nnsat
-    % insat = 1;
+    %   insat = 1;
     disp(nsat(insat));
     
-    if tdura == 0.25
-      %%%load synthetics of certain saturation level
-      STAopt = load(strcat(workpath,fname,num2str(nsat(insat)),'tdura',num2str(tdura)));
-    elseif tdura == 0.4
-      STAopt = load(strcat(workpath,fname,num2str(nsat(insat))));      
-    end
-
+    %%%load synthetics of certain saturation level
+    %       optseg = load(strcat(workpath,fname,num2str(nsat(insat))));
+    optseg = synths(:,:,insat);
+    
+    %%% make noise by amp spectrum of synthetics and random phase
+    %obtain the amp and phase spectra of records via fft
+    nfft = size(optseg,1); % number of points in fft
+    [xf,ft,amp,pha] = fftspectrum(optseg(:,1:end), nfft, sps,'twosided');
+    
+    %uniform, random phase with the same span [-pi,pi];
+    mpharan = minmax(pha');
+    
+    rng(seed);
+    pharand = (rand(nfft,nsta)-0.5)*2*pi;  %make the phases span from -pi to pi
+    
+    %construct record with the same amplitude but random phase
+    xfrand = amp.*nfft.*exp(1i.*pharand);
+    optsegnoi = real(ifft(xfrand,nfft));
+    
+    xnoi1 = optsegnoi; %synthetic noise
+    
+    xnoi = xnoi1;
+    % ind = find(impindepst(:,1)/sps >= xnoi(1) & impindepst(:,1)/sps <= xnoi(2));
+    
+    %%%Different scaling schemes
+    %       %1. To make noise have the median amp of data
+    %       sclfact = median(envelope(detrend(optseg(:,2:end))));
+    %2. To make noise have the same fluctuation as data
+    env = envelope(detrend(optseg(:,1:end)));
+    % sclfact = env./range(env);  %normalize
+    sclfact = env;
+    %       %3. To make noise have the median amp of decon sources from data
+    %       sclfact = 6.4461e-01*mean(spread(1:3))/2;
+    
+    %scale the noise so that it has amp fluctuation as data
+    %       xnoi = xnoi .* sclfact;
+    
+    %normalize so that noi has the same median env as data
+    envn = envelope(detrend(xnoi));
+    xnoi = xnoi .* median(env) ./ median(envn);
+    median(env) - median(envelope(detrend(xnoi)))
+    
+    %%
+    %some percent of assembled noise
+    noiseg = xnoi .*perc;
+    
+    %add simulated noise to the current burst window
+    tmp = synths(:,:,insat);
+    synnew(:,:,insat) = tmp + noiseg;
+    
+    %% load synthetics of certain saturation level
+    STAopt = synnew(:,:,insat);
+    
+    %%%load sources
+    n=writes(insat);
+    a = squeeze(sources(1:n,:,insat));
+    b = a(any(a,2),:);
+    synsrc=b;
+    tmp = tmpgrid(synsrc(:,2),:);
+    synsrc = [synsrc(:,1) tmp(:,1:4) ones(length(tmp),1)];  %[indtarvl, off12, off13, loce, locn, amp]
+    
+    % keyboard
+    %%%load starting indices of added sources at sta 1
+    synsrcstind = squeeze(greensts{insat}{1});
+    
     %% filter data (and templates)
-    %%%filter data
+    %%filter data
     hisig=6.3; % this will give a similar spectral shape between template and signal
     losig=1.8;
     optseg = [];
     for ista = 1:nsta
       optseg(:,ista) = Bandpass(STAopt(:,ista), sps, losig, hisig, 2, 2, 'butter');
-    end
-    
-    %%%important, does the data actucally have a similar spectral shape to templates
-    if testfreqflag
-      for i = 1: nsta
-        [f] = plt_wletsig_timefreq(green(:,i),STAopt(:,i),greenf(:,i),optseg(:,i),[],[],sps,...
-          [lowlet hiwlet],[losig hisig]);
-        text(f.ax(end),0.95, 0.95,stas(i,:),'Units','normalized','HorizontalAlignment','right',...
-          'FontSize',12);
-      end
     end
     
     %% Best alignment for the whole window
@@ -515,15 +619,14 @@ for ireg = 1: nreg
       [mcoef(ista-3),off1i(ista)] = xcorrmax(optcc(:,1), optcc(:,ista), msftadd, 'coeff');
       mlag(ista-3) = off1i(ista);
     end
+    %       keyboard
     
-    %%%%%%%%%%%%%%%%%%%%%%%%%%
     %if you want to avoid the case when the alignment is way off the centroid
     %by chance while the saturation level is low, you can force it to be the
     %an average location, this reference value is from the abs location of the
     %the centroid (0.2,0.2), and prediction of off14 from plane fit model
     off1i(2:3) = [2 2];
     [~,off1i(4)] = pred_tarvl_at4thsta(stas(4,:),off1i(2),off1i(3));
-    %%%%%%%%%%%%%%%%%%%%%%%%%%
     
     %%%Align and compute the RCC based on the entire win, and take that as the input signal!
     optdat = [];  % win segment of interest
@@ -549,8 +652,8 @@ for ireg = 1: nreg
     rccpair = [rcc12 rcc13 rcc23];
     %if only use the mean RCC from pair 12 and 13
     rcc = mean(rccpair(:,[1 2]), 2);
-    rccsat(:,insat,ireg) = rcc;
-    mrcc(insat,ireg) = median(rcc);
+    rccsat(:,insat,iperc) = rcc;
+    mrcc(insat,iperc) = median(rcc);
     
     rcc1i = zeros(length(rcc),nsta-3);
     for ista = 4:nsta
@@ -568,16 +671,16 @@ for ireg = 1: nreg
       cc1i(ista-3) = xcorr(sigsta(:,1), sigsta(:,ista),0,'normalized');
     end
     ccpair = [cc12 cc13 cc23];
-    mcc(insat,ireg) = (cc12+cc13)/2;  %if only use the pair 12 and 13
+    mcc(insat,iperc) = (cc12+cc13)/2;  %if only use the pair 12 and 13
     
-    %envelope of the trace
-    for i = 1:nsta
-      [envup,~] = envelope(detrend(sigsta(:,i)));
-      prc = 90;
-      envhi(i,insat,ireg) = prctile(envup,prc);
-      envlo(i,insat,ireg) = prctile(envup,100-prc);
-      envmed(i,insat,ireg) = median(envup);
-    end
+%     %envelope of the trace
+%     for i = 1:nsta
+%       [envup,~] = envelope(detrend(sigsta(:,i)));
+%       prc = 90;
+%       envhi(i,insat,iperc) = prctile(envup,prc);
+%       envlo(i,insat,iperc) = prctile(envup,100-prc);
+%       envmed(i,insat,iperc) = median(envup);
+%     end
     
     % %a qucik look of the data
     % figure
@@ -678,18 +781,16 @@ mccreal1win = median(templump2);
 %%
 %%%plot of median RCC/CC value wrt saturation & region size
 f = initfig(8,4.5,1,2); %initialize fig
-color = jet(nreg);
+color = jet(ntrial);
 ax=f.ax(1);
 hold(ax,'on'); ax.Box='on'; grid(ax,'on');
-for ireg = 1: nreg
-  mrcc = median(rccsat(:,:,ireg),1);  %median of rcc
-%   plot(ax,log10(nsat),mrcc,'-o','markersize',4,'color',color(ireg,:),...
-%     'MarkerEdgeColor','k');
-  plot(ax,log10(nsat),mrcc,'-','Color',color(ireg,:),'linew',1);
-  scatter(ax,log10(nsat),mrcc,20,color(ireg,:),'filled','MarkerEdgeColor','k');
+for iperc = 1: ntrial
+  mrcc = median(rccsat(:,:,iperc),1);  %median of rcc
+%   plot(ax,log10(nsat),mrcc,'-o','markersize',4,'color',color(iperc,:));
+  plot(ax,log10(nsat),mrcc,'-','Color',color(iperc,:),'linew',1);
+  scatter(ax,log10(nsat),mrcc,20,color(iperc,:),'filled','MarkerEdgeColor','k');
 end
 plot(ax,ax.XLim,[mrccreal mrccreal],'k--','linew',1);
-% plot(ax,ax.XLim,[mrccreal1win mrccreal1win],'b--');
 xlabel(ax,'log_{10}(Saturation)');
 ylabel(ax,'Median RCC');
 longticks(ax,2);
@@ -698,16 +799,16 @@ ylim(ax,[0 1]);
 ax=f.ax(2);
 hold(ax,'on'); ax.Box='on'; grid(ax,'on');
 p=[]; label=[];
-for ireg = 1: nreg
-%   p(ireg) = plot(ax,log10(nsat),mcc(:,ireg),'-o','markersize',4,'color',color(ireg,:));
-  p(ireg) = plot(ax,log10(nsat),mcc(:,ireg),'-','Color',color(ireg,:),'linew',1);
-  scatter(ax,log10(nsat),mcc(:,ireg),20,color(ireg,:),'filled','MarkerEdgeColor','k');
-  label{ireg} = sprintf('a=%.1f, b=%.1f',2*semia(ireg),2*semib(ireg));
+for iperc = 1: ntrial
+%   plot(ax,log10(nsat),mcc(:,iperc),'-o','markersize',4,'color',color(iperc,:));
+  p(iperc) = plot(ax,log10(nsat),mcc(:,iperc),'-','Color',color(iperc,:),'linew',1);
+  scatter(ax,log10(nsat),mcc(:,iperc),20,color(iperc,:),'filled','MarkerEdgeColor','k');
+  label{iperc} = sprintf('Noise=%.1f',perctrial(iperc));
 end
-p(nreg+1) = plot(ax,ax.XLim,[mccreal mccreal],'k--','linew',1);
+p(ntrial+1) = plot(ax,ax.XLim,[mccreal mccreal],'k--','linew',1);
 % plot(ax,ax.XLim,[mccreal1win mccreal1win],'b--');
-label{nreg+1} = 'Data';
-% legend(ax,p,label,'NumColumns',2,'Location','north');
+label{ntrial+1} = 'Data';
+legend(ax,p,label,'NumColumns',2,'Location','north');
 xlabel(ax,'log_{10}(Saturation)');
 ylabel(ax,'Zero-lag CC');
 longticks(ax,2);
@@ -717,136 +818,25 @@ keyboard
 
 %%
 %%%plot of the cdf of RCC wrt saturation & region size
-f = initfig(12,8,2,4); %initialize fig
+f = initfig(12,8,3,3); %initialize fig
 color = jet(nnsat);
 k=0;
-for ireg =  1: nreg
+for iperc =  1: ntrial
   k=k+1;
   ax=f.ax(k);
   hold(ax,'on'); ax.Box='on'; grid(ax,'on');
   p(1)=plot(ax,rccreal(:,1),rccreal(:,2),'k-','LineWidth',1);
-  %   p(1)=plot(ax,rccreal1win(:,1),rccreal1win(:,2),'k-','LineWidth',1);
   label2{1}='Med of data';
   for i = 1: nnsat
-    temp = sort(rccsat(:,i,ireg),'ascend');
+    temp = sort(rccsat(:,i,iperc),'ascend');
     temp(:,2) = (1:size(temp,1))/size(temp,1);
     p(i+1) = plot(ax,temp(:,1),temp(:,2),'-','color',color(i,:));
     label2{i+1} = sprintf('Satur=%.1f',nsat(i));
   end
-  title(ax,sprintf('a/2=%.2f,b/2=%.2f',semia(ireg),semib(ireg)));
+  title(ax,sprintf('noise=%.1f',perctrial(iperc)));
   if k==1
     legend(ax,p,label2);
   end
   xlabel(ax,'RCC');
   ylabel(ax,'CDF');
 end
-
-keyboard
-
-%% Envelope range & ratio, vs. saturaiton level & region size
-%%%We already know the amp or env of seismogram is proportional to the sqrt of # of templates
-%%%added into synthetics, so is the env divided by the amp range of templates which is a
-%%%constant, therefore, we care about the amplitude ratio between different stations, not
-%%%relative to the templates, which is a known information.
-
-%%%env range from real bursts, which is almost invariant wrt the env itself
-savefile = 'rst_envcc_dtr.mat';
-load(strcat(rstpath, '/MAPS/',savefile));
-for ii = 1: 3
-  envranreal(:,ii) = envprct(:,2,ii)./envprct(:,1,ii);
-  envmedreal(:,ii) = envprct(:,3,ii);
-end
-menvranreal = median(envranreal,1);
-
-f = initfig(12,8,2,4); %initialize fig
-color = jet(nnsat);
-sybl = ['o';'^';'s'];
-clear label p
-k=0;
-for ireg =  1: nreg
-  k=k+1;
-  ax=f.ax(k);
-  hold(ax,'on'); ax.Box='on'; grid(ax,'on');
-  for ii = 1: 3
-    scatter(ax,log10(envmedreal(:,ii)),log10(envranreal(:,ii)),20,...
-      [.7 .7 .7],sybl(ii,:),'filled');
-    %bin x by equal number
-    nbin = 5;
-    [xbin,indbin,n] = binxeqnum(log10(envmedreal(:,ii)),nbin);
-    for i = 1: nbin
-      ind = indbin{i};
-      envmedrealb(i,ii) = median(log10(envmedreal(ind,ii)));
-      envranrealb(i,ii) = median(log10(envranreal(ind,ii)));
-    end
-  end
-  for ii = 1: 3
-    scatter(ax,envmedrealb(:,ii),envranrealb(:,ii),20,'k',sybl(ii,:),'filled');
-  end
-  for ii = 1: 3
-    for i = 1: nnsat
-      p(i)=scatter(ax,log10(envmed(ii,i,ireg)),log10(envhi(ii,i,ireg)./envlo(ii,i,ireg)),...
-        30,color(i,:),sybl(ii,:),'filled','markeredgec',[.3 .3 .3]);
-      label{i} = sprintf('Satur=%.1f',nsat(i));
-    end
-  end
-  title(ax,sprintf('a/2=%.2f,b/2=%.2f',semia(ireg),semib(ireg)));
-  if k==1
-    legend(ax,p,label);
-  end
-  axis(ax,'equal');
-  xlim(ax,[-2.1 0.4]);
-  ylim(ax,[0 1.5]);
-  xlabel(ax,'log_{10}{Median env}');
-  ylabel(ax,'log_{10}{90th/10th prctile}');
-end
-% keyboard
-
-% %%%env range ratio between stations
-% f = initfig(15,5,1,3); %initialize fig
-% color = jet(nreg);
-% ax = f.ax(1); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
-% for ireg = 1: nreg
-%   p(ireg) = plot(ax,log10(nsat),envhi(1,:,ireg)./envhi(2,:,ireg),...
-%     '-o','markersize',4,'color',color(ireg,:));
-%   plot(ax,log10(nsat),envlo(1,:,ireg)./envlo(2,:,ireg),...
-%     '-^','markersize',4,'color',color(ireg,:));
-%   label{ireg} = sprintf('a/2=%.2f,b/2=%.2f',semia(ireg),semib(ireg));
-% end
-% plot(ax,ax.XLim,[spread(1)/spread(2) spread(1)/spread(2)],'b--','LineWidth',1);
-% plot(ax,ax.XLim,[spreadf(1)/spreadf(2) spreadf(1)/spreadf(2)],'b:','LineWidth',1);
-% legend(ax,p,label);
-% ylim(ax,[spread(1)/spread(2)/2 spread(1)/spread(2)*2]);
-% xlabel(ax,'Saturation level (log)');
-% ylabel(ax,'Seis. amp range ratio 1/2');
-
-% ax = f.ax(2); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
-% for ireg = 1: nreg
-%   plot(ax,log10(nsat),envhi(1,:,ireg)./envhi(3,:,ireg),...
-%     '-o','markersize',4,'color',color(ireg,:));
-%   plot(ax,log10(nsat),envlo(1,:,ireg)./envlo(3,:,ireg),...
-%     '-^','markersize',4,'color',color(ireg,:));
-% end
-% plot(ax,ax.XLim,[spread(1)/spread(3) spread(1)/spread(3)],'b--','LineWidth',1);
-% plot(ax,ax.XLim,[spreadf(1)/spreadf(3) spreadf(1)/spreadf(3)],'b:','LineWidth',1);
-% ylim(ax,[spread(1)/spread(3)/2 spread(1)/spread(3)*2]);
-% xlabel(ax,'Saturation level (log)');
-% ylabel(ax,'Amp range ratio 1/3');
-
-% ax = f.ax(3); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
-% for ireg = 1: nreg
-%   plot(ax,log10(nsat),envhi(2,:,ireg)./envhi(3,:,ireg),...
-%     '-o','markersize',4,'color',color(ireg,:));
-%   plot(ax,log10(nsat),envlo(2,:,ireg)./envlo(3,:,ireg),...
-%     '-^','markersize',4,'color',color(ireg,:));
-% end
-% plot(ax,ax.XLim,[spread(2)/spread(3) spread(2)/spread(3)],'b--','LineWidth',1);
-% plot(ax,ax.XLim,[spreadf(2)/spreadf(3) spreadf(2)/spreadf(3)],'b:','LineWidth',1);
-% ylim(ax,[spread(2)/spread(3)/2 spread(2)/spread(3)*2]);
-% xlabel(ax,'Saturation level (log)');
-% ylabel(ax,'Amp range ratio 2/3');
-
-
-
-
-
-

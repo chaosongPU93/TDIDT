@@ -107,6 +107,36 @@ typepltnoi = 1; %plot noise
 
 keyboard
 
+%%
+nbst = size(trange,1);
+m = 1;
+dtcut = 0.25*m+0.125;
+mindtinter = [];
+for i = 1: nbst
+  if nsrc(i) == 0
+    continue
+  end
+  ist = sum(nsrc(1:i-1))+1;
+  ied = ist+nsrc(i)-1;
+  impi = imp(ist:ied,:);
+  %between Nth and (N-1)th source; Nth and (N-2)th; Nth and (N-3)th
+  dtfor = diffcustom(impi(:,1), m,'forward');
+  dtfor = [zeros(m,1); dtfor];
+  %   dtarvlnnsepall = [dtarvlnnsepall; dtarvl{nsep}];
+  dtback = diffcustom(impi(:,1), m,'backward');
+  dtback = [dtback; zeros(m,1)]; 
+  tmp1 = [dtfor dtback];  %time to N-m and N+m for each N   
+  %choose the min time to neighbors to find isolated ones
+  tmp2 = [dtback(1:m); min(tmp1(m+1: end-m, :),[],2); dtfor(1:m)];
+  mindtinter = [mindtinter; tmp2];
+end
+%if the smaller one of the time to N-m and N+m for the source N is big, it is
+%isolated
+nevtiso = sum(mindtinter/sps>dtcut);
+fraciso = nevtiso/length(imp);
+
+keyboard
+
 %% for a few m, fraction of unique events inside clusters w/i a diff time cut, wrt. all catalog for data
 mmax = 15;
 nbst = size(trange,1);
@@ -124,6 +154,7 @@ dfracsrc2alldmn = dfracsrc2all - dfracsrc2alln;
 % xlim(ax,[0 mmax]);
 
 % keyboard
+
 
 %% for a few m, diff time distribution between N&N-m, and fraction w/i dtcut  
 mmax = 15;
@@ -161,9 +192,9 @@ nbst = size(trange,1);
 scale = 'linear';
 % scale = 'log';
 if strcmp(scale,'linear')
-  widin=10; htin=4.5; nrow=1; ncol=2;
+  widin=10; htin=4; nrow=1; ncol=2;
 elseif strcmp(scale,'log')
-  widin=5; htin=4.5; nrow=1; ncol=1;
+  widin=5; htin=4; nrow=1; ncol=1;
 end
 f2 = initfig(widin,htin,nrow,ncol); %initialize fig
 xran = [0.15 0.9]; yran = [0.15 0.9];

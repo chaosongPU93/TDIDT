@@ -141,7 +141,7 @@ for m = 1:mmaxnonzero
 %   p(m) = plot(ax,log10(tmp1),tmp2,'-','Color',color(m,:),'linew',1,...
 %     'marker','o','markersize',4,'markerfacec',color(m,:));
   p(m) = plot(ax,log10(tmp1),tmp2,'-','Color',color(m,:),'linew',1);
-  scatter(ax,log10(tmp1),tmp2,log10(tmp4)*10,color(m,:),'filled');
+  scatter(ax,log10(tmp1),tmp2,log10(tmp4)*10,color(m,:),'filled','MarkerEdgeColor','k');
   label{m} = sprintf('m=%d',m);
   xlabel(ax,'log_{10}{Median amp.}');
   ylabel(ax,ylblstr);

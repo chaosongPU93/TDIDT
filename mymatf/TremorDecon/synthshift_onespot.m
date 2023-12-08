@@ -30,13 +30,23 @@ clc
 close all
 
 %%%Flag to indicate if it is necessary to recalculate everything
-flagrecalc = 0;
-% flagrecalc = 1;
+% flagrecalc = 0;
+flagrecalc = 1;
+
+tdura = 0.25;  %must be consistent with what synthetics actually used, start to use on 2023/12/07
+% tdura = 0.4;
 
 if ~flagrecalc
-  load('rst_synth_onespot.mat');
+  if tdura == 0.25
+    %   load(strcat('rst_synth_onespot','_td',num2str(tdura),'.mat'));
+    %   load(strcat('rst_synth_onespotnitm8500','_td',num2str(tdura),'.mat'));
+    load(strcat('rst_synth_onespotmedwtcoef','_td',num2str(tdura),'.mat'));
+  elseif tdura == 0.4
+    load('rst_synth_onespot.mat');
 %   load('rst_synth_onespotnitm8500.mat');
-%   load('rst_synth_onespotmedwtcoef.mat');  
+%   load('rst_synth_onespotmedwtcoef.mat');
+  end
+  
 else
   %% for easy testing
   defval('normflag',0); %whether to normalize templates
@@ -271,8 +281,7 @@ else
   % npeaksf
   % keyboard
   
- 
-  
+   
   %% generate synthetic sources
   %%%Specify the amplitude-frequency (counts) distribution
   distr='UN'  % uniform distribution
@@ -291,7 +300,8 @@ else
   %%%2. direct eyeballing for between zerocrossings: ~65
   %%%3. binned peak-to-peak separation for decently saturated unfiltered synthetics: ~37
   %%%4. similar to 3, but synthetics are filtered first: ~37
-  tdura = 0.4;  % duration from Chao's broadband template, width is about 795-730=65 spls at 160 hz
+%   tdura = 0.4;  % duration from Chao's broadband template, width is about 795-730=65 spls at 160 hz
+%   tdura = 0.25; % start to use on 2023/12/07
   satn=1/tdura*Twin   % if just saturated, how many templates can be fit in? a single peak is ~20 samples wide; maybe a little less (at 100 sps).
   %Twin is window duration in seconds. Events can fall within Twin of
   %the start, but the synthetics will go to Twin*(sample rate)+Greenlen to
@@ -323,12 +333,12 @@ else
   ftrans = 'interpchao';
   
   %%%whether to plot to check the synthetics
-%   pltsynflag = 0;
-  pltsynflag = 1;
+  pltsynflag = 0;
+%   pltsynflag = 1;
   
   %%%whether to plot to check the new synthetics with added noise
-%   pltnewsynflag = 0;
-  pltnewsynflag = 1;
+  pltnewsynflag = 0;
+%   pltnewsynflag = 1;
   
   %%%specify if forcing a min speration of arrival time for 2 events from the same spot
   % forcesep = 1;
@@ -577,13 +587,13 @@ else
       
       %%
       if pltnewsynflag
-        [f] = initfig(8,5,3,1);
+        [f] = initfig(8,4.5,3,1);
         optaxpos(f,3,1,[],[],[],0.06);
         ax = f.ax(1); hold(ax,'on'); ax.Box = 'on';
         plot(ax,(1:size(optseg,1))/sps,optseg(:,1),'r','linew',1); hold on
         plot(ax,(1:size(optseg,1))/sps,optseg(:,2),'b','linew',1);
         plot(ax,(1:size(optseg,1))/sps,optseg(:,3),'k','linew',1);
-        text(ax,0.98,0.9,sprintf('syn from sat: %.1f',nsat(insat)),'Units','normalized',...
+        text(ax,0.98,0.9,sprintf('syn from satur=%.1f',nsat(insat)),'Units','normalized',...
           'HorizontalAlignment','right');
         %       xlabel('Samples at 160 sps');
 %         xlabel('Time (s)');
@@ -1081,9 +1091,9 @@ else
 %         tdura = 0.4;  % estimate from the broadband template from fam 002
 %         nit_max = round(1.5*1/tdura*tlen*nsat(insat));  % max numer of iterations
 %         nimp_max = round(1/tdura*tlen*nsat(insat));%a single peak is ~20 samples wide; maybe a little less (at 100 sps). ~0.4s, 1/0.4=2.5
-        tdura = 0.25; 
-%         nit_max = round(1.5*1/tdura*(tlen));  % max numer of iterations
-        nit_max = 8500;
+%         tdura = 0.25; 
+        nit_max = round(1.5*1/tdura*(tlen));  % max numer of iterations
+%         nit_max = 8500;
         nimp_max = round(1/tdura*(tlen));%a single peak is ~20 samples wide; maybe a little less (at 100 sps). ~0.4s, 1/0.4=2.5
         fpltit = 0;  % plot flag for each iteration
         fpltend = 0;  % plot flag for the final iteration
@@ -1620,9 +1630,15 @@ else
     
   end %loop end for percent of noise
   
-%   save('rst_synth_onespot.mat');
-  save('rst_synth_onespotnitm8500.mat');
-%   save('rst_synth_onespotmedwtcoef.mat');
+  if tdura == 0.25
+%     save(strcat('rst_synth_onespot','_td',num2str(tdura),'.mat'));
+%     save(strcat('rst_synth_onespotnitm8500','_td',num2str(tdura),'.mat'));
+    save(strcat('rst_synth_onespotmedwtcoef','_td',num2str(tdura),'.mat'));
+  elseif tdura == 0.4 
+%     save('rst_synth_onespot.mat');
+%     save('rst_synth_onespotnitm8500.mat');
+    save('rst_synth_onespotmedwtcoef.mat');
+  end
   
 end %if need to recalculate
 
@@ -1801,7 +1817,7 @@ for iperc = 1: ntrial
   p(iperc) = plot(ax,log10(nsat),nsrcm(:,iperc),'-o','Color',color(iperc,:),...
     'markersize',4,'MarkerFaceColor',color(iperc,:),...
     'MarkerEdgeColor',color(iperc,:),'LineWidth',1);
-  label{iperc} = sprintf('noise=%.1f',perctrial(iperc));
+  label{iperc} = sprintf('Noise=%.1f',perctrial(iperc));
 end
 legend(ax,p,label,'NumColumns',2,'Location','south');
 % title(ax,'Secondary sources removed');
@@ -1837,10 +1853,11 @@ ax=f.ax(1); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
 for iperc = 1: ntrial
 %   p(iperc) = plot(ax,log10(nsat),mprojx22all(:,iperc),'-o','markersize',4,'color',color(iperc,:));
   p(iperc) = plot(ax,log10(nsat),mprojx22all(:,iperc),'-','Color',color(iperc,:),'linew',1);
-  scatter(ax,log10(nsat),mprojx22all(:,iperc),nsrcm(:,iperc)/50,color(iperc,:),'filled');
-  label{iperc} = sprintf('noise=%.1f',perctrial(iperc));
+  scatter(ax,log10(nsat),mprojx22all(:,iperc),nsrcm(:,iperc)/50,color(iperc,:),...
+    'filled','MarkerEdgeColor','k');
+  label{iperc} = sprintf('Noise=%.1f',perctrial(iperc));
 end
-p(ntrial+1) = plot(ax,log10(nsat),0.50*ones(nnsat,1),'k--');  %this is from data
+p(ntrial+1) = plot(ax,log10(nsat),0.50*ones(nnsat,1),'k--','linew',1);  %this is from data
 label{ntrial+1} = 'Data';
 legend(ax,p,label,'NumColumns',2,'Location','south');
 % title(ax,'Secondary sources removed');
@@ -1855,9 +1872,10 @@ ax=f.ax(2); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
 for iperc = 1: ntrial
 %   plot(ax,log10(nsat),mprojx32all(:,iperc),'-o','markersize',4,'color',color(iperc,:));
   plot(ax,log10(nsat),mprojx32all(:,iperc),'-','Color',color(iperc,:),'linew',1);
-  scatter(ax,log10(nsat),mprojx32all(:,iperc),nsrc4thm(:,iperc)/50,color(iperc,:),'filled');
+  scatter(ax,log10(nsat),mprojx32all(:,iperc),nsrc4thm(:,iperc)/50,color(iperc,:),...
+    'filled','MarkerEdgeColor','k');
 end
-plot(ax,log10(nsat),0.45*ones(nnsat,1),'k--');  %this is from data
+plot(ax,log10(nsat),0.45*ones(nnsat,1),'k--','linew',1);  %this is from data
 ylim(ax,yran);
 % title(ax,'Checkd at 4th stas');
 longticks(ax,2);
@@ -1900,7 +1918,7 @@ f = initfig(12,8,2,3); %initialize fig
 orient(f.fig,'landscape');
 optaxpos(f,2,3,[],[],0.05,0.08);
 for iperc = 1: ntrial 
-  label{iperc} = sprintf('noise=%.1f',perctrial(iperc));
+  label{iperc} = sprintf('Noise=%.1f',perctrial(iperc));
 end
 label{ntrial+1} = 'Data';
 srcampralld = allbstsig.srcamprall;  %using reference from real data

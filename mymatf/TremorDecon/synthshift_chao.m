@@ -288,7 +288,8 @@ skiplen=greenlen;
 %%%2. direct eyeballing for between zerocrossings: ~65, 0.4s
 %%%3. binned peak-to-peak separation for decently saturated unfiltered synthetics: ~37, 0.25s
 %%%4. similar to 3, but synthetics are filtered first: ~37, 0.25s
-tdura = 0.4;  % duration from Chao's broadband template, width is about 795-730=65 spls at 160 hz
+% tdura = 0.4;  % duration from Chao's broadband template, width is about 795-730=65 spls at 160 hz
+tdura = 0.25; % start to use on 2023/12/07
 satn=1/tdura*Twin   % if just saturated, how many templates can be fit in? a single peak is ~20 samples wide; maybe a little less (at 100 sps).
     %Twin is window duration in seconds. Events can fall within Twin of
     %the start, but the synthetics will go to Twin*(sample rate)+Greenlen to
@@ -761,15 +762,15 @@ for inwrites=1:length(writes)
   if strcmp(srcregion,'ellipse')
     fid = fopen([workpath,'/synthetics/STAS.',distr,'.',int2str(sps),'sps.',srcregion(1:3),...
       '_',num2str(xaxis),'-',num2str(yaxis),'.diam',num2str(diam),'.else',num2str(fracelsew,2),...
-      'nsat',num2str(nsat(inwrites))],'w');
+      'nsat',num2str(nsat(inwrites)),'tdura',num2str(tdura)],'w');
   elseif strcmp(srcregion,'rectangle')
     fid = fopen([workpath,'/synthetics/STAS.',distr,'.',int2str(sps),'sps.',srcregion(1:3),...
       '_',num2str(ll(1)),num2str(ll(2)),num2str(ur(1)),num2str(ur(2)),'.diam',num2str(diam),...
-      '.else',num2str(fracelsew,2),'nsat',num2str(nsat(inwrites))],'w');
+      '.else',num2str(fracelsew,2),'nsat',num2str(nsat(inwrites)),'tdura',num2str(tdura)],'w');
   elseif strcmp(srcregion,'circle')
     fid = fopen([workpath,'/synthetics/STAS.',distr,'.',int2str(sps),'sps.',srcregion(1:3),...
       '_',num2str(radi),'.diam',num2str(diam),'.else',num2str(fracelsew,2),...
-      'nsat',num2str(nsat(inwrites))],'w');  
+      'nsat',num2str(nsat(inwrites)),'tdura',num2str(tdura)],'w');  
   end
   towrite=squeeze(synths(:,:,inwrites));
   if nsta == 3
@@ -783,15 +784,15 @@ for inwrites=1:length(writes)
   if strcmp(srcregion,'ellipse')
     fid = fopen([workpath,'/synthetics/STAS.',distr,'.',int2str(sps),'sps.',srcregion(1:3),...
       '_',num2str(xaxis),'-',num2str(yaxis),'.diam',num2str(diam),'.else',num2str(fracelsew,2),...
-      'nsat',num2str(nsat(inwrites)),'_sources'],'w');
+      'nsat',num2str(nsat(inwrites)),'tdura',num2str(tdura),'_sources'],'w');
   elseif strcmp(srcregion,'rectangle')
     fid = fopen([workpath,'/synthetics/STAS.',distr,'.',int2str(sps),'sps.',srcregion(1:3),...
       '_',num2str(ll(1)),num2str(ll,2),num2str(ur(1)),num2str(ur,2),'.diam',num2str(diam),...
-      '.else',num2str(fracelsew,2),'nsat',num2str(nsat(inwrites)),'_sources'],'w');
+      '.else',num2str(fracelsew,2),'nsat',num2str(nsat(inwrites)),'tdura',num2str(tdura),'_sources'],'w');
   elseif strcmp(srcregion,'circle')
     fid = fopen([workpath,'/synthetics/STAS.',distr,'.',int2str(sps),'sps.',srcregion(1:3),...
       '_',num2str(radi),'.diam',num2str(diam),'.else',num2str(fracelsew,2),...
-      'nsat',num2str(nsat(inwrites)),'_sources'],'w');  
+      'nsat',num2str(nsat(inwrites)),'tdura',num2str(tdura),'_sources'],'w');  
   end
   if strcmp(distrloc,'uniform')
 %     if forcesep
@@ -843,15 +844,15 @@ for inwrites=1:length(writes)
   if strcmp(srcregion,'ellipse')
     fid = fopen([workpath,'/synthetics/STAS.',distr,'.',int2str(sps),'sps.',srcregion(1:3),...
       '_',num2str(xaxis),'-',num2str(yaxis),'.diam',num2str(diam),'.else',num2str(fracelsew,2),...
-      'nsat',num2str(nsat(inwrites)),'_stind'],'w');
+      'nsat',num2str(nsat(inwrites)),'tdura',num2str(tdura),'_stind'],'w');
   elseif strcmp(srcregion,'rectangle')
     fid = fopen([workpath,'/synthetics/STAS.',distr,'.',int2str(sps),'sps.',srcregion(1:3),...
       '_',num2str(ll(1)),num2str(ll,2),num2str(ur(1)),num2str(ur,2),'.diam',num2str(diam),...
-      '.else',num2str(fracelsew,2),'nsat',num2str(nsat(inwrites)),'_stind'],'w');
+      '.else',num2str(fracelsew,2),'nsat',num2str(nsat(inwrites)),'tdura',num2str(tdura),'_stind'],'w');
   elseif strcmp(srcregion,'circle')
     fid = fopen([workpath,'/synthetics/STAS.',distr,'.',int2str(sps),'sps.',srcregion(1:3),...
       '_',num2str(radi),'.diam',num2str(diam),'.else',num2str(fracelsew,2),...
-      'nsat',num2str(nsat(inwrites)),'_stind'],'w');  
+      'nsat',num2str(nsat(inwrites)),'tdura',num2str(tdura),'_stind'],'w');  
   end
   tmp = squeeze(greensts{inwrites}{1});
   fprintf(fid,'%d \n', tmp');

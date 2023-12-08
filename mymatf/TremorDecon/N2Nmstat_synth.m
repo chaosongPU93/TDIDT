@@ -51,13 +51,30 @@ offmax = round(2.0*rmse);
 
 %flag to decide which type of synthetics to use
 singleflag = 0;
-if ~singleflag  %%%synthetics from different region sizes and saturation levels  
-  savefile = 'rst_decon_synth.mat';
+tdura = 0.25;
+if ~singleflag  %%%synthetics from different region sizes and saturation levels 
+  if tdura == 0.25
+    % savefile = 'rst_decon_synth.mat';
+    % savefile = 'rst_decon_synthnitm8500.mat';
+    savefile = 'rst_decon_synthmedwtcoef.mat';
+  elseif tdura == 0.4 
+    % savefile = strcat('rst_decon_synth','_td',num2str(tdura),'.mat');
+    % savefile = strcat('rst_decon_synthnitm8500','_td',num2str(tdura),'.mat');
+    savefile = strcat('rst_decon_synthmedwtcoef','_td',num2str(tdura),'.mat');
+  end
   ttstr1 = {'Noise-free syn, '};
   load(savefile);
   nround = nreg;
 else  %%%synthetics from different noise and saturation levels, sources at a single spot
-  savefile = 'rst_synth_onespot.mat';
+  if tdura == 0.25
+    % savefile = 'rst_synth_onespot.mat';
+    % savefile = 'rst_synth_onespotnitm8500.mat';
+    savefile = 'rst_synth_onespotmedwtcoef.mat';
+  elseif tdura == 0.4
+    % savefile = strcat('rst_synth_onespot','_td',num2str(tdura),'.mat');
+    % savefile = strcat('rst_synth_onespotnitm8500','_td',num2str(tdura),'.mat');
+    savefile = strcat('rst_synth_onespotmedwtcoef','_td',num2str(tdura),'.mat');
+  end
   ttstr1 = {'Single-spot syn, '};
   load(savefile);
   nround = ntrial;
@@ -97,35 +114,38 @@ mmax=15;
 m=1;
 supertstr = strcat(ttstr1,ttstr2);
 
-%% summarize the whole catalog, diff arrival time and fractions
-
+%% summarize the whole catalog, distribution of diff arrival time
 [~,cntd,Nnd,~,fracd,~,mmaxnonzero,mmaxnonzeron]=...
   plt_srcdifftime_NNm_mmax([],nbst,impd,nsrcd,impn,nsrcn,mmax,sps,1,0);
 
-f = initfig(15,8,2,round(nnsat/2)); %initialize fig
-tit=supertit(f.ax,supertstr);
-movev(tit,0.2);
+f = initfig(10.5,6,2,round(nnsat/2)); %initialize fig
+optaxpos(f,2,round(nnsat/2),[],[],0.04,0.05);
+% tit=supertit(f.ax,supertstr);
+% movev(tit,0.2);
 label = [];
 for iround = 1: nround
   if ~singleflag
-    label{iround} = sprintf('a/2=%.2f,b/2=%.2f',semia(iround),semib(iround));
+    label{iround} = sprintf('a=%.1f, b=%.1f',2*semia(iround),2*semib(iround));
   else
-    label{iround} = sprintf('noise=%.1f',perctrial(iround));
+    label{iround} = sprintf('Noise=%.1f',perctrial(iround));
   end
 end
 label{nround+1} = 'Data';
 ref = Nnd;
 
-[f,Nn,frac]=plt_difftime_NNm_syn(f,impplt,mmax,nsat,nround,label,sps,m,ref);
+[f,Nn,frac]=plt_difftime_NNm_syn(f,impplt,nsat,nround,label,sps,m,ref);
 keyboard
 
-%%
-%%%summarize the whole catalog, only fractions
-f = initfig(4,5,1,1); %initialize fig
-tit=supertit(f.ax,supertstr);
-movev(tit,0.2);
+orient(f.fig,'landscape');
+print(f.fig,'-dpdf',strcat('/home/chaosong/Pictures/agu2023s3f4.pdf'));
+
+%% summarize the whole catalog, only fractions of diff arrival time w/i dtcut
+%%%summarize the whole catalog, 
+f = initfig(4,4.5,1,1); %initialize fig
+% tit=supertit(f.ax,supertstr);
+% movev(tit,0.2);
 ref = fracd;
-[f,frac]=plt_frac_difftime_NNm_syn(f,impplt,mmax,nsat,nround,label,sps,m,ref);
+[f,frac]=plt_frac_difftime_NNm_syn(f,impplt,nsat,nround,label,sps,m,ref);
 
 keyboard
 
@@ -182,11 +202,12 @@ for iround = 1: nround
   if ~singleflag
     label{iround} = sprintf('a/2=%.2f,b/2=%.2f',semia(iround),semib(iround));
   else
-    label{iround} = sprintf('noise=%.1f',perctrial(iround));
+    label{iround} = sprintf('Noise=%.1f',perctrial(iround));
   end
 end
 label{nround+1} = 'Data';
 
+ref = [];
 ref{1} = fracsrc2alld;
 ref{2} = dfracsrc2alld;
 [f1,f2,fracsrc2all,dfracsrc2all]=frac_uniqevt_incluster_syn(f1,f2,impplt,mmax,nsat,nround,label,sps,ref);

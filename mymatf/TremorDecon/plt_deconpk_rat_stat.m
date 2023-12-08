@@ -29,11 +29,11 @@ for itrial = 1: ntrial
     if i == 1
       if isempty(sybsize)
         p(itrial) = plot(ax,log10(nsat),mip(:,i),'-','marker',symbol(i,:),'markersize',4,...
-          'color',color(itrial,:));
+          'color',color(itrial,:),'MarkerEdgeColor','k');
       else
         p(itrial) = plot(ax,log10(nsat),mip(:,i),'-','color',color(itrial,:),'linew',1);
         scatter(ax,log10(nsat),mip(:,i),sybsize(:,i),color(itrial,:),...
-          symbol(i,:),'filled');
+          symbol(i,:),'filled','MarkerEdgeColor','k');
       end
 %       label{itrial} = sprintf('noise=%.1f',trial(itrial));
       ylabel(ax,'Median of log_{10}(amp ratio)');
@@ -41,17 +41,17 @@ for itrial = 1: ntrial
     else
       if isempty(sybsize)
         plot(ax,log10(nsat),mip(:,i),'-','marker',symbol(i,:),'markersize',4,...
-          'color',color(itrial,:));
+          'color',color(itrial,:),'MarkerEdgeColor','k');
       else
         plot(ax,log10(nsat),mip(:,i),'-','color',color(itrial,:),'linew',1);
         scatter(ax,log10(nsat),mip(:,i),sybsize(:,i),color(itrial,:),...
-          symbol(i,:),'filled');
+          symbol(i,:),'filled','MarkerEdgeColor','k');
       end  
     end
     if itrial == ntrial
       if ~isempty(ref)
         mamprd = ref{1};
-        p(ntrial+1) = plot(ax,log10(nsat),mamprd(i)*ones(nnsat,1),'k--');
+        p(ntrial+1) = plot(ax,log10(nsat),mamprd(i)*ones(nnsat,1),'k--','linew',1);
       end
     end
     yran = [-0.1 0.1];
@@ -63,11 +63,11 @@ for itrial = 1: ntrial
     ax=f.ax(i); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
     if isempty(sybsize)
       plot(ax,log10(nsat),madip(:,i-nsta),'-','marker',symbol(i-nsta,:),'markersize',4,...
-        'color',color(itrial,:));
+        'color',color(itrial,:),'MarkerEdgeColor','k');
     else
       plot(ax,log10(nsat),madip(:,i-nsta),'-','color',color(itrial,:),'linew',1);
       scatter(ax,log10(nsat),madip(:,i-nsta),sybsize(:,i-nsta),color(itrial,:),...
-        symbol(i-nsta,:),'filled');
+        symbol(i-nsta,:),'filled','MarkerEdgeColor','k');
     end
     if i == nsta+1
       ylabel(ax,'MAD of log_{10}(amp ratio)');
@@ -76,7 +76,7 @@ for itrial = 1: ntrial
     if itrial == ntrial
       if ~isempty(ref)
         madamprd = ref{2};
-        plot(ax,log10(nsat),madamprd(i-nsta)*ones(nnsat,1),'k--');
+        plot(ax,log10(nsat),madamprd(i-nsta)*ones(nnsat,1),'k--','linew',1);
       end
     end
     yran = [0 0.3];

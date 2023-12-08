@@ -1,4 +1,4 @@
-function [f,Nn,frac]=plt_difftime_NNm_syn(f,impplt,mmax,nsat,nround,label,sps,m,ref)
+function [f,Nn,frac]=plt_difftime_NNm_syn(f,impplt,nsat,nround,label,sps,m,ref)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % [f,Nn,frac]=plt_difftime_NNm_syn(f,impplt,mmax,nsat,nrounds,label,sps,m)
 %
@@ -36,7 +36,7 @@ for insat = 1: nnsat
   
   ax=f.ax(insat); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
   if m == 1
-    yran = [0 0.2];
+    yran = [0 0.15];
   elseif m == 2
     yran = [0 0.06];
   end
@@ -46,12 +46,13 @@ for insat = 1: nnsat
     nsrc = size(impi,1);
     
     %between Nth and (N-1)th source; Nth and (N-2)th; Nth and (N-3)th
-    dtarvl = srcdistNtoNm(impi(:,1),impi(:,7:8),mmax);
+    dtarvl = diffcustom(impi(:,1), m,'forward');
+%     dtarvl = srcdistNtoNm(impi(:,1),impi(:,7:8),mmax);
     %   dtarvlnnsepall = [dtarvlnnsepall; dtarvl{m}];
-    if isempty(dtarvl{m})
+    if isempty(dtarvl)
       continue
     end
-    dtarvlplt = dtarvl{m};
+    dtarvlplt = dtarvl;
     
     N=histcounts(dtarvlplt/sps,edges,'normalization','count');
     Nn = N./length(dtarvlplt);
@@ -71,15 +72,17 @@ for insat = 1: nnsat
   end
   %   text(ax,0.95,0.85,sprintf('Fraction w/i %.3f s: %.2f',dtcut,frac),'HorizontalAlignment','right',...
   %     'Units','normalized','FontSize',12);
-  if insat == 1
-    ylabel(ax,'Normalized count');
-    xlabel(ax,sprintf('Diff. arrival between sources N and N-%d (s)',m));
-    legend(ax,p,label);
-  end
-  text(ax,0.98,0.2,sprintf('Satur=%.1f',nsat(insat)),'Units','normalized',...
+  text(ax,0.98,0.3,sprintf('Satur=%.1f',nsat(insat)),'Units','normalized',...
     'HorizontalAlignment','right');  
   xlim(ax,xran);
   ylim(ax,yran);
   longticks(ax,2);
   hold(ax,'off');
 end
+
+ylabel(f.ax(5),'Normalized count');
+xlabel(f.ax(5),sprintf('Arrival time difference N to N-%d (s)',m));
+legend(f.ax(1),p,label);
+
+
+
