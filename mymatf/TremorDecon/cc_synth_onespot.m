@@ -808,7 +808,7 @@ end
 p(ntrial+1) = plot(ax,ax.XLim,[mccreal mccreal],'k--','linew',1);
 % plot(ax,ax.XLim,[mccreal1win mccreal1win],'b--');
 label{ntrial+1} = 'Data';
-legend(ax,p,label,'NumColumns',2,'Location','north');
+% legend(ax,p,label,'NumColumns',2,'Location','north');
 xlabel(ax,'log_{10}(Saturation)');
 ylabel(ax,'Zero-lag CC');
 longticks(ax,2);

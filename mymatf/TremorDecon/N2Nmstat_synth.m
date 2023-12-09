@@ -50,7 +50,7 @@ rmse = planefit.gof{4}.rmse;
 offmax = round(2.0*rmse);
 
 %flag to decide which type of synthetics to use
-singleflag = 0;
+singleflag = 1;
 tdura = 0.25;
 if ~singleflag  %%%synthetics from different region sizes and saturation levels 
   if tdura == 0.25
@@ -134,10 +134,9 @@ label{nround+1} = 'Data';
 ref = Nnd;
 
 [f,Nn,frac]=plt_difftime_NNm_syn(f,impplt,nsat,nround,label,sps,m,ref);
-keyboard
-
 orient(f.fig,'landscape');
-print(f.fig,'-dpdf',strcat('/home/chaosong/Pictures/agu2023s3f4.pdf'));
+keyboard
+% print(f.fig,'-dpdf',strcat('/home/chaosong/Pictures/agu2023s3f4.pdf'));
 
 %% summarize the whole catalog, only fractions of diff arrival time w/i dtcut
 %%%summarize the whole catalog, 

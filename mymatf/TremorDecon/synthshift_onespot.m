@@ -30,8 +30,8 @@ clc
 close all
 
 %%%Flag to indicate if it is necessary to recalculate everything
-% flagrecalc = 0;
-flagrecalc = 1;
+flagrecalc = 0;
+% flagrecalc = 1;
 
 tdura = 0.25;  %must be consistent with what synthetics actually used, start to use on 2023/12/07
 % tdura = 0.4;
@@ -42,9 +42,9 @@ if ~flagrecalc
     %   load(strcat('rst_synth_onespotnitm8500','_td',num2str(tdura),'.mat'));
     load(strcat('rst_synth_onespotmedwtcoef','_td',num2str(tdura),'.mat'));
   elseif tdura == 0.4
-    load('rst_synth_onespot.mat');
+%     load('rst_synth_onespot.mat');
 %   load('rst_synth_onespotnitm8500.mat');
-%   load('rst_synth_onespotmedwtcoef.mat');
+    load('rst_synth_onespotmedwtcoef.mat');
   end
   
 else
@@ -1859,7 +1859,7 @@ for iperc = 1: ntrial
 end
 p(ntrial+1) = plot(ax,log10(nsat),0.50*ones(nnsat,1),'k--','linew',1);  %this is from data
 label{ntrial+1} = 'Data';
-legend(ax,p,label,'NumColumns',2,'Location','south');
+% legend(ax,p,label,'NumColumns',2,'Location','south');
 % title(ax,'Secondary sources removed');
 xlabel(ax,'log_{10}(Saturation)');
 ylabel(ax,'Distance (km)');
