@@ -1796,8 +1796,8 @@ for iperc = 1: ntrial
   end
 end
 
-f = initfig(10.5,4,1,3); %initialize fig
-optaxpos(f,1,3,[],[],0.06);
+f = initfig(14,4.5,1,4); %initialize fig
+optaxpos(f,1,4,[],[],0.05);
 color = jet(ntrial);
 ax=f.ax(1); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
 for iperc = 1: ntrial
@@ -1843,6 +1843,20 @@ ylabel(ax,'Number of detections');
 ylim(ax,yran);
 longticks(ax,2);
 ax.YAxis.Exponent = 3;
+hold(ax,'off');
+
+ax=f.ax(4); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
+for iperc = 1: ntrial
+  plot(ax,log10(nsat),nsrc4thm(:,iperc)./nsrcm(:,iperc),'-o','Color',color(iperc,:),...
+    'markersize',4,'MarkerFaceColor',color(iperc,:),...
+    'MarkerEdgeColor',color(iperc,:),'LineWidth',1);
+end
+% title(ax,'Secondary sources removed');
+xlabel(ax,'log_{10}(Saturation)');
+ylabel(ax,'Successful check rate');
+yran = [0 1];
+ylim(ax,yran);
+longticks(ax,2);
 hold(ax,'off');
 
 

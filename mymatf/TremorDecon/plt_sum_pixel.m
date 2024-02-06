@@ -1,10 +1,12 @@
 function [f] = plt_sum_pixel(density1d,sumz1d,xran,yran,msize,cstr,symbol,scale)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% [sumz1d,indices] = sum_pixel(x,y,z)
+% [f] = plt_sum_pixel(density1d,sumz1d,xran,yran,msize,cstr,symbol,scale)
 %
-% Beyond 'density_pixel', sometimes you not only want the cumulative count
-% of data (x,y) at each pixel, but also you want the sum of z at those 
-% unique points. The sum of z and indices of unique pixels are returned.
+% Regardless of binning method, plot the cumulative density and related 
+% quantity that is summed at indices with multiple detections at single 
+% bins. The 'scale' of data can be either 'linear' or 'log10'.
+% 
+%  
 %
 %
 %
@@ -13,7 +15,7 @@ function [f] = plt_sum_pixel(density1d,sumz1d,xran,yran,msize,cstr,symbol,scale)
 % Last modified date:   2023/05/27
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 defval('symbol','o');
-defval('scale','log');
+defval('scale','log10');
 
 htin = 5;   % maximum height allowed is 11 inches
 nrow = 1;
@@ -31,13 +33,13 @@ ax=f.ax(1);
 hold(ax,'on'); ax.Box = 'on'; grid(ax, 'on');
 dum = density1d;
 dum(dum(:,3)>1, :) = [];
-if strcmp(scale,'log')
+if strcmp(scale,'log10')
   dum(:,3) = log10(dum(:,3));
 end
 scatter(ax,dum(:,1),dum(:,2),msize,dum(:,3),symbol,'linew',0.2);  %, 'MarkerEdgeColor', 'w')
 dum = sortrows(density1d,3);
 dum(dum(:,3)==1, :) = [];
-if strcmp(scale,'log')
+if strcmp(scale,'log10')
   dum(:,3) = log10(dum(:,3));
 end
 scatter(ax,dum(:,1),dum(:,2),msize,dum(:,3),symbol,'filled','MarkerEdgeColor','none');
@@ -48,7 +50,7 @@ newc = flipud(oldc);
 colormap(ax,newc);
 c=colorbar(ax,'SouthOutside');
 ax.CLim(2) = prctile(dum(:,3),99);
-if strcmp(scale,'log')
+if strcmp(scale,'log10')
   c.Label.String = strcat('log_{10}(',cstr{1},')');
 elseif strcmp(scale,'linear')
   c.Label.String = cstr{1};  
@@ -69,7 +71,7 @@ if ~isempty(sumz1d)
   ax=f.ax(2);
   hold(ax,'on'); ax.Box = 'on'; grid(ax, 'on');
   sumz1d = sortrows(sumz1d,3);
-  if strcmp(scale,'log')
+  if strcmp(scale,'log10')
     sumz1d(:,3) = log10(sumz1d(:,3));
   end
   scatter(ax,sumz1d(:,1),sumz1d(:,2),msize,sumz1d(:,3),symbol,'filled','MarkerEdgeColor','none');
@@ -79,7 +81,7 @@ if ~isempty(sumz1d)
   c=colorbar(ax,'SouthOutside');
 %   ax.CLim(2) = prctile(sumz1d(:,3),99);
   caxis(ax,[prctile(sumz1d(:,3),1) prctile(sumz1d(:,3),99)]);
-  if strcmp(scale,'log')
+  if strcmp(scale,'log10')
     c.Label.String = strcat('log_{10}(',cstr{2},')');
   elseif strcmp(scale,'linear')
     c.Label.String = cstr{2};  

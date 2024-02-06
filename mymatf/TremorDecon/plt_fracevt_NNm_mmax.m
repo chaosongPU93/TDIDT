@@ -63,7 +63,7 @@ for m=1:mmax
 
   %%%DATA
   %%%%%%%%%% if bin by amp with a equal number
-  [ampplt,dtarvlplt,indimpdtcut] = med_amp_incluster(nbst,imp,nsrc,m,dtcut*sps);
+  [ampplt,dtarvlplt,indimpdtcut] = med_amp_incluster(nbst,imp,nsrc,m,dtcut,sps,'tarvl');
   nunievtbst=zeros(nbst,1); %num of unqiue evts in clusters w/i dtcut
   for j = 1: nbst
     indibst = find(dtarvlplt(:,2)==j);  %ind of starting evt of the eligible cluster   
@@ -105,7 +105,7 @@ for m=1:mmax
   ampbincnt{m} = medampbin;
   
   %%%NOISE, NO need to bin by amp
-  [~,dtarvlpltn,indimpdtcutn]=med_amp_incluster(nbst,impn,nsrcn,m,dtcut*sps);
+  [~,dtarvlpltn,indimpdtcutn]=med_amp_incluster(nbst,impn,nsrcn,m,dtcut,sps,'tarvl');
   nunievtbstn=zeros(nbst,1); %num of unqiue evts in clusters w/i dtcut
   for j = 1: nbst
     indibst = find(dtarvlpltn(:,2)==j);  %ind of starting evt of the eligible cluster   

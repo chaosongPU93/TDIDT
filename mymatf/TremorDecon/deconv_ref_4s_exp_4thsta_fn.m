@@ -654,6 +654,7 @@ dto2all4thbst = [];
 dloco2all4thbst = [];
 disto2all4thbst = [];
 
+trangenew = trange; 
 for iii = 1: length(idxbst)
   
   [iets,i,j] = indofburst(trange,idxbst(iii));
@@ -747,6 +748,8 @@ for iii = 1: length(idxbst)
       tstbuf = min(tcnti(indtmaxi)-2);
       tedbuf = max(tcnti(indtmaxi)+2); 
       tlenbuf = tedbuf-tstbuf;
+      trangenew(iii,2)=tstbuf;
+      trangenew(iii,3)=tedbuf;
                           
       %max allowable shift in best alignment
 %       msftaddm = (round(max(abs([off12ran off13ran])))+1)*sps/40;  %+1 for safety
@@ -3047,6 +3050,11 @@ end
 
 % keyboard
 
+fid = fopen(strcat(rstpath, '/MAPS/tdec.bstranbuf',...
+  num2str(ttol),'s.pgc002.',cutout(1:4)),'w+');
+fprintf(fid,'%d %9.2f %9.2f \n',trangenew');
+fclose(fid);
+
 %% Ouput everything in the form of a structure array
 rststruct.srcamprall = srcamprall;
 rststruct.lndevsrcamprall = lndevsrcamprall;
@@ -3058,6 +3066,7 @@ rststruct.nsrcamprsall = nsrcamprsall;
 rststruct.rcccatsrcall = rcccatsrcall;
 rststruct.rccpairsrcall = rccpairsrcall;
 rststruct.rccbst = rccbst;
+rststruct.trangenew = trangenew;
 
 rststruct.srcampr4thall = srcampr4thall;
 rststruct.lndevsrcampr4thall = lndevsrcampr4thall;

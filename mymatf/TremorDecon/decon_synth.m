@@ -821,18 +821,18 @@ else
       density1d = [impgtloc(:,1:2) density1d(:,3)];
       ampgtsum1d = sortrows([impgtloc(:,1:2) ampgtsum], 3);
       
-      %% ONLY for AGU2023
-      xran = [-6 4];
-      yran = [-4 4];
-      f=agu23diffregsize(xran,yran);
-      %plot the cumulative density map, binning by pixel, ie., each unique detection 
-      [aa, ~] = off2space002(impgt(:,7:8),sps,ftrans,0);
-      [f] = plt_cumulative_density(aa,[],xran,yran,'pixel',6,6);          
-      hold(f.ax(1),'on');
-      plot(f.ax(1),xcut,ycut,'k-','LineWidth',1.5);
-      scatter(f.ax(1),0.2,0.2,10,'k','LineWidth',1);
-      text(f.ax(1),0.98,0.9,sprintf('Satur=%.1f',nsat(insat)),'Units','normalized',...
-          'HorizontalAlignment','right');
+      % %% ONLY for AGU2023
+      % xran = [-6 4];
+      % yran = [-4 4];
+      % f=agu23diffregsize(xran,yran);
+      % %plot the cumulative density map, binning by pixel, ie., each unique detection 
+      % [aa, ~] = off2space002(impgt(:,7:8),sps,ftrans,0);
+      % [f] = plt_cumulative_density(aa,[],xran,yran,'pixel',6,6);          
+      % hold(f.ax(1),'on');
+      % plot(f.ax(1),xcut,ycut,'k-','LineWidth',1.5);
+      % scatter(f.ax(1),0.2,0.2,10,'k','LineWidth',1);
+      % text(f.ax(1),0.98,0.9,sprintf('Satur=%.1f',nsat(insat)),'Units','normalized',...
+      %     'HorizontalAlignment','right');
       
       %%
       %%%if you want to plot the ground truth
@@ -1663,8 +1663,8 @@ for ireg = 1: nreg
   end
 end
 
-f = initfig(10.5,4,1,3); %initialize fig
-optaxpos(f,1,3,[],[],0.06);
+f = initfig(14,4.5,1,4); %initialize fig
+optaxpos(f,1,4,[],[],0.05);
 color = jet(nreg);
 ax=f.ax(1); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
 for ireg = 1: nreg
@@ -1691,8 +1691,8 @@ legend(ax,p,label,'NumColumns',2,'Location','south');
 % title(ax,'Secondary sources removed');
 xlabel(ax,'log_{10}(Saturation)');
 ylabel(ax,'Number of detections');
-% yran = [6e2 2.2e3];
-yran = ax.YLim;
+yran = [0.7e3 2.2e3];
+% yran = ax.YLim;
 ylim(ax,yran);
 longticks(ax,2);
 ax.YAxis.Exponent = 3;
@@ -1711,6 +1711,20 @@ ylabel(ax,'Number of detections');
 ylim(ax,yran);
 longticks(ax,2);
 ax.YAxis.Exponent = 3;
+hold(ax,'off');
+
+ax=f.ax(4); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
+for ireg = 1: nreg
+  plot(ax,log10(nsat),nsrc4thm(:,ireg)./nsrcm(:,ireg),'-o','Color',color(ireg,:),...
+    'markersize',4,'MarkerFaceColor',color(ireg,:),...
+    'MarkerEdgeColor',color(ireg,:),'LineWidth',1);
+end
+% title(ax,'Secondary sources removed');
+xlabel(ax,'log_{10}(Saturation)');
+ylabel(ax,'Successful check rate');
+yran = [0 1];
+ylim(ax,yran);
+longticks(ax,2);
 hold(ax,'off');
 
 

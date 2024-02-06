@@ -1,6 +1,6 @@
-function f=plt_srcdlocall(dloc2all,binw,disttype)
+function [f,mdist2all]=plt_srcdlocall(dloc2all,binw,disttype)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% f=plt_srcdlocall(dloc2all,binw,disttype)
+% [f,mdist2all]=plt_srcdlocall(dloc2all,binw,disttype)
 %
 % Function just to ease the plotting of differential location between
 % between each LFE source to all others
@@ -166,6 +166,7 @@ if strcmp(disttype,'spl')
   hold(ax,'off');
 end
 
+mdist2all = [median(abs(dloc2all(:,1))) median(abs(dloc2all(:,2)))];
 
 
 

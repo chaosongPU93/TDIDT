@@ -9,7 +9,11 @@
 % wrt to the background noise level (night or day). Maybe the prediction at
 % a 4th station would be better if the burst was during night times given a 
 % set of deconvolved sources using trio stations.
-% 
+% --Instead of asking the distance from each src to all others within 2s,
+% ie, close-in-time sources, we now move on to ask within 10s (20-s range),
+% not only the distance, but also the number of srcs matter. 20-s range 
+% is able to constrain the migration to be less than 100m, 20% of the 
+% distance, if there is any migration. --- 2024/01/17
 %
 %
 %
@@ -180,133 +184,134 @@ end
 % bstnoi = allbstnoi;
 % keyboard
  
-%% params for loading data
-% %%%param for secondary sources removed
-% %data
-% locxyprojall = allbstsig.locxyprojall;
-% tarvlsplstall = allbstsig.impindepall(:,1);
-% nsrc = allbstsig.nsrc;
-% dtarvlnn1 = allbstsig.dtarvlnn1all;
-% dtarvlnn2 = allbstsig.dtarvlnn2all;
-% dtarvlnn3 = allbstsig.dtarvlnn3all;
-% dtarvlnn4 = allbstsig.dtarvlnn4all;
-% dtarvlnn5 = allbstsig.dtarvlnn5all;
-% imp = allbstsig.impindepall;
-% dt2all = allbstsig.dt2allbst;
-% dist2all = allbstsig.dist2allbst;
-% dloc2all = allbstsig.dloc2allbst;
-% dneloc{1,1} = allbstsig.distarvlnn1all(:,2:3);
-% dneloc{2,1} = allbstsig.distarvlnn2all(:,2:3);
-% dneloc{3,1} = allbstsig.distarvlnn3all(:,2:3);
-% dneloc{4,1} = allbstsig.distarvlnn4all(:,2:3);
-% dneloc{5,1} = allbstsig.distarvlnn5all(:,2:3);
-% eucdist{1,1} = allbstsig.distarvlnn1all(:,1);
-% eucdist{2,1} = allbstsig.distarvlnn2all(:,1);
-% eucdist{3,1} = allbstsig.distarvlnn3all(:,1);
-% eucdist{4,1} = allbstsig.distarvlnn4all(:,1);
-% eucdist{5,1} = allbstsig.distarvlnn5all(:,1);
-% dtarvl{1,1} = allbstsig.dtarvlnn1all;
-% dtarvl{2,1} = allbstsig.dtarvlnn2all;
-% dtarvl{3,1} = allbstsig.dtarvlnn3all;
-% dtarvl{4,1} = allbstsig.dtarvlnn4all;
-% dtarvl{5,1} = allbstsig.dtarvlnn5all;
-% srcamprall = allbstsig.srcamprall;
-% %noise
-% locxyprojalln = allbstnoi.locxyprojall;
-% tarvlsplstalln = allbstnoi.impindepall(:,1);
-% nsrcn = allbstnoi.nsrc;
-% dtarvlnn1n = allbstnoi.dtarvlnn1all;
-% dtarvlnn2n = allbstnoi.dtarvlnn2all;
-% dtarvlnn3n = allbstnoi.dtarvlnn3all;
-% dtarvlnn4n = allbstnoi.dtarvlnn4all;
-% dtarvlnn5n = allbstnoi.dtarvlnn5all;
-% impn = allbstnoi.impindepall;
-% dt2alln = allbstnoi.dt2allbst;
-% dist2alln = allbstnoi.dist2allbst;
-% dloc2alln = allbstnoi.dloc2allbst;
-% dnelocn{1,1} = allbstnoi.distarvlnn1all(:,2:3);
-% dnelocn{2,1} = allbstnoi.distarvlnn2all(:,2:3);
-% dnelocn{3,1} = allbstnoi.distarvlnn3all(:,2:3);
-% dnelocn{4,1} = allbstnoi.distarvlnn4all(:,2:3);
-% dnelocn{5,1} = allbstnoi.distarvlnn5all(:,2:3);
-% eucdistn{1,1} = allbstnoi.distarvlnn1all(:,1);
-% eucdistn{2,1} = allbstnoi.distarvlnn2all(:,1);
-% eucdistn{3,1} = allbstnoi.distarvlnn3all(:,1);
-% eucdistn{4,1} = allbstnoi.distarvlnn4all(:,1);
-% eucdistn{5,1} = allbstnoi.distarvlnn5all(:,1);
-% dtarvln{1,1} = allbstnoi.dtarvlnn1all;
-% dtarvln{2,1} = allbstnoi.dtarvlnn2all;
-% dtarvln{3,1} = allbstnoi.dtarvlnn3all;
-% dtarvln{4,1} = allbstnoi.dtarvlnn4all;
-% dtarvln{5,1} = allbstnoi.dtarvlnn5all;
-% srcampralln = allbstnoi.srcamprall;
-% supertstr = 'Secondary sources removed';
-% fnsuffix = [];
-% nsta = 3;
-
-%%%param for further checked at KLNB
+% params for loading data
+%%%param for secondary sources removed
 %data
-locxyprojall = allbstsig.locxyproj4thall;
-tarvlsplstall = allbstsig.impindep4thall(:,1);
-nsrc = allbstsig.nsrc4th;
-dtarvlnn1 = allbstsig.dtarvlnn14thall;
-dtarvlnn2 = allbstsig.dtarvlnn24thall;
-dtarvlnn3 = allbstsig.dtarvlnn34thall;
-imp = allbstsig.impindep4thall;
-dt2all = allbstsig.dt2all4thbst;
-dist2all = allbstsig.dist2all4thbst;
-dloc2all = allbstsig.dloc2all4thbst;
-dneloc{1,1} = allbstsig.distarvlnn14thall(:,2:3);
-dneloc{2,1} = allbstsig.distarvlnn24thall(:,2:3);
-dneloc{3,1} = allbstsig.distarvlnn34thall(:,2:3);
-dneloc{4,1} = allbstsig.distarvlnn44thall(:,2:3);
-dneloc{5,1} = allbstsig.distarvlnn54thall(:,2:3);
-eucdist{1,1} = allbstsig.distarvlnn14thall(:,1);
-eucdist{2,1} = allbstsig.distarvlnn24thall(:,1);
-eucdist{3,1} = allbstsig.distarvlnn34thall(:,1);
-eucdist{4,1} = allbstsig.distarvlnn44thall(:,1);
-eucdist{5,1} = allbstsig.distarvlnn54thall(:,1);
-dtarvl{1,1} = allbstsig.dtarvlnn14thall;
-dtarvl{2,1} = allbstsig.dtarvlnn24thall;
-dtarvl{3,1} = allbstsig.dtarvlnn34thall;
-dtarvl{4,1} = allbstsig.dtarvlnn44thall;
-dtarvl{5,1} = allbstsig.dtarvlnn54thall;
-srcamprall = allbstsig.srcampr4thall;
+locxyprojall = allbstsig.locxyprojall;
+tarvlsplstall = allbstsig.impindepall(:,1);
+nsrc = allbstsig.nsrc;
+dtarvlnn1 = allbstsig.dtarvlnn1all;
+dtarvlnn2 = allbstsig.dtarvlnn2all;
+dtarvlnn3 = allbstsig.dtarvlnn3all;
+dtarvlnn4 = allbstsig.dtarvlnn4all;
+dtarvlnn5 = allbstsig.dtarvlnn5all;
+imp = allbstsig.impindepall;
+dt2all = allbstsig.dt2allbst;
+dist2all = allbstsig.dist2allbst;
+dloc2all = allbstsig.dloc2allbst;
+dneloc{1,1} = allbstsig.distarvlnn1all(:,2:3);
+dneloc{2,1} = allbstsig.distarvlnn2all(:,2:3);
+dneloc{3,1} = allbstsig.distarvlnn3all(:,2:3);
+dneloc{4,1} = allbstsig.distarvlnn4all(:,2:3);
+dneloc{5,1} = allbstsig.distarvlnn5all(:,2:3);
+eucdist{1,1} = allbstsig.distarvlnn1all(:,1);
+eucdist{2,1} = allbstsig.distarvlnn2all(:,1);
+eucdist{3,1} = allbstsig.distarvlnn3all(:,1);
+eucdist{4,1} = allbstsig.distarvlnn4all(:,1);
+eucdist{5,1} = allbstsig.distarvlnn5all(:,1);
+dtarvl{1,1} = allbstsig.dtarvlnn1all;
+dtarvl{2,1} = allbstsig.dtarvlnn2all;
+dtarvl{3,1} = allbstsig.dtarvlnn3all;
+dtarvl{4,1} = allbstsig.dtarvlnn4all;
+dtarvl{5,1} = allbstsig.dtarvlnn5all;
+srcamprall = allbstsig.srcamprall;
 %noise
-locxyprojalln = allbstnoi.locxyproj4thall;
-tarvlsplstalln = allbstnoi.impindep4thall(:,1);
-nsrcn = allbstnoi.nsrc4th;
-dtarvlnn1n = allbstnoi.dtarvlnn14thall;
-dtarvlnn2n = allbstnoi.dtarvlnn24thall;
-dtarvlnn3n = allbstnoi.dtarvlnn34thall;
-impn = allbstnoi.impindep4thall;
-dt2alln = allbstnoi.dt2all4thbst;
-dist2alln = allbstnoi.dist2all4thbst;
-dloc2alln = allbstnoi.dloc2all4thbst;
-dnelocn{1,1} = allbstnoi.distarvlnn14thall(:,2:3);
-dnelocn{2,1} = allbstnoi.distarvlnn24thall(:,2:3);
-dnelocn{3,1} = allbstnoi.distarvlnn34thall(:,2:3);
-dnelocn{4,1} = allbstnoi.distarvlnn44thall(:,2:3);
-dnelocn{5,1} = allbstnoi.distarvlnn54thall(:,2:3);
-eucdistn{1,1} = allbstnoi.distarvlnn14thall(:,1);
-eucdistn{2,1} = allbstnoi.distarvlnn24thall(:,1);
-eucdistn{3,1} = allbstnoi.distarvlnn34thall(:,1);
-eucdistn{4,1} = allbstnoi.distarvlnn44thall(:,1);
-eucdistn{5,1} = allbstnoi.distarvlnn54thall(:,1);
-dtarvln{1,1} = allbstnoi.dtarvlnn14thall;
-dtarvln{2,1} = allbstnoi.dtarvlnn24thall;
-dtarvln{3,1} = allbstnoi.dtarvlnn34thall;
-dtarvln{4,1} = allbstnoi.dtarvlnn44thall;
-dtarvln{5,1} = allbstnoi.dtarvlnn54thall;
-srcampralln = allbstnoi.srcampr4thall;
-supertstr = 'Further checked at KLNB';
-fnsuffix = '4th';
-nsta = 4;
+locxyprojalln = allbstnoi.locxyprojall;
+tarvlsplstalln = allbstnoi.impindepall(:,1);
+nsrcn = allbstnoi.nsrc;
+dtarvlnn1n = allbstnoi.dtarvlnn1all;
+dtarvlnn2n = allbstnoi.dtarvlnn2all;
+dtarvlnn3n = allbstnoi.dtarvlnn3all;
+dtarvlnn4n = allbstnoi.dtarvlnn4all;
+dtarvlnn5n = allbstnoi.dtarvlnn5all;
+impn = allbstnoi.impindepall;
+dt2alln = allbstnoi.dt2allbst;
+dist2alln = allbstnoi.dist2allbst;
+dloc2alln = allbstnoi.dloc2allbst;
+dnelocn{1,1} = allbstnoi.distarvlnn1all(:,2:3);
+dnelocn{2,1} = allbstnoi.distarvlnn2all(:,2:3);
+dnelocn{3,1} = allbstnoi.distarvlnn3all(:,2:3);
+dnelocn{4,1} = allbstnoi.distarvlnn4all(:,2:3);
+dnelocn{5,1} = allbstnoi.distarvlnn5all(:,2:3);
+eucdistn{1,1} = allbstnoi.distarvlnn1all(:,1);
+eucdistn{2,1} = allbstnoi.distarvlnn2all(:,1);
+eucdistn{3,1} = allbstnoi.distarvlnn3all(:,1);
+eucdistn{4,1} = allbstnoi.distarvlnn4all(:,1);
+eucdistn{5,1} = allbstnoi.distarvlnn5all(:,1);
+dtarvln{1,1} = allbstnoi.dtarvlnn1all;
+dtarvln{2,1} = allbstnoi.dtarvlnn2all;
+dtarvln{3,1} = allbstnoi.dtarvlnn3all;
+dtarvln{4,1} = allbstnoi.dtarvlnn4all;
+dtarvln{5,1} = allbstnoi.dtarvlnn5all;
+srcampralln = allbstnoi.srcamprall;
+supertstr = 'Secondary sources removed';
+fnsuffix = [];
+nsta = 3;
+
+% %%%param for further checked at KLNB
+% %data
+% locxyprojall = allbstsig.locxyproj4thall;
+% tarvlsplstall = allbstsig.impindep4thall(:,1);
+% nsrc = allbstsig.nsrc4th;
+% dtarvlnn1 = allbstsig.dtarvlnn14thall;
+% dtarvlnn2 = allbstsig.dtarvlnn24thall;
+% dtarvlnn3 = allbstsig.dtarvlnn34thall;
+% imp = allbstsig.impindep4thall;
+% dt2all = allbstsig.dt2all4thbst;
+% dist2all = allbstsig.dist2all4thbst;
+% dloc2all = allbstsig.dloc2all4thbst;
+% dneloc{1,1} = allbstsig.distarvlnn14thall(:,2:3);
+% dneloc{2,1} = allbstsig.distarvlnn24thall(:,2:3);
+% dneloc{3,1} = allbstsig.distarvlnn34thall(:,2:3);
+% dneloc{4,1} = allbstsig.distarvlnn44thall(:,2:3);
+% dneloc{5,1} = allbstsig.distarvlnn54thall(:,2:3);
+% eucdist{1,1} = allbstsig.distarvlnn14thall(:,1);
+% eucdist{2,1} = allbstsig.distarvlnn24thall(:,1);
+% eucdist{3,1} = allbstsig.distarvlnn34thall(:,1);
+% eucdist{4,1} = allbstsig.distarvlnn44thall(:,1);
+% eucdist{5,1} = allbstsig.distarvlnn54thall(:,1);
+% dtarvl{1,1} = allbstsig.dtarvlnn14thall;
+% dtarvl{2,1} = allbstsig.dtarvlnn24thall;
+% dtarvl{3,1} = allbstsig.dtarvlnn34thall;
+% dtarvl{4,1} = allbstsig.dtarvlnn44thall;
+% dtarvl{5,1} = allbstsig.dtarvlnn54thall;
+% srcamprall = allbstsig.srcampr4thall;
+% %noise
+% locxyprojalln = allbstnoi.locxyproj4thall;
+% tarvlsplstalln = allbstnoi.impindep4thall(:,1);
+% nsrcn = allbstnoi.nsrc4th;
+% dtarvlnn1n = allbstnoi.dtarvlnn14thall;
+% dtarvlnn2n = allbstnoi.dtarvlnn24thall;
+% dtarvlnn3n = allbstnoi.dtarvlnn34thall;
+% impn = allbstnoi.impindep4thall;
+% dt2alln = allbstnoi.dt2all4thbst;
+% dist2alln = allbstnoi.dist2all4thbst;
+% dloc2alln = allbstnoi.dloc2all4thbst;
+% dnelocn{1,1} = allbstnoi.distarvlnn14thall(:,2:3);
+% dnelocn{2,1} = allbstnoi.distarvlnn24thall(:,2:3);
+% dnelocn{3,1} = allbstnoi.distarvlnn34thall(:,2:3);
+% dnelocn{4,1} = allbstnoi.distarvlnn44thall(:,2:3);
+% dnelocn{5,1} = allbstnoi.distarvlnn54thall(:,2:3);
+% eucdistn{1,1} = allbstnoi.distarvlnn14thall(:,1);
+% eucdistn{2,1} = allbstnoi.distarvlnn24thall(:,1);
+% eucdistn{3,1} = allbstnoi.distarvlnn34thall(:,1);
+% eucdistn{4,1} = allbstnoi.distarvlnn44thall(:,1);
+% eucdistn{5,1} = allbstnoi.distarvlnn54thall(:,1);
+% dtarvln{1,1} = allbstnoi.dtarvlnn14thall;
+% dtarvln{2,1} = allbstnoi.dtarvlnn24thall;
+% dtarvln{3,1} = allbstnoi.dtarvlnn34thall;
+% dtarvln{4,1} = allbstnoi.dtarvlnn44thall;
+% dtarvln{5,1} = allbstnoi.dtarvlnn54thall;
+% srcampralln = allbstnoi.srcampr4thall;
+% supertstr = 'Further checked at KLNB';
+% fnsuffix = '4th';
+% nsta = 4;
 
 dtarvlplt = dtarvlnn1;
 dtarvlpltn = dtarvlnn1n;
 mmax = 5;
 m = 1;
+tmax2all = 10;  %max time in sec from each src to all others to check distance
 % dtarvlplt = dtarvlnn2;
 % dtarvlpltn = dtarvlnn2n;
 % nsep = 2;
@@ -314,7 +319,7 @@ m = 1;
 % dtarvlpltn = dtarvlnn3n;
 % nsep = 3;
 
-keyboard
+% keyboard
 
 %%
 %%%abs distance along min-rmse direction between each source and all others whose arrival 
@@ -345,7 +350,7 @@ for i = 1: size(trange,1)
   ied = ist+nsrcprop(i)-1;
   locxyproj = locxyprojall(ist:ied, :);
   if ~isempty(tarvlsplst) && ~isempty(locxyproj) 
-    [~,dlocproj2all] = srcdistall(tarvlsplst,locxyproj,[0 2*sps]);
+    [~,dlocproj2all] = srcdistall(tarvlsplst,locxyproj,[0 tmax2all*sps]);
     dlocproj2allbst = [dlocproj2allbst; dlocproj2all];
     [~,dlocproj] = srcdistNtoNm(tarvlsplst,locxyproj,2);
     dlocprojnn1bst = [dlocprojnn1bst; dlocproj{1}];
@@ -375,7 +380,7 @@ for i = 1: size(trange,1)
   ied = ist+nsrcpropn(i)-1;
   locxyproj = locxyprojalln(ist:ied, :);
   if ~isempty(tarvlsplst) && ~isempty(locxyproj) 
-    [~,dlocproj2all] = srcdistall(tarvlsplst,locxyproj,[0 2*sps]);
+    [~,dlocproj2all] = srcdistall(tarvlsplst,locxyproj,[0 tmax2all*sps]);
     dlocproj2allbstn = [dlocproj2allbstn; dlocproj2all];
   end
 end
@@ -457,28 +462,31 @@ for i = 1: size(trange,1)
   impst = impi(indsort, :);
   %I suspect the diff loc and distance between pairs should be the same as using tarvl, but correspondance with time 
   %should be different
-  [dto2all,dloco2all,disto2all] = srcdistall(torisplst,implocst,[0 2*sps]);
+  [dto2all,dloco2all,disto2all] = srcdistall(torisplst,implocst,[0 tmax2all*sps]);
   dto2allbst = [dto2allbst; dto2all];
   dloco2allbst = [dloco2allbst; dloco2all] ;
   disto2allbst = [disto2allbst; disto2all];
   impstall = [impstall; impst];
   tcorall = [tcorall; tcor(indsort)];
 end
-% f=plt_srcdlocinmap(dto2allbst,dloco2allbst,sps,'km','tori');
+cstr = {'# events / grid'};
+f=plt_srcdlocinmap(dto2allbst/sps,dloco2allbst,[],'km','tori',...
+  10,cstr,'s','log10','grid',[-4 4],[-4 4],0.1,0.1);
 
-% %plot euclidean distance between each LFE source to all others
-% tlensec = 14981;
-% f = plt_srcdistall(dt2all,dist2all,sps,40/sps,tlensec,0.1,'km');
-% %plot the loc diff between each LFE source to all others
-% f = plt_srcdlocall(dloc2all,0.1,'km');
-% 
-% %plot the loc diff between above source pairs
-% f = plt_srcdlocNtoNm(dneloc,0.1,'km');
-% %plot the diff time and distance between above source pairs
-% f = plt_srcdistNtoNm(dtarvl,eucdist,sps,40/sps,tlensec,0.1,'km');
+%plot euclidean distance between each LFE source to all others
+tlensec = 14981;
+f = plt_srcdistall(dto2allbst,disto2allbst,sps,40/sps,tlensec,0.1,'km');
+%plot the loc diff between each LFE source to all others
+f = plt_srcdlocall(dloco2allbst,0.1,'km');
 
-%%%projection along the min-rmse direction
+%plot the loc diff between above source pairs
+f = plt_srcdlocNtoNm(dneloc,0.1,'km');
+%plot the diff time and distance between above source pairs
+f = plt_srcdistNtoNm(dtarvl,eucdist,sps,40/sps,tlensec,0.1,'km');
+
+%% projection along the min-rmse direction
 dlocproj2allbst = [];
+dto2allbst = [];
 tmp1=[];
 tmp2=[];
 tmp3=[];
@@ -489,7 +497,8 @@ for i = 1: size(trange,1)
   ied = ist+nsrc(i)-1;
   tarvlsplst = tarvlsplstall(ist:ied);
   locxyproj = locxyprojall(ist:ied, :);
-  [~,dlocproj2all] = srcdistall(tarvlsplst,locxyproj,[0 2*sps]);
+  [dto2all,dlocproj2all] = srcdistall(tarvlsplst,locxyproj,[0 tmax2all*sps]);
+  dto2allbst = [dto2allbst; dto2all];
   dlocproj2allbst = [dlocproj2allbst; dlocproj2all];
   
   [~,dlocproj] = srcdistNtoNm(tarvlsplst,locxyproj,mmax);
@@ -505,10 +514,13 @@ dlocprojbst{3,1} = tmp3;
 dlocprojbst{4,1} = tmp4;
 dlocprojbst{5,1} = tmp5;
 
-% f=plt_srcdlocinmap(dt2all,dlocproj2allbst,sps,'km');
+cstr = {'# events / grid'};
+f=plt_srcdlocinmap(dto2allbst/sps,dlocproj2allbst,[],'km','tarvl',...
+  10,cstr,'s','log10','grid',[-4 4],[-4 4],0.1,0.1);
+keyboard
 %%
 %plot the projected loc diff between each LFE source to all others
-f = plt_srcdlocall(dlocproj2allbst,0.1,'km');
+[f,mpjdist2all] = plt_srcdlocall(dlocproj2allbst,0.1,'km');
 xlabel(f.ax(1),'Diff loc along min-rmse direc. (km)');
 xlabel(f.ax(2),'Abs dist. along min-rmse direc. (km)');
 xlabel(f.ax(3),'Diff loc along ort direc. (km)');
@@ -517,7 +529,7 @@ xlim(f.ax([1 3]),[-5 5]);
 xlim(f.ax([2 4]),[0 5]);
 
 %plot the projected loc diff between above source pairs
-f = plt_srcdlocNtoNm(dlocprojbst,0.1,'km');
+[f,mpjdist] = plt_srcdlocNtoNm(dlocprojbst,0.1,'km');
 xlabel(f.ax(1),'Diff loc along min-rmse direc. (km)');
 xlabel(f.ax(2),'Abs dist. along min-rmse direc. (km)');
 xlabel(f.ax(3),'Diff loc along ort direc. (km)');
@@ -799,7 +811,7 @@ ylim(f1.ax(2),[0 3]);
 %     impst = impi(indsort, :);
 %     %I suspect the diff loc and distance between pairs should be the same as using tarvl, but correspondance with time
 %     %should be different
-%     [dto2all,dloco2all,disto2all] = srcdistall(torisplst,impst(:,7:8),[0 2*sps]);
+%     [dto2all,dloco2all,disto2all] = srcdistall(torisplst,impst(:,7:8),[0 tmax2all*sps]);
 %     
 %   else
 %     dto2all = [];

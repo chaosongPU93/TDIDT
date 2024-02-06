@@ -50,7 +50,7 @@ rmse = planefit.gof{4}.rmse;
 offmax = round(2.0*rmse);
 
 %flag to decide which type of synthetics to use
-singleflag = 1;
+singleflag = 0;
 tdura = 0.25;
 if ~singleflag  %%%synthetics from different region sizes and saturation levels 
   if tdura == 0.25
@@ -95,7 +95,6 @@ ttstr2 = '2ndary removed';
 fnsuffix = [];
 impplt = imp;
 denom = 18275;
-
 %below from data for reference
 locxyprojalld = allbstsig.locxyprojall;
 tarvlsplstalld = allbstsig.impindepall(:,1);
@@ -109,10 +108,19 @@ impn = allbstnoi.impindepall;
 % fnsuffix = '4th';
 % impplt = imp4th;
 % denom = 10547;
+% %below from data for reference
+% locxyprojalld = allbstsig.locxyproj4thall;
+% tarvlsplstalld = allbstsig.impindep4thall(:,1);
+% nsrcd = allbstsig.nsrc4th;
+% impd = allbstsig.impindep4thall;
+% nsrcn = allbstnoi.nsrc4th;
+% impn = allbstnoi.impindep4thall;
 
 mmax=15;
 m=1;
 supertstr = strcat(ttstr1,ttstr2);
+
+keyboard
 
 %% summarize the whole catalog, distribution of diff arrival time
 [~,cntd,Nnd,~,fracd,~,mmaxnonzero,mmaxnonzeron]=...
@@ -135,7 +143,7 @@ ref = Nnd;
 
 [f,Nn,frac]=plt_difftime_NNm_syn(f,impplt,nsat,nround,label,sps,m,ref);
 orient(f.fig,'landscape');
-keyboard
+% keyboard
 % print(f.fig,'-dpdf',strcat('/home/chaosong/Pictures/agu2023s3f4.pdf'));
 
 %% summarize the whole catalog, only fractions of diff arrival time w/i dtcut

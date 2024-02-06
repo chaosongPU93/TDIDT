@@ -28,7 +28,7 @@ y = reshape([yup,-fliplr(yup(1:end-1))], [], 1);
 x = x+xc;
 y = y+yc;
 
-%if needs to rotate counter-clockwiseby 'angrot' degrees, relative to 'rotcnt' 
+%if needs to rotate counter-clockwise by 'angrot' degrees, relative to 'rotcnt' 
 [x,y] = complex_rot(x,y,rotang,rotcnt);
 
 

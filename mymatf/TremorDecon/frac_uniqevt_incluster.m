@@ -90,8 +90,8 @@ for m = 1:mmax
   ndcutsrc2all(m,1) = sum(ndcutsrc2);
   fracsrc2all(m,1) = ndcutsrc2all(m,1)/sum(nsrc)*100;
   
-%   ndcutpairall(m,1) = sum(ndcutpair);
-%   fracpairall = ndcutpairall(m,1)/sum(nsrcsep)*100;
+  ndcutpairall(m,1) = sum(ndcutpair);
+  fracpairall = ndcutpairall(m,1)/sum(nsrcsep)*100;
   
 end
 
@@ -101,17 +101,17 @@ if isempty(mmaxzero)  %if the trial mmax is not big enough to exhaust the list
   warning('mmax is not big enough, better increase it');
 end
 
-% for m = 1:mmaxzero
-%   dtcut = 0.25*m+0.125;
-%   fprintf('%d clusters of %d consecutive events (%d/%d unique) w/i %.3f s \n',...
-%     ndcutpairall(m,1), m+1, ndcutsrc2all(m,1), sum(nsrc), dtcut);
-% end
+for m = 1:mmaxzero
+  dtcut = 0.25*m+0.125;
+  fprintf('%d clusters of %d consecutive events (%d/%d unique) w/i %.3f s \n',...
+    ndcutpairall(m,1), m+1, ndcutsrc2all(m,1), sum(nsrc), dtcut);
+end
 
 
 fracsrc2all = [100; fracsrc2all];
-fprintf('%.3f \n',fracsrc2all);
+% fprintf('%.3f \n',fracsrc2all);
 dfracsrc2all = fracsrc2all(1:end-1) - fracsrc2all(2:end);
-fprintf('%.3f \n',dfracsrc2all);
+% fprintf('%.3f \n',dfracsrc2all);
 
 % fracsrc2all = fracsrc2all(1:mmaxzero+1);
 % dfracsrc2all = dfracsrc2all(1:mmaxzero);

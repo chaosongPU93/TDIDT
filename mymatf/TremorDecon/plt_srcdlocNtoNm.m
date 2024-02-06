@@ -1,9 +1,9 @@
-function f=plt_srcdlocNtoNm(dlocxy,binw,disttype)
+function [f,mdist]=plt_srcdlocNtoNm(dlocxy,binw,disttype)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% f=plt_srcdlocNtoNm(dlocxy,disttype)
+% [f,mdist]=plt_srcdlocNtoNm(dlocxy,binw,disttype)
 %
 % Function just to ease the plotting of differential location between
-% sources N and N-1 until N and N-m, where m is determined by input data size.
+% sources N and N-1 until N and N-mmax, where mmax is determined by input data size.
 % Plot the direct difference.
 %
 %
@@ -29,8 +29,8 @@ xran = [0.1 0.96]; yran = [0.1 0.96];
 xsep = 0.09; ysep = 0.1;
 optaxpos(f,nrow,ncol,xran,yran,xsep,ysep);
 
-m = size(dlocxy,1);
-color = jet(m);
+mmax = size(dlocxy,1);
+color = jet(mmax);
 
 if strcmp(disttype,'spl')
   X = -50:binw:50;
@@ -41,7 +41,7 @@ end
 
 ax=f.ax(1);
 hold(ax,'on'); ax.Box = 'on'; grid(ax,'on');
-for i = m:-1:1
+for i = mmax:-1:1
   aa=dlocxy{i};
   [N,edges]=histcounts(aa(:,1),'binwidth',binw,'normalization','countdensity');
 %   edges = edges-binw/2;
@@ -68,7 +68,7 @@ hold(ax,'off');
 
 ax=f.ax(2);
 hold(ax,'on'); ax.Box = 'on'; grid(ax,'on');
-for i = m:-1:1
+for i = mmax:-1:1
   aa=dlocxy{i};
   [N,edges]=histcounts(abs(aa(:,1)),'binwidth',binw,'normalization','countdensity');
 %   edges = edges-binw/2;
@@ -83,6 +83,7 @@ for i = m:-1:1
   text(ax,0.98,0.5-i*0.05,sprintf('med=%.2f km',median(abs(aa(:,1)))),'Units','normalized',...
     'HorizontalAlignment','right'); %,'Color',color(i,:)
   label{i} = sprintf('N and N-%d',i);
+  mdist(i,1) = median(abs(aa(:,1)));
 end
 if strcmp(disttype,'spl')
   xlabel(ax,'Abs diff off12 (samples)');
@@ -99,7 +100,7 @@ hold(ax,'off');
 
 ax=f.ax(3);
 hold(ax,'on'); ax.Box = 'on'; grid(ax,'on');
-for i = m:-1:1
+for i = mmax:-1:1
   aa=dlocxy{i};
   [N,edges]=histcounts(aa(:,2),'binwidth',binw,'normalization','countdensity');
 %   edges = edges-binw/2;
@@ -126,7 +127,7 @@ hold(ax,'off');
 
 ax=f.ax(4);
 hold(ax,'on'); ax.Box = 'on'; grid(ax,'on');
-for i = m:-1:1
+for i = mmax:-1:1
   aa=dlocxy{i};
   [N,edges]=histcounts(abs(aa(:,2)),'binwidth',binw,'normalization','countdensity');
 %   edges = edges-binw/2;
@@ -140,6 +141,7 @@ for i = m:-1:1
   plot(ax,[median(abs(aa(:,2))) median(abs(aa(:,2)))],ax.YLim,'--','Color',color(i,:));
   text(ax,0.98,0.5-i*0.05,sprintf('med=%.2f km',median(abs(aa(:,2)))),'Units','normalized',...
     'HorizontalAlignment','right'); %,'Color',color(i,:)
+  mdist(i,2) = median(abs(aa(:,2)));
 end
 if strcmp(disttype,'spl')
   xlabel(ax,'Abs diff off13 (samples)');
@@ -156,7 +158,7 @@ hold(ax,'off');
 if strcmp(disttype,'spl')
   ax=f.ax(5);
   hold(ax,'on'); ax.Box = 'on'; grid(ax,'on');
-  for i = m:-1:1
+  for i = mmax:-1:1
     aa=dlocxy{i};
     [N,edges]=histcounts(aa(:,2)-aa(:,1),'binwidth',binw,'normalization','countdensity');
 %     edges = edges-binw/2;
@@ -176,7 +178,7 @@ if strcmp(disttype,'spl')
 
   ax=f.ax(6);
   hold(ax,'on'); ax.Box = 'on'; grid(ax,'on');
-  for i = m:-1:1
+  for i = mmax:-1:1
     aa=dlocxy{i};
     [N,edges]=histcounts(abs(aa(:,2)-aa(:,1)),'binwidth',binw,'normalization','countdensity');
 %     edges = edges-binw/2;

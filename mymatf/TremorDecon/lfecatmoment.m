@@ -1067,9 +1067,12 @@ p1=histogram(ax,log10(lfemoall),'FaceColor','b','Normalization','count',...
   'BinWidth',0.1);
 text(ax,0.95,0.7,sprintf('before: %.1e Nm',sum(lfemoall)),'HorizontalAlignment',...
   'right','Units','normalized');
-ratio = lfemoall./prctile(lfemoall,5);
+lfemoch=prctile(lfemoall,5); %'characteristic moment', defined here as 5th percentile 
+ratio = lfemoall./lfemoch;
 ratio(ratio<1) = 1;
 lfemoall = lfemoall.*ratio;
+text(ax,0.95,0.75,sprintf('characteristic: %.1e Nm',lfemoch),'HorizontalAlignment',...
+  'right','Units','normalized');
 
 p2=histogram(ax,log10(lfemoall),'FaceColor','r','Normalization','count',...
   'BinWidth',0.1);

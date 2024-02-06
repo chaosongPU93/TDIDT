@@ -320,8 +320,8 @@ distrloc = 'uniform'; %uniformly random in a specified region,
 timetype = 'tori';
 
 %%%specify if considering the physical size of each source
-% physicalsize = 1;
-physicalsize = 0;
+physicalsize = 1;
+% physicalsize = 0;
 
 %%%specify shape of the source region
 srcregion='ellipse';
@@ -551,7 +551,7 @@ elseif strcmp(distrloc,'uniform')
     lly=xygrid(1,4);  %lower left corner x and y
     urx=xygrid(end,3);  %upper right corner x and y    
     ury=xygrid(end,4);
-    diam=0.15;  %note that if diam is <150m, in sample space you'll have too many nonunqiue sources 
+    diam=0.3;  %note that if diam is <150m, in sample space you'll have too many nonunqiue sources 
     [hxq,hyq]=meshgrid(llx:diam:urx, lly:diam*sqrt(3)/2:ury); %area of a hexagon is sqrt(3)*a^2, a=diam/2
     for i=2:2:size(hxq,1)
         hxq(i,:)=hxq(i,:)+0.5*diam; %shift x every 2 rows, to create hex grid
@@ -609,7 +609,7 @@ elseif strcmp(distrloc,'uniform')
     semia = 1.75*(0.6:0.2:2.0);
     semib = 1.25*(0.6:0.2:2.0);
     nreg = length(semia);
-    ireg = 8;
+    ireg = 4;
     xaxis = semia(ireg); %axis length of the same ellipse of my 4-s catalog
     yaxis = semib(ireg);
     % xaxis=1.75; %axis length of the same ellipse of my 4-s catalog
@@ -675,6 +675,7 @@ elseif strcmp(distrloc,'uniform')
   end
   size(xygrid)
 
+  keyboard
   %whether to force a min speration if 2 events from the same spot separated by less than the template duration
   %USE unfiltered templates to generate synthetics, then bandpass before deconvolution
   if forcesep

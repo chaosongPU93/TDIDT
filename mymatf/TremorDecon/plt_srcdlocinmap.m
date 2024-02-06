@@ -1,21 +1,30 @@
-function f=plt_srcdlocinmap(dt2all,dloc2all,sps,disttype,timetype)
+function f=plt_srcdlocinmap(dt,dloc,dtran,disttype,timetype,...
+  msize,cstr,symbol,scale,bintype,xran,yran,dx,dy,smoothsigma,intvl)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% f=plt_srcdlocinmap(dt2all,dloc2all,sps,disttype,timetype)
+% f=plt_srcdlocinmap(dt,dloc,disttype,timetype,bintype)
 %
 % Function to create a similar plot to figure 4 of Rubin & Gillard (JGRSE,
 % 2000) and figure 4 of Rubin (JGRSE, 2002). For each detection, it gets 
 % placed at the origin, and then all the other detections in the adopted
 % differential time bin (or overall within some range) get plotted in their
 % relative position on the fault plane. Here we talk about the event pairs
-% composed by each detection and all the other (that occur within some 
-% time range).
+% composed by either each detection and all the other (that occur within  
+% some time range), or consecutive events 
 %
 % Chao Song, chaosong@princeton.edu
 % First created date:   2023/03/08
-% Last modified date:   2023/03/08
+% Last modified date:   2024/01/22
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-defval('disttype','spl');
+defval('dtran',[]);
+defval('disttype','km');
 defval('timetype','tarvl');
+defval('scale','log10');
+defval('bintype','grid');
+defval('bintype','grid');
+defval('dx',[]);
+defval('dy',[]);
+defval('smoothsigma',2);
+defval('intvl',2);
 
 % %convert time offset to relative loc, but we mainly need the travel time estimate from sources
 % ftrans = 'interpchao';
@@ -27,82 +36,152 @@ defval('timetype','tarvl');
 % imptime = imp(:,1)-tcor;
 
 widin = 12;  % maximum width allowed is 8.5 inches
-htin = 6;   % maximum height allowed is 11 inches
+htin = 5.5;   % maximum height allowed is 11 inches
 nrow = 1;
-ncol = 2;
+ncol = 3;
 f = initfig(widin,htin,nrow,ncol); %initialize fig
 
-xran = [0.1 0.96]; yran = [0.06 0.96];
-xsep = 0.1; ysep = 0.08;
-optaxpos(f,nrow,ncol,xran,yran,xsep,ysep);
+figxran = [0.06 0.96]; figyran = [0.06 0.96];
+figxsep = 0.05; figysep = 0.06;
+optaxpos(f,nrow,ncol,figxran,figyran,figxsep,figysep);
 
 % nbin = length(edges)-1;
 % color = jet(nbin);
 % binedge = (0: binwdist: 50*binwdist)';
-binwdt = 0.25;
-edges = -binwdt/2: binwdt: max(dt2all/sps)+binwdt/2;
-nbin = length(edges)-1;
-dlocplt = dloc2all;
-dtplt = dt2all;
-for i = 1: nbin
-  dlocplt = dloc2all((dt2all/sps)>=edges(i) & (dt2all/sps)<edges(i+1),:);
-  dtplt = dt2all((dt2all/sps)>=edges(i) & (dt2all/sps)<edges(i+1),:);
+% binwdt = 0.25;
+% edges = -binwdt/2: binwdt: max(dt)+binwdt/2;
+% nbin = length(edges)-1;
+% dlocplt = dloc;
+% dtplt = dt;
+% for i = 1: nbin
+  % dlocplt = dloc((dt)>=edges(i) & (dt)<edges(i+1),:);
+  % dtplt = dt((dt)>=edges(i) & (dt)<edges(i+1),:);
+  if ~isempty(dtran)
+    dtplt = dt(dt>=dtran(1) & dt<=dtran(2),:);
+    dlocplt = dloc(dt>=dtran(1) & dt<=dtran(2),:);
+  else
+    dtplt = dt;
+    dlocplt = dloc;
+  end
   
   dplt = [dtplt dlocplt];
-  dpltst = dplt;
   dpltst = sortrows(dplt,1,'descend');
 
-  ax=f.ax(1);
-  hold(ax,'on'); ax.Box = 'on'; grid(ax,'on');
-  scatter(ax,dpltst(:,2),dpltst(:,3),5,dpltst(:,1)/sps,'filled');
-  colormap(ax,'jet');
-  c=colorbar(ax,'east');
+  %scatter plot of all data points
+  ax=f.ax(1); hold(ax,'on'); ax.Box = 'on'; grid(ax,'on'); axis(ax, 'equal');
+  scatter(ax,dpltst(:,2),dpltst(:,3),msize,dpltst(:,1),'filled');
+%   keyboard
+  % colormap(ax,'jet');
+  colormap(ax,flipud(colormap(ax,'kelicol')));
+  c=colorbar(ax,'SouthOutside');
+  caxis(ax,[min(dpltst(:,1)) max(dpltst(:,1))]);
   if strcmp(timetype,'tarvl')
     c.Label.String = strcat({'Differential arrival time (s)'});
   elseif strcmp(timetype,'tori')
     c.Label.String = strcat({'Differential origin time (s)'});
   end
-  caxis(ax,[min(dtplt/sps) max(dtplt/sps)]);
-  axis(ax, 'equal');
+  ax.GridLineStyle = '--';
+  ax.XAxisLocation = 'top';
+  xlim(ax,xran);
+  ylim(ax,yran);
   if strcmp(disttype,'spl')
     xlabel(ax,'Diff off12 (samples)');
     ylabel(ax,'Diff off13 (samples)');
-    axis(ax,[-50 50 -50 50]);
   elseif strcmp(disttype,'km')
     xlabel(ax,'Diff E loc (km)');
     ylabel(ax,'Diff N loc (km)');
-    axis(ax,[-4 4 -4 4]);
   end
-  plot(ax,ax.XLim,ax.YLim,'k--','linew',1);
+  % plot(ax,ax.XLim,ax.YLim,'k--','linew',1);
   hold(ax,'off');
 
-  ax=f.ax(2);
-  hold(ax,'on'); ax.Box = 'on'; grid(ax,'on');
-  density1d = density_pixel(dpltst(:,2),dpltst(:,3));
-  dum = density1d(density1d(:,3)>0, :);
+  %cumulative density, bin type determined by 'bintype'
+  ax=f.ax(2); hold(ax,'on'); ax.Box = 'on'; grid(ax, 'on'); axis(ax, 'equal');
+  if strcmp(bintype,'pixel')
+    den1d = density_pixel(dlocplt(:,1),dlocplt(:,2));
+  elseif strcmp(bintype,'grid')
+    den1d = density_matrix(dlocplt(:,1),dlocplt(:,2),xran,yran,dx,dy);
+  end
+  den1d = den1d(den1d(:,3)>0, :);
+
+  dum = den1d;
   dum(dum(:,3)>1, :) = [];
-  scatter(ax,dum(:,1),dum(:,2),5,log(dum(:,3)),'o','linew',0.2);  %, 'MarkerEdgeColor', 'w')
-  dum = sortrows(density1d(density1d(:,3)>0, :), 3);
+  if strcmp(scale,'log10')
+    dum(:,3) = log10(dum(:,3));
+  end
+  scatter(ax,dum(:,1),dum(:,2),msize,dum(:,3),symbol,'linew',0.2);  %, 'MarkerEdgeColor', 'w')
+  
+  dum = sortrows(den1d,3);
   dum(dum(:,3)==1, :) = [];
-  scatter(ax,dum(:,1),dum(:,2),5,log(dum(:,3)),'o','filled','MarkerEdgeColor','none');  %,
-  colormap(ax,'jet');
-  c=colorbar(ax,'east');
-  c.Label.String = strcat({'log_{10}(# of detections / pixel)'});
-  axis(ax, 'equal');
+  if strcmp(scale,'log10')
+    dum(:,3) = log10(dum(:,3));
+  end  
+  scatter(ax,dum(:,1),dum(:,2),msize,dum(:,3),symbol,'filled','MarkerEdgeColor','none');
+  text(ax,0.98,0.05,sprintf('%d events',size(dlocplt,1)),'Units','normalized',...
+    'HorizontalAlignment','right','FontSize',9);
+  colormap(ax,flipud(colormap(ax,'kelicol')));
+  c=colorbar(ax,'SouthOutside');
+  ax.CLim(2) = prctile(dum(:,3),99);
+  if strcmp(scale,'log10')
+    c.Label.String = strcat('log_{10}(',cstr{1},')');
+  elseif strcmp(scale,'linear')
+    c.Label.String = cstr{1};  
+  end
+  ax.GridLineStyle = '--';
+  ax.XAxisLocation = 'top';
+  xlim(ax,xran);
+  ylim(ax,yran);
+  % xticks(ax,xran(1):5:xran(2));
+  % yticks(ax,yran(1):5:yran(2));
   if strcmp(disttype,'spl')
     xlabel(ax,'Diff off12 (samples)');
     ylabel(ax,'Diff off13 (samples)');
-    axis(ax,[-50 50 -50 50]);
   elseif strcmp(disttype,'km')
     xlabel(ax,'Diff E loc (km)');
     ylabel(ax,'Diff N loc (km)');
-    axis(ax,[-4 4 -4 4]);
   end
-  plot(ax,ax.XLim,ax.YLim,'k--','linew',1);
+  % plot(ax,ax.XLim,ax.YLim,'k--','linew',1);
   hold(ax,'off');
 
-end
+  %contours of cumulative density
+  ax=f.ax(3); hold(ax,'on'); ax.Box = 'on'; grid(ax, 'on'); axis(ax, 'equal');
+  if strcmp(disttype,'spl')
+    [xyzgridpad,xgrid,ygrid,zgrid,ind2] = ...
+      zeropadmat2d(den1d,xran(1):1:xran(2),yran(1):1:yran(2));    
+  elseif strcmp(disttype,'km')
+    [xyzgridpad,xgrid,ygrid,zgrid,ind2] = ...
+      zeropadmat2d(den1d,xran(1)+dx/2:dx:xran(2)-dx/2,yran(1)+dy/2:dy:yran(2)-dy/2);
+  end
+  zgridgf = imgaussfilt(zgrid, smoothsigma);  %smooth it a bit
+  % perc = 50:10:90;
+  % conplt = prctile(dum(:,3),perc);
+  conplt=1:intvl:prctile(den1d(:,3),99);
+  if strcmp(scale,'log10')
+    zgridgf = log10(zgridgf);
+  end
+  conmat = contour(ax,xgrid,ygrid,zgridgf,conplt,'-'); %,'ShowText','on','color',[.3 .3 .3]
+  colormap(ax,flipud(colormap(ax,'kelicol')));
+  c=colorbar(ax,'SouthOutside');
+  ax.CLim(2) = prctile(dum(:,3),99);
+  if strcmp(scale,'log10')
+    c.Label.String = strcat('log_{10}(',cstr{1},')');
+  elseif strcmp(scale,'linear')
+    c.Label.String = cstr{1};  
+  end
+  ax.GridLineStyle = '--';
+  ax.XAxisLocation = 'top';
+  xlim(ax,xran);
+  ylim(ax,yran);
+  % xticks(ax,xran(1):5:xran(2));
+  % yticks(ax,yran(1):5:yran(2));
+  if strcmp(disttype,'spl')
+    xlabel(ax,'Diff off12 (samples)');
+    ylabel(ax,'Diff off13 (samples)');
+  elseif strcmp(disttype,'km')
+    xlabel(ax,'Diff E loc (km)');
+    ylabel(ax,'Diff N loc (km)');
+  end
 
+% end
 
 % keyboard
 

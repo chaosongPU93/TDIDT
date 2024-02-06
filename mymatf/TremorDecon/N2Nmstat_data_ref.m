@@ -5,6 +5,11 @@
 % 'deconv_ref_4s_exp_4thsta.m' because they are getting more and more 
 % complicated and different from the original scope of 
 % 'deconv_ref_4s_exp_4thsta.m'
+% --Instead of asking the distance from each src to all others within 2s,
+% ie, close-in-time sources, we now move on to ask within 10s (20-s range),
+% not only the distance, but also the number of srcs matter. 20-s range 
+% is able to constrain the migration to be less than 100m, 20% of the 
+% distance, if there is any migration. --- 2024/01/17
 % 
 %
 %
@@ -39,6 +44,7 @@ ttol = 35;
 ntol = 3;
 trange = load(strcat(rstpath, '/MAPS/tdec.bstran',num2str(ttol),'s.pgc002.',cutout(1:4)));
 % trange = trange(1:end-1,:);
+nbst = size(trange,1);
 tlen = trange(:,3)-trange(:,2);
 tlensum = sum(tlen);
 
@@ -105,13 +111,18 @@ fnsuffix = [];
 typepltnoi = 1; %plot noise
 % typepltnoi = 2; %plot data -noise
 
-keyboard
+% keyboard
 
-%%
+%% fraction of 'isolated' events, eg, when m=1, evts whose minimum interevt time >0.375s
+%%%2 definitions of inter-event times, one is what we have been used
+%%%the other is the smaller one of the diff time to the left and right
 nbst = size(trange,1);
 m = 1;
 dtcut = 0.25*m+0.125;
-mindtinter = [];
+mindtinter=[];
+dtinter=[];
+mindtintern=[];
+dtintern=[];
 for i = 1: nbst
   if nsrc(i) == 0
     continue
@@ -119,21 +130,117 @@ for i = 1: nbst
   ist = sum(nsrc(1:i-1))+1;
   ied = ist+nsrc(i)-1;
   impi = imp(ist:ied,:);
+  ist = sum(nsrcn(1:i-1))+1;
+  ied = ist+nsrcn(i)-1;
+  impin = impn(ist:ied,:);
   %between Nth and (N-1)th source; Nth and (N-2)th; Nth and (N-3)th
-  dtfor = diffcustom(impi(:,1), m,'forward');
-  dtfor = [zeros(m,1); dtfor];
-  %   dtarvlnnsepall = [dtarvlnnsepall; dtarvl{nsep}];
-  dtback = diffcustom(impi(:,1), m,'backward');
-  dtback = [dtback; zeros(m,1)]; 
-  tmp1 = [dtfor dtback];  %time to N-m and N+m for each N   
+  dtfor = diffcustom(impi(:,1), m,'forward'); %to its preceding one
+  dtforpad = [zeros(m,1); dtfor];
+  dtback = diffcustom(impi(:,1), m,'backward'); %to its following one
+  dtbackpad = [dtback; zeros(m,1)]; 
+  tmp1 = [dtforpad dtbackpad];  %time to N-m and N+m for each N
+  dtforn = diffcustom(impin(:,1), m,'forward'); %to its preceding one
+  dtforpadn = [zeros(m,1); dtforn];
+  dtbackn = diffcustom(impin(:,1), m,'backward'); %to its following one
+  dtbackpadn = [dtbackn; zeros(m,1)]; 
+  tmp1n = [dtforpadn dtbackpadn];  %time to N-m and N+m for each N     
   %choose the min time to neighbors to find isolated ones
-  tmp2 = [dtback(1:m); min(tmp1(m+1: end-m, :),[],2); dtfor(1:m)];
+  tmp2 = [dtbackpad(1:m); min(tmp1(m+1: end-m, :),[],2); dtforpad(1:m)];
   mindtinter = [mindtinter; tmp2];
+  dtinter = [dtinter; dtfor];
+  tmp2n = [dtbackpadn(1:m); min(tmp1n(m+1: end-m, :),[],2); dtforpadn(1:m)];
+  mindtintern = [mindtintern; tmp2n];
+  dtintern = [dtintern; dtforn];
 end
 %if the smaller one of the time to N-m and N+m for the source N is big, it is
 %isolated
 nevtiso = sum(mindtinter/sps>dtcut);
 fraciso = nevtiso/length(imp);
+nevtison = sum(mindtintern/sps>dtcut);
+fracison = nevtison/length(impn);
+
+%%
+f=initfig(12,9,2,2); %initialize fig
+ax=f.ax(1); hold(ax,'on'); ax.Box='on'; grid(ax,'on'); set(ax,'YScale','log');
+binedge=0:0.1:12;
+[N1d]=histcounts(dtinter/sps,binedge,'normalization','count');
+[N1n]=histcounts(dtintern/sps,binedge,'normalization','count');
+N1d=[N1d N1d(end)];
+N1n=[N1n N1n(end)];
+p1d=stairs(ax,binedge,N1d,'b','LineWidth',1);
+p1n=stairs(ax,binedge,N1n,'r','LineWidth',1);
+% p1=histogram(ax,dtinter/sps,'binedges',binedge,'normalization','count','Facec','b');
+% p2=histogram(ax,dtintern/sps,'binedges',binedge,'normalization','count','Facec','r');
+fitstruct=robustexpfit(binedge(6:end),N1d(6:end),'log10',[1e3 -1]);
+fitobj=fitstruct.fitobj;
+coef=coeffvalues(fitobj); slp1d=coef(2);
+yfit1d = feval(fitobj,binedge);
+plot(ax,binedge,yfit1d,'b--');
+fitstruct=robustexpfit(binedge(6:end),N1n(6:end),'log10',[1e3 -1]);
+fitobj=fitstruct.fitobj;
+coef=coeffvalues(fitobj); slp1n=coef(2);
+yfit1n = feval(fitobj,binedge);
+plot(ax,binedge,yfit1n,'r--');
+xlabel(ax,'Time (s) from each to its preceding');
+ylabel(ax,'Count');
+xlim(ax,[0 6]);
+legend(ax,[p1d,p1n],'Data','Synthetic noise');
+% [lambdahat,lambdaci] = poissfit(dtinter/sps)
+% x=0:1:12;
+% y=poisspdf(x,lambdahat);
+% plot(ax,x,y,'r-','linew',2);
+% keyboard
+ax=f.ax(3); hold(ax,'on'); ax.Box='on'; grid(ax,'on'); set(ax,'YScale','log');
+N1=N1d-N1n;
+p1=stairs(ax,binedge,N1,'k','LineWidth',1);
+% fitstruct=robustexpfit(binedge(6:50),N1(6:50),'log10',[1e3 -1]);
+% fitobj=fitstruct.fitobj;
+% coef=coeffvalues(fitobj); slp1=coef(2);
+% yfit1 = feval(fitobj,binedge);
+% plot(ax,binedge,yfit1,'k--');
+xlabel(ax,'Time (s) from each to its preceding');
+ylabel(ax,'Count');
+xlim(ax,[0 6]);
+ylim(ax,[0 1e4]);
+legend(ax,p1,'Data-Synthetic noise');
+ax=f.ax(2); hold(ax,'on'); ax.Box='on'; grid(ax,'on'); set(ax,'YScale','log');
+[N2d]=histcounts(mindtinter/sps,binedge,'normalization','count');
+[N2n]=histcounts(mindtintern/sps,binedge,'normalization','count');
+N2d=[N2d N2d(end)];
+N2n=[N2n N2n(end)];
+stairs(ax,binedge,N2d,'b','LineWidth',1);
+stairs(ax,binedge,N2n,'r','LineWidth',1);
+% histogram(ax,mindtinter/sps,'binedges',binedge,'normalization','count','Facec','b');
+% histogram(ax,mindtintern/sps,'binedges',binedge,'normalization','count','Facec','r');
+% fitstruct=robustexpfit(binedge(6:end),N2d(6:end),'log10',[1e3 -1]);
+% fitobj=fitstruct.fitobj;
+% coef=coeffvalues(fitobj); slp2d=coef(2);
+% yfit2d = feval(fitobj,binedge);
+% plot(ax,binedge,yfit2d,'b--');
+% fitstruct=robustexpfit(binedge(6:end),N2n(6:end),'log10',[1e3 -1]);
+% fitobj=fitstruct.fitobj;
+% coef=coeffvalues(fitobj); slp2n=coef(2);
+% yfit2n = feval(fitobj,binedge);
+% plot(ax,binedge,yfit2n,'r--');
+xlabel(ax,'Time (s) from each to nearest neighbor');
+ylabel(ax,'Count');
+xlim(ax,[0 6]);
+% [lambdahat,lambdaci] = poissfit(mindtinter/sps)
+% x=0:1:12;
+% y=poisspdf(x,lambdahat);
+% plot(ax,x,y,'r-','linew',2);
+ax=f.ax(4); hold(ax,'on'); ax.Box='on'; grid(ax,'on'); set(ax,'YScale','log');
+N2=N2d-N2n;
+stairs(ax,binedge,N2,'b','LineWidth',1);
+% fitstruct=robustexpfit(binedge(6:50),N2(6:50),'log10',[1e3 -1]);
+% fitobj=fitstruct.fitobj;
+% coef=coeffvalues(fitobj); slp2=coef(2);
+% yfit2 = feval(fitobj,binedge);
+% plot(ax,binedge,yfit2,'k--');
+xlabel(ax,'Time (s) from each to nearest neighbor');
+ylabel(ax,'Count');
+xlim(ax,[0 6]);
+ylim(ax,[0 1e4]);
 
 keyboard
 
@@ -143,7 +250,10 @@ nbst = size(trange,1);
 
 [fracsrc2all, dfracsrc2all,mmaxzero, f]=frac_uniqevt_incluster(nbst,imp,nsrc,mmax,sps);
 [fracsrc2alln, dfracsrc2alln,mmaxzeron, f]=frac_uniqevt_incluster(nbst,impn,nsrcn,mmax,sps);
-dfracsrc2alldmn = dfracsrc2all - dfracsrc2alln;
+aa = (fracsrc2all*size(imp,1) - fracsrc2alln*size(impn,1))/100;
+fracsrc2alldmn = aa/(size(imp,1)-size(impn,1))*100;
+bb = (dfracsrc2all*size(imp,1) - dfracsrc2alln*size(impn,1))/100;
+dfracsrc2alldmn = bb/(size(imp,1)-size(impn,1))*100;
 % f=initfig;
 % ax=f.ax(1); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
 % plot(ax,1:mmaxzero,dfracsrc2alldmn(1:mmaxzero),'ro-','linew',1,'markersize',4);
@@ -153,7 +263,7 @@ dfracsrc2alldmn = dfracsrc2all - dfracsrc2alln;
 % legend(ax,'exclusive, data - synthetic noise');
 % xlim(ax,[0 mmax]);
 
-% keyboard
+keyboard
 
 
 %% for a few m, diff time distribution between N&N-m, and fraction w/i dtcut  

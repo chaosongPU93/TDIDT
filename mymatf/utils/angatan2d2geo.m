@@ -1,11 +1,12 @@
-function anggeo = angatan2d2geo(angatan2d)
+function [anggeo,anggeooppo] = angatan2d2geo(angatan2d)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% anggeo = angatan2d2geo(angatan2d)
+% [anggeo,anggeooppo] = angatan2d2geo(angatan2d)
 %
 % A transformation from the angle under the convention of 'atan2d', where 
 % atan2d(Y,X) is the four quadrant arctangent of the elements of X and Y
 % such that -180 <= atan2d(Y,X) <= 180, to the angle under the convention 
-% of geographical north as the start and count clockwise.
+% of geographical north as the start and count clockwise. 
+% Return the 'anggeo' and its opposite direction 'anggeooppo'.
 %
 %
 % By Chao Song, chaosong@princeton.edu
@@ -23,3 +24,7 @@ if temp > 360
 end
   
 anggeo = temp;
+anggeooppo = anggeo-180;  %its opposite direction 
+if anggeooppo < 0
+  anggeooppo = anggeooppo+360;
+end
