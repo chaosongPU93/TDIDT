@@ -84,10 +84,19 @@ if isequal(ftrans, 'directhypo')
   if length(indmatch) < length(induniq)
     warning("Some inputs did not find a match, used grid is too small");
     return
+%   elseif length(indmatch) < length(induniq)  
+%     warning("Some inputs find more than one match, needs check");
+%     return
   end 
   for i =1:size(offset,1)
-    indgrid(i,1) = find(offset(i,1)==offgrid(:,7) & offset(i,2)==offgrid(:,8));
-    indinput(i,1) = i;
+    tmp = find(offset(i,1)==offgrid(:,7) & offset(i,2)==offgrid(:,8));
+    if length(tmp)>1
+      disp(i);
+      warning("this input offset has more than one match in the loc grid");
+    else
+      indgrid(i,1) = tmp;
+      indinput(i,1) = i;
+    end
   end
   tmp = offgrid(indgrid, :); % only use the matched points
   lon0 = -123.585000;
@@ -219,8 +228,14 @@ else
     return
   end 
   for i =1:size(offset,1)
-    indgrid(i,1) = find(offset(i,1)==offgrid(:,5) & offset(i,2)==offgrid(:,6));
-    indinput(i,1) = i;
+    tmp = find(offset(i,1)==offgrid(:,5) & offset(i,2)==offgrid(:,6));
+    if length(tmp)>1
+      disp(i);
+      warning("this input offset has more than one match in the loc grid");
+    else
+      indgrid(i,1) = tmp;
+      indinput(i,1) = i;
+    end
   end
   tmp = offgrid(indgrid, :); % only use the matched points
   [dx,dy] = absloc2relaloc(tmp(:,1),tmp(:,2),lon0,lat0); % convert to rela loc around 002

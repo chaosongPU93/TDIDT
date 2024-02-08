@@ -8,6 +8,15 @@ function [dloc,dt,k,dloc_spl]=dloc_evtcluster(impcluster,implocclus,sps,ftrans,m
 % between event pair N and N-n inside each cluster, where n<=m. For example, 
 % you can target all consecutive events in doublets, triplets, etc., or N and
 % N-2 in triplets, quaduplets, quintuplets, etc.
+%
+% 2024/02/06, mapping from samples to relation location already contains error,
+% so when you try to obtain the location difference, or distance, start with 
+% the difference in samples first. For example, if you ask the difference in 
+% certain directions, first obtain the difference in off12 and off13, then map
+% the diff to location, then you can project along any direction to get the
+% loc difference along that direction, or the distance (abs of loc diff) in
+% that direction, etc. In all, it is NOT recommended to use output 'dloc' 
+% unless a lof of data points would average out the error. 
 % 
 % 
 %

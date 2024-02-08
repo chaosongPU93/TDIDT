@@ -10,6 +10,13 @@
 % area of each circle. 1 minus this ratio of area indicates the overlapping 
 % extent.
 % 
+% 2024/02/06, mapping from samples to relation location already contains error,
+% so when you try to obtain the location difference, or distance, start with 
+% the difference in samples first. For example, if you ask the difference in 
+% certain directions, first obtain the difference in off12 and off13, then map
+% the diff to location, then you can project along any direction to get the
+% loc difference along that direction, or the distance (abs of loc diff) in
+% that direction, etc.
 %
 %
 %
@@ -65,37 +72,53 @@ load(strcat(rstpath, '/MAPS/',savefile));
 % keyboard
 
 %%
-%%%param for secondary sources removed
-locxyprojall = allbstsig.locxyprojall;
-tarvlsplstall = allbstsig.impindepall(:,1);
-nsrc = allbstsig.nsrc;
-imp = allbstsig.impindepall;
-locxyprojalln = allbstnoi.locxyprojall;
-tarvlsplstalln = allbstnoi.impindepall(:,1);
-nsrcn = allbstnoi.nsrc;
-impn = allbstnoi.impindepall;
-supertstr = 'Secondary sources removed';
-fnsuffix = [];
+% %%%param for secondary sources removed
+% locxyprojall = allbstsig.locxyprojall;
+% tarvlsplstall = allbstsig.impindepall(:,1);
+% nsrc = allbstsig.nsrc;
+% imp = allbstsig.impindepall;
+% locxyprojalln = allbstnoi.locxyprojall;
+% tarvlsplstalln = allbstnoi.impindepall(:,1);
+% nsrcn = allbstnoi.nsrc;
+% impn = allbstnoi.impindepall;
+% supertstr = 'Secondary sources removed';
+% fnsuffix = [];
 
-% %%%param for further checked at KLNB
-% locxyprojall = allbstsig.locxyproj4thall;
-% tarvlsplstall = allbstsig.impindep4thall(:,1);
-% nsrc = allbstsig.nsrc4th;
-% imp = allbstsig.impindep4thall;
-% locxyprojalln = allbstnoi.locxyproj4thall;
-% tarvlsplstalln = allbstnoi.impindep4thall(:,1);
-% nsrcn = allbstnoi.nsrc4th;
-% impn = allbstnoi.impindep4thall;
-% supertstr = 'Further checked at KLNB';
-% fnsuffix = '4th';
+%%%param for further checked at KLNB
+locxyprojall = allbstsig.locxyproj4thall;
+tarvlsplstall = allbstsig.impindep4thall(:,1);
+nsrc = allbstsig.nsrc4th;
+imp = allbstsig.impindep4thall;
+locxyprojalln = allbstnoi.locxyproj4thall;
+tarvlsplstalln = allbstnoi.impindep4thall(:,1);
+nsrcn = allbstnoi.nsrc4th;
+impn = allbstnoi.impindep4thall;
+supertstr = 'Further checked at KLNB';
+fnsuffix = '4th';
 
 %choice of diameter of circular sources
 diams = [0.1 0.3 0.5 0.7];
 
+% impuse = imp;
+% nsrcuse = nsrc;
+impuse = impn;
+nsrcuse = nsrcn;
+
+%to the 'mmax' for which the resulting number of clusters is nonzero
+mmax=1;
+timetype = 'tarvl';
+dtcut = 0.25*mmax+0.125;
+[~,impuni]=evtcluster(nbst,impuse,nsrcuse,mmax,dtcut,sps,timetype);
+while ~isempty(impuni)
+  mmax=mmax+1;
+  dtcut = 0.25*mmax+0.125;
+  [~,impuni]=evtcluster(nbst,impuse,nsrcuse,mmax,dtcut,sps,timetype);
+end
+mmax=mmax-1;
 
 %% loc difference between events pairs N and N-n in clusters of m+1 events (N and N-m w/i dtcut)
-mmax=14; %to define cluster of events within N and N-m
-n=2;  %to decide which event pair inthe cluster to look at
+% mmax=14; %to define cluster of events within N and N-m
+n=1;  %to decide which event pair inthe cluster to look at
 dtlump=cell(mmax,1);
 dloclump=cell(mmax,1);
 dlocspllump=cell(mmax,1);
@@ -109,29 +132,45 @@ for m=n:mmax
   % timetype = 'tori';
   %obtain clusters of events defined by N and N-m w/i dtcut
   dtcut = 0.25*m+0.125;
-  [impcluster,impuni]=evtcluster(nbst,imp,nsrc,m,dtcut,sps,timetype);
-  imploc = off2space002(impuni(:,7:8),sps,ftrans,0); % 8 cols, format: dx,dy,lon,lat,dep,ttrvl,off12,off13
+  [impcluster,impuni]=evtcluster(nbst,impuse,nsrcuse,m,dtcut,sps,timetype);
   implocclus = off2space002(impcluster(:,7:8),sps,ftrans,0); % 8 cols, format: dx,dy,lon,lat,dep,ttrvl,off12,off13
 
   %for each cluster, obtain their diff location between events N and N-n
   % timetype = 'tori';
-  [dloc,dt,k,dloc_spl]=dloc_evtcluster(impcluster,implocclus,sps,ftrans,m,n,timetype);
+  [~,dt,k,dloc_spl]=dloc_evtcluster(impcluster,implocclus,sps,ftrans,m,n,timetype);
+  temp = off2space002(dloc_spl(:,1:2),sps,ftrans,0); % 8 cols, format: dx,dy,lon,lat,dep,ttrvl,off12,off13
+  dloc=temp(:,1:2);
   dtlump{m}=dt;
   dloclump{m}=dloc;
   dlocspllump{m}=dloc_spl;
   
-%   [coeff,score,angle,anglegeo,ellx,elly]=pcaellipse(dloc,p);
-  
 %   %plot the diff location in map
-%   cstr={'# events / grid'}; xran=[-4 4]; yran=[-4 4]; dx=0.1; dy=0.1;
-%   f=plt_srcdlocinmap(dt/sps,dloc,[],'km',timetype,...
-%     10,cstr,'s','linear','grid',xran,yran,dx,dy,2);
+%   [coeff,score,angle,anglegeo,x0,y0,semia,semib,ellx,elly]=pcaellipse(dloc_spl);
+%   cstr={'# events / pixel'}; xran=[-50 50]; yran=[-50 50]; dx=1; dy=1;
+%   [f,den1d_spl,conmat]=plt_srcdlocinmap(dt/sps,dloc_spl,[],'spl',timetype,...
+%     6,cstr,'o','linear','pixel',xran,yran,dx,dy,1,2);
 %   ax=f.ax(2);
 %   hold(ax,'on');
-%   plot(ax,x,y,'k-','linew',2);
+%   plot(ax,ellx,elly,'k-','linew',2);
+%   plot(ax,x0+10*[coeff(1,2),-coeff(1,2)],y0+10*[coeff(2,2),-coeff(2,2)],'k--','linew',2);
+%   plot(ax,x0+10*[coeff(1,1),-coeff(1,1)],y0+10*[coeff(2,1),-coeff(2,1)],'k--','linew',2);
+%   text(ax,0.98,0.15,sprintf('%d ^o',round(anglegeo(2))),'Units','normalized',...
+%     'HorizontalAlignment','right','FontSize',9);
+%   text(ax,0.98,0.1,sprintf('asprat: %.1f',semia/semib),'Units','normalized',...
+%     'HorizontalAlignment','right','FontSize',9);
+%   hold(ax,'off');
+  
+%   %%
+%   [coeff,score,angle,anglegeo,x0,y0,semia,semib,ellx,elly]=pcaellipse(dloc); 
+%   cstr={'# events / pixel'}; xran=[-4 4]; yran=[-4 4]; dx=0.1; dy=0.1;
+%   [f,den1d]=plt_srcdlocinmap(dt/sps,dloc,[],'km',timetype,...
+%     10,cstr,'o','linear','pixel',xran,yran,dx,dy,0);
+%   ax=f.ax(2);
+%   hold(ax,'on');
+%   plot(ax,ellx,elly,'k-','linew',2);
 %   plot(ax,x0+[coeff(1,2),-coeff(1,2)],y0+[coeff(2,2),-coeff(2,2)],'k--','linew',2);
 %   plot(ax,x0+[coeff(1,1),-coeff(1,1)],y0+[coeff(2,1),-coeff(2,1)],'k--','linew',2);
-%   text(ax,0.98,0.15,sprintf('%d ^o',round(ang2)),'Units','normalized',...
+%   text(ax,0.98,0.15,sprintf('%d ^o',round(anglegeo(2))),'Units','normalized',...
 %     'HorizontalAlignment','right','FontSize',9);
 %   text(ax,0.98,0.1,sprintf('asprat: %.1f',semia/semib),'Units','normalized',...
 %     'HorizontalAlignment','right','FontSize',9);
@@ -141,13 +180,9 @@ for m=n:mmax
   %there is some elongation along N45E, then we want to project along that direction
   projang=135;
   % projang=ang2; %note that 'ang2', 2nd pc axis from PCA is very close to the eyeball value 135
-  [~,~,impprojlocclus] = customprojection(implocclus(:,1:2),projang);
-  impprojlocclusspl=impcluster;
-  [~,~,impprojlocclusspl(:,7:8)] = customprojection(impcluster(:,7:8),projang);
-  % timetype = 'tori';
-  [dprojloc,~,~,dprojlocspl]=dloc_evtcluster(impprojlocclusspl,impprojlocclus,sps,ftrans,m,n,timetype);
+  [~,~,dprojloc] = customprojection(dloc(:,1:2),projang);
 %   f=plt_srcdlocinmap(dt/sps,dprojloc,[],'km',timetype,...
-%     10,cstr,'s','linear','grid',xran,yran,dx,dy);
+%     10,cstr,'o','linear','pixel',xran,yran,dx,dy,0);
   ndloc(m)=size(dprojloc,1);
   dprojloclump{m}=dprojloc;
   
@@ -168,36 +203,19 @@ for m=n:mmax
 end
 
 %%
-st=2;
+st=n;
 dt=cat(1,dtlump{st:end});
-dloc=cat(1,dloclump{st:end});
 dloc_spl=cat(1,dlocspllump{st:end});
-dprojloc=cat(1,dprojloclump{st:end});
-dprojloccs=cat(1,dprojloccslump{st:end});
-
-%%
-%plot the diff location in map
-[coeff,score,angle,anglegeo,x0,y0,semia,semib,ellx,elly]=pcaellipse(dloc);
-cstr={'# events / grid'}; xran=[-4 4]; yran=[-4 4]; dx=0.1; dy=0.1;
-f=plt_srcdlocinmap(dt/sps,dloc,[],'km',timetype,...
-  10,cstr,'s','linear','grid',xran,yran,dx,dy,2,2);
-ax=f.ax(2);
-hold(ax,'on');
-plot(ax,ellx,elly,'k-','linew',2);
-plot(ax,x0+[coeff(1,2),-coeff(1,2)],y0+[coeff(2,2),-coeff(2,2)],'k--','linew',2);
-plot(ax,x0+[coeff(1,1),-coeff(1,1)],y0+[coeff(2,1),-coeff(2,1)],'k--','linew',2);
-text(ax,0.98,0.15,sprintf('%d ^o',round(anglegeo(2))),'Units','normalized',...
-  'HorizontalAlignment','right','FontSize',9);
-text(ax,0.98,0.1,sprintf('asprat: %.1f',semia/semib),'Units','normalized',...
-  'HorizontalAlignment','right','FontSize',9);
-hold(ax,'off');
+dloc=cat(1,dloclump{st:end});
+% dprojloc=cat(1,dprojloclump{st:end});
+% dprojloccs=cat(1,dprojloccslump{st:end});
 
 %%
 %plot the diff location in map
 [coeff,score,angle,anglegeo,x0,y0,semia,semib,ellx,elly]=pcaellipse(dloc_spl);
 cstr={'# events / pixel'}; xran=[-50 50]; yran=[-50 50]; dx=1; dy=1;
-f=plt_srcdlocinmap(dt/sps,dloc_spl,[],'spl',timetype,...
-  6,cstr,'o','linear','pixel',xran,yran,dx,dy,2);
+[f,den1d_spl,conmat]=plt_srcdlocinmap(dt/sps,dloc_spl,[],'spl',timetype,...
+  6,cstr,'o','linear','pixel',xran,yran,dx,dy,1,1);
 ax=f.ax(2);
 hold(ax,'on');
 plot(ax,ellx,elly,'k-','linew',2);
@@ -211,44 +229,112 @@ hold(ax,'off');
 % keyboard
 
 %%
-%choose a strip with a finite width.
-widspl=2;
-ind1=find(abs(dloc_spl(:,1))<=widspl);
-ind2=find(abs(dloc_spl(:,2))<=widspl);
-f = initfig(8,4.5,1,2);
-ax=f.ax(1); hold(ax,'on'); ax.Box = 'on'; grid(ax,'on'); axis(ax, 'equal');
-scatter(ax,dloc_spl(ind2,1),dloc_spl(ind2,2),3,[.8 .8 .8],'filled');
-scatter(ax,dloc_spl(ind1,1),dloc_spl(ind1,2),3,[.2 .2 .2],'filled');
-xlim(ax,[-50 50]); ylim(ax,[-50 50]);
-xlabel(ax,'Diff off12 (samples)'); ylabel(ax,'Diff off13 (samples)');
-ax=f.ax(2); hold(ax,'on'); ax.Box = 'on'; grid(ax,'on'); axis(ax, 'equal');
-scatter(ax,dloc(ind2,1),dloc(ind2,2),3,[.8 .8 .8],'filled');
-scatter(ax,dloc(ind1,1),dloc(ind1,2),3,[.2 .2 .2],'filled');
-xlim(ax,[-4 4]); ylim(ax,[-4 4]);
-xlabel(ax,'Diff E loc (km)'); ylabel(ax,'Diff N loc (km)');
-[coeff1,score,angle,anglegeo1,x0,y0]=pcaellipse(dloc(ind1,1:2));
-plot(ax,x0+10*[coeff1(1,1),-coeff1(1,1)],y0+10*[coeff1(2,1),-coeff1(2,1)],...
-  '-','linew',2,'Color',[.2 .2 .2]);
-text(ax,0.98,0.15,sprintf('%d ^o',round(anglegeo1(1))),'Units','normalized',...
+[coeff,score,angle,anglegeo,x0,y0,semia,semib,ellx,elly]=pcaellipse(dloc);
+cstr={'# events / pixel'}; xran=[-4 4]; yran=[-4 4]; dx=0.1; dy=0.1;
+[f,den1d]=plt_srcdlocinmap(dt/sps,dloc,[],'km',timetype,...
+  10,cstr,'o','linear','pixel',xran,yran,dx,dy,0);
+ax=f.ax(2);
+hold(ax,'on');
+plot(ax,ellx,elly,'k-','linew',2);
+plot(ax,x0+[coeff(1,2),-coeff(1,2)],y0+[coeff(2,2),-coeff(2,2)],'k--','linew',2);
+plot(ax,x0+[coeff(1,1),-coeff(1,1)],y0+[coeff(2,1),-coeff(2,1)],'k--','linew',2);
+text(ax,0.98,0.15,sprintf('%d ^o',round(anglegeo(2))),'Units','normalized',...
   'HorizontalAlignment','right','FontSize',9);
-[coeff2,score,angle,anglegeo2,x0,y0]=pcaellipse(dloc(ind2,1:2));
-plot(ax,x0+10*[coeff2(1,1),-coeff2(1,1)],y0+10*[coeff2(2,1),-coeff2(2,1)],...
-  '-','linew',2,'Color',[.8 .8 .8]);
-text(ax,0.98,0.1,sprintf('%d ^o',round(anglegeo2(1))),'Units','normalized',...
+text(ax,0.98,0.1,sprintf('asprat: %.1f',semia/semib),'Units','normalized',...
   'HorizontalAlignment','right','FontSize',9);
-% keyboard
+hold(ax,'off');
+
+% %% if choose a strip with a finite width in off12 or off13.
+% widspl=2;
+% ind1=find(abs(dloc_spl(:,1))<=widspl);
+% ind2=find(abs(dloc_spl(:,2))<=widspl);
+% f = initfig(8,4.5,1,2);
+% ax=f.ax(1); hold(ax,'on'); ax.Box = 'on'; grid(ax,'on'); axis(ax, 'equal');
+% scatter(ax,dloc_spl(ind2,1),dloc_spl(ind2,2),3,[.8 .8 .8],'filled');
+% scatter(ax,dloc_spl(ind1,1),dloc_spl(ind1,2),3,[.2 .2 .2],'filled');
+% xlim(ax,[-50 50]); ylim(ax,[-50 50]);
+% xlabel(ax,'Diff off12 (samples)'); ylabel(ax,'Diff off13 (samples)');
+% ax=f.ax(2); hold(ax,'on'); ax.Box = 'on'; grid(ax,'on'); axis(ax, 'equal');
+% scatter(ax,dloc(ind2,1),dloc(ind2,2),3,[.8 .8 .8],'filled');
+% scatter(ax,dloc(ind1,1),dloc(ind1,2),3,[.2 .2 .2],'filled');
+% xlim(ax,[-4 4]); ylim(ax,[-4 4]);
+% xlabel(ax,'Diff E loc (km)'); ylabel(ax,'Diff N loc (km)');
+% [coeff1,score,angle,anglegeo1,x0,y0]=pcaellipse(dloc(ind1,1:2));
+% plot(ax,x0+10*[coeff1(1,1),-coeff1(1,1)],y0+10*[coeff1(2,1),-coeff1(2,1)],...
+%   '-','linew',2,'Color',[.2 .2 .2]);
+% text(ax,0.98,0.15,sprintf('%d ^o',round(anglegeo1(1))),'Units','normalized',...
+%   'HorizontalAlignment','right','FontSize',9);
+% [coeff2,score,angle,anglegeo2,x0,y0]=pcaellipse(dloc(ind2,1:2));
+% plot(ax,x0+10*[coeff2(1,1),-coeff2(1,1)],y0+10*[coeff2(2,1),-coeff2(2,1)],...
+%   '-','linew',2,'Color',[.8 .8 .8]);
+% text(ax,0.98,0.1,sprintf('%d ^o',round(anglegeo2(1))),'Units','normalized',...
+%   'HorizontalAlignment','right','FontSize',9);
+% % keyboard
+% 
+% dlocsplplt=dloc_spl(ind1,:);
+% dlocplt=dloc(ind1,:);
+% [~,~,dprojlocplt] = customprojection(dlocplt(:,1:2),anglegeo1(1));
+% f = initfig(8,4.5,1,2);
+% supertit(f.ax,'abs(off12)<=2 samples',10);
+% xran=[-40 40]; binw=1; legendstr1={'off13'}; normopt='count';
+% f.ax(1)=plt_dlochist(f.ax(1),dlocsplplt(:,2),xran,binw,legendstr1,normopt);
+% xlabel(f.ax(1),'Location difference (samples)');
+% 
+% f = initfig(8,4.5,1,2);
+% supertit(f.ax,'abs(off12)<=2 samples',10);
+% xran=[-4 4]; binw=0.1; legendstr1={'E','N'}; normopt='countdensity';
+% f.ax(1)=plt_dlochist(f.ax(1),dlocplt,xran,binw,legendstr1,normopt);
+% legendstr2={sprintf('%d ^o',round(anglegeo1(1)))};
+% f.ax(2)=plt_dlochist(f.ax(2),dprojlocplt(:,1),xran,binw,legendstr2,normopt);  
+% distprojlocplt=median(abs(dprojlocplt(:,1)));
+
+%% if choose a strip with a finite width in the PCA direction
+[~,~,dprojloc] = customprojection(dloc(:,1:2),anglegeo(2));
+
+wid1=0.25;
+cstr={'# events / pixel'}; xran=[-4 4]; yran=[-4 4]; dx=0.1; dy=0.1;
+[f,den1d]=plt_srcdlocinmap(dt/sps,dprojloc,[],'km',timetype,...
+  10,cstr,'o','linear','pixel',xran,yran,dx,dy,0);
+ax=f.ax(2);
+hold(ax,'on');
+plot(ax,ax.XLim,[wid1 wid1],'-','linew',2,'color',[.7 .7 .7]);
+plot(ax,ax.XLim,[-wid1 -wid1],'-','linew',2,'color',[.7 .7 .7]);
+hold(ax,'off');
 
 %%
-ind1=find(abs(dloc_spl(:,1))<=2);
-dlocplt=dloc(ind1,:);
-[~,~,dprojlocplt] = customprojection(dlocplt(:,1:2),anglegeo1(1));
-f = initfig(8,4.5,1,2);
-supertit(f.ax,'abs(off12)<=2 samples',10);
+f = initfig(8,8,2,2);
+supertit(f.ax(1:2),sprintf('all, %d measurements',size(dloc,1)),10);
 xran=[-4 4]; binw=0.1; legendstr1={'E','N'}; normopt='countdensity';
-f.ax(1)=plt_dlochist(f.ax(1),dlocplt,xran,binw,legendstr1,normopt);
-legendstr2={'112 ^o'};
-f.ax(2)=plt_dlochist(f.ax(2),dprojlocplt(:,1),xran,binw,legendstr2,normopt);  
-distprojlocplt=median(abs(dprojlocplt(:,1)))
+f.ax(1)=plt_dlochist(f.ax(1),dloc,xran,binw,legendstr1,normopt);
+legendstr2={sprintf('%d ^o',round(anglegeo(2))), ...
+  sprintf('%d ^o',round(anglegeo(1)))};
+f.ax(2)=plt_dlochist(f.ax(2),dprojloc,xran,binw,legendstr2,normopt);  
+distprojloc=median(abs(dprojloc(:,1)));
+
+%strip along the short direction
+ind1=find(abs(dprojloc(:,2))<=wid1);
+dlocplt1=dloc(ind1,:);
+dprojlocplt1=dprojloc(ind1,:);
+title(f.ax(3),sprintf('A strip along %d^o of %.1f km wide, %d measurements',...
+  round(anglegeo(2)),2*wid1,size(dlocplt1,1)));
+% legendstr1={'E','N'};
+% f.ax(3)=plt_dlochist(f.ax(3),dlocplt,xran,binw,legendstr1,normopt);
+legendstr2={sprintf('%d ^o',round(anglegeo(2)))};
+f.ax(3)=plt_dlochist(f.ax(3),dprojlocplt1(:,1),xran,binw,legendstr2,normopt);  
+distprojlocplt=median(abs(dprojlocplt1(:,1)));
+
+%strip along the short direction
+wid2=0.15;
+ind2=find(abs(dprojloc(:,1))<=wid2);
+dlocplt2=dloc(ind2,:);
+dprojlocplt2=dprojloc(ind2,:);
+title(f.ax(4),sprintf('A strip along %d^o of %.1f km wide, %d measurements',...
+  round(anglegeo(1)),2*wid2,size(dlocplt2,1)));
+% xran=[-4 4]; binw=0.1; legendstr1={'E','N'}; normopt='countdensity';
+% f.ax(3)=plt_dlochist(f.ax(3),dlocplt,xran,binw,legendstr1,normopt);
+legendstr2={sprintf('%d ^o',round(anglegeo(1)))};
+f.ax(4)=plt_dlochist(f.ax(4),dprojlocplt2(:,2),xran,binw,legendstr2,normopt);  
+distprojlocplt=median(abs(dprojlocplt2(:,1)));
 
 %%
 for dmu=5:5:30

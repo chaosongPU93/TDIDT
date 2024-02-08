@@ -1,5 +1,5 @@
-function f=plt_srcdlocinmap(dt,dloc,dtran,disttype,timetype,...
-  msize,cstr,symbol,scale,bintype,xran,yran,dx,dy,smoothsigma,intvl)
+function [f,den1d,conmat,conobj]=plt_srcdlocinmap(dt,dloc,dtran,disttype,timetype,...
+  msize,cstr,symbol,scale,bintype,xran,yran,dx,dy,contourflag,smoothsigma,intvl)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % f=plt_srcdlocinmap(dt,dloc,disttype,timetype,bintype)
 %
@@ -23,6 +23,7 @@ defval('bintype','grid');
 defval('bintype','grid');
 defval('dx',[]);
 defval('dy',[]);
+defval('contourflag',1);
 defval('smoothsigma',2);
 defval('intvl',2);
 
@@ -35,10 +36,15 @@ defval('intvl',2);
 % tcor = round((imploc(:,6)-imploc0(6))*sps);   % travel time difference between each source and a ref source at 0,0
 % imptime = imp(:,1)-tcor;
 
-widin = 12;  % maximum width allowed is 8.5 inches
 htin = 5.5;   % maximum height allowed is 11 inches
 nrow = 1;
-ncol = 3;
+if contourflag
+  widin = 12;  % maximum width allowed is 8.5 inches
+  ncol = 3;
+else
+  widin = 8;  % maximum width allowed is 8.5 inches
+  ncol = 2;  
+end
 f = initfig(widin,htin,nrow,ncol); %initialize fig
 
 figxran = [0.06 0.96]; figyran = [0.06 0.96];
@@ -102,7 +108,8 @@ optaxpos(f,nrow,ncol,figxran,figyran,figxsep,figysep);
     den1d = density_matrix(dlocplt(:,1),dlocplt(:,2),xran,yran,dx,dy);
   end
   den1d = den1d(den1d(:,3)>0, :);
-
+  den1d = sortrows(den1d,3);
+  
   dum = den1d;
   dum(dum(:,3)>1, :) = [];
   if strcmp(scale,'log10')
@@ -142,46 +149,57 @@ optaxpos(f,nrow,ncol,figxran,figyran,figxsep,figysep);
   % plot(ax,ax.XLim,ax.YLim,'k--','linew',1);
   hold(ax,'off');
 
-  %contours of cumulative density
-  ax=f.ax(3); hold(ax,'on'); ax.Box = 'on'; grid(ax, 'on'); axis(ax, 'equal');
-  if strcmp(disttype,'spl')
-    [xyzgridpad,xgrid,ygrid,zgrid,ind2] = ...
-      zeropadmat2d(den1d,xran(1):1:xran(2),yran(1):1:yran(2));    
-  elseif strcmp(disttype,'km')
-    [xyzgridpad,xgrid,ygrid,zgrid,ind2] = ...
-      zeropadmat2d(den1d,xran(1)+dx/2:dx:xran(2)-dx/2,yran(1)+dy/2:dy:yran(2)-dy/2);
+  if contourflag
+    %contours of cumulative density
+    ax=f.ax(3); hold(ax,'on'); ax.Box = 'on'; grid(ax, 'on'); axis(ax, 'equal');
+    if strcmp(disttype,'spl')
+      [~,xgrid,ygrid,zgrid] = ...
+        zeropadmat2d(den1d,xran(1):1:xran(2),yran(1):1:yran(2));
+    elseif strcmp(disttype,'km')
+      [~,xgrid,ygrid,zgrid] = ...
+        zeropadmat2d(den1d,xran(1)+dx/2:dx:xran(2)-dx/2,yran(1)+dy/2:dy:yran(2)-dy/2);
+%       F = scatteredInterpolant(den1d(:,1),den1d(:,2),den1d(:,3),'linear','linear');
+%       [xgrid, ygrid] = meshgrid(xran(1):dx:xran(2),yran(1):dy:yran(2));
+%       x = reshape(xgrid,[],1);
+%       y = reshape(ygrid,[],1);
+%       z = F(x,y);
+%       zgrid = reshape(z,size(xgrid));
+    end
+    zgridgf = imgaussfilt(zgrid, smoothsigma);  %smooth it a bit
+    % perc = 50:10:90;
+    % conplt = prctile(dum(:,3),perc);
+    conplt=1:intvl:prctile(den1d(:,3),99);
+    if strcmp(scale,'log10')
+      zgridgf = log10(zgridgf);
+    end
+    [conmat,conobj] = contour(ax,xgrid,ygrid,zgridgf,conplt,'-'); %,'ShowText','on','color',[.3 .3 .3]
+    if ~isempty(conmat) 
+      contable = getContourLineCoordinates(conmat);
+      conmat=table2array(contable);
+    end
+    colormap(ax,flipud(colormap(ax,'kelicol')));
+    c=colorbar(ax,'SouthOutside');
+    ax.CLim(2) = prctile(dum(:,3),99);
+    if strcmp(scale,'log10')
+      c.Label.String = strcat('log_{10}(',cstr{1},')');
+    elseif strcmp(scale,'linear')
+      c.Label.String = cstr{1};
+    end
+    ax.GridLineStyle = '--';
+    ax.XAxisLocation = 'top';
+    xlim(ax,xran);
+    ylim(ax,yran);
+    % xticks(ax,xran(1):5:xran(2));
+    % yticks(ax,yran(1):5:yran(2));
+    if strcmp(disttype,'spl')
+      xlabel(ax,'Diff off12 (samples)');
+      ylabel(ax,'Diff off13 (samples)');
+    elseif strcmp(disttype,'km')
+      xlabel(ax,'Diff E loc (km)');
+      ylabel(ax,'Diff N loc (km)');
+    end
+    
   end
-  zgridgf = imgaussfilt(zgrid, smoothsigma);  %smooth it a bit
-  % perc = 50:10:90;
-  % conplt = prctile(dum(:,3),perc);
-  conplt=1:intvl:prctile(den1d(:,3),99);
-  if strcmp(scale,'log10')
-    zgridgf = log10(zgridgf);
-  end
-  conmat = contour(ax,xgrid,ygrid,zgridgf,conplt,'-'); %,'ShowText','on','color',[.3 .3 .3]
-  colormap(ax,flipud(colormap(ax,'kelicol')));
-  c=colorbar(ax,'SouthOutside');
-  ax.CLim(2) = prctile(dum(:,3),99);
-  if strcmp(scale,'log10')
-    c.Label.String = strcat('log_{10}(',cstr{1},')');
-  elseif strcmp(scale,'linear')
-    c.Label.String = cstr{1};  
-  end
-  ax.GridLineStyle = '--';
-  ax.XAxisLocation = 'top';
-  xlim(ax,xran);
-  ylim(ax,yran);
-  % xticks(ax,xran(1):5:xran(2));
-  % yticks(ax,yran(1):5:yran(2));
-  if strcmp(disttype,'spl')
-    xlabel(ax,'Diff off12 (samples)');
-    ylabel(ax,'Diff off13 (samples)');
-  elseif strcmp(disttype,'km')
-    xlabel(ax,'Diff E loc (km)');
-    ylabel(ax,'Diff N loc (km)');
-  end
-
-% end
 
 % keyboard
 
