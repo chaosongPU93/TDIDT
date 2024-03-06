@@ -51,10 +51,12 @@ xyloc = [x y];
 ind2 = nan(size(xyzscatter,1),1);
 for i = 1:size(xyzscatter,1)
 %   keyboard
-  ind2(i) = find(abs(xyloc(:,1)-xyzscatter(i,1))<1e-6 & abs(xyloc(:,2)-xyzscatter(i,2))<1e-6);
-  if isempty(ind2(i))
+%   i
+  ind = find(abs(xyloc(:,1)-xyzscatter(i,1))<1e-6 & abs(xyloc(:,2)-xyzscatter(i,2))<1e-6);
+  if isempty(ind)
     error('The input range of grid is smaller than data scatter.');
   end
+  ind2(i) = ind;
 end
 
 %At those matched grid points, just replace the z value 

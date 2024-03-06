@@ -1,5 +1,7 @@
 function meddist = median_of_wt_data_pdf(pdfx, pdf)
-% 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% meddist = median_of_wt_data_pdf(pdfx, pdf)
+%
 % This function is to get the median of the data that has different weights for
 % each point. Trying to deal with it from a point view that if you have the PDF
 % of the data with a certain distribution, you could obtain the CDF. Then the 
@@ -12,6 +14,7 @@ function meddist = median_of_wt_data_pdf(pdfx, pdf)
 % By Chao Song, chaosong@princeton.edu
 % First created date:   2020/10/05
 % Last modified date:   2020/10/05
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % vectorization and normalization of the input pdf, just in case
 pdfx=pdfx(:);

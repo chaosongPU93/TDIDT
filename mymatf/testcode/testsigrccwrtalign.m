@@ -142,6 +142,7 @@ hfout = sortrows(hfout, [daycol, seccol]);
 ttol = 35;
 trange = load(strcat(rstpath, '/MAPS/tdec.bstran',num2str(ttol),'s.pgc002.',cutout(1:4)));
 tlen = trange(:,3)-trange(:,2);
+nbst = size(trange,1);
 
 %%%load the empirical model param of time offset 14 for each addtional stations
 off14mod = load(strcat(rstpath, '/MAPS/timeoff_planefitparam_4thsta_160sps'),'w+');
@@ -291,24 +292,32 @@ if strcmp(alignflg,'wholewin')
     %compute running CC between 3 stations
     [ircc,rcc12,rcc13,rcc23] = RunningCC3sta(sigsta,rccmwlen);
     rccpair = [rcc12 rcc13 rcc23];
-    meanmedrcc(ipt) = mean(median(rccpair,1));
-    meanmeanrcc(ipt) = mean(mean(rccpair,1));
+    meanmedrcc123(ipt) = mean(median(rccpair,1));
+    meanmeanrcc123(ipt) = mean(mean(rccpair,1));
 
     cc12 = xcorr(sigsta(:,1), sigsta(:,2),0,'normalized');  %0-lag maximum cc based on current alignment
     cc13 = xcorr(sigsta(:,1), sigsta(:,3),0,'normalized');
     cc23 = xcorr(sigsta(:,2), sigsta(:,3),0,'normalized');
     ccpair = [cc12 cc13 cc23];
-    meancc(ipt) = mean(ccpair);
+    meancc123(ipt) = mean(ccpair);
 
-    [~,ind] = min(ccpair);
-    cc(ipt) = mean(ccpair(:,setdiff(1:3,ind)));
-    medrcc(ipt) = mean(median(rccpair(:,setdiff(1:3,ind)),1)); 
-    meanrcc(ipt) = mean(mean(rccpair(:,setdiff(1:3,ind)),1));
+%     [~,ind] = min(ccpair);
+%     meancc12(ipt) = mean(ccpair(:,setdiff(1:3,ind)));
+%     meanmedmedrcc12(ipt) = mean(median(rccpair(:,setdiff(1:3,ind)),1)); 
+%     meanmeanrcc12(ipt) = mean(mean(rccpair(:,setdiff(1:3,ind)),1));
 
-    cc(ipt) = mean(ccpair(:,[1 2]));
-    medrcc(ipt) = mean(median(rccpair(:,[1 2]),1)); 
-    meanrcc(ipt) = mean(mean(rccpair(:,[1 2]),1));
-  
+    meancc12(ipt) = mean(ccpair(:,[1 2]));
+    meanmedmedrcc12(ipt) = mean(median(rccpair(:,[1 2]),1)); 
+    meanmeanrcc12(ipt) = mean(mean(rccpair(:,[1 2]),1));
+
+    meancc13(ipt) = mean(ccpair(:,[1 3]));
+    meanmedmedrcc13(ipt) = mean(median(rccpair(:,[1 3]),1)); 
+    meanmeanrcc13(ipt) = mean(mean(rccpair(:,[1 3]),1));
+
+    meancc23(ipt) = mean(ccpair(:,[2 3]));
+    meanmedmedrcc23(ipt) = mean(median(rccpair(:,[2 3]),1)); 
+    meanmeanrcc23(ipt) = mean(mean(rccpair(:,[2 3]),1));
+
   end
   
 elseif strcmp(alignflg,'subwin')
@@ -414,29 +423,43 @@ elseif strcmp(alignflg,'subwin')
       ccpair = [ccpair; ccw12 ccw13 ccw23];
       
     end
-    meanmedrcc(ipt) = mean(median(rccpair,1));
-    meanmeanrcc(ipt) = mean(mean(rccpair,1));
-    meancc(ipt) = mean(mean(ccpair,1));
+    meanmedrcc123(ipt) = mean(median(rccpair,1));
+    meanmeanrcc123(ipt) = mean(mean(rccpair,1));
+    meancc123(ipt) = mean(mean(ccpair,1));
 
 %     [~,ind] = min(mean(ccpair,1));
 %     cc(ipt) = mean(mean(ccpair(:,setdiff(1:3,ind)), 1));
 %     medrcc(ipt) = mean(median(rccpair(:,setdiff(1:3,ind)),1)); 
 %     meanrcc(ipt) = mean(mean(rccpair(:,setdiff(1:3,ind)),1)); 
     
-    cc(ipt) = mean(mean(ccpair(:,[1 2]), 1));
-    medrcc(ipt) = mean(median(rccpair(:,[1 2]),1));
-    meanrcc(ipt) = mean(mean(rccpair(:,[1 2]),1));
+    meancc12(ipt) = mean(mean(ccpair(:,[1 2]), 1));
+    meanmedmedrcc12(ipt) = mean(median(rccpair(:,[1 2]),1));
+    meanmeanrcc12(ipt) = mean(mean(rccpair(:,[1 2]),1));
+    
+    meancc13(ipt) = mean(mean(ccpair(:,[1 3]), 1));
+    meanmedmedrcc13(ipt) = mean(median(rccpair(:,[1 3]),1)); 
+    meanmeanrcc13(ipt) = mean(mean(rccpair(:,[1 3]),1));
+
+    meancc23(ipt) = mean(mean(ccpair(:,[2 3]), 1));
+    meanmedmedrcc23(ipt) = mean(median(rccpair(:,[2 3]),1)); 
+    meanmeanrcc23(ipt) = mean(mean(rccpair(:,[2 3]),1));
 
   end
 
 end
 
-meanmedrcc = reshape(meanmedrcc,length(off13),length(off12));
-meanmeanrcc = reshape(meanmeanrcc,length(off13),length(off12));
-medrcc = reshape(medrcc,length(off13),length(off12));
-meanrcc = reshape(meanrcc,length(off13),length(off12));
-meancc = reshape(meancc,length(off13),length(off12));
-cc = reshape(cc,length(off13),length(off12));
+meanmedrcc123 = reshape(meanmedrcc123,length(off13),length(off12));
+meanmeanrcc123 = reshape(meanmeanrcc123,length(off13),length(off12));
+meanmedmedrcc12 = reshape(meanmedmedrcc12,length(off13),length(off12));
+meanmeanrcc12 = reshape(meanmeanrcc12,length(off13),length(off12));
+meanmedmedrcc13 = reshape(meanmedmedrcc13,length(off13),length(off12));
+meanmeanrcc13 = reshape(meanmeanrcc13,length(off13),length(off12));
+meanmedmedrcc23 = reshape(meanmedmedrcc23,length(off13),length(off12));
+meanmeanrcc23 = reshape(meanmeanrcc23,length(off13),length(off12));
+meancc123 = reshape(meancc123,length(off13),length(off12));
+meancc12 = reshape(meancc12,length(off13),length(off12));
+meancc13 = reshape(meancc13,length(off13),length(off12));
+meancc23 = reshape(meancc23,length(off13),length(off12));
 
 %% load the LFE catalog, whole-win
 if strcmp(alignflg,'wholewin')
@@ -473,89 +496,127 @@ rcc = rccsrc(ist:ied, 1); %cat RCC at the average src arrival of 3 stas
 %%%plot to show how does the RCC/CC change wrt. the diff alignment between sta pairs 12 and 13
 %%%note that the result is gonna be burst dependent, as data is changing
 %%%in contrast, if using templates for similar analysis, result would be invariant
-widin = 12; htin = 9;
-nrow = 2; ncol = 2;
-[f1] = initfig(widin,htin,nrow,ncol);
-xran = [0.1 0.95]; yran = [0.1 0.95];
-xsep = 0.05; ysep = 0.05;
-optaxpos(f1,nrow,ncol,xran,yran,xsep,ysep);
+widin = 8;  % maximum width allowed is 8.5 inches
+htin = 7;   % maximum height allowed is 11 inches
+nrow = 2;
+ncol = 2;
+f1=initfig(widin,htin,nrow,ncol);
 
-matplt = meanmedrcc;
+figxran = [0.08 0.95]; figyran = [0.06 0.95];
+figxsep = 0.06; figysep = 0.07;
+optaxpos(f1,nrow,ncol,figxran,figyran,figxsep,figysep);
+
+matplt = meancc12;
 ax=f1.ax(1);
 hold(ax,'on'); ax.Box = 'on'; 
-imagesc(ax,off12,off13,matplt);
-contour(ax,X1,X2,matplt,'k-','ShowText','on');
-plot(ax,minmax(off12),minmax(off13),'--','Color',[.3 .3 .3],'linew',1);
+imagesc(ax,off12/sps,off13/sps,matplt);
+contour(ax,X1/sps,X2/sps,matplt,'k-','ShowText','on');
+% scatter(ax,lfe(:,7)/sps,lfe(:,8)/sps,10,[.7 .7 .7],'filled','MarkerEdgeColor','k');
+plot(ax,minmax(off12)/sps,minmax(off13)/sps,'--','Color',[.3 .3 .3],'linew',1);
 ind = find(matplt==max(matplt,[],'all'));
 [sub13, sub12] = ind2sub(size(matplt),ind);
-scatter(ax,off12(sub12),off13(sub13),30,'k^','linew',1.5);
-axis(ax,'equal','tight');
-xlim(ax,minmax(off12));
-ylim(ax,minmax(off13));
-colormap(ax,'jet');
-xlabel(ax,sprintf('PGC-SSIB offset (samples at %d Hz)',sps),'FontSize',11);
-ylabel(ax,sprintf('PGC-SILB offset (samples at %d Hz)',sps),'FontSize',11);
+scatter(ax,off12(sub12)/sps,off13(sub13)/sps,30,'k^','linew',1.5);
+% colormap(ax,'jet');
+colormap(ax, flipud(colormap(ax,'kelicol')));
 c=colorbar(ax);
-c.Label.String = 'median of mean RCC of 3 pairs';
+% c.Label.String = 'mean overall CC of pairs 12 and 13';
+title(ax,'Average CC of pairs 12 and 13','FontSize',10,'FontWeight','bold');  %,'FontWeight','normal'
+axis(ax,'equal','tight');
+xlim(ax,minmax(off12)/sps);
+ylim(ax,minmax(off13)/sps);
+xticks(ax,-0.1: 0.1: 0.1);
+yticks(ax,-0.1: 0.1: 0.1);
+ax.XAxis.MinorTick = 'on';
+ax.YAxis.MinorTick = 'on';
+xlabel(ax,sprintf('\\Delta{t}_{12} (s)'));
+ylabel(ax,sprintf('\\Delta{t}_{13} (s)'));
+longticks(ax,2);
 
-matplt = medrcc;
-ax=f1.ax(2);
-hold(ax,'on'); ax.Box = 'on'; 
-imagesc(ax,off12,off13,matplt);
-contour(ax,X1,X2,matplt,'k-','ShowText','on');
-scatter(ax,lfe(:,7),lfe(:,8),15,[.7 .7 .7],'filled','MarkerEdgeColor','k');
-plot(ax,minmax(off12),minmax(off13),'--','Color',[.3 .3 .3],'linew',1);
+matplt = meancc13;
+ax=f1.ax(2); hold(ax,'on'); ax.Box = 'on'; 
+imagesc(ax,off12/sps,off13/sps,matplt);
+contour(ax,X1/sps,X2/sps,matplt,'k-','ShowText','on');
+plot(ax,minmax(off12)/sps,minmax(off13)/sps,'--','Color',[.3 .3 .3],'linew',1);
 ind = find(matplt==max(matplt,[],'all'));
 [sub13, sub12] = ind2sub(size(matplt),ind);
-scatter(ax,off12(sub12),off13(sub13),30,'k^','linew',1.5);
-axis(ax,'equal','tight');
-xlim(ax,minmax(off12));
-ylim(ax,minmax(off13));
-colormap(ax,'jet');
-xlabel(ax,sprintf('PGC-SSIB offset (samples at %d Hz)',sps),'FontSize',11);
-ylabel(ax,sprintf('PGC-SILB offset (samples at %d Hz)',sps),'FontSize',11);
+scatter(ax,off12(sub12)/sps,off13(sub13)/sps,30,'k^','linew',1.5);
+% colormap(ax,'jet');
+colormap(ax, flipud(colormap(ax,'kelicol')));
 c=colorbar(ax);
-c.Label.String = 'median of mean RCC of pairs 12 and 13';
+% c.Label.String = 'median of mean RCC of 3 pairs';
+title(ax,'Average CC of pairs 12 and 23','FontSize',10,'FontWeight','normal');
+axis(ax,'equal','tight');
+xlim(ax,minmax(off12)/sps);
+ylim(ax,minmax(off13)/sps);
+xticks(ax,-0.1: 0.1: 0.1);
+yticks(ax,-0.1: 0.1: 0.1);
+ax.XAxis.MinorTick = 'on';
+ax.YAxis.MinorTick = 'on';
+% xlabel(ax,sprintf('PGC-SSIB offset (samples at %d Hz)',sps),'FontSize',11);
+% ylabel(ax,sprintf('PGC-SILB offset (samples at %d Hz)',sps),'FontSize',11);
+xlabel(ax,sprintf('\\Delta{t}_{12} (s)'));
+% ylabel(ax,sprintf('\\Delta{t}_{13} (s)'));
+longticks(ax,2);
 
-matplt = meancc;
-ax=f1.ax(3);
-hold(ax,'on'); ax.Box = 'on'; 
-imagesc(ax,off12,off13,matplt);
-contour(ax,X1,X2,matplt,'k-','ShowText','on');
-% conmat = contour(ax,X1,X2,matplt,-0.15:0.01:0.3,'k-','ShowText','on'); %
-plot(ax,minmax(off12),minmax(off13),'--','Color',[.3 .3 .3],'linew',1);
+matplt = meancc23;
+ax=f1.ax(3); hold(ax,'on'); ax.Box = 'on'; 
+imagesc(ax,off12/sps,off13/sps,matplt);
+contour(ax,X1/sps,X2/sps,matplt,'k-','ShowText','on');
+% scatter(ax,lfe(:,7)/sps,lfe(:,8)/sps,10,[.7 .7 .7],'filled','MarkerEdgeColor','k');
+plot(ax,minmax(off12)/sps,minmax(off13)/sps,'--','Color',[.3 .3 .3],'linew',1);
 ind = find(matplt==max(matplt,[],'all'));
 [sub13, sub12] = ind2sub(size(matplt),ind);
-scatter(ax,off12(sub12),off13(sub13),30,'k^','linew',1.5);
-axis(ax,'equal','tight');
-xlim(ax,minmax(off12));
-ylim(ax,minmax(off13));
-colormap(ax,'jet');
-xlabel(ax,sprintf('PGC-SSIB offset (samples at %d Hz)',sps),'FontSize',11);
-ylabel(ax,sprintf('PGC-SILB offset (samples at %d Hz)',sps),'FontSize',11);
+scatter(ax,off12(sub12)/sps,off13(sub13)/sps,30,'k^','linew',1.5);
+% colormap(ax,'jet');
+colormap(ax, flipud(colormap(ax,'kelicol')));
 c=colorbar(ax);
-c.Label.String = 'mean overall CC of 3 pairs';
+% c.Label.String = 'median of mean RCC of pairs 12 and 13';
+title(ax,'Average CC of pairs 13 and 23','FontSize',10,'FontWeight','normal');
+axis(ax,'equal','tight');
+xlim(ax,minmax(off12)/sps);
+ylim(ax,minmax(off13)/sps);
+xticks(ax,-0.1: 0.1: 0.1);
+yticks(ax,-0.1: 0.1: 0.1);
+ax.XAxis.MinorTick = 'on';
+ax.YAxis.MinorTick = 'on';
+xlabel(ax,sprintf('\\Delta{t}_{12} (s)'));
+ylabel(ax,sprintf('\\Delta{t}_{13} (s)'));
+longticks(ax,2);
 
-matplt = cc;
+matplt = meancc123;
 ax=f1.ax(4);
 hold(ax,'on'); ax.Box = 'on'; 
-imagesc(ax,off12,off13,matplt);
-conmat = contour(ax,X1,X2,matplt,'k-','ShowText','on');
-scatter(ax,lfe(:,7),lfe(:,8),15,[.7 .7 .7],'filled','MarkerEdgeColor','k');
-plot(ax,minmax(off12),minmax(off13),'--','Color',[.3 .3 .3],'linew',1);
+imagesc(ax,off12/sps,off13/sps,matplt);
+contour(ax,X1/sps,X2/sps,matplt,'k-','ShowText','on');
+% conmat = contour(ax,X1,X2,matplt,-0.15:0.01:0.3,'k-','ShowText','on'); %
+plot(ax,minmax(off12)/sps,minmax(off13)/sps,'--','Color',[.3 .3 .3],'linew',1);
 ind = find(matplt==max(matplt,[],'all'));
 [sub13, sub12] = ind2sub(size(matplt),ind);
-scatter(ax,off12(sub12),off13(sub13),30,'k^','linew',1.5);
-axis(ax,'equal','tight');
-xlim(ax,minmax(off12));
-ylim(ax,minmax(off13));
-colormap(ax,'jet');
-xlabel(ax,sprintf('PGC-SSIB offset (samples at %d Hz)',sps),'FontSize',11);
-ylabel(ax,sprintf('PGC-SILB offset (samples at %d Hz)',sps),'FontSize',11);
+scatter(ax,off12(sub12)/sps,off13(sub13)/sps,30,'k^','linew',1.5);
+% colormap(ax,'jet');
+colormap(ax, flipud(colormap(ax,'kelicol')));
 c=colorbar(ax);
-c.Label.String = 'mean overall CC of pairs 12 and 13';
+% c.Label.String = 'mean overall CC of 3 pairs';
+title(ax,'Average CC of all 3 pairs','FontSize',10,'FontWeight','normal');
+axis(ax,'equal','tight');
+xlim(ax,minmax(off12)/sps);
+ylim(ax,minmax(off13)/sps);
+xticks(ax,-0.1: 0.1: 0.1);
+yticks(ax,-0.1: 0.1: 0.1);
+ax.XAxis.MinorTick = 'on';
+ax.YAxis.MinorTick = 'on';
+xlabel(ax,sprintf('\\Delta{t}_{12} (s)'));
+% ylabel(ax,sprintf('\\Delta{t}_{13} (s)'));
+longticks(ax,2);
+
+orient(f1.fig,'landscape');
+fname = 'sigccwrtoffset.pdf';
+print(f1.fig,'-dpdf',...
+  strcat('/home/data2/chaosong/CurrentResearch/Song_Rubin_2024/figures/',fname));
+
 
 keyboard
+
 %% choose a set of offset12, 13 with equal CC/RCC
 ccval = 0.1;
 [~,indcol] = find(abs(conmat(1,:)-ccval)<=1e-6);

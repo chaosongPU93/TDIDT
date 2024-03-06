@@ -1,5 +1,5 @@
 % deconv_ref_4s_exp_4thsta_fn.m
-function rststruct = deconv_ref_4s_exp_4thsta_fn(idxbst,normflag,noiseflag,pltflag,rccmwsec)
+% function rststruct = deconv_ref_4s_exp_4thsta_fn(idxbst,normflag,noiseflag,pltflag,rccmwsec)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Based on 'deconvbursts002_ref_4s_exp' and 'deconv_ref_4s_exp_rand_fn', but
 % this version tries to involve the 4th station to check the deconvolution
@@ -476,6 +476,7 @@ spread = range(greenf);   % range of the amp of template
 
 %just the filtered templates
 % plt_templates_bp(greenf,stas,lowlet,hiwlet,sps);
+
 
 
 %% prepare the signal and noise windows
@@ -2018,17 +2019,19 @@ for iii = 1: length(idxbst)
       rcccatsrcall = [rcccatsrcall; rcccatsrc];
 
       %% signal + zoom-in + map locations + some reference symbols 
-%       if noiseflag
-%         xzoom = [0 25];
-%         [f] = plt_agu2022abstractv4(greenf(:,1:3),optdat(:,2:4),impindepst,sps,xzoom,off1iw,loff_max,...
-%           rcccat,overshoot,tstbuf,dy,mo,yr,ftrans,'spl');
-%         text(f.ax(3),0.98,0.88,'Using synthetic noise','HorizontalAlignment','right',...
-%           'Units','normalized','FontSize',9,'FontWeight','bold');
-%       else        
-%         xzoom = [5 30];
+      if noiseflag
+        xzoom = [0 25];
+        [f] = plt_agu2022abstractv4(greenf(:,1:3),optdat(:,2:4),impindepst,sps,xzoom,off1iw,loff_max,...
+          rcccat,overshoot,tstbuf,dy,mo,yr,ftrans,'spl');
+        text(f.ax(3),0.98,0.88,'Using synthetic noise','HorizontalAlignment','right',...
+          'Units','normalized','FontSize',9,'FontWeight','bold');
+      else        
+        xzoom = [5 30];
+        f=plt_002lfe_signalzoom(greenf,sigsta,impindepst,sps,xzoom,tstbuf,dy,mo,yr);
 %         [f] = plt_agu2022abstractv3(greenf(:,1:3),sigsta(:,1:3),impindepst,sps,xzoom,off1iw,loff_max,...
 %           tstbuf,dy,mo,yr,ftrans,'spl');
-%       end
+      end
+      keyboard
 %       text(f.ax(3),0.98,0.95,'Secondary removed','HorizontalAlignment','right',...
 %         'Units','normalized','FontSize',10);
 % %       text(f.ax(3),0.98,0.95,'Further checked at KLNB','HorizontalAlignment','right',...

@@ -12,27 +12,17 @@ function [f] = plt_spectra_of_bursts_norm(years,stas,pcft,pcall,minfnorm,maxfnor
 % Last modified date:   2021/11/08
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-f.fig = figure;
-f.fig.Renderer = 'painters';
-widin = 8;  % maximum width allowed is 8.5 inches
-htin = 7;   % maximum height allowed is 11 inches
-% get the scrsz in pixels and number of pixels per inch of monitor 1
-[scrsz, res] = pixelperinch(1);
-set(f.fig,'Position',[1*scrsz(3)/20 scrsz(4)/10 widin*res htin*res]);
-
 nets = length(years);
 nsta = size(stas,1);
 nrow = nets;
 ncol = nsta;
 
-for isub = 1:nrow*ncol
-    f.ax(isub) = subplot(nrow,ncol,isub);
-    f.ax(isub).Box = 'on';
-%     grid(f.ax(isub),'on');
-end
+widin = 2.5*nsta;  % maximum width allowed is 8.5 inches
+htin = 7;   % maximum height allowed is 11 inches
+f = initfig(widin,htin,nrow,ncol);
 
 pltxran = [0.08 0.98]; pltyran = [0.08 0.98];
-pltxsep = 0.05; pltysep = 0.05; 
+pltxsep = 0.04; pltysep = 0.05; 
 axpos = optaxpos(f,nrow,ncol,pltxran,pltyran,pltxsep,pltysep);
 
 isub = 0;
@@ -73,23 +63,24 @@ for iets = 1: nets
 %       grid(ax,'on');  
     end   % all bursts
 
-    pltstamed = median(pltsta,2);  % median of all cols, ie, bursts
-    pltstaave = mean(pltsta,2);  % mean of all cols, ie, bursts
-    loglog(ax,pcft,pltstaave,'r','linew',1);
-    loglog(ax,pcft,pltstamed,'b','linew',1);
+    pltstamed = median(pltstanorm,2);  % median of all cols, ie, bursts
+    pltstaave = mean(pltstanorm,2);  % mean of all cols, ie, bursts
+    p1=loglog(ax,pcft,pltstaave,'r','linew',1);
+    p2=loglog(ax,pcft,pltstamed,'b','linew',1);
     
-    loglog(ax,[1 10],[1 0.1],'g','linew',1.5);  % a reference line with a slope of -1
+%     loglog(ax,[1 10],[1 0.1],'g','linew',1.5);  % a reference line with a slope of -1
     
     xlim(ax,xran);
     ylim(ax,yran);
     xticks(ax,[0.1 1 10]);
+    longticks(ax,2);
     
     plot(ax,[1 1],ax.YLim,':','color',[0.8 0.8 0.8]);
     plot(ax,[2 2],ax.YLim,':','color',[0.8 0.8 0.8]);
     plot(ax,[4 4],ax.YLim,':','color',[0.8 0.8 0.8]);
     plot(ax,[8 8],ax.YLim,':','color',[0.8 0.8 0.8]);
-    plot(ax,[pcft(indmin) pcft(indmin)],ax.YLim,'--','color',[0.6 0.6 0.6]);
-    plot(ax,[pcft(indmax) pcft(indmax)],ax.YLim,'--','color',[0.6 0.6 0.6]);
+    plot(ax,[pcft(indmin) pcft(indmin)],ax.YLim,'--','color',[0.4 0.4 0.4]);
+    plot(ax,[pcft(indmax) pcft(indmax)],ax.YLim,'--','color',[0.4 0.4 0.4]);
 
 %     ax.GridLineStyle = '-';
     text(ax,0.04,0.95,num2str(years(iets)),'FontSize',8,'unit','normalized',...
@@ -102,6 +93,9 @@ end   % all ets
 
 ax = f.ax((nrow-1)*ncol+1);
 hold(ax,'on');
-xlabel(ax,'Frequency (Hz)','FontSize',12);
-ylabel(ax,'Normalized amplitude/Hz','FontSize',12);
+xlabel(ax,'Frequency (Hz)','FontSize',10);
+ylabel(ax,'Normalized spectral density (energy/Hz)','FontSize',10);
+lgd=legend(ax,[p1,p2],{'Mean','Median'},'location','south','FontSize',8);
+%make background transparent
+set(lgd.BoxFace, 'ColorType','truecoloralpha', 'ColorData',uint8(255*[1;1;1;.8]));
 

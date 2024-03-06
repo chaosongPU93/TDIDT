@@ -19,7 +19,7 @@ defval('binmethod','grid');
 defval('dxhf',0.2);
 defval('dyhf',0.2);
 defval('contourflag',0);
-defval('scale','log');
+defval('scale','log10');
 
 if isequal(binmethod,'grid')
   defval('msizehf',10);
@@ -70,14 +70,14 @@ if ~isempty(hfplt)
   dum = density1d(density1d(:,3)>0, :);
   normalizer = max(dum(:,3));
   dum(dum(:,3)>1, :) = [];
-  if strcmp(scale,'log')
+  if strcmp(scale,'log10')
     dum(:,3) = log10(dum(:,3));
   end
   scatter(ax,dum(:,1),dum(:,2),msizehf,dum(:,3),marker,'linew',0.2);  %, 'MarkerEdgeColor', 'w')
 %   scatter(ax,dum(:,1),dum(:,2), msizehf, dum(:,3)/normalizer,marker,'linew',0.2);  %, 'MarkerEdgeColor', 'w')
   dum = sortrows(density1d(density1d(:,3)>0, :), 3);
   dum(dum(:,3)==1, :) = [];
-  if strcmp(scale,'log')
+  if strcmp(scale,'log10')
     dum(:,3) = log10(dum(:,3));
   end
   scatter(ax,dum(:,1),dum(:,2),msizehf,dum(:,3),marker,'filled','MarkerEdgeColor','none');  %, 
@@ -91,7 +91,7 @@ if ~isempty(hfplt)
   c=colorbar(ax,'SouthOutside');
   pos = ax.Position;
   c.Position = [pos(1), pos(2)-0.03, pos(3), 0.02];
-  if strcmp(scale,'log')
+  if strcmp(scale,'log10')
     cstr = strcat({'log_{10}(# detections / '},binmethod,')');
   elseif strcmp(scale,'linear')
     cstr = strcat({'# detections / '},binmethod);  
@@ -112,7 +112,7 @@ if ~isempty(hfplt)
     zgridgf = imgaussfilt(zgrid, 1);  %smooth it a bit
     perc = 50:10:90;
     conplt = prctile(dum(:,3),perc);
-    if strcmp(scale,'log')
+    if strcmp(scale,'log10')
       zgridgf = log10(zgridgf);
     end
     conmat = contour(ax,xgrid,ygrid,zgridgf,conplt,'-','color',[.3 .3 .3]); %,'ShowText','on'
@@ -155,14 +155,14 @@ if ~isempty(lfplt)
   dum = density1d(density1d(:,3)>0, :);
   normalizer = max(dum(:,3));
   dum(dum(:,3)>1, :) = [];
-  if strcmp(scale,'log')
+  if strcmp(scale,'log10')
     dum(:,3) = log10(dum(:,3));
   end
   scatter(ax,dum(:,1),dum(:,2),msizelf,dum(:,3),marker,'linew',0.2);  %, 'MarkerEdgeColor', 'w')
 %   scatter(ax,dum(:,1),dum(:,2), msizelf, dum(:,3)/normalizer,marker,'linew',0.2);  %, 'MarkerEdgeColor', 'w')
   dum = sortrows(density1d(density1d(:,3)>0, :), 3);
   dum(dum(:,3)==1, :) = [];
-  if strcmp(scale,'log')
+  if strcmp(scale,'log10')
     dum(:,3) = log10(dum(:,3));
   end
   scatter(ax,dum(:,1),dum(:,2),msizelf,dum(:,3),marker,'filled');  %, 'MarkerEdgeColor', 'w')
@@ -191,7 +191,7 @@ if ~isempty(lfplt)
     zgridgf = imgaussfilt(zgrid, 1);  %smooth it a bit
     perc = 50:10:90;
     conplt = prctile(dum(:,3),perc);
-    if strcmp(scale,'log')
+    if strcmp(scale,'log10')
       zgridgf = log10(zgridgf);
     end
     conmat = contour(ax,xgrid,ygrid,zgridgf,conplt,'-','color',[.3 .3 .3]); %

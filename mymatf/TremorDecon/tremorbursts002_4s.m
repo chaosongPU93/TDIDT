@@ -84,8 +84,8 @@ hfout = setdiff(hfall,hfbnd,'rows');
 hfout = sortrows(hfout, [daycol, seccol]);
 
 %%
-% hfanalyse = hfbnd;
-hfanalyse = hfout;
+hfanalyse = hfbnd;
+% hfanalyse = hfout;
 
 %% compute relative time in days
 %sort according to day, sec of the strongest arrival of the window
@@ -227,6 +227,12 @@ text(f.ax(2),0.06,0.5,strcat(num2str(round(perchf04)),'%'),'FontSize',12,'unit',
     'horizontalalignment','left');
 text(f.ax(3),0.06,0.5,strcat(num2str(round(perchf05)),'%'),'FontSize',12,'unit','normalized',...
     'horizontalalignment','left');
+
+%% summarize the inter-event time and grouped bursts
+ymax = 1e-3;
+[f] = plt_intertimeandbursts(hfinter03,hfinter04,hfinter05,thf03,thf04,thf05,ymax,ttol);
+
+keyboard
 
 %% plot the inter-detection time for each ETS in more detail, in sec
 ttol1 = 1e-3*ones(3,1)*86400; 

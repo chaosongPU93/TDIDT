@@ -18,6 +18,14 @@ function [dloc,dt,k,dloc_spl]=dloc_evtcluster(impcluster,implocclus,sps,ftrans,m
 % that direction, etc. In all, it is NOT recommended to use output 'dloc' 
 % unless a lof of data points would average out the error. 
 % 
+% 2024/02/15, looks like if you need the loc difference in map-view, you have
+% to first invert time offsets to map locations, then obtain the difference.
+% Despite the possible location error propagation, you need it. Since if you 
+% start from difference in samples, then transform them to map locations,
+% you are essentially assuming one of the two sources is located at the 
+% origin, which is not the case in reality, even if the actual difference in
+% the two ways may be small.
+% 
 % 
 %
 % Chao Song, chaosong@princeton.edu
@@ -38,7 +46,9 @@ for i = 1: ncluster
   implocplt=implocclus(ist:ied,:);
   impplt=impcluster(ist:ied,:);
   if strcmp(timetype,'tori')
-    tevt=tarvl2tori(impplt,sps,ftrans);  %return the origin time 
+    %return the origin time, sorted srcs, and indices
+    [tevt,impplt,indsort]=tarvl2tori(impplt,sps,ftrans,1);
+    implocplt = implocplt(indsort, :);
   else
     tevt=impplt(:,1);
   end

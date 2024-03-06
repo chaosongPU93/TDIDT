@@ -38,10 +38,8 @@ set(0,'DefaultFigureVisible','off');   % switch to show the plots or not
 % (4)mshift (5)bostsec (6)stas (7)PERMROTS and POLROTS (8)tempoffs
 
 workpath = getenv('ALLAN');
-temppath = strcat(workpath, '/templates/');
-%%% choose the data path here
-% datapath = workpath;
 datapath = strcat(workpath,'/data-no-resp');
+temppath = strcat(datapath, '/templates/PGCtrio/');
 rstpath = strcat(datapath, '/PGCtrio');
 
 freqflag='hf';  % flag to indicate whether to do hf or lf;
@@ -139,49 +137,51 @@ hfout = sortrows(hfout, [daycol, seccol]);
 ttol = 35;
 trange = load(strcat(rstpath, '/MAPS/tdec.bstran',num2str(ttol),'s.pgc002.',cutout(1:4)));
 tlen = trange(:,3)-trange(:,2);
+nbst = size(trange,1);
+
+% dates and ets
+%%% NOTE: 'dates' is the dates that the tremor is active at the region of interest, so that the
+%%% waveform at the stations on these dates you are looking at mainly comes from the sources at the
+%%% region of interest. We want to see if there is a noticable change in spectra during the burst
+%%% windows on these dates
+dates = unique(trange(:,1));
+years = unique(floor(dates/1000));
+nets = length(years);
 
 
 %% load other catalogs
 %%% load the LFE catalog of Michael Bostock, inside and outside the rectangle in 'locinterp002_4s.m'
 %obtain the location of fam 002, lon0 and lat0
-loc0 = off2space002([0 0],sps*iup,'interpchao',0); % 8 cols, format: dx,dy,lon,lat,dep,ttrvl,off12,off13
+ftrans = 'interpchao';
+% loc0 = off2space002([0 0],sps*iup,ftrans,0); % 8 cols, format: dx,dy,lon,lat,dep,ttrvl,off12,off13
 %format: [fam yyyy mm dd sec dx dy lon lat dep magnitude number-of-stations], 12 cols
 %time should point to the peak, zero-crossing?
-bostcat = ReformBostock(loc0(3),loc0(4),0);
+% bostcat = ReformBostock(loc0(3),loc0(4),0);
 
-% figure
-% bb = [];
-% dates = unique(trange(:,1));
-% years = unique(floor(dates/1000));
-% nets = length(years);
-% for iets = 1: nets
-%   % dates in each ets
-%   year = years(iets);
-%   datesets = dates(floor(dates/1000)==year);
-%     
-%   for i = 1: length(datesets)
-%     
-%     date = datesets(i);
-%     jday = floor(date-year*1000);
-%     a = jul2dat(year,jday);
-%     mo = a(1);
-%     if mo == 9
-%       mo = 'Sep.';
-%     elseif mo == 7
-%       mo = 'Jul.';
-%     else
-%       mo = 'Mar.';
-%     end
-%     dy = a(2);
-%        
-%     aa = bostcat(bostcat(:,2)==year & bostcat(:,3)==a(1) & bostcat(:,4)==a(2),:);
-%     aa = sortrows(aa, 5);
-%   
-%     aa = sort(diff(aa(:,5)));
-%     bb = [bb; aa];
-%   end
-% end
-% scatter(1:length(aa),aa,15,'ko','filled'); hold on
+bosdir = ('/home/data2/chaosong/matlab/allan/BOSTOCK');
+lfefnm = ('newlfeloc');
+lfeloc = load(fullfile(bosdir, lfefnm));
+loc0 = lfeloc(lfeloc(:,1)==2,:);
+% bostcat = ReformBostock(loc0(3),loc0(2),1);
+%%%if use the lumped catalog that combine unique events from 002 and 246
+bostcat = load(fullfile(bosdir, '002-246_lumped.2003-2005_cull_NEW_chao'));
+
+%all MB's LFEs of the SAME dates that I have been using
+bostdayi = cell(length(dates),1);
+for i = 1: length(dates)
+  date = dates(i);
+  year = floor(date/1000);
+  jday = floor(date-year*1000);
+  a = jul2dat(year,jday);
+
+  temp = bostcat(bostcat(:,2)==year & bostcat(:,3)==a(1) & bostcat(:,4)==a(2),:);
+  bostdayi{i} = sortrows(temp, 5);
+  nbostdayi(i) = size(temp,1);
+  bomsumday(i) = sum(temp(:,end));
+  
+end
+bostdayia = cat(1,bostdayi{:});
+bostcat = bostdayia;
 
 %the cut-out boundary of 4-s detections
 cutout = 'ellipse';
@@ -210,7 +210,17 @@ bostcati = bostcat(isinbnd == 1, :);
 bostcato = bostcat(isinbnd ~= 1, :);
 clear bostcat
 
-%%%load the tremor catalog of John Armbruster
+% %if you choose only fam 002 regardless
+% bostcati = bostcati(bostcati(:,1)==2,:);
+%convert moment mag to moment, Mw = (2/3)*log_10(M0)-10.7, where M0 has the unit of dyne.cm
+%(10^-7 N.m), so Mw = (2/3)*log_10(M0)-6 if M0 has the unit of N.m
+bostcati(:,13) = 10.^(1.5*(6+bostcati(:,11)));
+
+% bostcato = bostcato(bostcato(:,1)~=2 & bostcato(:,1)~=47 & bostcato(:,1)~=246,:);
+bostcato(:,13) = 10.^(1.5*(6+bostcato(:,11)));
+
+
+%%%load the tremor catalog of John Armbruster, 
 %%%2022/06/29, not really very useful as the detecting window could be 128-s long (not sure)
 %format: [yyyy mm dd sec dx dy lon lat dep], 9 cols;
 armcat = ReformArmbrusterv2(loc0(3),loc0(4),0);
@@ -225,21 +235,12 @@ clear armcat
 
 
 %% read daily data, break into windows of segments, plot
-% dates and ets
-%%% NOTE: 'dates' is the dates that the tremor is active at the region of interest, so that the
-%%% waveform at the stations on these dates you are looking at mainly comes from the sources at the
-%%% region of interest. We want to see if there is a noticable change in spectra during the burst
-%%% windows on these dates
-dates = unique(trange(:,1));
-years = unique(floor(dates/1000));
-nets = length(years);
-
 %filtering passband for reading data
 hisig=6.3; % this will give a similar spectral shape between template and signal
 losig=1.8;
 
 %moving window length in samples for running CC, envelope, etc.
-mwlen=sps/2;
+mwlen=0.5*sps;
 % mwlen=sps;
 
 %settings for each seismogram figure f1
@@ -986,20 +987,33 @@ close all
 data = load('seisbursts_allvari.mat');
 runall = data.runall;
 pctl = [2.28 50];
+dnpts=round(data.mwlen/4);
 for iets = 1: nets
   runtmp = runall{iets};
-  [xcnt(:,iets),ycnt(:,iets),y1sig(:,iets)] = ranybinx(runtmp(:,1),runtmp(:,3),'median',10,[],[]);
-  [spearets(iets),~] = corr(runtmp(:,1),runtmp(:,3),'Type','Spearman');
-  [kenets(iets),~] = corr(runtmp(:,1),runtmp(:,3),'Type','Kendall');
-  pctlv(1:2,iets) = prctile(runtmp(:,1),pctl);
+  runplt = runtmp(1:dnpts:end,:);
+  nbin=10;
+  [xbin,indbin] = binxeqnum(runplt(:,1),nbin);  %bin by amp with same number
+  for i = 1: nbin
+    indi = indbin{i};
+    xcnt(i,iets) = median(xbin{i});
+    ycnt(i,iets) = median(runplt(indi,3));
+    y1sig(i,iets) = std(runplt(indi,3));  
+  end
+%   [xcnt(:,iets),ycnt(:,iets),y1sig(:,iets)] = ranybinx(runplt(:,1),runplt(:,3),'median',10,[],[]);
+  [spearets(iets),~] = corr(runplt(:,1),runplt(:,3),'Type','Spearman');
+  [kenets(iets),~] = corr(runplt(:,1),runplt(:,3),'Type','Kendall');
+%   pctlv(1:2,iets) = prctile(runplt(:,1),pctl);
 end
 
 %% summary plot of rc VS renv for all bursts
+data = load('seisbursts_allvari.mat');
+runall = data.runall;
+
 nrow = 1; % rows and cols of subplots in each figure
 ncol = 3; 
-widin = 15; % size of each figure
-htin = 5;
-pltxran = [0.06 0.96]; pltyran = [0.1 0.96]; % optimal axis location
+widin = 10; % size of each figure
+htin = 4;
+pltxran = [0.06 0.98]; pltyran = [0.16 0.9];
 pltxsep = 0.04; pltysep = 0.03;
 f = initfig(widin,htin,nrow,ncol);
 axpos = optaxpos(f,nrow,ncol,pltxran,pltyran,pltxsep,pltysep);
@@ -1012,38 +1026,75 @@ ylabel(f.ax(1),'Running CC','FontSize',10);
 for iets = 1: nets
   ax = f.ax(iets); hold(ax,'on');
   runtmp = runall{iets};
-  scatter(ax,runtmp(:,1),runtmp(:,3),6,'MarkerFaceColor',[.2 .2 .2],'MarkerEdgeColor',...
-    'none','MarkerFaceAlpha',.2); hold on
-  scatter(ax,median(runtmp(:,1)),median(runtmp(:,3)),20,'bo','filled');
-  text(ax,median(runtmp(:,1))*1.05,median(runtmp(:,3))*1.05,sprintf('(%.3f, %.3f)',...
-    median(runtmp(:,1)),median(runtmp(:,3))),'HorizontalAlignment',...
-    'left','fontsize',10);
-  text(ax,0.98,0.1,sprintf('%d',years(iets)),'unit','normalized',...
-    'HorizontalAlignment','right','fontsize',12); % burst number
+  runplt = runtmp(1:dnpts:end,:);
+  
+  scale='log10';
+  binmethod='grid';
+  xran=[0 1]; yran=[-1 1];
+  dx=0.01; dy=0.01;
+  den1d = density_matrix(runplt(:,1),runplt(:,3),xran,yran,dx,dy);
+  den1d = den1d(den1d(:,3)>0, :);
+  den1d = sortrows(den1d,3);
+  
+  dum = den1d;
+  dum(dum(:,3)>1, :) = [];
+  if strcmp(scale,'log10')
+    dum(:,3) = log10(dum(:,3));
+  end
+  scatter(ax,dum(:,1),dum(:,2),3,dum(:,3),'o','linew',0.2);  %, 'MarkerEdgeColor', 'w')
+  
+  dum = sortrows(den1d,3);
+  dum(dum(:,3)==1, :) = [];
+  if strcmp(scale,'log10')
+    dum(:,3) = log10(dum(:,3));
+  end  
+  scatter(ax,dum(:,1),dum(:,2),3,dum(:,3),'o','filled','MarkerEdgeColor','none');
+%   colormap(ax,flipud(colormap(ax,'kelicol')));
+  colormap(ax,jet);
+  c=colorbar(ax,'SouthOutside');
+  pos = ax.Position;
+  c.Position = [pos(1), pos(2)-0.06, pos(3), 0.03];
+  if strcmp(scale,'log10')
+    cstr = strcat({'log_{10}(# points / '},binmethod,')');
+  elseif strcmp(scale,'linear')
+    cstr = strcat({'# detections / '},binmethod);  
+  end
+  c.Label.String = cstr;
+  
+%   scatter(ax,runplt(:,1),runplt(:,3),6,'MarkerFaceColor',[.2 .2 .2],'MarkerEdgeColor',...
+%     'none','MarkerFaceAlpha',.2); hold on
+  scatter(ax,median(runplt(:,1)),median(runplt(:,3)),40,'k^','filled');
+%   text(ax,median(runplt(:,1))*1.05,median(runplt(:,3))*1.05,sprintf('(%.3f, %.3f)',...
+%     median(runplt(:,1)),median(runplt(:,3))),'HorizontalAlignment',...
+%     'left','fontsize',10);
+%   text(ax,0.2,0.1,sprintf('%d',years(iets)),'unit','normalized',...
+%     'HorizontalAlignment','left','fontsize',12);
+  text(ax,0.98,0.05,sprintf('%d',years(iets)),'unit','normalized',...
+    'HorizontalAlignment','right','fontsize',10);
 %   text(ax,0.2,0.1,sprintf('2.5 prctile: %.3f',prctile(runtmp(:,1),2.5)),'unit','normalized',...
 %     'HorizontalAlignment','left','fontsize',10);
   errorbar(ax,xcnt(:,iets),ycnt(:,iets),-y1sig(:,iets),y1sig(:,iets),'vertical','o',...
-    'markersize',3,'color','k','linewidth',0.8,'MarkerEdgeColor','k',...
-    'MarkerFaceColor','k','CapSize',4);
-  text(ax,0.02,0.2,sprintf('S: %.2f',spearets(iets)),'unit','normalized',...
+    'markersize',4,'color','k','linewidth',0.8,'MarkerEdgeColor','k',...
+    'MarkerFaceColor','none','CapSize',4);
+  text(ax,0.02,0.1,sprintf('S: %.2f',spearets(iets)),'unit','normalized',...
     'HorizontalAlignment','left','fontsize',8);
-  text(ax,0.02,0.15,sprintf('K: %.2f',kenets(iets)),'unit','normalized',...
+  text(ax,0.02,0.05,sprintf('K: %.2f',kenets(iets)),'unit','normalized',...
     'HorizontalAlignment','left','fontsize',8);
-  text(ax,0.02,0.05,sprintf('%.3f; %.3f',pctlv(1,iets),pctlv(2,iets)),'unit','normalized',...
-    'HorizontalAlignment','left','fontsize',8.5,'color','k');
-  ylim(ax,[-1 1]);
-%   ax.XLim(1) = ax.XLim(1)-0.1;
-%   xlim(ax,[-0.1 0.7]);
-  xlim(ax,[0 1.2]);
-  plot(ax,[0 0],ax.YLim,'k--');
-
+%   text(ax,0.02,0.05,sprintf('%.3f; %.3f',pctlv(1,iets),pctlv(2,iets)),'unit','normalized',...
+%     'HorizontalAlignment','left','fontsize',8.5,'color','k');
+  ax.GridLineStyle = '--';
+  ax.XAxisLocation = 'top';
+  xlim(ax,xran);
+  ylim(ax,yran);
   longticks(ax,2);
   hold(ax,'off');
 
 end
 
 orient(f.fig,'landscape');
-print(f.fig,'-dpdf','-bestfit',fullfile('/home/chaosong/Pictures/aaa.pdf'));
+fname = 'rccvsrenv.pdf';
+print(f.fig,'-dpdf',...
+  strcat('/home/data2/chaosong/CurrentResearch/Song_Rubin_2024/figures/',fname));
 
 % clear runall runtmp
 

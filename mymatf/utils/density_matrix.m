@@ -28,12 +28,14 @@ densitygrid = nan(nx,ny); % grid form of the count inside each grid cell
 k=1;
 for i = 1: nx
     for j = 1: ny
-        density1d(k,1) = xran(1)+ (i-1+0.5)*dx;
-        density1d(k,2) = yran(1)+ (j-1+0.5)*dy;
-        indgrid{k} = find(x>= xran(1)+ (i-1)*dx & x< xran(1)+ i*dx &...
-                           y>= yran(1)+ (j-1)*dy & y< yran(1)+ j*dy);                 
-%         density1d(k,3) = sum(x>= xran(1)+ (i-1)*dx & x< xran(1)+ i*dx &...
-%                            y>= yran(1)+ (j-1)*dy & y< yran(1)+ j*dy);
+        density1d(k,1) = xran(1)+ (i-1)*dx; %x coordinate of center of the grid
+        density1d(k,2) = yran(1)+ (j-1)*dy; %y coordinate of center of the grid
+        indgrid{k} = find(x>= xran(1)+ (i-1-0.5)*dx & x< xran(1)+ (i-1+0.5)*dx &...
+                          y>= yran(1)+ (j-1-0.5)*dy & y< yran(1)+ (j-1+0.5)*dy);                 
+%         density1d(k,1) = xran(1)+ (i-1+0.5)*dx; %x coordinate of center of the grid
+%         density1d(k,2) = yran(1)+ (j-1+0.5)*dy; %y coordinate of center of the grid
+%         indgrid{k} = find(x>= xran(1)+ (i-1)*dx & x< xran(1)+ i*dx &...
+%                            y>= yran(1)+ (j-1)*dy & y< yran(1)+ j*dy);                 
         density1d(k,3) = length(indgrid{k});
         k = k+1;
         
@@ -43,10 +45,14 @@ for i = 1: nx
 %                   y>= yran(1)+ (j-1)*dy & y< yran(1)+ j*dy);
 %         density2d(i,j) = tmp;
         
-        xgrid(j,i) = xran(1)+ (i-1+0.5)*dx;
-        ygrid(j,i) = yran(1)+ (j-1+0.5)*dy;
-        tmp = sum(x>= xran(1)+ (i-1)*dx & x< xran(1)+ i*dx &...
-                  y>= yran(1)+ (j-1)*dy & y< yran(1)+ j*dy);
+        xgrid(j,i) = xran(1)+ (i-1)*dx; %x coordinate of center of the grid
+        ygrid(j,i) = yran(1)+ (j-1)*dy; %y coordinate of center of the grid
+        tmp = sum(x>= xran(1)+ (i-1-0.5)*dx & x< xran(1)+ (i-1+0.5)*dx &...
+                  y>= yran(1)+ (j-1-0.5)*dy & y< yran(1)+ (j-1+0.5)*dy);
+%         xgrid(j,i) = xran(1)+ (i-1+0.5)*dx;
+%         ygrid(j,i) = yran(1)+ (j-1+0.5)*dy;
+%         tmp = sum(x>= xran(1)+ (i-1)*dx & x< xran(1)+ i*dx &...
+%                   y>= yran(1)+ (j-1)*dy & y< yran(1)+ j*dy);
         densitygrid(j,i) = tmp;
     end
 end

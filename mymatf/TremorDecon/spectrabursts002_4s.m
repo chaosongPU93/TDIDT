@@ -2,7 +2,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % The next script to run after 'seisbursts002_4s.m', to obtain the spectrum
 % of each data window, in order to know what is the proper corner to filter 
-% to bandpass the data to achieve a similar shape as the template. 
+% to bandpass the data to achieve a similar shape as the template. \
 % Previously, we have been using 1.8-6.3 Hz for data, according to the 
 % examination to the 9-s example in 'testiterdecon_exp.m'. To preserve the 
 % most the high-freq energy in the template (as the stacking would lose
@@ -25,6 +25,8 @@ format short e   % Set the format to 5-digit floating point
 clear
 clc
 close all
+
+defval('normflag',0); %whether to normalize templates
 
 set(0,'DefaultFigureVisible','on');
 % set(0,'DefaultFigureVisible','off');   % switch to show the plots or not
@@ -74,7 +76,8 @@ POLSTA=['SSIB '           % polaris station names
 
 stas=['PGC  '
   'SSIB '
-  'SILB '];     % determine the trio and order, here the 1st sta is PGC
+  'SILB '
+  'KLNB '];     % determine the trio and order, here the 1st sta is PGC
 nsta=size(stas,1);         %  number of stations
 
 sps = 40;
@@ -134,28 +137,30 @@ hfout = sortrows(hfout, [daycol, seccol]);
 ttol = 35;
 trange = load(strcat(rstpath, '/MAPS/tdec.bstran',num2str(ttol),'s.pgc002.',cutout(1:4)));
 tlen = trange(:,3)-trange(:,2);
+nbst = size(trange,1);
 
 %trial passband for templates
 lowlet = 1.8;
 hiwlet = 18;
 %broader-band filtering passband for reading data
 lo = 0.1;
-hi = 15;
+% hi = 15;
+hi = 18;
 %trial passband for data wins
 losig = 1.8;
 hisig = 6.3;
 
 %% prepare templates (Green's functions)
-ccstack = [];
 sps = 160;
 templensec = 60;
 
+ccstack = [];
 for ista = 1: nsta
     fname = strcat(temppath, fam, '_', strtrim(stas(ista, :)), '_', num2str(sps), 'sps_', ...
         num2str(templensec), 's_', 'BBCCS_', 'opt_Nof_Non_Chao_catnew');
     ccstack(:,ista) = load(fname);
 end
-STA = ccstack;
+STA = detrend(ccstack);
 
 % for ista=1:nsta
 %     STA(:,ista)=Bandpass(STA(:,ista),sps,0.1,15,2,2,'butter');   % change 'bandpass' to 'Bandpass'
@@ -168,14 +173,18 @@ STA = ccstack;
 % plot(STA(:,3),'k')
 
 %%%The below aligns the templates by x-correlation
-[maxses,imaxses]=max(STA,[],1);
-[minses,iminses]=min(STA,[],1);
+ist = templensec*sps*4/10;  %not using whole window in case any station has very long-period energy
+ied = templensec*sps*6/10;
+[maxses,imaxses]=max(STA(ist:ied,:),[],1);
+[minses,iminses]=min(STA(ist:ied,:),[],1);
 spread=maxses-minses;
+imaxses = imaxses+ist-1;  %convert to global indices
+iminses = iminses+ist-1;
 % zcrosses=round(0.5*(imaxses+iminses));  % rough, assuming symmetry, Chao 2021/07/16
 %automatically find the zero-crossings
 zcrosses = zeros(nsta,1);
 for ista = 1:nsta
-    seg = STA(iminses(ista): imaxses(ista),ista);  % for zero-crossing timing, only use the main station
+    seg = detrend(STA(iminses(ista): imaxses(ista),ista));  % for zero-crossing timing, only use the main station
     [~,zcrosses(ista)] = min(abs(seg));
     zcrosses(ista) = zcrosses(ista)-1+iminses(ista);  % convert to global index
 end
@@ -185,21 +194,27 @@ sampaft=10*sps;
 is=zcrosses-sampbef;
 ie=zcrosses+sampaft;
 for ista=1:nsta
-    STAtmp(:,ista)=STA(is(ista):ie(ista),ista);  % this means templates are 'aligned' at zero-crossings
+  STAtmp(:,ista)=detrend(STA(is(ista):ie(ista),ista));  % this means templates are 'aligned' at zero-crossings
 end
 %x-correlation independently between each station pair 
 mshiftadd=10*sps/40;
 tempxc(:,1)=xcorr(STAtmp(:,2),STAtmp(:,3),mshiftadd,'coeff');
 tempxc(:,2)=xcorr(STAtmp(:,1),STAtmp(:,2),mshiftadd,'coeff'); %shift STAtmp(3,:) to right for positive values
 tempxc(:,3)=xcorr(STAtmp(:,1),STAtmp(:,3),mshiftadd,'coeff'); %shift STAtmp(2,:) to right for positive values
+for ista = 4: nsta
+  tempxc(:,ista)=xcorr(STAtmp(:,1),STAtmp(:,ista),mshiftadd,'coeff'); %shift STAtmp(2,:) to right for positive values
+end
 [~,imax]=max(tempxc,[],1);
 imax=imax-(mshiftadd+1); %This would produce a slightly different shift, if filtered seisms were used.
 imax(2)-imax(3)+imax(1);   %enclosed if it equals to 0
 for ista=2:nsta
-    STAtmp(mshiftadd+1:end-(mshiftadd+1),ista)=STAtmp(mshiftadd+1-imax(ista):end-(mshiftadd+1)-imax(ista),ista);
+  STAtmp(mshiftadd+1:end-(mshiftadd+1),ista)=detrend(STAtmp(mshiftadd+1-imax(ista):end-(mshiftadd+1)-imax(ista),ista));
 end
-for ista=1:nsta
-    STAtmp(:,ista)=STAtmp(:,ista)/spread(ista); % now templates are 'aligned' indeoendently by x-corr wrt. sta 1
+%normalization
+if normflag 
+  for ista=1:nsta
+      STAtmp(:,ista)=STAtmp(:,ista)/spread(ista); % now templates are 'aligned' indeoendently by x-corr wrt. sta 1
+  end
 end
 % figure
 % hold on
@@ -219,7 +234,7 @@ for ista = 1: nsta
   w = tukeywin(size(tmpwlet(:,ista),1),fractap);
   tmpwlet(:,ista) = w.* tmpwlet(:,ista);
   %detrend again for caution
-  tmpwlet(:,ista)=detrend(tmpwlet(:,ista));
+  tmpwlet(:,ista) = detrend(tmpwlet(:,ista));
   %filter the template
 %   hiwlet=18;
 %   lowlet=1.8;
@@ -234,11 +249,15 @@ ccwlen = 10*sps;
 loffmax = 5*sps/40;
 ccmin = 0.01;  % depending on the length of trace, cc could be very low
 iup = 1;    % times of upsampling
-[off12con,off13con,cc,iloopoff,loopoff] = constrained_cc_interp(tmpwletf',ccmid,...
+[off12con,off13con,cc,iloopoff,loopoff] = constrained_cc_interp(tmpwletf(:,1:3)',ccmid,...
   ccwlen,mshiftadd,loffmax,ccmin,iup);
 offwlet1i(1) = 0;
 offwlet1i(2) = round(off12con);
 offwlet1i(3) = round(off13con);
+
+for ista = 4: nsta
+  [mcoef,offwlet1i(ista)] = xcorrmax(tmpwletf(:,1), tmpwletf(:,ista), mshiftadd, 'coeff');
+end
 
 %%%automatically find the rough zero-crossing time, whose abs. value is closest to 0, whether + or -
 [~,imin] = min(tmpwletf(:,1));
@@ -249,6 +268,7 @@ greenlen = pow2(9)*sps/40;
 green = zeros(greenlen,nsta); % no bandpass
 greenf = zeros(greenlen,nsta);  % bandpassed version
 ppeaks = zeros(nsta,1);
+npeaks = zeros(nsta,1); % negative peaks
 for ista = 1: nsta
   %cut according to the zero-crossing and the time shift from the constrained CC
   green(:,ista) = tmpwlet(zcsta1+8*sps-greenlen+1-offwlet1i(ista): zcsta1+8*sps-offwlet1i(ista), ista);
@@ -256,9 +276,11 @@ for ista = 1: nsta
   %detrend again for caution
   green(:,ista)=detrend(green(:,ista));
   greenf(:,ista)=detrend(greenf(:,ista));
-  %normalize by max amp
-  green(:,ista)=green(:,ista)/max(abs(green(:,ista)));    % normalize
-  greenf(:,ista)=greenf(:,ista)/max(abs(green(:,ista)));    % normalize
+  if normflag
+    %normalize by max amp
+    green(:,ista) = green(:,ista)/max(abs(green(:,ista)));    % normalize
+    greenf(:,ista) = greenf(:,ista)/max(abs(green(:,ista)));    % normalize
+  end
   
   %re-find the zero-crossing as the template length has changed
   [~,imin] = min(greenf(:,ista));
@@ -266,6 +288,7 @@ for ista = 1: nsta
   [~,zcrosses(ista)] = min(abs(greenf(imin:imax,ista)));
   zcrosses(ista) = zcrosses(ista)+imin-1;
   ppeaks(ista) = imax;
+  npeaks(ista) = imin;
 end
 %the following is just a check, because now the templates must be best aligned 
 ccmid = round(size(greenf,1)/2);
@@ -273,10 +296,16 @@ ccwlen = 4*sps;
 loffmax = 5*sps/40;
 ccmin = 0.01;  % depending on the length of trace, cc could be very low
 iup = 1;    % times of upsampling
-[off12con,off13con,cc,iloopoff,loopoff] = constrained_cc_interp(greenf',ccmid,...
+[off12con,off13con,cc,iloopoff,loopoff] = constrained_cc_interp(greenf(:,1:3)',ccmid,...
   ccwlen,mshiftadd,loffmax,ccmin,iup);
 if ~(off12con==0 && off13con==0)
   disp('Filtered templates are NOT best aligned');
+end
+for ista = 4: nsta
+  [mcoef,mlag] = xcorrmax(greenf(:,1), greenf(:,ista), mshiftadd, 'coeff');
+  if mlag~=0   % offset in samples
+    fprintf('Filtered templates are NOT best aligned at %s \n',stas(ista,:));
+  end
 end
 
 %%%plot the unfiltered and filtered templates
@@ -478,15 +507,39 @@ clear pcetsoptbb pcetsopt
   
 %% plot the spectra of optimal components
 xran = [0.1 20];
-yran = [1e-4 1e1];
+yran = [1e-3 1e1];
 [f] = plt_spectra_of_bursts(years,stas,pcft,pcallbb,xran,yran);
-[f] = plt_spectra_of_bursts(years,stas,pcft,pcall,xran,yran);
+orient(f.fig,'landscape');
+fname = 'bb_spectra_of_bursts.pdf';
+print(f.fig,'-dpdf',...
+  strcat('/home/data2/chaosong/CurrentResearch/Song_Rubin_2024/figures/',fname));
+% keyboard
 
-% %% plot the spectra of normalized optimal components
-% xran = [0.1 20];
-% yran = [1e-2 1e2];
-% minfnorm = 1.5; maxfnorm = 5;
-% [f] = plt_spectra_of_bursts_norm(years,stas,pcft,pcallbb,minfnorm,maxfnorm,xran,yran);  
+yran = [5e-5 5e-1];
+[f] = plt_spectra_of_bursts(years,stas,pcft,pcall,xran,yran);
+orient(f.fig,'landscape');
+fname = 'bp_spectra_of_bursts.pdf';
+print(f.fig,'-dpdf',...
+  strcat('/home/data2/chaosong/CurrentResearch/Song_Rubin_2024/figures/',fname));
+
+%% plot the spectra of normalized optimal components
+xran = [0.1 20];
+yran = [5e-2 5e2];
+minfnorm = 1.8; maxfnorm = 6.3;
+[f] = plt_spectra_of_bursts_norm(years,stas,pcft,pcallbb,minfnorm,maxfnorm,xran,yran);  
+orient(f.fig,'landscape');
+fname = 'bbnorm_spectra_of_bursts.pdf';
+print(f.fig,'-dpdf',...
+  strcat('/home/data2/chaosong/CurrentResearch/Song_Rubin_2024/figures/',fname));
+
+yran = [1e-3 1e1];
+[f] = plt_spectra_of_bursts_norm(years,stas,pcft,pcall,minfnorm,maxfnorm,xran,yran);  
+orient(f.fig,'landscape');
+fname = 'bpnorm_spectra_of_bursts.pdf';
+print(f.fig,'-dpdf',...
+  strcat('/home/data2/chaosong/CurrentResearch/Song_Rubin_2024/figures/',fname));
+
+keyboard
   
 %% compare the spectral shape of templates and data windows
 pcmedetsbb = zeros(round(nfft/2)+1, nsta, nets);
@@ -522,9 +575,10 @@ for ista = 1: nsta
   pcave(:,ista) = mean(pccomb,2);
 end
 
+%%
 f.fig = figure;
 f.fig.Renderer = 'painters';
-widin = 8;  % maximum width allowed is 8.5 inches
+widin = 2.5*nsta;  % maximum width allowed is 8.5 inches
 htin = 3;   % maximum height allowed is 11 inches
 % get the scrsz in pixels and number of pixels per inch of monitor 1
 [scrsz, res] = pixelperinch(1);
@@ -539,8 +593,8 @@ for isub = 1:nrow*ncol
   %     grid(f.ax(isub),'on');
 end
 
-pltxran = [0.08 0.98]; pltyran = [0.12 0.95];
-pltxsep = 0.05; pltysep = 0.05; 
+pltxran = [0.06 0.98]; pltyran = [0.15 0.95];
+pltxsep = 0.04; pltysep = 0.05; 
 axpos = optaxpos(f,nrow,ncol,pltxran,pltyran,pltxsep,pltysep);
 
 % color = ['r';'b';'k'];
@@ -549,15 +603,15 @@ for i = 1: nsta
   
   loglog(ax,pcfw,pcwletbb(:,i),'r--','linew',1);
   hold(ax,'on');
-  loglog(ax,pcft,pcmedbb(:,i),'k--','linew',1);
-  
   loglog(ax,pcfw,pcwlet(:,i),'color','r','linew',1.5);
+  
+  loglog(ax,pcft,pcmedbb(:,i),'k--','linew',1); 
   loglog(ax,pcft,pcmed(:,i),'color','k','linew',1.5);
   
-  amprat = mean(pcmed(pcft>=losig & pcft<=hisig, i))./ ...
-    mean(pcwlet(pcfw>=losig & pcfw<=hisig, i));
-  npcmed = pcmed(:,i)/amprat;
-  loglog(ax,pcft,npcmed,'color',[.4 .4 .4],'linew',1.5);
+%   amprat = mean(pcmed(pcft>=losig & pcft<=hisig, i))./ ...
+%     mean(pcwlet(pcfw>=losig & pcfw<=hisig, i));
+%   npcmed = pcmed(:,i)/amprat;
+%   loglog(ax,pcft,npcmed,'color',[.4 .4 .4],'linew',1.5);
   
   yran = [1e-6 1e0];
   xran = [0.1 20];
@@ -572,17 +626,23 @@ for i = 1: nsta
   xlim(ax,xran);
   ylim(ax,yran);  
   xticks(ax,[0.1 1 10]);
-  text(ax,0.9,0.9,stas(i,:),'unit','normalized','HorizontalAlignment','right');
+  text(ax,0.96,0.95,stas(i,:),'unit','normalized','HorizontalAlignment','right');
   
-  lgd = legend(ax,'BB temp.',sprintf('BB med. data'),...
-    sprintf('BP temp., %.1f-%.1f Hz',lowlet,hiwlet),...
-    sprintf('BP sig., %.1f-%.1f Hz',losig,hisig),...
-    'Norm. sig.','location','south','fontsize',7);% make background transparent
-  set(lgd.BoxFace, 'ColorType','truecoloralpha', 'ColorData',uint8(255*[1;1;1;.8]));
-
   xlabel(ax,'Frequency (Hz)','FontSize',10);
+  longticks(ax,2);
 end  
-ylabel(f.ax(1),'Amplitude/Hz','FontSize',10);
+ylabel(f.ax(1),'Spectral density (energy/Hz)','FontSize',10);
+lgd = legend(f.ax(1),'BB template',sprintf('BP temp., %.1f-%.1f Hz',lowlet,hiwlet),...
+  sprintf('Median of BB data'),sprintf('Med. of BP data, %.1f-%.1f Hz',losig,hisig),...
+  'location','south','fontsize',7);
+%make background transparent
+set(lgd.BoxFace, 'ColorType','truecoloralpha', 'ColorData',uint8(255*[1;1;1;.8]));
+
+
+orient(f.fig,'landscape');
+fname = 'spectra_summary.pdf';
+print(f.fig,'-dpdf',...
+  strcat('/home/data2/chaosong/CurrentResearch/Song_Rubin_2024/figures/',fname));
 
 
   
