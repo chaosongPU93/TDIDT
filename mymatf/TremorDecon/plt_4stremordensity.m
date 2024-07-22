@@ -160,44 +160,19 @@ angrot = 45;
 % x0 = mean(EW);
 % y0 = mean(NS);
 % [x, y] = rectangle_chao(x0,y0,wid,hgt,0.01);
-% 
-%% load LFE catalogs
-%%%load the LFE catalog, 25-s-win
-savefile = 'deconv_stats4th_allbstsig.mat';
-allsig = load(strcat(rstpath, '/MAPS/',savefile));
-imp = allsig.allbstsig.impindepall;
-imp4th = allsig.allbstsig.impindep4thall;
-%convert time offset to relative loc
-sps = 160;
-[imploc, indinput] = off2space002(imp(:,7:8),sps,ftrans,0); % 8 cols, format: dx,dy,lon,lat,dep,ttrvl,off12,off13
-[imploc4th, indinput] = off2space002(imp4th(:,7:8),sps,ftrans,0); % 8 cols, format: dx,dy,lon,lat,dep,ttrvl,off12,off13
 
-%%%load the LFE catalog, whole-win
-savefile = 'deconv1win_stats4th_allbstsig.mat';
-allsig1win = load(strcat(rstpath, '/MAPS/',savefile));
-imp1win = allsig1win.allbstsig.impindepall;
-imp1win4th = allsig1win.allbstsig.impindep4thall;
-%convert time offset to relative loc
-[imploc1win, ~] = off2space002(imp1win(:,7:8),sps,ftrans,0); % 8 cols, format: dx,dy,lon,lat,dep,ttrvl,off12,off13
-[imploc1win4th, ~] = off2space002(imp1win4th(:,7:8),sps,ftrans,0); % 8 cols, format: dx,dy,lon,lat,dep,ttrvl,off12,off13
+%%%detecting range of LFEs
+loffm = 6;  %at 40 Hz
+detranoff = [-loffm*ones(2*loffm+1,1) (loffm:-1:-loffm)';
+             (-loffm:1:loffm)' -loffm*ones(2*loffm+1,1);
+             loffm*ones(2*loffm+1,1) (-loffm:1:loffm)';
+             (loffm:-1:-loffm)' loffm*ones(2*loffm+1,1)];
+detranloc = off2space002(detranoff,sps,ftrans,0); % 8 cols, format: dx,dy,lon,lat,dep,ttrvl,off12,off13
 
-%%%load the LFE catalog, 25-s-win, noise
-savefile = 'deconv_stats4th_allbstnoi.mat';
-allnoi = load(strcat(rstpath, '/MAPS/',savefile));
-impn = allnoi.allbstnoi.impindepall;
-impn4th = allnoi.allbstnoi.impindep4thall;
-%convert time offset to relative loc
-[implocn, ~] = off2space002(impn(:,7:8),sps,ftrans,0); % 8 cols, format: dx,dy,lon,lat,dep,ttrvl,off12,off13
-[implocn4th, ~] = off2space002(impn4th(:,7:8),sps,ftrans,0); % 8 cols, format: dx,dy,lon,lat,dep,ttrvl,off12,off13
+%%%range that encloses about 90 percent of LFE detections aftering shifting back
+%%%to the origin
+load('90thprcrangeoflfes.mat');
 
-%%%load the LFE catalog, whole-win, noise
-savefile = 'deconv1win_stats4th_allbstnoi.mat';
-allnoi1win = load(strcat(rstpath, '/MAPS/',savefile));
-impn1win = allnoi1win.allbstnoi.impindepall;
-impn1win4th = allnoi1win.allbstnoi.impindep4thall;
-%convert time offset to relative loc
-[implocn1win, ~] = off2space002(impn1win(:,7:8),sps,ftrans,0); % 8 cols, format: dx,dy,lon,lat,dep,ttrvl,off12,off13
-[implocn1win4th, ~] = off2space002(impn1win4th(:,7:8),sps,ftrans,0); % 8 cols, format: dx,dy,lon,lat,dep,ttrvl,off12,off13
 
 %% plot the cumulative density map, binning by pixel, ie., each unique detection         
 xran=[-6 4];
@@ -208,14 +183,13 @@ scale='log10';
 hfplt=hfall;
 contourflag=0;
 
-
 nrow = 1;
 ncol = 1;
-widin = 5;  % maximum width allowed is 8.5 inches
-htin = 5;   % maximum height allowed is 11 inches
+widin = 4.5;  % maximum width allowed is 8.5 inches
+htin = 4.5;   % maximum height allowed is 11 inches
 f = initfig(widin,htin,nrow,ncol);
 
-pltxran = [0.08 0.95]; pltyran = [0.15 0.9];
+pltxran = [0.1 0.95]; pltyran = [0.15 0.9];
 pltxsep = 0.08; pltysep = 0.05; 
 axpos = optaxpos(f,nrow,ncol,pltxran,pltyran,pltxsep,pltysep);
 
@@ -259,18 +233,15 @@ if ~isempty(hfplt)
   scatter(ax,dum(:,1),dum(:,2),msizehf,dum(:,3),marker,'filled','MarkerEdgeColor','none');  %, 
 %   scatter(ax,dum(:,1),dum(:,2), msizehf, dum(:,3)/normalizer,marker,'filled','MarkerEdgeColor','none');  %, 
   % imagesc(ax,[xran(1)+0.5*dx xran(end)-0.5*dx], [yran(1)+0.5*dy yran(end)-0.5*dy], density2d');
-  colormap(ax,'jet');
-%   oldc = colormap(ax,'kelicol');
-%   newc = flipud(oldc);
-%   colormap(ax,newc);
-  % colormap(ax, flipud(colormap(ax,'kelicol')));
+  % colormap(ax,flipud(colormap(ax,'kelicol')));
+  colormap(ax,'plasma');
   c=colorbar(ax,'SouthOutside');
   pos = ax.Position;
-  c.Position = [pos(1), pos(2)-0.03, pos(3), 0.02];
+  c.Position = [pos(1), pos(2)-0.01, pos(3), 0.02];
   if strcmp(scale,'log10')
-    cstr = strcat({'log_{10}(# detections / '},binmethod,')');
+    cstr = strcat({'log_{10}(# events / '},binmethod,')');
   elseif strcmp(scale,'linear')
-    cstr = strcat({'# detections / '},binmethod);  
+    cstr = strcat({'# events / '},binmethod);  
   end
   c.Label.String = cstr;
 %   c.Label.String = strcat({'normalized # tremor detections / '},binmethod,')');
@@ -280,6 +251,12 @@ if ~isempty(hfplt)
   %plot the high-density ellipse
   plot(ax,xcut,ycut,'k-','LineWidth',2);
 
+%   %plot the adopted range for detecting LFEs
+%   plot(ax,detranloc(:,1)+x0,detranloc(:,2)+y0,'r-','LineWidth',1);
+  
+  %plot the range of 90 percent of detected LFEs
+  plot(ax,conmatxy10th(:,3)+x0,conmatxy10th(:,4)+y0,'r-','LineWidth',1.5);
+  
   %plot arrows to indicate the semi-long and -short axes
   [rotx, roty] = complex_rot(0,semia,-45);
   xvect = [x0 x0+rotx];
@@ -291,21 +268,27 @@ if ~isempty(hfplt)
   drawArrow(ax,xvect,yvect,xran,yran,'linewidth',1.5);
   
   plot(ax,[x0 x0+2],[y0 y0],'k--','linewidth',1.5);
-  text(ax,x0+0.4,y0+0.3,sprintf('\\theta=%d^o',angrot),'FontSize',11,...
-      'horizontalalignment','left');
-  h=text(ax,0.05,y0+0.2,sprintf('a=%.2fkm',semia),'FontSize',11,'horizontalalignment','left');
-%   h=text(ax,0.05,y0+0.2,sprintf('a=%.2fkm',semia),'FontSize',10,'horizontalalignment','left');
+  
+  text(ax,0.6,0.4,sprintf('\\theta'),'FontSize',11,...
+      'horizontalalignment','left','fontweight','bold');
+  h=text(ax,0.5,0.9,'a','FontSize',11,'horizontalalignment','left','fontweight','bold');
   set(h,'Rotation',45);
-  h=text(ax,0.2,-0.2,sprintf('b=%.2f',semib),'FontSize',11,'horizontalalignment','right');
+  h=text(ax,-0.5,0.5,'b','FontSize',11,'horizontalalignment','left','fontweight','bold');
   set(h,'Rotation',-45);
   text(ax,0.98,0.95,'4-s Tremor','FontSize',12,'unit','normalized','horizontalalignment','right',...
     'fontweight','bold');
+  text(ax,0.98,0.85,sprintf('a=%.2f km',semia),'FontSize',10,'horizontalalignment',...
+    'right','unit','normalized');
+  text(ax,0.98,0.80,sprintf('b=%.2f km',semib),'FontSize',10,'horizontalalignment',...
+    'right','unit','normalized');
+  text(ax,0.98,0.75,sprintf('\\theta=%d^o',angrot),'FontSize',10,...
+      'horizontalalignment','right','unit','normalized');
 % text(ax, 0.85, 0.93, '2004','FontSize',12,'unit','normalized','horizontalalignment','center',...
 %      'EdgeColor','k','Margin',2);
 % text(ax,0.85,0.8,'HF','FontSize',12,'unit','normalized','horizontalalignment','center');
 %   text(ax,0.04,0.93,'a','FontSize',11,'unit','normalized','EdgeColor','k','Margin',2);
-  text(ax,0.5,0.05,strcat(num2str(length(hfplt(:,1))),{' detections'}),'FontSize',10,'unit','normalized',...
-      'horizontalalignment','center');
+  text(ax,0.98,0.05,strcat(num2str(length(hfplt(:,1))),{' events'}),'FontSize',10,'unit','normalized',...
+      'horizontalalignment','right');
   %%%Add contour lines if needed  
   if contourflag
     [xyzgridpad,xgrid,ygrid,zgrid,ind2] = zeropadmat2d(density1d,xran(1):1:xran(2),yran(1):1:yran(2));
@@ -329,7 +312,7 @@ ylabel(ax,'N (km)','fontsize',11);
 longticks(ax,2);
 hold(ax,'off');
 
-orient(f.fig,'landscape');
+% orient(f.fig,'landscape');
 fname = '4stremordensity.pdf';
 print(f.fig,'-dpdf',...
   strcat('/home/data2/chaosong/CurrentResearch/Song_Rubin_2024/figures/',fname));

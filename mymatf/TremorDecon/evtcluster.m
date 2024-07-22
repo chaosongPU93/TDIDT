@@ -1,4 +1,5 @@
-function [impcluster,impuni,ncluster,impclusterk,impunii]=evtcluster(nbst,imp,nsrc,m,dtcut,sps,timetype)
+function [impcluster,impuni,ncluster,impclusterk,impunii]=...
+  evtcluster(nbst,imp,nsrc,m,dtcut,sps,timetype)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % [impcluster,impuni,ncluster,impclusterk,impunii]=evtcluster(nbst,imp,nsrc,m,dtcut,sps,timetype)
 %
@@ -7,13 +8,21 @@ function [impcluster,impuni,ncluster,impclusterk,impunii]=evtcluster(nbst,imp,ns
 % is smaller than 'dtcut' in sec.  All events in the eligible cluster are 
 % returned, including duplicates. The unique events from the clusters lumped
 % for each burst are also included.  
-% 
+% --NOTE as of 2024/03/15: This function tries to find clusters of events 
+% whose first and last
+% event is separated by less than 'dcut'. However, the events included in that 
+% cluster is NOT exclusive. For example, two events are included in doublets, 
+% they can also appear in triplets. It is fine when you want ALL doublets, but 
+% it contains duplicates (events or event pairs) if you ONLY want you doublets 
+% are NOT part of any triplets or quadupltets. 
 % 
 %
 % Chao Song, chaosong@princeton.edu
 % First created date:   2024/01/23
 % Last modified date:   2024/01/23
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+defval('sps',160);
+defval('timetype','tarvl');
 
 [~,dtplt,indimpdtcut] = med_amp_incluster(nbst,imp,nsrc,m,dtcut,sps,timetype);
 ncluster=size(indimpdtcut,1); %num of clusters
@@ -29,7 +38,7 @@ for i = 1: nbst
 
   %which type of time to use
   if strcmp(timetype,'tori')
-    [~,impi]=tarvl2tori(impi,sps,ftrans,1);  %return the origin time 
+    [~,impi]=tarvl2tori(impi,sps,ftrans,1);  %return sorted src by origin time 
   end
 
   indibst = find(dtplt(:,2)==i);  %ind of starting evt of the eligible cluster   
@@ -45,3 +54,6 @@ for i = 1: nbst
 end
 impuni = cat(1,impunii{:}); %unique events included in clusters
 impcluster = cat(1,impclusterk{:}); %events included in clusters, with duplicates
+
+
+

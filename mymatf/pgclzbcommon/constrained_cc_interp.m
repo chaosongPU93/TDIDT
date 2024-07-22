@@ -1,12 +1,13 @@
-function [off12,off13,cc,iloff,loff] = constrained_cc_interp(trace,mid,wlen,mshift,loffmax,ccmin,iup)
+function [off12,off13,cc,iloff,loff] = ...
+  constrained_cc_interp(trace,mid,wlen,mshift,loffmax,ccmin,iup)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % This function is to the constrained cross-correlation between the waveforms
 % at the 3 stations to make sure off13-off12+off32=0, note that this is
 % different from the independent cross-correlaton 'xcorr', which only align
 % separately between two records. This is necessary to ensure only two offsets
 % among the 3 station pairs are independent to represent detections
-% 
-% similar to 'constrained_cc.m', but this allows for interpolation, i.e. 
+%
+% similar to 'constrained_cc.m', but this allows for interpolation, i.e.
 % upsampling to obtain a higher precision. More important for higher-frequency
 % detections. If the 'iup' is set to 1, theoretically should return the same
 % result as 'constrained_cc.m'.
@@ -19,7 +20,7 @@ function [off12,off13,cc,iloff,loff] = constrained_cc_interp(trace,mid,wlen,mshi
 
 %in case it has non-zero mean
 for i = 1:size(trace,1)
-  trace(i,:) = detrend(trace(i,:));   
+  trace(i,:) = detrend(trace(i,:));
 end
 staauto = trace.*trace;
 templen = size(trace,2);
@@ -29,15 +30,15 @@ sta13x = zeros(lenx, 2*mshift+1);    % stas: 1->PGC, 2->SSIB, 3->SILB
 sta32x = zeros(lenx, 2*mshift+1);
 
 for n=-mshift:mshift
-    % PGC corr SSIB, 1+mshift:tracelen-mshift == 1+mshift-n:tracelen-mshift-n == lenx
-    sta12x(:,n+mshift+1)=trace(1,1+mshift:templen-mshift).* ...
-        trace(2,1+mshift-n:templen-mshift-n);
-    % PGC corr SILB
-    sta13x(:,n+mshift+1)=trace(1,1+mshift:templen-mshift).* ...
-        trace(3,1+mshift-n:templen-mshift-n);
-    % SILB corr SSIB
-    sta32x(:,n+mshift+1)=trace(3,1+mshift:templen-mshift).* ...
-        trace(2,1+mshift-n:templen-mshift-n);
+  % PGC corr SSIB, 1+mshift:tracelen-mshift == 1+mshift-n:tracelen-mshift-n == lenx
+  sta12x(:,n+mshift+1)=trace(1,1+mshift:templen-mshift).* ...
+    trace(2,1+mshift-n:templen-mshift-n);
+  % PGC corr SILB
+  sta13x(:,n+mshift+1)=trace(1,1+mshift:templen-mshift).* ...
+    trace(3,1+mshift-n:templen-mshift-n);
+  % SILB corr SSIB
+  sta32x(:,n+mshift+1)=trace(3,1+mshift:templen-mshift).* ...
+    trace(2,1+mshift-n:templen-mshift-n);
 end
 
 sumsta12=zeros(1,2*mshift+1);   % PGC-SSIB
@@ -56,8 +57,8 @@ sumsta32(1,:) = sum(sta32x(istart-mshift: iend-mshift, :));
 sumsta1sq(1,:) = sum(staauto(1, istart: iend));
 sumsta3Bsq(1,:) = sum(staauto(3, istart: iend));
 for m = -mshift:mshift
-    sumsta2sq(1,m+mshift+1)=sum(staauto(2, istart-m: iend-m)); %+m??? (yes).
-    sumsta3sq(1,m+mshift+1)=sum(staauto(3, istart-m: iend-m));
+  sumsta2sq(1,m+mshift+1)=sum(staauto(2, istart-m: iend-m)); %+m??? (yes).
+  sumsta3sq(1,m+mshift+1)=sum(staauto(3, istart-m: iend-m));
 end
 
 %An attempt to bypass glitches in data.  Min value of good data typically ~10^{-2}
@@ -99,77 +100,86 @@ off12=xmaxsta12n;    % tmp == temporary
 off13=xmaxsta13n;
 off32=xmaxsta32n;
 
-
-if xcmaxAVEn<ccmin || abs(loff)>loffmax || isequal(abs(imaxsta12cent),mshift)...
-        || isequal(abs(imaxsta13cent),mshift) || isequal(abs(imaxsta32cent),mshift)
-    % return the BAD offset and loopoff, and cc at offset (0,0)
-    off12=mshift+1; off13=mshift+1; off32=mshift+1; %dummy them, if these criteria are met
-%     cc = (sumstack12n(mshift+1)+sumstack13n(mshift+1)+sumstack32n(mshift+1))/3;
-    cc = xcmaxAVEn;
-    disp('WRONG! The basic criteria is not met');
+%%%%%%%%% require each raw best alignment is not at the edge %%%%%%%%%%%%%%%
+% if xcmaxAVEn<ccmin || abs(loff)>loffmax || isequal(abs(imaxsta12cent),mshift)...
+%         || isequal(abs(imaxsta13cent),mshift) || isequal(abs(imaxsta32cent),mshift)
+% else
+%%%%%%%%% do not require each raw best alignment is not at the edge %%%%%%%%%%%%%%%
+if xcmaxAVEn<ccmin || abs(loff)>loffmax
+  % return the BAD offset and loopoff, and cc at offset (0,0)
+  off12=mshift+1; off13=mshift+1; off32=mshift+1; %dummy them, if these criteria are met
+  %     cc = (sumstack12n(mshift+1)+sumstack13n(mshift+1)+sumstack32n(mshift+1))/3;
+  cc = xcmaxAVEn;
+  disp('WRONG! The basic criteria is not met');
 else
-    interpsta12n=interp(sumsta12n,iup,3);
-    interpsta13n=interp(sumsta13n,iup,3);
-    interpsta32n=interp(sumsta32n,iup,3);
-    leninterp=length(interpsta12n);
-    [xcmaxinterpsta12n,imaxinterpsta12]=max(interpsta12n(1:leninterp-(iup-1)));
-    [xcmaxinterpsta13n,imaxinterpsta13]=max(interpsta13n(1:leninterp-(iup-1)));
-    [xcmaxinterpsta32n,imaxinterpsta32]=max(interpsta32n(1:leninterp-(iup-1)));
-    xcmaxconprev=-99999.;  %used to be 0; not good with glitches
-    %predefine below in case none qualified are found, but replacable otherwise
-    iSTA12bang=mshift+1;
-    iSTA13bang=mshift+1;
-    for iSTA12=max(1,imaxinterpsta12-3*iup):min(imaxinterpsta12+3*iup,iup*(2*mshift+1)-...
-            (iup-1))
-        %3 samples from peak;%intentionally wider than acceptable;%iup-1 are extrapolated points
-        for iSTA13=max(1,imaxinterpsta13-3*iup):min(imaxinterpsta13+3*iup,iup*...
-                (2*mshift+1)-(iup-1))
-            ibangon = (iup*mshift+1)-iSTA13+iSTA12;
-            if ibangon >= 1 && ibangon<=iup*(2*mshift+1)
-                xcmaxcon=interpsta12n(iSTA12)+interpsta13n(iSTA13)+interpsta32n(ibangon);
-                if xcmaxcon > xcmaxconprev
-                    xcmaxconprev=xcmaxcon;
-                    iSTA12bang=iSTA12;
-                    iSTA13bang=iSTA13;
-                end
-%             else
-            end
+  if (isequal(abs(imaxsta12cent),mshift) || isequal(abs(imaxsta13cent),mshift) ...
+      || isequal(abs(imaxsta32cent),mshift))
+    disp('One or more raw alignment is at the edge, check!');
+  end
+  
+  interpsta12n=interp(sumsta12n,iup,3);
+  interpsta13n=interp(sumsta13n,iup,3);
+  interpsta32n=interp(sumsta32n,iup,3);
+  leninterp=length(interpsta12n);
+  [xcmaxinterpsta12n,imaxinterpsta12]=max(interpsta12n(1:leninterp-(iup-1)));
+  [xcmaxinterpsta13n,imaxinterpsta13]=max(interpsta13n(1:leninterp-(iup-1)));
+  [xcmaxinterpsta32n,imaxinterpsta32]=max(interpsta32n(1:leninterp-(iup-1)));
+  xcmaxconprev=-99999.;  %used to be 0; not good with glitches
+  %predefine below in case none qualified are found, but replacable otherwise
+  iSTA12bang=mshift+1;
+  iSTA13bang=mshift+1;
+  for iSTA12=max(1,imaxinterpsta12-3*iup):min(imaxinterpsta12+3*iup,iup*(2*mshift+1)-...
+      (iup-1))
+    %3 samples from peak;%intentionally wider than acceptable;%iup-1 are extrapolated points
+    for iSTA13=max(1,imaxinterpsta13-3*iup):min(imaxinterpsta13+3*iup,iup*...
+        (2*mshift+1)-(iup-1))
+      ibangon = (iup*mshift+1)-iSTA13+iSTA12;
+      if ibangon >= 1 && ibangon<=iup*(2*mshift+1)
+        xcmaxcon=interpsta12n(iSTA12)+interpsta13n(iSTA13)+interpsta32n(ibangon);
+        if xcmaxcon > xcmaxconprev
+          xcmaxconprev=xcmaxcon;
+          iSTA12bang=iSTA12;
+          iSTA13bang=iSTA13;
         end
+        %             else
+      end
     end
-    %%% will result in the max xcmaxcon and corresponding iSTA12,
-    %%% iSTA13, and save them into xcmaxconprev, iSTA12bang and iSTA13bang
-    iSTA32bang=(iup*mshift+1)-iSTA13bang+iSTA12bang;
-    if abs(iSTA12bang-imaxinterpsta12) <= loffmax*iup && ...
-       abs(iSTA13bang-imaxinterpsta13) <= loffmax*iup && ...
-       abs(iSTA32bang-imaxinterpsta32) <= loffmax*iup && ...
-       interpsta12n(iSTA12bang)+interpsta13n(iSTA13bang)+interpsta32n(iSTA32bang) >= ...
-       3*ccmin
-   
-        off12=(iSTA12bang-(iup*mshift+1))/iup;
-        off13=(iSTA13bang-(iup*mshift+1))/iup;
-        off32=(iSTA32bang-(iup*mshift+1))/iup;
-                
-        %%% xcmaxAVEnbang is added by Chao, to distinguish from
-        %%% xcmaxAVEn, because it is max average CC coef
-        cc=(interpsta12n(iSTA12bang)+interpsta13n(iSTA13bang)+interpsta32n(iSTA32bang))/3;
-%     end
-%     if off13-off12+off32 ~=0
-    else
-        disp('WRONG! Loopoff is not enclosed');
-        off12=mshift+1; off13=mshift+1; off32=mshift+1; %dummy them, if these criteria are met
-%         cc = (sumstack12n(mshift+1)+sumstack13n(mshift+1)+sumstack32n(mshift+1))/3;
-        cc = xcmaxAVEn;
-
-    end
+  end
+  %%% will result in the max xcmaxcon and corresponding iSTA12,
+  %%% iSTA13, and save them into xcmaxconprev, iSTA12bang and iSTA13bang
+  iSTA32bang=(iup*mshift+1)-iSTA13bang+iSTA12bang;
+  if abs(iSTA12bang-imaxinterpsta12) <= loffmax*iup && ...
+      abs(iSTA13bang-imaxinterpsta13) <= loffmax*iup && ...
+      abs(iSTA32bang-imaxinterpsta32) <= loffmax*iup && ...
+      interpsta12n(iSTA12bang)+interpsta13n(iSTA13bang)+interpsta32n(iSTA32bang) >= ...
+      3*ccmin
+    
+    off12=(iSTA12bang-(iup*mshift+1))/iup;
+    off13=(iSTA13bang-(iup*mshift+1))/iup;
+    off32=(iSTA32bang-(iup*mshift+1))/iup;
+    
+    %%% xcmaxAVEnbang is added by Chao, to distinguish from
+    %%% xcmaxAVEn, because it is max average CC coef
+    cc=(interpsta12n(iSTA12bang)+interpsta13n(iSTA13bang)+interpsta32n(iSTA32bang))/3;
+    %     end
+    %     if off13-off12+off32 ~=0
+  else
+    disp('WRONG! Loopoff is not enclosed');
+    off12=mshift+1; off13=mshift+1; off32=mshift+1; %dummy them, if these criteria are met
+    %         cc = (sumstack12n(mshift+1)+sumstack13n(mshift+1)+sumstack32n(mshift+1))/3;
+    cc = xcmaxAVEn;
+    
+  end
+  
 end
-
-
-% keyboard
-
-
-
-
-
-
-
-
+  
+  
+  % keyboard
+  
+  
+  
+  
+  
+  
+  
+  

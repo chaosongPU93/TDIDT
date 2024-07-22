@@ -17,13 +17,13 @@ nsta = size(stas,1);
 nrow = nets;
 ncol = nsta;
 
-widin = 2.5*nsta;  % maximum width allowed is 8.5 inches
-htin = 7;   % maximum height allowed is 11 inches
+widin = ncol*2.1;  % maximum width allowed is 8.5 inches
+htin = nrow*2.1;   % maximum height allowed is 11 inches
 f = initfig(widin,htin,nrow,ncol);
 
 pltxran = [0.08 0.98]; pltyran = [0.08 0.98];
-pltxsep = 0.04; pltysep = 0.05; 
-axpos = optaxpos(f,nrow,ncol,pltxran,pltyran,pltxsep,pltysep);
+pltxsep = 0.02; pltysep = 0.02;
+optaxpos(f,nrow,ncol,pltxran,pltyran,pltxsep,pltysep);
 
 isub = 0;
 for iets = 1: nets
@@ -56,7 +56,7 @@ for iets = 1: nets
     xlim(ax,xran);
     ylim(ax,yran);
     xticks(ax,[0.1 1 10]);
-    longticks(ax,2);
+    longticks(ax,1.5);
     
     plot(ax,[1 1],ax.YLim,':','color',[0.8 0.8 0.8]);
     plot(ax,[2 2],ax.YLim,':','color',[0.8 0.8 0.8]);
@@ -69,6 +69,13 @@ for iets = 1: nets
     text(ax,0.96,0.95,stas(ista, :),'FontSize',8,'unit','normalized',...
       'horizontalalignment','right');
 
+    if ista ~= 1
+      nolabels(ax,2);
+    end
+    if iets ~= nrow
+      nolabels(ax,1);
+    end
+    
   end   % all stations
 end   % all ets
 

@@ -1,6 +1,6 @@
-function locgrid = space2off002(loc,sps,ftrans,fplt)
+function offset = space2off002(loc,sps,ftrans,fplt)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% [offset, indinput] = space2off002(loc,sps,ftrans,fplt)
+% offset = space2off002(loc,sps,ftrans,fplt)
 %
 % This function aims to quickly transform the locations on the slab
 % interface loc=[dx, dy], into travel time offset between  station 1 and 2,
@@ -142,8 +142,10 @@ else
   ttrvln = griddata(dx,dy,ttrvl,loc(:,1),loc(:,2),'cubic');
 end
   
-%8 cols, format: dx,dy,lon,lat,dep,ttrvl,off12,off13
-locgrid = [loc(:,1) loc(:,2) lonn latn depn ttrvln off12n off13n];
+% %8 cols, format: dx,dy,lon,lat,dep,ttrvl,off12,off13
+% locgrid = [loc(:,1) loc(:,2) lonn latn depn ttrvln off12n off13n];
+%2 cols, format: off12,off13
+offset = [off12n off13n]; 
 
 if fplt
   color1 = ttrvl;

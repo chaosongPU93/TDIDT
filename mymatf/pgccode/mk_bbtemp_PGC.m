@@ -1,4 +1,5 @@
-function [dstack,ccstack,dstackort,ccstackort] = mk_bbtemp_PGC(fam,CATA,sps,templensec,ccmethod,ccbp,plflag)
+function [dstack,ccstack,dstackort,ccstackort,dstackvert,ccstackvert] = ...
+  mk_bbtemp_PGC(fam,CATA,sps,templensec,ccmethod,ccbp,plflag)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
 % This is the function to generate the broadband LFE family template from Bostock's
@@ -44,6 +45,7 @@ function [dstack,ccstack,dstackort,ccstackort] = mk_bbtemp_PGC(fam,CATA,sps,temp
 
 %% default value for easy debugging
 defval('fam', '002');
+defval('CATA', 'new');
 defval('sps', 40);
 defval('templensec', 60);
 defval('ccmethod', 2);
@@ -334,6 +336,8 @@ for id = 1: nday
                 % 2. this is for data with no response
                 [opt, ort, timeperm] = readperm_nofilterv2(prename, ...
                     PERMSTA, PERMROTS, idx, sps, fact);
+                vert = readperm_nofilterv2(prename, ...
+                    PERMSTA, PERMROTS, idx, sps, fact, 'Z');
             else
                 fileflag = 0;   % change the file flag to 0, meaning abnormal
                 fprintf('No data for station %s in day %s / %s, this day will be omitted. \n',...
@@ -362,6 +366,8 @@ for id = 1: nday
                 % 2. this is for data with no response
                 [opt, ort, ~] = readpola_nofilterv2(prename, ...
                     POLSTA, POLROTS, idx, sps, fact);
+                vert = readpola_nofilterv2(prename, ...
+                    POLSTA, POLROTS, idx, sps, fact, 'Z');
             else
                 fileflag = 0;   % change the file flag to 0, meaning abnormal
                 fprintf('No data for station %s in day %s / %s,this day will be omitted. \n',...
@@ -373,6 +379,7 @@ for id = 1: nday
         
         STAopt(ista, :) = opt/scaleseisms(ista);
         STAort(ista, :) = ort/scaleseisms(ista);
+        STAvert(ista, :) = vert/scaleseisms(ista);
     end
     
     if fileflag == 0    % means there are missing files
@@ -409,6 +416,10 @@ for id = 1: nday
               
             dataortmat(:, nstack, :) = STAort(:, bostsamp(n)- before- extra: ...
                 bostsamp(n)+ after+ extra);  
+              
+            datavertmat(:, nstack, :) = STAvert(:, bostsamp(n)- before- extra: ...
+                bostsamp(n)+ after+ extra);  
+              
         end
     end
     
@@ -429,6 +440,7 @@ end     % loop for days
 windata = [];
 stackex = zeros(nsta, templen+ 2*extra);
 stackortex = zeros(nsta, templen+ 2*extra);
+stackvertex = zeros(nsta, templen+ 2*extra);
 for i = 1: nstack
 %     windata(:,:) = datamat(:, i, indst: inded);
     windata(:,:) = datamat(:, i, :);
@@ -440,22 +452,29 @@ for i = 1: nstack
     tmp = detrend(windata');
     stackortex = stackortex+ tmp';
     
+    windata(:,:) = datavertmat(:, i, :);
+    tmp = detrend(windata');
+    stackvertex = stackvertex+ tmp';    
 end
 
 %% Averaging & normalization
 %%% cut off extra points, stack should be templen long
 dstack = stackex(:, 1+extra: end-extra);
 dstackort = stackortex(:, 1+extra: end-extra);
+dstackvert = stackvertex(:, 1+extra: end-extra);
 
 %%% averaging
 dstack = dstack/ nstack;
 dstackort = dstackort/nstack;
+dstackvert = dstackvert/nstack;
 
 %%% detrend
 tmp = detrend(dstack');
 dstack = tmp';
 tmp2 = detrend(dstackort');
 dstackort = tmp2';
+tmp3 = detrend(dstackvert');
+dstackvert = tmp3';
 
 %%% normalization
 mid = templen/2;
@@ -528,6 +547,7 @@ if ccmethod == 1    % start for CCMETHOD choice
     coefmin = 0.25;
     ccstack = zeros(nsta, templen);
     ccstackort = zeros(nsta, templen);
+    ccstackvert = zeros(nsta, templen);
     %%% SEE NOTES for proper freq. band choices
 %     lo = 2;     % empirical 
 %     hi = 8;
@@ -596,6 +616,13 @@ if ccmethod == 1    % start for CCMETHOD choice
                                 lagmat(ista, istack)+extra+templen);
             tmp = detrend(newdata');
             ccstackort = ccstackort+ tmp';
+            
+            windata = datavertmat(:,istack, :);
+            newdata = windata(:,1+lagmat(ista, istack)+extra: ...
+                                lagmat(ista, istack)+extra+templen);
+            tmp = detrend(newdata');
+            ccstackvert = ccstackvert+ tmp';
+            
         end
     end
             %%% This was the test for long/short cc comparison ,now in a
@@ -625,6 +652,7 @@ elseif ccmethod == 2
     offsetmax = sps/4;
     ccstack = zeros(nsta, templen);
     ccstackort = zeros(nsta, templen);
+    ccstackvert = zeros(nsta, templen);
     %%% SEE NOTES for proper freq. band choices
 %     lo = 2;     % empirical 
 %     hi = 8;
@@ -667,6 +695,8 @@ elseif ccmethod == 2
         tem = detrend(tem);
         dummyort(:,:) = dataortmat(ista,:, :);
         windataort = dummyort';
+        dummyvert(:,:) = datavertmat(ista,:, :);
+        windatavert = dummyvert';
         for istack = 1: nstack
             [coef, lag] = xcorr(win(:,istack), tem, offsetmax, 'coeff');
             [maxcoef, idx] = max(coef);
@@ -682,6 +712,10 @@ elseif ccmethod == 2
             newdata(:) = windataort(1+lagsamp+extra: lagsamp+extra+templen,istack);
             tmp = detrend(newdata');
             ccstackort(ista, :) = ccstackort(ista, :)+ tmp';
+            
+            newdata(:) = windatavert(1+lagsamp+extra: lagsamp+extra+templen,istack);
+            tmp = detrend(newdata');
+            ccstackvert(ista, :) = ccstackvert(ista, :)+ tmp';
         end
         
         %%% This was the test for long/short cc comparison ,now in a
@@ -712,6 +746,7 @@ end     % end for CCMETHOD choice
 for ista = 1: nsta
     ccstack(ista, :) = ccstack(ista, :)/ nstack2;
     ccstackort(ista, :) = ccstackort(ista, :)/ nstack2;
+    ccstackvert(ista, :) = ccstackvert(ista, :)/ nstack2;
 end
 
 %%% detrend
@@ -719,7 +754,8 @@ tmp = detrend(ccstack');
 ccstack = tmp';
 tmp = detrend(ccstackort');
 ccstackort = tmp';
-
+tmp = detrend(ccstackvert');
+ccstackvert = tmp';
 
 %%% normalization
 ampmax = max(ccstack(:, mid-sps/2+1: mid+sps/2),[],2);

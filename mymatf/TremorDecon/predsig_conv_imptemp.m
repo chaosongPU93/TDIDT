@@ -1,5 +1,5 @@
-function [f,predgrp,resgrp,predgrpl,resgrpl,l2normred]=predsig_conv_imptemp(sigsta,optdat,impindepst,...
-  greenf,zcrosses,overshoot,stas,flagplt,sps)
+function [f,predgrp,resgrp,predgrpl,resgrpl,l2normred,varred]=...
+  predsig_conv_imptemp(sigsta,optdat,impindepst,greenf,zcrosses,overshoot,stas,flagplt,sps)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % This script obtains the predicted (modeled) waveform by carring out a 
 % convolution between the arrival time of deconvolved impulses (usually 
@@ -60,10 +60,15 @@ resgrp = sigsta - predgrp;  %residual, difference between signal and prediction
 resgrpa = sigsta - predgrpa;  %residual, difference between aligned signal and prediction
 resgrpl = detrend(optdat(:,2:end)) - predgrpl;  %longer residual including an overshoot on both sides for alignment
 
-l2normred = zeros(nsta, 3);  %residual reduction
+l2normred = zeros(nsta, 3);  %relative l2-norm reduction
+varred = zeros(nsta, 3);  %relative variance reduction
 for i = 1: nsta
+%   mean(sigsta(:,i))
+%   mean(resgrp(:,i))
   l2normred(i, :) = [norm(sigsta(:,i)) norm(resgrp(:,i)) ...
-    (norm(sigsta(:,i))-norm(resgrp(:,i)))/norm(sigsta(:,i))*100];  
+    (norm(sigsta(:,i))-norm(resgrp(:,i)))/norm(sigsta(:,i))*100];
+  varred(i, :) = [var(sigsta(:,i)) var(resgrp(:,i)) ...
+    (var(sigsta(:,i))-var(resgrp(:,i)))/var(sigsta(:,i))*100]; 
 end
 
 if flagplt

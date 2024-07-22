@@ -2,7 +2,7 @@ function [septime] = interevt_time(occtime)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % function [septime] = interevt_time(occtime)
 % This function is to read in the time of detections and return the 
-% separation in time between itself and its preceding detection,
+% separation in time between itself and its PRECEDING detection,
 % i.e., inter-event time
 %
 %

@@ -20,7 +20,6 @@
 % First created date:   2023/03/22
 % Last modified date:   2023/03/22
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 %% Initialization
 %%% SAME if focusing on the same region (i.e. same PERMROTS and POLROTS)
 %%% AND if using the same family, same station trio
@@ -30,8 +29,6 @@ clc
 close all
 
 %% for easy testing
-defval('idxbst',1:195); %global indices of bursts to run 
-
 set(0,'DefaultFigureVisible','on');
 % set(0,'DefaultFigureVisible','off');   % switch to show the plots or not
 
@@ -143,10 +140,9 @@ hfout = sortrows(hfout, [daycol, seccol]);
 
 ttol = 35;
 ntol = 3;
-trange = load(strcat(rstpath, '/MAPS/tdec.bstran',num2str(ttol),'s.pgc002.',cutout(1:4)));
-% trange = trange(1:end-1,:);
-% trange = load(strcat(rstpath, '/MAPS/tdec.bstran',num2str(ttol),'s.',num2str(ntol),'.pgc002.',...
-%   cutout(1:4)));
+% trange = load(strcat(rstpath, '/MAPS/tdec.bstran',num2str(ttol),'s.pgc002.',cutout(1:4)));
+trange = load(strcat(rstpath, '/MAPS/tdec.bstran',num2str(ttol),'s.',num2str(ntol),'.pgc002.',...
+  cutout(1:4)));
 tlen = trange(:,3)-trange(:,2);
 nbst = size(trange,1);
 
@@ -156,7 +152,6 @@ nets = length(years);
 
 trangeout = load(strcat(rstpath, '/MAPS/tdec.bstran',num2str(ttol),'s.',num2str(ntol),'.pgcout002.',...
   cutout(1:4)));
-
 
 %%%load the empirical model param of time offset 14 for each addtional stations
 off14mod = load(strcat(rstpath, '/MAPS/timeoff_planefitparam_4thsta_160sps'),'w+');
@@ -177,7 +172,8 @@ lfeloc = load(fullfile(bosdir, lfefnm));
 loc0 = lfeloc(lfeloc(:,1)==2,:);
 %%%if still use the catalog separated by each fam
 %this specifies which MB LFE catalog to use, 'AMR' is updated within 2-4 Hz
-%while 'NEW' is within 0.5-1 Hz
+%while 'NEW' is within 1-1.5 Hz, use the lower-freq estimate
+%see more details in 'rm002246overlap'
 flag = 'NEW';
 % flag = 'AMR';
 bostname = strcat('/BOSTOCK/update20230916/total_mag_detect_0000_cull_',flag,'.txt');
@@ -187,6 +183,8 @@ bostcatof = bostcatof(bostcatof(:,1)~=2 & bostcatof(:,1)~=47 & bostcatof(:,1)~=2
 bostcatof(:,13) = mag2moment(bostcatof(:,11));
 
 %%%if use the lumped catalog that combine unique events from 002 and 246
+%%%Under this case, 'bostcat' and 'bostcati' have the same size
+%%%This coms from 'rm002246overlap.m'
 bostcat = load(strcat(bosdir,'/002-246_lumped.2003-2005_cull_',flag,'_chao'));
 
 %the cut-out boundary of 4-s detections
@@ -217,7 +215,7 @@ bostcati = bostcat(isinbnd == 1, :);  %inside boundary
 % clear bostcat
 
 %convert moment mag to moment, Mw = (2/3)*log_10(M0)-10.7, where M0 has the unit of dyne.cm
-%(10^-7 N.m), so Mw = (2/3)*log_10(M0)-6 if M0 has the unit of N.m
+%(10^-7 Nm), so Mw = (2/3)*log_10(M0)-6 if M0 has the unit of Nm
 bostcati(:,13) = mag2moment(bostcati(:,11));
 % bostcato(:,13) = mag2moment(bostcato(:,11));
 
@@ -225,7 +223,7 @@ bostcati(:,13) = mag2moment(bostcati(:,11));
 % bostcati = bostcati(bostcati(:,1)==2,:);
 % bostcato = bostcato(bostcato(:,1)~=2 & bostcato(:,1)~=47 & bostcato(:,1)~=246,:);
 
-keyboard
+% keyboard
 
 %% plot to see if 002 and 246 are still strongly overlapping
 % aaa = unique(bostcati(:,1));
@@ -273,14 +271,14 @@ for i = 1: length(dates)
 end
 bostdayia = cat(1,bostdayi{:});   %MB 002/246 lfes of the same dates I case
 bomsumdaya = sum(bomsumday);
-factsamed = length(bostdayia)/length(bostcati);
+factsamed = length(bostdayia)/length(bostcati); %fraction of MB's 002/246 LFEs of same dates
 % factsamedi = nbostdayi/length(bostcati);
 bostdayofa = cat(1,bostdayof{:});   %MB other fams' lfes of the same dates I case
 clear bostdayof
 
 %so what happened to days I never focused, do I miss a lot of MB's LFEs?
-bostotherd=setdiff(bostcati,bostdayia,'rows','stable');
-factotherd = length(bostotherd)/length(bostcati);
+bostotherd=setdiff(bostcati,bostdayia,'rows','stable'); 
+factotherd = length(bostotherd)/length(bostcati); %fraction of MB's 002/246 LFEs of OTHER dates
 aa = bostotherd(:,2)*10000+bostotherd(:,3)*100+bostotherd(:,4);
 odate = unique(aa);
 odatenum = zeros(length(odate),1);
@@ -292,58 +290,57 @@ bb = bostdayia(:,2)*10000+bostdayia(:,3)*100+bostdayia(:,4);
 idate = unique(bb);
 
 %%
-%%%daily # LFEs for dates analysed and days not 
-figure
-subplot(211)
-box on; grid on; hold on;
-scatter(1:length(idate),nbostdayi);
-tklbl = [];
-minnum = 40;
-for i = 1: length(idate)
-  tklbl{i} = num2str(idate(i));
-end
-ax=gca;
-plot(ax.XLim,[minnum minnum],'k--');
-text(1,minnum,'Min # 002 LFEs to select','VerticalAlignment','top');
-text(0.98,0.95,sprintf('Total: %d/%d=%.1f%%',sum(nbostdayi),length(bostcati),factsamed*100),...
-  'Units','normalized','HorizontalAlignment','right');
-xticks(1:length(idate));
-xticklabels(tklbl);
-xtickangle(45);  
-ylabel('# MB 002 LFEs');
-title('Dates in 2003/2004/2005 analysed');
+% %%%daily # LFEs for dates analysed and days not 
+% figure
+% subplot(211)
+% box on; grid on; hold on;
+% scatter(1:length(idate),nbostdayi);
+% tklbl = [];
+% minnum = 40;
+% for i = 1: length(idate)
+%   tklbl{i} = num2str(idate(i));
+% end
+% ax=gca;
+% plot(ax.XLim,[minnum minnum],'k--');
+% text(1,minnum,'Min # 002 LFEs to select','VerticalAlignment','top');
+% text(0.98,0.95,sprintf('Total: %d/%d=%.1f%%',sum(nbostdayi),length(bostcati),factsamed*100),...
+%   'Units','normalized','HorizontalAlignment','right');
+% xticks(1:length(idate));
+% xticklabels(tklbl);
+% xtickangle(45);  
+% ylabel('# MB 002 LFEs');
+% title('Dates in 2003/2004/2005 analysed');
 
-subplot(212)
-box on; grid on; hold on;
-scatter(1:length(odate),odatenum);
-tklbl = [];
-for i = 1:length(odate)
-  tklbl{i} = num2str(odate(i));
-end
-ax=gca;
-plot(ax.XLim,[minnum minnum],'k--');
-text(1,minnum,'Min # 002 LFEs to select','VerticalAlignment','top');
-text(1,odatenum(3),'Not chosen because no data at LZB','VerticalAlignment','top','color','r');
-text(0.98,0.95,sprintf('Total: %d/%d',sum(odatenum),length(bostcati)),'Units','normalized',...
-  'HorizontalAlignment','right');
-xticks(1:length(odate));
-xticklabels(tklbl);
-xtickangle(45);  
-ylabel('# MB 002 LFEs');
-title('Dates in 2003/2004/2005 NOT analysed');
+% subplot(212)
+% box on; grid on; hold on;
+% scatter(1:length(odate),odatenum);
+% tklbl = [];
+% for i = 1:length(odate)
+%   tklbl{i} = num2str(odate(i));
+% end
+% ax=gca;
+% plot(ax.XLim,[minnum minnum],'k--');
+% text(1,minnum,'Min # 002 LFEs to select','VerticalAlignment','top');
+% text(1,odatenum(3),'Not chosen because no data at LZB','VerticalAlignment','top','color','r');
+% text(0.98,0.95,sprintf('Total: %d/%d',sum(odatenum),length(bostcati)),'Units','normalized',...
+%   'HorizontalAlignment','right');
+% xticks(1:length(odate));
+% xticklabels(tklbl);
+% xtickangle(45);  
+% ylabel('# MB 002 LFEs');
+% title('Dates in 2003/2004/2005 NOT analysed');
 
-%%
-%%%mag distribution of LFEs for dates analysed and days not 
-figure
-box on; grid on; hold on;
-histogram(log10(bostdayia(:,end)),'Normalization','count','FaceColor','b','BinWidth',0.05);
-histogram(log10(bostotherd(:,end)),'Normalization','count','FaceColor','r','BinWidth',0.05);
-ax=gca;
-plot([median(log10(bostdayia(:,end))) median(log10(bostdayia(:,end)))],ax.YLim,'b--','linew',2);
-plot([median(log10(bostotherd(:,end))) median(log10(bostotherd(:,end)))],ax.YLim,'r--','linew',2);
-legend('MB LFEs in my analysed days','Those in my ignored days');
-xlabel('log_{10}{moment of MB LFEs}');
-ylabel('Probability');
+% %% mag distribution of LFEs on dates analysed and dates ignored 
+% figure
+% box on; grid on; hold on;
+% histogram(log10(bostdayia(:,end)),'Normalization','count','FaceColor','b','BinWidth',0.05);
+% histogram(log10(bostotherd(:,end)),'Normalization','count','FaceColor','r','BinWidth',0.05);
+% ax=gca;
+% plot([median(log10(bostdayia(:,end))) median(log10(bostdayia(:,end)))],ax.YLim,'b--','linew',2);
+% plot([median(log10(bostotherd(:,end))) median(log10(bostotherd(:,end)))],ax.YLim,'r--','linew',2);
+% legend('MB LFEs in my analysed days','Those in my ignored days');
+% xlabel('log_{10}{moment of MB LFEs}');
+% ylabel('Count');
 
       
 %%
@@ -383,7 +380,8 @@ clear armcat
 
 %% load LFE catalogs
 %%%load the LFE catalog, 25-s-win
-savefile = 'deconv_stats4th_allbstsig.mat';
+% savefile = 'deconv_stats4th_allbstsig.mat';
+savefile = 'deconv_stats4th_no23_allbstsig.mat';
 allsig = load(strcat(rstpath, '/MAPS/',savefile));
 imp = allsig.allbstsig.impindepall;
 imp4th = allsig.allbstsig.impindep4thall;
@@ -400,19 +398,9 @@ sps = 160;
 [imploc, indinput] = off2space002(imp(:,7:8),sps,ftrans,0); % 8 cols, format: dx,dy,lon,lat,dep,ttrvl,off12,off13
 [imploc4th, indinput] = off2space002(imp4th(:,7:8),sps,ftrans,0); % 8 cols, format: dx,dy,lon,lat,dep,ttrvl,off12,off13
 
-%%%load the LFE catalog, whole-win
-savefile = 'deconv1win_stats4th_allbstsig.mat';
-allsig1win = load(strcat(rstpath, '/MAPS/',savefile));
-imp1win = allsig1win.allbstsig.impindepall;
-imp1win4th = allsig1win.allbstsig.impindep4thall;
-nsrc1win = allsig1win.allbstsig.nsrcraw;
-nsrc1win4th = allsig1win.allbstsig.nsrc;
-%convert time offset to relative loc
-[imploc1win, ~] = off2space002(imp1win(:,7:8),sps,ftrans,0); % 8 cols, format: dx,dy,lon,lat,dep,ttrvl,off12,off13
-[imploc1win4th, ~] = off2space002(imp1win4th(:,7:8),sps,ftrans,0); % 8 cols, format: dx,dy,lon,lat,dep,ttrvl,off12,off13
-
 %%%load the LFE catalog, 25-s-win, noise
-savefile = 'deconv_stats4th_allbstnoi.mat';
+% savefile = 'deconv_stats4th_allbstnoi.mat';
+savefile = 'deconv_stats4th_no23_allbstnoi.mat';
 allnoi = load(strcat(rstpath, '/MAPS/',savefile));
 impn = allnoi.allbstnoi.impindepall;
 impn4th = allnoi.allbstnoi.impindep4thall;
@@ -425,24 +413,40 @@ off1ikn = allnoi.allbstnoi.off1i;
 [implocn, ~] = off2space002(impn(:,7:8),sps,ftrans,0); % 8 cols, format: dx,dy,lon,lat,dep,ttrvl,off12,off13
 [implocn4th, ~] = off2space002(impn4th(:,7:8),sps,ftrans,0); % 8 cols, format: dx,dy,lon,lat,dep,ttrvl,off12,off13
 
-%%%load the LFE catalog, whole-win, noise
-savefile = 'deconv1win_stats4th_allbstnoi.mat';
-allnoi1win = load(strcat(rstpath, '/MAPS/',savefile));
-impn1win = allnoi1win.allbstnoi.impindepall;
-impn1win4th = allnoi1win.allbstnoi.impindep4thall;
-nsrcn1win = allnoi1win.allbstnoi.nsrcraw;
-nsrcn1win4th = allnoi1win.allbstnoi.nsrc;
-%convert time offset to relative loc
-[implocn1win, ~] = off2space002(impn1win(:,7:8),sps,ftrans,0); % 8 cols, format: dx,dy,lon,lat,dep,ttrvl,off12,off13
-[implocn1win4th, ~] = off2space002(impn1win4th(:,7:8),sps,ftrans,0); % 8 cols, format: dx,dy,lon,lat,dep,ttrvl,off12,off13
+% %%%load the LFE catalog, whole-win
+% savefile = 'deconv1win_stats4th_allbstsig.mat';
+% allsig1win = load(strcat(rstpath, '/MAPS/',savefile));
+% imp1win = allsig1win.allbstsig.impindepall;
+% imp1win4th = allsig1win.allbstsig.impindep4thall;
+% nsrc1win = allsig1win.allbstsig.nsrc;
+% nsrc1win4th = allsig1win.allbstsig.nsrc4th;
+% %convert time offset to relative loc
+% [imploc1win, ~] = off2space002(imp1win(:,7:8),sps,ftrans,0); % 8 cols, format: dx,dy,lon,lat,dep,ttrvl,off12,off13
+% [imploc1win4th, ~] = off2space002(imp1win4th(:,7:8),sps,ftrans,0); % 8 cols, format: dx,dy,lon,lat,dep,ttrvl,off12,off13
+
+% %%%load the LFE catalog, whole-win, noise
+% savefile = 'deconv1win_stats4th_allbstnoi.mat';
+% allnoi1win = load(strcat(rstpath, '/MAPS/',savefile));
+% impn1win = allnoi1win.allbstnoi.impindepall;
+% impn1win4th = allnoi1win.allbstnoi.impindep4thall;
+% nsrcn1win = allnoi1win.allbstnoi.nsrc;
+% nsrcn1win4th = allnoi1win.allbstnoi.nsrc4th;
+% %convert time offset to relative loc
+% [implocn1win, ~] = off2space002(impn1win(:,7:8),sps,ftrans,0); % 8 cols, format: dx,dy,lon,lat,dep,ttrvl,off12,off13
+% [implocn1win4th, ~] = off2space002(impn1win4th(:,7:8),sps,ftrans,0); % 8 cols, format: dx,dy,lon,lat,dep,ttrvl,off12,off13
 
 %%
 impuse = imp;
 nsrcuse = nsrc;
+fnsuffix = [];
 % impuse = imp4th;
 % nsrcuse = nsrc4th;
+% fnsuffix = '4th';
+
 rccuse = rccbst;
 rcccol = 1;
+
+locuse = off2space002(impuse(:,7:8),sps,ftrans,0);
 
 %%
 %ppeaks-zcrosses
@@ -474,18 +478,19 @@ ccali = zeros(size(trange,1),1);  % CC value using the best alignment
 nbosti = zeros(length(idxbst),1);
 ratbosti = zeros(length(idxbst),1);
 bost = cell(length(idxbst),1);  %all bostocks's lfes inside burst wins (and inside region)
-bostmsum = zeros(length(idxbst),1);
+bostmsum = zeros(length(idxbst),1); %sum of moment
 bostday = [];
 
-impi = cell(length(idxbst),1); %all my own lfes 
+%%%Separated for each burst  
+impi = cell(length(idxbst),1); %all my own lfes
 impasum = zeros(length(idxbst),1);
 bostcomm = cell(length(idxbst),1);  %bostock's lfes that correspond to one of my lfes, inside burst wins (and inside region)
 impcomm = cell(length(idxbst),1);   %my corresponding lfes
-impuniq = cell(length(idxbst),1);   %my corresponding lfes
+impuniq = cell(length(idxbst),1);   %my unique lfes
 ampcomm = cell(length(idxbst),1);   %max and std of amp of my LFEs close to MB's in time
 bostmiss = cell(length(idxbst),1);	%bostock's lfes that i missed, inside burst wins (and inside region)   
 ncomm = zeros(length(idxbst),1); %num of commons
-ratcomm = zeros(length(idxbst),1);  %ratio of commons
+fraccomm = zeros(length(idxbst),1);  %fraction of commons
 
 for iii = 1: length(idxbst)
   
@@ -519,7 +524,7 @@ for iii = 1: length(idxbst)
   armdayo = armcato(armcato(:,1)==year & armcato(:,2)==a(1) & armcato(:,3)==a(2),:);
   armdayo = sortrows(armdayo, 4);
   
-  %bursts and 4-s detections of the same day
+  %bursts and 4-s tremor detections of the same day
   rangetemp = trange(trange(:,1)==datesets(i), :);
   hfdayi = hfbnd(hfbnd(:,daycol)==datesets(i), :);  % inside bound of the day
   hfdayo = hfout(hfout(:,daycol)==datesets(i), :);  % outside bound of the day
@@ -548,20 +553,20 @@ for iii = 1: length(idxbst)
   tedbuf = max(tcnti(indtmaxi)+2);
   tlenbuf = tedbuf-tstbuf;
       
-  %plot the strongest 0.5-s arrival outside ellipse
+  %plot the strongest 0.5-s arrival of a 4-s trmeor detection outside ellipse
   indto = find(tmaxo>=tstbuf & tmaxo<=tedbuf);
-  %plot the strongest 0.5-s arrival inside ellipse
+  %plot the strongest 0.5-s arrival of a 4-s trmeor detection inside ellipse
   indti = find(tmaxi>=tstbuf & tmaxi<=tedbuf);
-%   %plot the bostock's LFE catalog outside rectangle
+%   %plot the bostock's LFE catalog outside ellipse
 %   indbo = find(tbosto>=tstbuf & tbosto<=tedbuf);
-  %plot the bostock's LFE catalog inside rectangle
+  %plot the bostock's LFE catalog inside ellipse
   indbi = find(tbosti>=tstbuf & tbosti<=tedbuf);
 
   %my lfes
   ist = sum(nsrcuse(1:idxbst(iii)-1))+1;
   ied = ist+nsrcuse(idxbst(iii))-1;
   impii = impuse(ist:ied,:);  %LFEs of the same time win
-  timp = impii(:,1)+ppkmzc(1);
+  timp = impii(:,1)+ppkmzc(1);  %LFE timing, corrected to the positive peak
   
   rcci = rccuse{k}; %rcc, 1st col is 25-s-win, 2nd col is whole-win
   
@@ -744,6 +749,7 @@ for iii = 1: length(idxbst)
     for ii = 1: length(indti)
       barst = tmaxi(indti(ii)); % arrival of strongest 0.5-s, in sec
       bared = tmaxi(indti(ii))+0.5; % last for 0.5 s
+      yloc = ax.YLim(1)+(ax.YLim(2)-ax.YLim(1))*0.03;
       plot(ax,[barst bared]-tstbuf,[yloc yloc],'k-','linew',2.5);
     end
     %       %plot the armbruster's tremor catalog outside rectangle
@@ -843,10 +849,10 @@ for iii = 1: length(idxbst)
     tmp = setdiff(1:size(impii,1),temp2);
     impuniq{iii} = impii(tmp,:);
   end
-  ampcomm{iii} = temp4;
+  ampcomm{iii} = temp4; 
   bostmiss{iii} = temp3;	%bostock's lfes that i missed, inside burst wins (and inside region) 
   ncomm(iii) = size(temp1,1); %num of commons
-  ratcomm(iii) = size(temp1,1)/length(indbi);  %ratio of commons  
+  fraccomm(iii) = size(temp1,1)/length(indbi);  %fraction of commons  
   
 %   if ~isempty(temp1)
 %     %diff time between consecutive common MB's LFEs
@@ -876,28 +882,28 @@ end
 % keyboard
 
 %lump all bursts
-bostcomma = cat(1,bostcomm{:});
-impcomma = cat(1,impcomm{:});
-impuniqa = cat(1,impuniq{:});
-ampcomma = cat(1,ampcomm{:});
-bostmissa = cat(1,bostmiss{:});
-bosta = cat(1,bost{:});
+bosta = cat(1,bost{:}); %all bostocks's lfes inside burst wins (and inside region)
+bostcomma = cat(1,bostcomm{:}); %bostock's lfes that correspond to one of my lfes, inside burst wins (and inside region)
+impcomma = cat(1,impcomm{:}); %my corresponding lfes that are shared with MB
+impuniqa = cat(1,impuniq{:}); %my unique lfes
+ampcomma = cat(1,ampcomm{:}); %max and std of amp of my LFEs close to MB's in time
+bostmissa = cat(1,bostmiss{:}); %bostock's lfes that i missed, inside burst wins (and inside region) 
 % bostcommdta = cat(1,bostcommdt{:});
 % bostcommdtalla = cat(1,bostcommdtall{:});
 % bostcommpairmoma = cat(1,bostcommpairmom{:});
 
 %%
-f = initfig(10,5,1,2); %initialize fig
-ax=f.ax(1); hold(ax,'on'); ax.Box = 'on'; grid(ax,'on');
-ind = find(ampcomma(:,2)>1);
-histogram(ax,ampcomma(ind,2));
-xlabel(ax,sprintf("# of my lfes w/in %.2fs of MB's",2*maxtoff));
-ylabel(ax,'Count');
-
-ax=f.ax(2); hold(ax,'on'); ax.Box = 'on'; grid(ax,'on');
-histogram(ax,ampcomma(ind,3));
-xlabel(ax,'std of their amp');
-ylabel(ax,'Count');
+% f = initfig(10,5,1,2); %initialize fig
+% ax=f.ax(1); hold(ax,'on'); ax.Box = 'on'; grid(ax,'on');
+% ind = find(ampcomma(:,2)>1);
+% histogram(ax,ampcomma(ind,2));
+% xlabel(ax,sprintf("# of my lfes w/in %.2fs of MB's",2*maxtoff));
+% ylabel(ax,'Count');
+% 
+% ax=f.ax(2); hold(ax,'on'); ax.Box = 'on'; grid(ax,'on');
+% histogram(ax,ampcomma(ind,3));
+% xlabel(ax,'std of their amp');
+% ylabel(ax,'Count');
 
 
 %% distribution in diff time between common MB's sources
@@ -959,22 +965,25 @@ text(ax,0.95,0.05,sprintf('%d/%d in common',length(x),size(bosta,1)),'Horizontal
 ylabel(ax,"Y-->log_{10}{Michael's moments (NM)}");
 xlabel(ax,"X-->log_{10}{My amps of common LFEs}");
 
+%fraction of MB LFEs in common for each burst burst
 ax=f.ax(2);
 hold(ax,'on'); ax.Box = 'on'; grid(ax,'on');
-histogram(ax,ratcomm,'BinWidth',0.1);
-xlabel(ax,'Ratio of common LFEs');
+histogram(ax,fraccomm,'BinWidth',0.1);
+xlabel(ax,'Fraction of common LFEs');
 ylabel(ax,'Count');
 
+%for common LFEs, ratio of MB's moment and my amp 
 ax=f.ax(3);
 hold(ax,'on'); ax.Box = 'on'; grid(ax,'on');
 histogram(ax,bostcomma(:,end)./lfeamp);
 xlabel(ax,'Ratio');
 ylabel(ax,'Count');
 
+%for common LFEs, log10-based ratio of MB's moment and my amp 
 ax=f.ax(4);
 hold(ax,'on'); ax.Box = 'on'; grid(ax,'on');
 histogram(ax,y-x);
-xlabel(ax,'Y-X [log_{10}{ratio}]');
+xlabel(ax,'log_{10}{ratio}');
 ylabel(ax,'Count');
 
 % supertit(f.ax(1:2),'data, 25-s wins, 2ndary sources removed');
@@ -990,8 +999,8 @@ lfeamp = mean(impuse(:,[2 4 6]),2); %amp for all LFE catalog
 % lfeamp = median(impuse(:,[2 4 6]),2);
 fitx = log10(lfeamp); 
 fity = feval(fitobj,fitx);  %use correlation above to infer the log10 of moment
-lfemoall = 10.^(fity);
-mosumallb = sum(lfemoall)  %total moment for my catalog
+lfemoallbc = 10.^(fity);
+mosumallbc = sum(lfemoallbc)  %total moment for my catalog Before Correction
 
 lfeamp = mean(impcomma(:,[2 4 6]),2); %amp for common LFE catalog
 fitx = log10(lfeamp); 
@@ -1002,248 +1011,356 @@ mosumcomm = sum(lfemocomm)  %total moment for common lfes
 %%%Bostock's moment sum 
 bmosummiss = sum(bostmissa(:,end)) %moment sum of missed
 bmosumcomm = sum(bostcomma(:,end)) %moment sum of commons
-bmosum = sum(bosta(:,end)) %moment sum of all
+bmosum = sum(bosta(:,end)) %moment sum of all, == missed + common
+% isequal(bmosum, bmosummiss+bmosumcomm)
 
-%% moment correction
-%the above moment could be deviated from truth in several ways, see NOTE for details:
-%1. My burst wins missed half of MB's LFEs on same dates same years, if my catalog can be projected
-%to those missing times, then the moment will increase
-%2. My catalog is smaller after checking at KLNB, moment will decrease
-%3. MB's LFEs' moments could be overestimate as he looks at 1-2 Hz, moment will decrease
-%4. if amp is proportional to square root of moments, then moment will increase
+%fraction of MB's LFEs inside my bursts
+fracinbst = length(bosta)/length(bostdayia)
+%fraction of MB's LFEs outside my bursts. for days we share, why did I miss a lot of MB's LFEs?
+bostoutbst = setdiff(bostdayia,bosta,'rows','stable');  %SAME dates, but outside bursts
+fracoutbst = length(bostoutbst)/length(bostdayia)
 
-%%%first of all, is there any systematic bias in amp/mag of different set of LFEs?
+%fraction of shared in common relative to total MB's LFEs inside my bursts
+fraccomm = length(bostcomma)/length(bosta)
+
+
+%% Before moment correction, any systematic bias in amp/mag of different set of LFEs?
 %%%distribution of mag of common and missed LFEs
-widin = 15;  % maximum width allowed is 8.5 inches
-htin = 5;   % maximum height allowed is 11 inches
+widin = 8.3;  % maximum width allowed is 8.5 inches
+htin = 4;   % maximum height allowed is 11 inches
 nrow = 1;
 ncol = 3;
 f = initfig(widin,htin,nrow,ncol); %initialize fig
 
+pltxran = [0.07 0.99]; pltyran = [0.15 0.9];
+pltxsep = 0.06; pltysep = 0.05;
+optaxpos(f,nrow,ncol,pltxran,pltyran,pltxsep,pltysep);
+
+binwm=0.05;
 ax=f.ax(1);
 hold(ax,'on'); ax.Box = 'on'; grid(ax,'on');
-p1=histogram(ax,log10(bostdayia(:,end)),'FaceColor','k','Normalization','count','BinWidth',0.05);
-p2=histogram(ax,log10(bosta(:,end)),'FaceColor','b','Normalization','count','BinWidth',0.05);
-fracinbst = length(bosta)/length(bostdayia)
-%for days we share, why did I miss a lot of MB's LFEs? 
-bostoutbst = setdiff(bostdayia,bosta,'rows','stable');  %same dates, but outside bursts
-p3=histogram(ax,log10(bostoutbst(:,end)),'FaceColor','r','Normalization','count','BinWidth',0.05);
-xlabel(ax,'log_{10}{moment of MB LFEs}');
-% ylabel(ax,'Probability');
-ylabel(ax,'Count');
-legend(ax,[p1,p2,p3],'MB LFEs in my analysed days','Those in my burst wins',...
-  'Those not in my burst wins');
+% p1=histogram(ax,log10(bostdayia(:,end)),'Facec','k','Normalization','count','binw',binwm);
+p2=histogram(ax,log10(bosta(:,end)),'Facec','b','Normalization','Probability',...
+  'binw',binwm);%,'edgec','none'
+p3=histogram(ax,log10(bostoutbst(:,end)),'Facec','r','Normalization','Probability',...
+  'binw',binwm);
+xlabel(ax,"log_{10}{Bostock's Moment (Nm)}");
+ylabel(ax,'Probability');
+% ylabel(ax,'Count');
+legend(ax,[p2,p3],sprintf('%d inside bursts',length(bosta)),...
+  sprintf('%d outside bursts',length(bostoutbst)),'Location','north');
+xlim(ax,[10.25 12.75]);
+ylim(ax,[0 0.1]);
+title(ax,'LFEs in Bostock et al. (2012)','FontSize',10,'FontWeight','normal');
+longticks(ax,3);
 
 ax=f.ax(2);
 hold(ax,'on'); ax.Box = 'on'; grid(ax,'on');
-p1=histogram(ax,log10(bosta(:,end)),'FaceColor','k','Normalization','count','BinWidth',0.05);
-p2=histogram(ax,log10(bostcomma(:,end)),'FaceColor','b','Normalization','count','BinWidth',0.05);
-fraccomm = length(bostcomma)/length(bosta)
-p3=histogram(ax,log10(bostmissa(:,end)),'FaceColor','r','Normalization','count','BinWidth',0.05);
-xlabel(ax,'log_{10}{moment of MB LFEs}');
+% p1=histogram(ax,log10(bosta(:,end)),'FaceColor','k','Normalization','count','BinWidth',0.05);
+p2=histogram(ax,log10(bostcomma(:,end)),'Facec','b','Normalization','Probability',...
+  'binw',binwm);
+p3=histogram(ax,log10(bostmissa(:,end)),'Facec','r','Normalization','Probability',...
+  'binw',binwm);
+xlabel(ax,"log_{10}{Bostock's Moment (Nm)}");
 % ylabel(ax,'Probability');
-ylabel(ax,'Count');
-legend(ax,[p1,p2,p3],'MB LFEs in my burst wins','Those I share','Those I miss');
+% ylabel(ax,'Count');
+legend(ax,[p2,p3],sprintf('%d shared',length(bostcomma)),...
+  sprintf('%d missed',length(bostmissa)),'Location','north');
+xlim(ax,[10.25 12.75]);
+ylim(ax,[0 0.2]);
+title(ax,'LFEs in Bostock et al. (2012)','FontSize',10,'FontWeight','normal');
+longticks(ax,3);
 
 ax=f.ax(3);
 hold(ax,'on'); ax.Box = 'on'; grid(ax,'on');
-p1=histogram(ax,log10(mean(impuse(:,[2 4 6]),2)),'FaceColor','k','Normalization','count',...
-  'BinWidth',0.1);
-p3=histogram(ax,log10(mean(impuniqa(:,[2 4 6]),2)),'FaceColor','r','Normalization','count','BinWidth',0.1);
-p2=histogram(ax,log10(mean(impcomma(:,[2 4 6]),2)),'FaceColor','b','Normalization','count',...
-  'BinWidth',0.1);
-xlabel(ax,'log_{10}{Amp of My LFEs}');
+% p1=histogram(ax,log10(mean(impuse(:,[2 4 6]),2)),'FaceColor','k','Normalization','count',...
+%   'BinWidth',0.1);
+p2=histogram(ax,log10(mean(impcomma(:,[2 4 6]),2)),'Facec','b','Normalization',...
+  'Probability','binw',binwm);
+p3=histogram(ax,log10(mean(impuniqa(:,[2 4 6]),2)),'Facec','r','Normalization',...
+  'Probability','binw',binwm);
+xlabel(ax,'log_{10}{Amplitude in this study}');
 % ylabel(ax,'Probability');
-ylabel(ax,'Count');
-legend(ax,[p1,p2,p3],'My LFEs in my burst wins','Those MB shares','Those unique');
+% ylabel(ax,'Count');
+legend(ax,[p2,p3],sprintf('%d shared',length(impcomma)),...
+  sprintf('%d unique',length(impuniqa)),'Location','north');
+title(ax,'LFEs in this study','FontSize',10,'FontWeight','normal');
+xlim(ax,[-1.75 1.25]);
+xticks(ax,-1.5: 0.5: 1);
+ylim(ax,[0 0.08]);
+longticks(ax,3);
 
-%%%correction #2, after checking at KLNB
+fname = strcat('lfemagcomparison',fnsuffix,'.pdf');
+print(f.fig,'-dpdf',...
+  strcat('/home/data2/chaosong/CurrentResearch/Song_Rubin_2024/figures/',fname));
+keyboard
 
-%%%correction #4
-f = initfig(5,5,1,1);
-ax=f.ax(1);
-hold(ax,'on'); ax.Box = 'on'; grid(ax,'on');
-p1=histogram(ax,log10(lfemoall),'FaceColor','b','Normalization','count',...
-  'BinWidth',0.1);
-text(ax,0.95,0.7,sprintf('before: %.1e Nm',sum(lfemoall)),'HorizontalAlignment',...
-  'right','Units','normalized');
-lfemoch=prctile(lfemoall,5); %'characteristic moment', defined here as 5th percentile 
-ratio = lfemoall./lfemoch;
+%% moment correction
+%the above moment could be deviated from truth in several ways, see NOTE for details:
+%0. My catalog is smaller after checking at KLNB, moment will decrease
+%1. if amp is proportional to square root of moments, then moment will increase
+%2. My burst wins missed half of MB's LFEs on same dates same years, if my catalog can be projected
+%to those missing times, then the moment will increase
+%3. MB's LFEs' moments could be overestimate as he looks at 1-2 Hz, moment will decrease
+
+%%%correction #0, after checking at KLNB
+
+%%%correction #1
+lfemoch=prctile(lfemoallbc,5); %'characteristic moment', defined here as 5th percentile 
+ratio = lfemoallbc./lfemoch;
 ratio(ratio<1) = 1;
-lfemoall = lfemoall.*ratio;
-text(ax,0.95,0.75,sprintf('characteristic: %.1e Nm',lfemoch),'HorizontalAlignment',...
-  'right','Units','normalized');
+lfemoallac1 = lfemoallbc.*ratio;
+mosumallac1 = sum(lfemoallac1);
 
-p2=histogram(ax,log10(lfemoall),'FaceColor','r','Normalization','count',...
-  'BinWidth',0.1);
-text(ax,0.95,0.8,sprintf('after: %.1e Nm',sum(lfemoall)),'HorizontalAlignment',...
-  'right','Units','normalized');
-xlabel(ax,'log_{10}{moment (Nm)}');
-ylabel(ax,'Count');
-legend(ax,[p1,p2],'before correction','after correction');
+%%%correction #2, project to those missing times, given the bias is negligible
+lfemoallac12 = lfemoallac1./fracinbst; %direct projection as the bias is low
+mosumallac12 = sum(lfemoallac12)  %total moment for my catalog
+mocor = mosumallac12/mosumallbc
 
-%%%correction #1, project to those missing times, given the bias is negligible
-lfemoall = lfemoall./fracinbst; %direct projection as the bias is low
+lfemoallac2 = lfemoallbc./fracinbst; %direct projection as the bias is low
+mosumallac2 = sum(lfemoallac2)  %total moment for my catalog
+mocor = mosumallac2/mosumallbc
 
-mosumalla = sum(lfemoall)  %total moment for my catalog
-mocor = mosumalla/mosumallb
+keyboard
 
+%% plot of moment correction step 1, missing moment due to saturation
+nrow = 1; % rows and cols of subplots in each figure
+ncol = 2;
+widin = 6.5; % size of each figure
+htin = 3.3;
+pltxran = [0.12 0.98]; pltyran = [0.15 0.96];
+pltxsep = 0.06; pltysep = 0.03;
+f = initfig(widin,htin,nrow,ncol);
+% optaxpos(f,nrow,ncol,pltxran,pltyran,pltxsep,pltysep);
+axpos = [0.12 0.15 0.4 0.8;
+         0.56 0.15 0.3 0.8];
+for isub = 1:nrow*ncol
+  set(f.ax(isub), 'position', axpos(isub,:));
+end
+ 
+fttpfree = fittype( @(a,b,x) a*x+b);
+
+ax = f.ax(1); hold(ax,'on'); ax.Box='on'; grid(ax,'on'); axis(ax,'equal');
+lfeamp = mean(impcomma(:,[2 4 6]),2);
+% lfeamp = median(impcomma(:,[2 4 6]),2);
+y = log10(bostcomma(:,end));
+x = log10(lfeamp);
+scatter(ax,x,y,15,[.3 .3 .3],'filled','MarkerEdgeColor','w');
+%linear robust least square
+[fitobj,gof,output] = fit(x,y,fttpfree,'Robust','Bisquare','StartPoint',[1 1]);
+% [fitobj,gof,output] = fit(x,y,'poly1');
+stats = statsofrobustlnfit(fitobj,gof,output,x,y);
+fitx = linspace(-1.2,1.2,100);
+fity = feval(fitobj,fitx);
+plot(ax,fitx,fity,'--','linewidth',2,'color','r');
+text(ax,0.99,0.10,sprintf('y = %.2fx + %.2f',stats.slope,stats.intcpt),'HorizontalAlignment',...
+  'right','Units','normalized','FontSize',8);
+text(ax,0.99,0.05,sprintf('Pearson: %.2f',stats.pearwt),'HorizontalAlignment',...
+  'right','Units','normalized','FontSize',8);
+% text(ax,0.95,0.25,sprintf('In burst: %d; %.2f; %.2e',nbostia,rbostia,bostiams),'HorizontalAlignment',...
+%   'right','Units','normalized');
+% text(ax,0.95,0.2,sprintf('Outside: %d; %.2f; %.2e',nbostimis,rbostimis,bostimisms),'HorizontalAlignment',...
+%   'right','Units','normalized');
+text(ax,0.99,0.95,'3-station','HorizontalAlignment',...
+  'right','Units','normalized','fontsize',10);
+text(ax,0.99,0.90,sprintf('%d LFEs shared',length(x)),'HorizontalAlignment',...
+  'right','Units','normalized','FontSize',8);
+text(ax,0.02,0.05,'a','FontSize',11,'unit','normalized','EdgeColor','k',...
+  'Margin',1);
+ylabel(ax,"log_{10}{Bostock's Moment (Nm)}",'FontSize',10);
+xlabel(ax,"log_{10}{Amplitude in this study}",'FontSize',10);
+axis(ax,[-1.25 1.25 10.25 12.75]);
+
+ax1pos=f.ax(1).Position;
+set(f.ax(2), 'position', [ax1pos(1)+ax1pos(3)+0.1 ax1pos(2) 0.35 ax1pos(4)]);
+ax=f.ax(2);
+hold(ax,'on'); ax.Box = 'on'; grid(ax,'on');
+p1=histogram(ax,log10(lfemoallbc),'Facec','b','Normalization','Probability',...
+  'binw',binwm);  %,'edgec','none'
+text(ax,0.99,0.8,sprintf('Original: %.1e Nm',mosumallbc),'HorizontalAlignment',...
+  'right','Units','normalized','FontSize',8);
+plot(ax,[log10(lfemoch) log10(lfemoch)],ax.YLim,'k--','linew',1);
+text(ax,0.99,0.7,sprintf('Char.: %.1e Nm',lfemoch),'HorizontalAlignment',...
+  'right','Units','normalized','FontSize',8);
+p2=histogram(ax,log10(lfemoallac1),'Facec','r','Normalization','Probability',...
+  'binw',binwm);
+text(ax,0.99,0.75,sprintf('Corrected: %.1e Nm',mosumallac1),'HorizontalAlignment',...
+  'right','Units','normalized','FontSize',8);
+text(ax,0.02,0.05,'b','FontSize',11,'unit','normalized','EdgeColor','k',...
+  'Margin',1);
+xlabel(ax,'log_{10}{Moment (Nm)}','FontSize',10);
+% ylabel(ax,'Count','FontSize',10);
+ylabel(ax,'Probability','FontSize',10);
+legend(ax,[p1,p2],'Original','Corrected','Orientation','horizontal',...
+  'Location','north','FontSize',8);
+
+fname = strcat('lfeamp2moment',fnsuffix,'.pdf');
+print(f.fig,'-dpdf',...
+  strcat('/home/data2/chaosong/CurrentResearch/Song_Rubin_2024/figures/',fname));
+% export_fig(f.fig,'-pdf',...
+%   strcat('/home/data2/chaosong/CurrentResearch/Song_Rubin_2024/figures/',fname));
 % keyboard
+
+%% choose which moment to use
+% lfemouse = lfemoallbc; %before corrections
+% lfemouse = lfemoallac2; %after corrections 2
+lfemouse = lfemoallac12;  %after corrections 1 & 2
 
 %% plot implied cumulative moment and slip
 %%%moment per pixel in sample space
 [denuniq1d, inddup] = density_pixel(impuse(:,7),impuse(:,8)); %count at each unique loc
-mosumuniq = sum_at_indices(lfemoall,inddup);
-mosumuniq1d = [denuniq1d(:,1:2) mosumuniq];  %sum of all at each unique loc
-cstr = {'# detections / pixel'; 'moment (Nm) / pixel'};
-[f] = plt_sum_pixel(denuniq1d,mosumuniq1d,[-40 40],[-40 40],20,cstr);
+mosumuniq = sum_at_indices(lfemouse,inddup);  %sum of all at each unique pixel
+mosumuniq1d = [denuniq1d(:,1:2) mosumuniq]; %matrix, moment sum at unique pixels
+cstr = {'# detections / pixel'; 'Total moment (Nm) / pixel'};
+% [f] = plt_sum_pixel(denuniq1d,mosumuniq1d,[-40 40],[-40 40],20,cstr);
+
 %%%moment per grid in map view
-dx = 0.4; dy = 0.4;
-loc = off2space002(impuse(:,7:8),sps,ftrans,0);
-[den1d,indices] = density_matrix(loc(:,1),loc(:,2),[-4 4],[-4 4],dx,dy);
-den1d = den1d(den1d(:,3)>0, :);
-indices = indices(~cellfun('isempty',indices));
-mosum = sum_at_indices(lfemoall,indices);
-mosum1d = [den1d(:,1:2) mosum];
-cstr = {'# detections / grid'; 'moment (Nm) / grid'};
-[f] = plt_sum_pixel(den1d,mosum1d,[-4 4],[-4 4],300,cstr,'s');
-hold(f.ax(1),'on');
-plot(f.ax(1),xcut,ycut,'k-','linew',2);
-hold(f.ax(1),'off');
+dx = 0.2; dy = 0.2;
+msize = 70;
+%convert uniq pixel loc to map loc
+locuniq = off2space002(mosumuniq1d(:,1:2),sps,ftrans,0);
+%bin uniq loc by grid
+[denuniqgrid1d,indgrid] = density_matrix(locuniq(:,1),locuniq(:,2),[-5 5],[-5 5],dx,dy);
+denuniqgrid1d = denuniqgrid1d(denuniqgrid1d(:,3)>0, :);
+indgrid = indgrid(~cellfun('isempty',indgrid));
+mosumgrid = sum_at_indices(mosumuniq,indgrid);  %sum of moment at each grid point
+mosumgrid1d = [denuniqgrid1d(:,1:2) mosumgrid]; %matrix, moment sum at grid points
+dengrid = sum_at_indices(denuniq1d(:,3),indgrid); %num of events at each grid point
+dengrid1d = [denuniqgrid1d(:,1:2) dengrid]; %matrix, num of events at grid points 
+cstr = {'# detections / grid'; 'Total moment (Nm) / grid'};
+% [f] = plt_sum_pixel(dengrid1d,mosumgrid1d,[-4 4],[-4 4],msize,cstr,'s');
+% hold(f.ax(1),'on');
+% plot(f.ax(1),xcut,ycut,'k-','linew',2);
+% hold(f.ax(1),'off');
 
 %%%moment per detection per pixel in sample space
 moaveuniq1d = [mosumuniq1d(:,1:2) mosumuniq1d(:,3)./denuniq1d(:,3)];
-cstr = {'# detections / pixel'; 'moment per detection / pixel'};
-[f] = plt_sum_pixel(denuniq1d,moaveuniq1d,[-40 40],[-40 40],20,cstr);
+cstr = {'# detections / pixel'; 'Average moment (Nm) / pixel'};
+% [f] = plt_sum_pixel(denuniq1d,moaveuniq1d,[-40 40],[-40 40],15,cstr);
 
 %%%moment per detection per grid in map view
-moave1d = [den1d(:,1:2) mosum./den1d(:,3)];
-cstr = {'# detections / grid'; 'moment per detection / grid'};
-[f] = plt_sum_pixel(den1d,moave1d,[-4 4],[-4 4],300,cstr,'s');
-hold(f.ax(1),'on');
-plot(f.ax(1),xcut,ycut,'k-','linew',2);
-hold(f.ax(1),'off');
-errgrid1 = [0 0;
-           1 0;
-           -1 0;
-           0 1;
-           0 -1
-           ];
-errloc1 = off2space002(errgrid1,sps,ftrans,0);
-sft1 = [1.5 -3];
-errgrid2 = 4*errgrid1;
-errloc2 = off2space002(errgrid2,sps,ftrans,0);
-sft2 = [2.5 -3];
-hold(f.ax(2),'on');
-plot(f.ax(2),errloc1([1 2],1)+sft1(1), errloc1([1 2],2)+sft1(2),'r-','linew',1);
-plot(f.ax(2),errloc1([1 3],1)+sft1(1), errloc1([1 3],2)+sft1(2),'r-','linew',1);
-plot(f.ax(2),errloc1([1 4],1)+sft1(1), errloc1([1 4],2)+sft1(2),'r-','linew',1);
-plot(f.ax(2),errloc1([1 5],1)+sft1(1), errloc1([1 5],2)+sft1(2),'r-','linew',1);
-plot(f.ax(2),errloc2([1 2],1)+sft2(1), errloc2([1 2],2)+sft2(2),'b-','linew',1);
-plot(f.ax(2),errloc2([1 3],1)+sft2(1), errloc2([1 3],2)+sft2(2),'b-','linew',1);
-plot(f.ax(2),errloc2([1 4],1)+sft2(1), errloc2([1 4],2)+sft2(2),'b-','linew',1);
-plot(f.ax(2),errloc2([1 5],1)+sft2(1), errloc2([1 5],2)+sft2(2),'b-','linew',1);
-hold(f.ax(2),'off');
+moavegrid1d = [mosumgrid1d(:,1:2) mosumgrid./dengrid];
+cstr = {'# detections / grid'; 'Average moment (Nm) / grid'};
+% [f] = plt_sum_pixel(dengrid1d,moavegrid1d,[-4 4],[-4 4],msize,cstr,'s');
+% hold(f.ax(1),'on');
+% plot(f.ax(1),xcut,ycut,'k-','linew',2);
+% hold(f.ax(1),'off');
+% errgrid1 = [0 0;
+%            1 0;
+%            -1 0;
+%            0 1;
+%            0 -1
+%            ];
+% errloc1 = off2space002(errgrid1,sps,ftrans,0);
+% sft1 = [1.5 -3];
+% errgrid2 = 4*errgrid1;
+% errloc2 = off2space002(errgrid2,sps,ftrans,0);
+% sft2 = [2.5 -3];
+% hold(f.ax(2),'on');
+% plot(f.ax(2),errloc1([1 2],1)+sft1(1), errloc1([1 2],2)+sft1(2),'r-','linew',1);
+% plot(f.ax(2),errloc1([1 3],1)+sft1(1), errloc1([1 3],2)+sft1(2),'r-','linew',1);
+% plot(f.ax(2),errloc1([1 4],1)+sft1(1), errloc1([1 4],2)+sft1(2),'r-','linew',1);
+% plot(f.ax(2),errloc1([1 5],1)+sft1(1), errloc1([1 5],2)+sft1(2),'r-','linew',1);
+% plot(f.ax(2),errloc2([1 2],1)+sft2(1), errloc2([1 2],2)+sft2(2),'b-','linew',1);
+% plot(f.ax(2),errloc2([1 3],1)+sft2(1), errloc2([1 3],2)+sft2(2),'b-','linew',1);
+% plot(f.ax(2),errloc2([1 4],1)+sft2(1), errloc2([1 4],2)+sft2(2),'b-','linew',1);
+% plot(f.ax(2),errloc2([1 5],1)+sft2(1), errloc2([1 5],2)+sft2(2),'b-','linew',1);
+% hold(f.ax(2),'off');
 
-%%
+% %% for burst #181
+% iii = 181;
+% ist = sum(nsrcuse(1:idxbst(iii)-1))+1;
+% ied = ist+nsrcuse(idxbst(iii))-1;
+% impi = impuse(ist:ied,:);  %LFEs of the same time win
+% [denuniq1di, inddupi] = density_pixel(impi(:,7),impi(:,8)); %count at each unique loc
+% mosumuniqi = sum_at_indices(lfemoall(ist:ied),inddupi);
+% mosumuniq1di = [denuniq1di(:,1:2) mosumuniqi];  %sum of all at each unique loc
+% moaveuniq1di = [mosumuniq1di(:,1:2) mosumuniq1di(:,3)./denuniq1di(:,3)];
+% 
+% locuniqi = off2space002(mosumuniq1di(:,1:2),sps,ftrans,0);
+% [dengrid1di,indgridi] = density_matrix(locuniqi(:,1),locuniqi(:,2),[-4 4],[-4 4],dx,dy);
+% dengrid1di = dengrid1di(dengrid1di(:,3)>0, :);
+% indgridi = indgridi(~cellfun('isempty',indgridi));
+% mosumgridi = sum_at_indices(mosumuniqi,indgridi);  % sum of moment in each grid cell
+% slipavegridi = mosumgridi / (mu*dx*dy)/ 1e3; %has the unit of mm .* dengrid1d(:,3)/ sum(dengrid1d(:,3))
+% slipavegrid1di = [dengrid1di(:,1:2) slipavegridi];
+% 
+% loci = locuse(ist:ied,:);
+% [den1di,indicesi] = density_matrix(loci(:,1),loci(:,2),[-4 4],[-4 4],dx,dy);
+% den1di = den1di(den1di(:,3)>0, :);
+% indicesi = indicesi(~cellfun('isempty',indicesi));
+% 
+% 
+% %%%density and slip for #181
+% f = initfig(9,4.5,1,2); %initialize fig
+% pltxran = [0.05 0.95]; pltyran = [0.05 0.95];
+% pltxsep = 0.06; pltysep = 0.06; 
+% optaxpos(f,1,2,pltxran,pltyran,pltxsep,pltysep);
+% 
+% %cumulative density
+% ax=f.ax(1);
+% hold(ax,'on'); ax.Box = 'on'; grid(ax, 'on');
+% dum = den1di;
+% dum(dum(:,3)>1, :) = [];
+% dum(:,3) = log10(dum(:,3));
+% scatter(ax,dum(:,1),dum(:,2),220,dum(:,3),'s','linew',0.2);  %, 'MarkerEdgeColor', 'w')
+% dum = sortrows(den1di,3);
+% dum(dum(:,3)==1, :) = [];
+% dum(:,3) = log10(dum(:,3));
+% scatter(ax,dum(:,1),dum(:,2),220,dum(:,3),'s','filled','MarkerEdgeColor','none');
+% % oldc = colormap(ax,'kelicol');
+% % newc = flipud(oldc);
+% % colormap(ax,newc);
+% colormap(ax,flipud(colormap(ax,'kelicol')));
+% c=colorbar(ax,'SouthOutside');
+% ax.CLim(2) = prctile(dum(:,3),99);
+% c.Label.String = strcat('log_{10}(# detections / grid)');
+% axis(ax,'equal');
+% axis(ax,[-4 4 -4 4]);
+% ax.GridLineStyle = '--';
+% ax.XAxisLocation = 'top';
+% ax.GridLineStyle = '--';
+% ax.XAxisLocation = 'top';
+% xlabel(ax,'E (km)','fontsize',11);
+% ylabel(ax,'N (km)','fontsize',11);
+% %the cut-out boundary of 4-s detections
+% plot(ax,xcut,ycut,'k-','linew',2);
+% scatter(ax,loci(:,1),loci(:,2),15,[.5 .5 .5],'o','filled',...
+%   'MarkerEdgeColor','none');
+% longticks(ax,1.5);
+% 
+% %average slip
+% ax=f.ax(2);
+% hold(ax,'on'); ax.Box = 'on'; grid(ax, 'on');
+% slipavegrid1di = sortrows(slipavegrid1di,3);
+% scatter(ax,slipavegrid1di(:,1),slipavegrid1di(:,2),220,slipavegrid1di(:,3),'s','filled',...
+%   'MarkerEdgeColor','none');
+% colormap(ax,flipud(colormap(ax,'kelicol')));
+% c=colorbar(ax,'SouthOutside'); %
+% caxis(ax,[0 prctile(slipavegrid1di(:,3),99)]);
+% % c.Label.String = 'log_{10}(average slip (mm)/ grid)';
+% c.Label.String = 'average slip (mm)/ grid';
+% axis(ax,'equal');
+% axis(ax,[-4 4 -4 4]);
+% ax.GridLineStyle = '--';
+% ax.XAxisLocation = 'top';
+% xlabel(ax,'E (km)','fontsize',11);
+% ylabel(ax,'N (km)','fontsize',11);
+% %the cut-out boundary of 4-s detections
+% plot(ax,xcut,ycut,'k-','linew',2);
+% longticks(ax,1.5);
+
 %%%convert moment to average slip per grid in map view
-locuniq = off2space002(mosumuniq1d(:,1:2),sps,ftrans,0);
-[dengrid1d,indgrid] = density_matrix(locuniq(:,1),locuniq(:,2),[-4 4],[-4 4],dx,dy);
-dengrid1d = dengrid1d(dengrid1d(:,3)>0, :);
-indgrid = indgrid(~cellfun('isempty',indgrid));
-mosumgrid = sum_at_indices(mosumuniq,indgrid);  % sum of moment in each grid cell
-mosumgrid1d = [dengrid1d(:,1:2) mosumgrid];
-mu = 3e10;
-slipavegrid = mosumgrid / (mu*dx*dy)/ 1e3; %has the unit of mm .* dengrid1d(:,3)/ sum(dengrid1d(:,3))
+mu = 3e10;  %has the unit of Pa
+fracseis = 1.0; %fraction of seismic area
+area = dx*dy*1e6; %has the unit of m^2
+slipavegrid = mosumgrid ./ mu ./ (fracseis*area) * 1e3; %has the unit of mm .* dengrid1d(:,3)/ sum(dengrid1d(:,3))
 slipavegrid1d = [dengrid1d(:,1:2) slipavegrid];
 
-%burst #181
-iii = 181;
-ist = sum(nsrcuse(1:idxbst(iii)-1))+1;
-ied = ist+nsrcuse(idxbst(iii))-1;
-impi = impuse(ist:ied,:);  %LFEs of the same time win
-[denuniq1di, inddupi] = density_pixel(impi(:,7),impi(:,8)); %count at each unique loc
-mosumuniqi = sum_at_indices(lfemoall(ist:ied),inddupi);
-mosumuniq1di = [denuniq1di(:,1:2) mosumuniqi];  %sum of all at each unique loc
-moaveuniq1di = [mosumuniq1di(:,1:2) mosumuniq1di(:,3)./denuniq1di(:,3)];
-
-locuniqi = off2space002(mosumuniq1di(:,1:2),sps,ftrans,0);
-[dengrid1di,indgridi] = density_matrix(locuniqi(:,1),locuniqi(:,2),[-4 4],[-4 4],dx,dy);
-dengrid1di = dengrid1di(dengrid1di(:,3)>0, :);
-indgridi = indgridi(~cellfun('isempty',indgridi));
-mosumgridi = sum_at_indices(mosumuniqi,indgridi);  % sum of moment in each grid cell
-slipavegridi = mosumgridi / (mu*dx*dy)/ 1e3; %has the unit of mm .* dengrid1d(:,3)/ sum(dengrid1d(:,3))
-slipavegrid1di = [dengrid1di(:,1:2) slipavegridi];
-
-loci = loc(ist:ied,:);
-[den1di,indicesi] = density_matrix(loci(:,1),loci(:,2),[-4 4],[-4 4],dx,dy);
-den1di = den1di(den1di(:,3)>0, :);
-indicesi = indicesi(~cellfun('isempty',indicesi));
-
-
-%%%density and slip for #181
-f = initfig(9,4.5,1,2); %initialize fig
-pltxran = [0.05 0.95]; pltyran = [0.05 0.95];
-pltxsep = 0.06; pltysep = 0.06; 
-optaxpos(f,1,2,pltxran,pltyran,pltxsep,pltysep);
-
-%cumulative density
-ax=f.ax(1);
-hold(ax,'on'); ax.Box = 'on'; grid(ax, 'on');
-dum = den1di;
-dum(dum(:,3)>1, :) = [];
-dum(:,3) = log10(dum(:,3));
-scatter(ax,dum(:,1),dum(:,2),220,dum(:,3),'s','linew',0.2);  %, 'MarkerEdgeColor', 'w')
-dum = sortrows(den1di,3);
-dum(dum(:,3)==1, :) = [];
-dum(:,3) = log10(dum(:,3));
-scatter(ax,dum(:,1),dum(:,2),220,dum(:,3),'s','filled','MarkerEdgeColor','none');
-% oldc = colormap(ax,'kelicol');
-% newc = flipud(oldc);
-% colormap(ax,newc);
-colormap(ax,flipud(colormap(ax,'kelicol')));
-c=colorbar(ax,'SouthOutside');
-ax.CLim(2) = prctile(dum(:,3),99);
-c.Label.String = strcat('log_{10}(# detections / grid)');
-axis(ax,'equal');
-axis(ax,[-4 4 -4 4]);
-ax.GridLineStyle = '--';
-ax.XAxisLocation = 'top';
-ax.GridLineStyle = '--';
-ax.XAxisLocation = 'top';
-xlabel(ax,'E (km)','fontsize',11);
-ylabel(ax,'N (km)','fontsize',11);
-%the cut-out boundary of 4-s detections
-plot(ax,xcut,ycut,'k-','linew',2);
-scatter(ax,loci(:,1),loci(:,2),15,[.5 .5 .5],'o','filled',...
-  'MarkerEdgeColor','none');
-longticks(ax,1.5);
-
-%average slip
-ax=f.ax(2);
-hold(ax,'on'); ax.Box = 'on'; grid(ax, 'on');
-slipavegrid1di = sortrows(slipavegrid1di,3);
-scatter(ax,slipavegrid1di(:,1),slipavegrid1di(:,2),220,slipavegrid1di(:,3),'s','filled',...
-  'MarkerEdgeColor','none');
-colormap(ax,flipud(colormap(ax,'kelicol')));
-c=colorbar(ax,'SouthOutside'); %
-caxis(ax,[0 prctile(slipavegrid1di(:,3),99)]);
-% c.Label.String = 'log_{10}(average slip (mm)/ grid)';
-c.Label.String = 'average slip (mm)/ grid';
-axis(ax,'equal');
-axis(ax,[-4 4 -4 4]);
-ax.GridLineStyle = '--';
-ax.XAxisLocation = 'top';
-xlabel(ax,'E (km)','fontsize',11);
-ylabel(ax,'N (km)','fontsize',11);
-%the cut-out boundary of 4-s detections
-plot(ax,xcut,ycut,'k-','linew',2);
-longticks(ax,1.5);
-
-%%%what's average slip over the entire area?
+%%%what's average slip over the ENTIRE AREA?
 indbnd = convhull(slipavegrid1d(:,1),slipavegrid1d(:,2));
-area = 0.5*polyarea(slipavegrid1d(indbnd,1),slipavegrid1d(indbnd,2));
-slipave = sum(lfemoall) ./ mu ./ area ./ 1e3; %has the unit of mm 
+area = polyarea(slipavegrid1d(indbnd,1),slipavegrid1d(indbnd,2))*1e6; %has the unit of m^2
+slipave = sum(lfemouse) ./ mu ./ (fracseis*area) * 1e3; %has the unit of mm 
 
 %%%what's average slip over each concentric ellipses?
 semia = 1.75*(0.6:0.2:2.0);
@@ -1257,48 +1374,158 @@ for ireg = 1: nreg
   shiftor=[0.2 0.2]; %(in km) %center of the same ellipse of my 4-s catalog
   [xcut1,ycut1] = ellipse_chao(shiftor(1),shiftor(2),xaxis,yaxis,0.01,45,shiftor);
   bnd = [xcut1 ycut1];
-  [iin,ion] = inpolygon(loc(:,1),loc(:,2),bnd(:,1),bnd(:,2));
+  [iin,ion] = inpolygon(locuse(:,1),locuse(:,2),bnd(:,1),bnd(:,2));
   isinbnd = iin | ion;
-  mosumell = sum(lfemoall(isinbnd == 1));  %total moment for my catalog
-  area = pi*xaxis*yaxis;
-  slipaveell(ireg) = mosumell ./ mu ./ area ./ 1e3; %has the unit of mm 
+  mosumell = sum(lfemouse(isinbnd == 1));  %total moment for my catalog
+  area = pi*xaxis*yaxis*1e6; %has the unit of m^2
+  slipaveell(ireg,1) = mosumell ./ mu ./ (fracseis*area) * 1e3; %has the unit of mm 
 end
 
-%%
-%%%average slip for the whole catalog
-f = initfig(9,9,2,2); %initialize fig
-pltxran = [0.05 0.95]; pltyran = [0.05 0.95];
-pltxsep = 0.06; pltysep = 0.06; 
-optaxpos(f,2,2,pltxran,pltyran,pltxsep,pltysep);
 
-%slip
+%%% A summary figure for moment and slip
+nrow = 2;
+ncol = 2;
+widin = 5.3;  % maximum width allowed is 8.5 inches
+htin = 7;   % maximum height allowed is 11 inches
+f = initfig(widin,htin,nrow,ncol);
+
+pltxran = [0.08 0.98]; pltyran = [0.03 0.98]; % optimal axis location
+pltxsep = 0.02; pltysep = 0.03;
+optaxpos(f,nrow,ncol,pltxran,pltyran,pltxsep,pltysep);
+
+xran = [-4 4];
+yran = [-4 4];
+dx = 0.2; dy = 0.2;
+msize = 30;
+scale = 'log10';
+symbol = 's';
+
+%%% total moment, binned by grid
 ax=f.ax(1);
 hold(ax,'on'); ax.Box = 'on'; grid(ax, 'on');
-slipavegrid1d = sortrows(slipavegrid1d,3);
-% scatter(ax,slipavegrid1d(:,1),slipavegrid1d(:,2),300,log10(slipavegrid1d(:,3)),'s','filled',...
-%   'MarkerEdgeColor','none');
-scatter(ax,slipavegrid1d(:,1),slipavegrid1d(:,2),220,slipavegrid1d(:,3),'s','filled',...
+cstr = 'Total moment (Nm) / grid';
+sumz1d = mosumgrid1d;
+sumz1d = sortrows(sumz1d,3);
+if strcmp(scale,'log10')
+  sumz1d(:,3) = log10(sumz1d(:,3));
+end
+scatter(ax,sumz1d(:,1),sumz1d(:,2),msize,sumz1d(:,3),symbol,'filled',...
   'MarkerEdgeColor','none');
-colormap(ax,flipud(colormap(ax,'kelicol')));
-c=colorbar(ax,'SouthOutside'); %
-caxis(ax,[0 prctile(slipavegrid1d(:,3),99)]);
-% c.Label.String = 'log_{10}(average slip (mm)/ grid)';
-c.Label.String = 'average slip (mm)/ grid';
-axis(ax,'equal');
-axis(ax,[-4 4 -4 4]);
+colormap(ax,'jet');
+% colormap(ax,'plasma');
+c=colorbar(ax,'SouthOutside');
+%   ax.CLim(2) = prctile(sumz1d(:,3),99);
+% caxis(ax,[prctile(sumz1d(:,3),1) prctile(sumz1d(:,3),99)]);
+if strcmp(scale,'log10')
+  c.Label.String = strcat('log_{10}(',cstr,')');
+elseif strcmp(scale,'linear')
+  c.Label.String = cstr;
+end
+pos = ax.Position;
+c.Position = [pos(1), pos(2)-0.09, pos(3), 0.02];
+text(ax,0.02,0.93,'a','FontSize',11,'unit','normalized','EdgeColor','k',...
+  'Margin',1);
+axis(ax, 'equal');
 ax.GridLineStyle = '--';
 ax.XAxisLocation = 'top';
-xlabel(ax,'E (km)','fontsize',11);
-ylabel(ax,'N (km)','fontsize',11);
+xlim(ax,xran);
+ylim(ax,yran);
+xticks(ax,xran(1):1:xran(2));
+yticks(ax,yran(1):1:yran(2));
+xlabel(ax,'E (km)');
+ylabel(ax,'N (km)');
+longticks(ax,2);
+hold(ax,'off');
+
+%%% average moment, binned by grid
+ax=f.ax(2);
+hold(ax,'on'); ax.Box = 'on'; grid(ax, 'on');
+cstr = 'Average moment (Nm) / grid';
+sumz1d = moavegrid1d;
+sumz1d = sortrows(sumz1d,3);
+if strcmp(scale,'log10')
+  sumz1d(:,3) = log10(sumz1d(:,3));
+end
+scatter(ax,sumz1d(:,1),sumz1d(:,2),msize,sumz1d(:,3),symbol,'filled',...
+  'MarkerEdgeColor','none');
+colormap(ax,'jet');
+% colormap(ax,'plasma');
+c=colorbar(ax,'SouthOutside');
+%   ax.CLim(2) = prctile(sumz1d(:,3),99);
+% caxis(ax,[prctile(sumz1d(:,3),1) prctile(sumz1d(:,3),99)]);
+if strcmp(scale,'log10')
+  c.Label.String = strcat('log_{10}(',cstr,')');
+elseif strcmp(scale,'linear')
+  c.Label.String = cstr;
+end
+pos = ax.Position;
+c.Position = [pos(1), pos(2)-0.09, pos(3), 0.02];
+text(ax,0.02,0.93,'b','FontSize',11,'unit','normalized','EdgeColor','k',...
+  'Margin',1);
+axis(ax, 'equal');
+ax.GridLineStyle = '--';
+ax.XAxisLocation = 'top';
+xlim(ax,xran);
+ylim(ax,yran);
+xticks(ax,xran(1):1:xran(2));
+yticks(ax,yran(1):1:yran(2));
+% xlabel(ax,'E (km)');
+% ylabel(ax,'N (km)');
+longticks(ax,2);
+nolabels(ax,3);
+hold(ax,'off');
+
+%%%average slip, binned by grid
+ax=f.ax(3);
+hold(ax,'on'); ax.Box = 'on'; grid(ax, 'on');
+cstr = 'Average slip (mm) / grid';
+sumz1d = slipavegrid1d;
+sumz1d = sortrows(sumz1d,3);
+% if strcmp(scale,'log10')
+%   sumz1d(:,3) = log10(sumz1d(:,3));
+% end
+scatter(ax,sumz1d(:,1),sumz1d(:,2),msize,sumz1d(:,3),symbol,'filled',...
+  'MarkerEdgeColor','none');
+colormap(ax,'jet');
+% colormap(ax,'plasma');
+c=colorbar(ax,'SouthOutside'); %
+% caxis(ax,[0 prctile(sumz1d(:,3),99)]);
+% if strcmp(scale,'log10')
+%   c.Label.String = strcat('log_{10}(',cstr,')');
+% elseif strcmp(scale,'linear')
+  c.Label.String = cstr;
+% end
+pos = ax.Position;
+c.Position = [pos(1), pos(2)-0.09, pos(3), 0.02];
 %the cut-out boundary of 4-s detections
 plot(ax,xcut,ycut,'k-','linew',2);
-loci = loc(ist:ied,:);
-scatter(ax,loci(:,1),loci(:,2),15,[.5 .5 .5],'o','filled',...
-  'MarkerEdgeColor','none');
-longticks(ax,1.5);
+text(ax,0.99,0.06,sprintf('%d over the\n entire area',round(slipave)),'fontsize',8,...
+  'unit','normalized','HorizontalAlignment','right');
+text(ax,0.02,0.93,'c','FontSize',11,'unit','normalized','EdgeColor','k',...
+  'Margin',1);
+% %detections from burst #181
+% iii = 181;
+% ist = sum(nsrcuse(1:idxbst(iii)-1))+1;
+% ied = ist+nsrcuse(idxbst(iii))-1;
+% impi = impuse(ist:ied,:);  %LFEs of the same time win
+% loci = locuse(ist:ied,:);
+% scatter(ax,loci(:,1),loci(:,2),6,[.5 .5 .5],'o','filled',...
+%   'MarkerEdgeColor','none');
+axis(ax, 'equal');
+ax.GridLineStyle = '--';
+ax.XAxisLocation = 'top';
+xlim(ax,xran);
+ylim(ax,yran);
+xticks(ax,xran(1):1:xran(2));
+yticks(ax,yran(1):1:yran(2));
+xlabel(ax,'E (km)');
+ylabel(ax,'N (km)');
+longticks(ax,2);
+% nolabels(ax,3);
+hold(ax,'off');
 
-%slip contour
-ax=f.ax(2);
+%%%Average slip over certain sizes of region
+ax=f.ax(4);
 hold(ax,'on'); ax.Box = 'on'; grid(ax, 'on');
 plot(ax,xcut,ycut,'k-','linew',2);
 off1iwa = [];
@@ -1306,7 +1533,6 @@ plta = [];
 for iii = 1: length(idxbst)
   off1iw = off1iwk{idxbst(iii)};
   off1iwa = [off1iwa; off1iw(:,2:3)];
-
   ccwpair = ccwpairk{idxbst(iii)};
   ccw = mean(ccwpair(:,1:2),2); %0-lag max cc of each subwin
   mrccwpair =  mrccwpairk{idxbst(iii)};
@@ -1317,87 +1543,213 @@ end
 [denoff1iwa, ind] = density_pixel(off1iwa(:,1),off1iwa(:,2)); %count at each unique loc
 medplta = median_at_indices(plta,ind);
 locoff1iw = off2space002(denoff1iwa(:,1:2),sps,ftrans,0);
-% keyboard
-scatter(ax,locoff1iw(:,1),locoff1iw(:,2),10,medplta,'^','filled',...
+% scatter(ax,locoff1iw(:,1),locoff1iw(:,2),6,medplta,'^','filled',...
+%   'MarkerEdgeColor','none');
+scatter(ax,locoff1iw(:,1),locoff1iw(:,2),5,denoff1iwa(:,3),'^','filled',...
   'MarkerEdgeColor','none');
-%   scatter(ax,locoff1iw(:,1),locoff1iw(:,2),10,'c','^','filled',...
-%     'MarkerEdgeColor','none');
-colormap(ax,flipud(colormap(ax,'kelicol')));
-c=colorbar(ax,'SouthOutside'); %
-caxis(ax,[prctile(plta,1) prctile(plta,99)]);
-c.Label.String = 'max CC of 25-s win';  %max CC, 'median RCC', 'num of det checked at KLNB'
-% [xyzgridpad,xgrid,ygrid,zgrid,ind2] = zeropadmat2d(slipavegrid1d,-4+dx/2: dx: 4-dx/2,...
-%   -4+dy/2: dy: 4-dy/2);
-% zgridgf = imgaussfilt(zgrid, 1);  %smooth it a bit
-% perc = 10:20:90;
-% conplt = round(prctile(slipavegrid1d(:,3),perc));
-% % conplt = 5: 20: 160;
-% conmat = contour(ax,xgrid,ygrid,zgridgf,conplt,'-','color','k','ShowText','on'); %
-% contour(ax,xgrid,ygrid,zgridgf,round([median(slipavegrid1d(:,3)),median(slipavegrid1d(:,3))]),...
-%   '-','color','r','linew',1.5);
+% scatter(ax,locoff1iw(:,1),locoff1iw(:,2),5,log10(denoff1iwa(:,3)),'^','filled',...
+%   'MarkerEdgeColor','none');
+colormap(ax,'jet');
+% colormap(ax,'plasma');
+% colormap(ax,flipud(colormap(ax,'kelicol')));
+c=colorbar(ax,'SouthOutside');
+% caxis(ax,[prctile(plta,1) prctile(plta,99)]);
+% c.Label.String = 'Max. CC of 25-s windows';  %max CC, 'median RCC', 'num of det checked at KLNB'
+c.Label.String = '# of 25-s windows';  %max CC, 'median RCC', 'num of det checked at KLNB'
+% c.Label.String = 'log_{10}{# of 25-s windows}';  %max CC, 'median RCC', 'num of det checked at KLNB'
+pos = ax.Position;
+c.Position = [pos(1), pos(2)-0.09, pos(3), 0.02];
 for ireg = 1: 2: nreg
   xaxis = semia(ireg);
   yaxis = semib(ireg);
   shiftor=[0.2 0.2]; %(in km) %center of the same ellipse of my 4-s catalog
   [xcut1,ycut1] = ellipse_chao(shiftor(1),shiftor(2),xaxis,yaxis,0.01,45,shiftor);
   plot(ax,xcut1,ycut1,'-','linew',1,'color',[.5 .5 .5]);
-  text(ax,0.2,0.98*max(ycut1),sprintf('%d',round(slipaveell(ireg))),'fontsize',9,...
-    'VerticalAlignment','top');
+%   if ireg == 5 && isequaln(lfemouse,lfemoallac12)
+  %let's say the geodetic constraint for the total slip of 3 ETS years is 6 cm
+  if round(round(slipaveell(ireg))/10) == 6    
+    text(ax,0.4+0.26*(ireg-1),0.8+0.26*(ireg-1),...
+      sprintf('%d mm',round(slipaveell(ireg))),'fontsize',8,'FontWeight','bold',...
+      'color','r');%[0 0 1]
+  else
+    text(ax,0.4+0.26*(ireg-1),0.8+0.26*(ireg-1),...
+      sprintf('%d',round(slipaveell(ireg))),'fontsize',8,'FontWeight','bold',...
+      'color','k');
+  end
 end
-axis(ax,'equal');
-axis(ax,[-4 4 -4 4]);
+text(ax,0.99,0.06,sprintf('%d; %d; %d; %d',round(slipaveell(1)),round(slipaveell(3)),...
+  round(slipaveell(5)),round(slipaveell(7))),'fontsize',8,...
+  'unit','normalized','HorizontalAlignment','right');
+text(ax,0.02,0.93,'d','FontSize',11,'unit','normalized','EdgeColor','k',...
+  'Margin',1);
+axis(ax, 'equal');
 ax.GridLineStyle = '--';
 ax.XAxisLocation = 'top';
-xlabel(ax,'E (km)','fontsize',11);
-ylabel(ax,'N (km)','fontsize',11);
-longticks(ax,1.5);
+xlim(ax,xran);
+ylim(ax,yran);
+xticks(ax,xran(1):1:xran(2));
+yticks(ax,yran(1):1:yran(2));
+% xlabel(ax,'E (km)');
+% ylabel(ax,'N (km)');
+nolabels(ax,3);
+longticks(ax,2);
+
+if isequaln(lfemouse,lfemoallac12) 
+  fname = strcat('lfemomentslipac12',fnsuffix,'.pdf');
+elseif isequaln(lfemouse,lfemoallac2) 
+  fname = strcat('lfemomentslipac2',fnsuffix,'.pdf');
+end
+print(f.fig,'-dpdf',...
+  strcat('/home/data2/chaosong/CurrentResearch/Song_Rubin_2024/figures/',fname));
+
 % keyboard
 
-%slip + 4-s tremor loc
-ax=f.ax(3);
-hold(ax,'on'); ax.Box = 'on'; grid(ax, 'on');
-scatter(ax,slipavegrid1d(:,1),slipavegrid1d(:,2),100,slipavegrid1d(:,3),'s','filled',...
-  'MarkerEdgeColor','none');
-colormap(ax,flipud(colormap(ax,'kelicol')));
-c=colorbar(ax,'SouthOutside'); %
-caxis(ax,[0 prctile(slipavegrid1d(:,3),99)]);
-% c.Label.String = 'log_{10}(average slip (mm)/ grid)';
-c.Label.String = 'average slip (mm)/ grid';
-axis(ax,'equal');
-axis(ax,[-7 5 -6 6]);
-ax.GridLineStyle = '--';
-ax.XAxisLocation = 'top';
-xlabel(ax,'E (km)','fontsize',11);
-ylabel(ax,'N (km)','fontsize',11);
-scatter(ax,hfall(:,1),hfall(:,2),3,[.3 .3 .3],'o','filled',...
-  'MarkerEdgeColor','none');
-longticks(ax,1.5);
-
-%slip contour + 4-s tremor density
-ax=f.ax(4);
-hold(ax,'on'); ax.Box = 'on'; grid(ax, 'on');
-dentmr = density_matrix(hfall(:,1),hfall(:,2),[-7 5],[-6 6],dx,dy);
-dentmr = dentmr(dentmr(:,3)>0, :);
-scatter(ax,dentmr(:,1),dentmr(:,2),100,dentmr(:,3),'s','filled',...
-  'MarkerEdgeColor','none');
-colormap(ax,flipud(colormap(ax,'kelicol')));
-c=colorbar(ax,'SouthOutside'); %
-caxis(ax,[0 prctile(dentmr(:,3),99)]);
-c.Label.String = '# tremor / grid';
-% conmat = contour(ax,xgrid,ygrid,zgridgf,conplt,'-','color',[.5 .5 .5],'ShowText','on','linew',1); %
-% contour(ax,xgrid,ygrid,zgridgf,round([median(slipavegrid1d(:,3)),median(slipavegrid1d(:,3))]),...
-%   '-','color','r','linew',1.5); %
-plot(ax,xcut,ycut,'k-','linew',2);
-axis(ax,'equal');
-axis(ax,[-7 5 -6 6]);
-ax.GridLineStyle = '--';
-ax.XAxisLocation = 'top';
-xlabel(ax,'E (km)','fontsize',11);
-ylabel(ax,'N (km)','fontsize',11);
-longticks(ax,1.5);
 
 
-keyboard
+
+%%
+% %%%average slip for the whole catalog
+% f = initfig(9,9,2,2); %initialize fig
+% pltxran = [0.05 0.95]; pltyran = [0.05 0.95];
+% pltxsep = 0.06; pltysep = 0.06; 
+% optaxpos(f,2,2,pltxran,pltyran,pltxsep,pltysep);
+
+% %slip
+% ax=f.ax(1);
+% hold(ax,'on'); ax.Box = 'on'; grid(ax, 'on');
+% slipavegrid1d = sortrows(slipavegrid1d,3);
+% % scatter(ax,slipavegrid1d(:,1),slipavegrid1d(:,2),300,log10(slipavegrid1d(:,3)),'s','filled',...
+% %   'MarkerEdgeColor','none');
+% scatter(ax,slipavegrid1d(:,1),slipavegrid1d(:,2),msize,slipavegrid1d(:,3),'s','filled',...
+%   'MarkerEdgeColor','none');
+% colormap(ax,flipud(colormap(ax,'kelicol')));
+% c=colorbar(ax,'SouthOutside'); %
+% caxis(ax,[0 prctile(slipavegrid1d(:,3),99)]);
+% % c.Label.String = 'log_{10}(average slip (mm)/ grid)';
+% c.Label.String = 'average slip (mm)/ grid';
+% axis(ax,'equal');
+% axis(ax,[-4 4 -4 4]);
+% ax.GridLineStyle = '--';
+% ax.XAxisLocation = 'top';
+% xlabel(ax,'E (km)','fontsize',11);
+% ylabel(ax,'N (km)','fontsize',11);
+% %the cut-out boundary of 4-s detections
+% plot(ax,xcut,ycut,'k-','linew',2);
+% iii = 181;
+% ist = sum(nsrcuse(1:idxbst(iii)-1))+1;
+% ied = ist+nsrcuse(idxbst(iii))-1;
+% impi = impuse(ist:ied,:);  %LFEs of the same time win
+% loci = locuse(ist:ied,:);
+% scatter(ax,loci(:,1),loci(:,2),15,[.5 .5 .5],'o','filled',...
+%   'MarkerEdgeColor','none');
+% longticks(ax,1.5);
+
+% %slip contour
+% ax=f.ax(2);
+% hold(ax,'on'); ax.Box = 'on'; grid(ax, 'on');
+% plot(ax,xcut,ycut,'k-','linew',2);
+% off1iwa = [];
+% plta = [];
+% for iii = 1: length(idxbst)
+%   off1iw = off1iwk{idxbst(iii)};
+%   off1iwa = [off1iwa; off1iw(:,2:3)];
+
+%   ccwpair = ccwpairk{idxbst(iii)};
+%   ccw = mean(ccwpair(:,1:2),2); %0-lag max cc of each subwin
+%   mrccwpair =  mrccwpairk{idxbst(iii)};
+%   mrccw = mean(mrccwpair(:,1:2),2); %median rcc of each subwin
+%   ndetw4th = ndetwin4thk{idxbst(iii)}; %num of detections checked at 4th sta in each subwin
+%   plta = [plta; ccw];
+% end
+% [denoff1iwa, ind] = density_pixel(off1iwa(:,1),off1iwa(:,2)); %count at each unique loc
+% medplta = median_at_indices(plta,ind);
+% locoff1iw = off2space002(denoff1iwa(:,1:2),sps,ftrans,0);
+% % keyboard
+% scatter(ax,locoff1iw(:,1),locoff1iw(:,2),10,medplta,'^','filled',...
+%   'MarkerEdgeColor','none');
+% %   scatter(ax,locoff1iw(:,1),locoff1iw(:,2),10,'c','^','filled',...
+% %     'MarkerEdgeColor','none');
+% colormap(ax,flipud(colormap(ax,'kelicol')));
+% c=colorbar(ax,'SouthOutside'); %
+% caxis(ax,[prctile(plta,1) prctile(plta,99)]);
+% c.Label.String = 'max CC of 25-s win';  %max CC, 'median RCC', 'num of det checked at KLNB'
+% % [xyzgridpad,xgrid,ygrid,zgrid,ind2] = zeropadmat2d(slipavegrid1d,-4+dx/2: dx: 4-dx/2,...
+% %   -4+dy/2: dy: 4-dy/2);
+% % zgridgf = imgaussfilt(zgrid, 1);  %smooth it a bit
+% % perc = 10:20:90;
+% % conplt = round(prctile(slipavegrid1d(:,3),perc));
+% % % conplt = 5: 20: 160;
+% % conmat = contour(ax,xgrid,ygrid,zgridgf,conplt,'-','color','k','ShowText','on'); %
+% % contour(ax,xgrid,ygrid,zgridgf,round([median(slipavegrid1d(:,3)),median(slipavegrid1d(:,3))]),...
+% %   '-','color','r','linew',1.5);
+% for ireg = 1: 1: nreg
+%   xaxis = semia(ireg);
+%   yaxis = semib(ireg);
+%   shiftor=[0.2 0.2]; %(in km) %center of the same ellipse of my 4-s catalog
+%   [xcut1,ycut1] = ellipse_chao(shiftor(1),shiftor(2),xaxis,yaxis,0.01,45,shiftor);
+%   plot(ax,xcut1,ycut1,'-','linew',1,'color',[.5 .5 .5]);
+% %   if mod(ireg,2)~=0
+%     text(ax,0.4+0.26*(ireg-1),0.9+0.26*(ireg-1),...
+%       sprintf('%d',round(slipaveell(ireg))),'fontsize',8);
+% %   else
+% %     text(ax,0.2+cosd(45)*0.2*(ireg-1),1.00*max(ycut1),sprintf('%d',round(slipaveell(ireg))),'fontsize',9,...
+% %       'VerticalAlignment','top');
+% %   end
+% end
+% axis(ax,'equal');
+% axis(ax,[-4 4 -4 4]);
+% ax.GridLineStyle = '--';
+% ax.XAxisLocation = 'top';
+% xlabel(ax,'E (km)','fontsize',11);
+% ylabel(ax,'N (km)','fontsize',11);
+% longticks(ax,1.5);
+% % keyboard
+
+% %slip + 4-s tremor loc
+% ax=f.ax(3);
+% hold(ax,'on'); ax.Box = 'on'; grid(ax, 'on');
+% scatter(ax,slipavegrid1d(:,1),slipavegrid1d(:,2),100,slipavegrid1d(:,3),'s','filled',...
+%   'MarkerEdgeColor','none');
+% colormap(ax,flipud(colormap(ax,'kelicol')));
+% c=colorbar(ax,'SouthOutside'); %
+% caxis(ax,[0 prctile(slipavegrid1d(:,3),99)]);
+% % c.Label.String = 'log_{10}(average slip (mm)/ grid)';
+% c.Label.String = 'average slip (mm) / grid';
+% axis(ax,'equal');
+% axis(ax,[-7 5 -6 6]);
+% ax.GridLineStyle = '--';
+% ax.XAxisLocation = 'top';
+% xlabel(ax,'E (km)','fontsize',11);
+% ylabel(ax,'N (km)','fontsize',11);
+% scatter(ax,hfall(:,1),hfall(:,2),3,[.3 .3 .3],'o','filled',...
+%   'MarkerEdgeColor','none');
+% longticks(ax,1.5);
+
+% %slip contour + 4-s tremor density
+% ax=f.ax(4);
+% hold(ax,'on'); ax.Box = 'on'; grid(ax, 'on');
+% dentmr = density_matrix(hfall(:,1),hfall(:,2),[-7 5],[-6 6],dx,dy);
+% dentmr = dentmr(dentmr(:,3)>0, :);
+% scatter(ax,dentmr(:,1),dentmr(:,2),100,dentmr(:,3),'s','filled',...
+%   'MarkerEdgeColor','none');
+% colormap(ax,flipud(colormap(ax,'kelicol')));
+% c=colorbar(ax,'SouthOutside'); %
+% caxis(ax,[0 prctile(dentmr(:,3),99)]);
+% c.Label.String = '# tremor / grid';
+% % conmat = contour(ax,xgrid,ygrid,zgridgf,conplt,'-','color',[.5 .5 .5],'ShowText','on','linew',1); %
+% % contour(ax,xgrid,ygrid,zgridgf,round([median(slipavegrid1d(:,3)),median(slipavegrid1d(:,3))]),...
+% %   '-','color','r','linew',1.5); %
+% plot(ax,xcut,ycut,'k-','linew',2);
+% axis(ax,'equal');
+% axis(ax,[-7 5 -6 6]);
+% ax.GridLineStyle = '--';
+% ax.XAxisLocation = 'top';
+% xlabel(ax,'E (km)','fontsize',11);
+% ylabel(ax,'N (km)','fontsize',11);
+% longticks(ax,1.5);
+
+
+% keyboard
 
 
 %%
@@ -1443,242 +1795,243 @@ keyboard
 % 
 % end
 
-keyboard
+% keyboard
 
 
-%% how many MB's LFEs fall in burst wins from 4-s tremors outside ellipse?
-for iii = 1: length(trangeout)
+%% how many MB's LFEs fall in burst wins from [4-s tremors outside ellipse]?
+% for iii = 1: length(trangeout)
   
-  [iets,i,j] = indofburst(trangeout,iii);
+%   [iets,i,j] = indofburst(trangeout,iii);
   
-  year = years(iets);
-  datesets = dates(floor(dates/1000)==year);
+%   year = years(iets);
+%   datesets = dates(floor(dates/1000)==year);
   
-  date = datesets(i);
-  jday = floor(date-year*1000);
-  a = jul2dat(year,jday);
-  if a(1) == 9
-    mo = 'Sep.';
-  elseif a(1) == 7
-    mo = 'Jul.';
-  else
-    mo = 'Mar.';
-  end
-  dy = num2str(a(2));
-  yr = num2str(a(3));
+%   date = datesets(i);
+%   jday = floor(date-year*1000);
+%   a = jul2dat(year,jday);
+%   if a(1) == 9
+%     mo = 'Sep.';
+%   elseif a(1) == 7
+%     mo = 'Jul.';
+%   else
+%     mo = 'Mar.';
+%   end
+%   dy = num2str(a(2));
+%   yr = num2str(a(3));
   
-  %Bostock's LFEs NOT in my burst wins inside ellipse
-  bostoutbsti = bostoutbst(bostoutbst(:,2)==year & bostoutbst(:,3)==a(1) & bostoutbst(:,4)==a(2),:);
-  bostoutbsti = sortrows(bostoutbsti, 5);  
-  tbostobi = bostoutbsti(:,5);    
+%   %Bostock's LFEs NOT {in my burst wins inside ellipse}, ie. on same dates, but
+%   %outside bursts
+%   bostoutbsti = bostoutbst(bostoutbst(:,2)==year & bostoutbst(:,3)==a(1) & bostoutbst(:,4)==a(2),:);
+%   bostoutbsti = sortrows(bostoutbsti, 5);  
+%   tbostobi = bostoutbsti(:,5);    
     
-  %burst wins outside ellipse
-  rangeouttemp = trangeout(trangeout(:,1)==datesets(i), :);
-  tst = rangeouttemp(j,2); % start and end time of bursts
-  ted = rangeouttemp(j,3);
+%   %burst wins outside ellipse
+%   rangeouttemp = trangeout(trangeout(:,1)==datesets(i), :);
+%   tst = rangeouttemp(j,2); % start and end time of bursts
+%   ted = rangeouttemp(j,3);
   
-  %which bostock's LFEs are within burst wins outside ellipse?
-  indobi = find(tbostobi>=tst & tbostobi<=ted);
-  bostob{iii} = bostoutbsti(indobi,:); %all bostocks's lfes inside burst wins (and inside region)
+%   %which bostock's LFEs are included in {burst wins outside ellipse?}
+%   indobi = find(tbostobi>=tst & tbostobi<=ted);
+%   bostob{iii} = bostoutbsti(indobi,:); %all bostocks's lfes inside burst wins (and inside region)
 
-end
-bostoba = cat(1,bostob{:});
-fracoba = length(bostoba)/length(bostoutbst)
-fracoba2 = length(bostoba)/length(bostdayia)
+% end
+% bostoba = cat(1,bostob{:});
+% fracoba = length(bostoba)/length(bostoutbst)  % ~22%, 284 / 1308
+% fracoba2 = length(bostoba)/length(bostdayia)  % ~12%, 284 / 2413
 
-%% how many MB's LFEs fall in ANY 4-s tremor detecting window
-bostobiit = [];
-bostobiot = [];
-for i = 1: nday
-  date = dates(i);
-  year = floor(date/1000);
-  jday = floor(date-year*1000);
-  a = jul2dat(year,jday);
-  if a(1) == 9
-    mo = 'Sep.';
-  elseif a(1) == 7
-    mo = 'Jul.';
-  else
-    mo = 'Mar.';
-  end
-  dy = num2str(a(2));
-  yr = num2str(a(3));
+% %% how many MB's LFEs fall in ANY 4-s tremor detecting window
+% bostobiit = [];
+% bostobiot = [];
+% for i = 1: nday
+%   date = dates(i);
+%   year = floor(date/1000);
+%   jday = floor(date-year*1000);
+%   a = jul2dat(year,jday);
+%   if a(1) == 9
+%     mo = 'Sep.';
+%   elseif a(1) == 7
+%     mo = 'Jul.';
+%   else
+%     mo = 'Mar.';
+%   end
+%   dy = num2str(a(2));
+%   yr = num2str(a(3));
   
-  %Bostock's LFEs NOT in my burst wins inside ellipse
-  bostoutbsti = bostoutbst(bostoutbst(:,2)==year & bostoutbst(:,3)==a(1) & bostoutbst(:,4)==a(2),:);
-  bostoutbsti = sortrows(bostoutbsti, 5);  
-  tbostobi = bostoutbsti(:,5);
+%   %Bostock's LFEs NOT in my burst wins inside ellipse
+%   bostoutbsti = bostoutbst(bostoutbst(:,2)==year & bostoutbst(:,3)==a(1) & bostoutbst(:,4)==a(2),:);
+%   bostoutbsti = sortrows(bostoutbsti, 5);  
+%   tbostobi = bostoutbsti(:,5);
   
-  hfdayi = hfbnd(hfbnd(:,daycol)==date, :);  % inside bound of the day
-  hfdayo = hfout(hfout(:,daycol)==date, :);  % outside bound of the day
-  tcnti = hfdayi(:, 15);  % the center of detecting win is the 15th col
-  tcnto = hfdayo(:, 15);  % the center of detecting win is the 15th col
+%   hfdayi = hfbnd(hfbnd(:,daycol)==date, :);  % inside bound of the day
+%   hfdayo = hfout(hfout(:,daycol)==date, :);  % outside bound of the day
+%   tcnti = hfdayi(:, 15);  % the center of detecting win is the 15th col
+%   tcnto = hfdayo(:, 15);  % the center of detecting win is the 15th col
 
-  indobiit = [];
-  indobiot = [];
-  for j = 1: length(tbostobi)
-    if ~isempty(find(abs(tbostobi(j)-tcnti)<=2, 1))
-      indobiit = [indobiit; j];
-    end      
-    if ~isempty(find(abs(tbostobi(j)-tcnto)<=2, 1))
-      indobiot = [indobiot; j];
-    end  
-  end
-  bostobiit = [bostobiit; bostoutbsti(unique(indobiit), :)];
-  bostobiot = [bostobiot; bostoutbsti(unique(indobiot), :)];  
-end
-fracobiit = length(bostobiit)/length(bostoutbst)
-fracobiot = length(bostobiot)/length(bostoutbst)
-fracobit = fracobiit+fracobiot
+%   indobiit = [];
+%   indobiot = [];
+%   for j = 1: length(tbostobi)
+%     if ~isempty(find(abs(tbostobi(j)-tcnti)<=2, 1))
+%       indobiit = [indobiit; j];
+%     end      
+%     if ~isempty(find(abs(tbostobi(j)-tcnto)<=2, 1))
+%       indobiot = [indobiot; j];
+%     end  
+%   end
+%   bostobiit = [bostobiit; bostoutbsti(unique(indobiit), :)];
+%   bostobiot = [bostobiot; bostoutbsti(unique(indobiot), :)];  
+% end
+% fracobiit = length(bostobiit)/length(bostoutbst)  % ~13%, 174
+% fracobiot = length(bostobiot)/length(bostoutbst)  % ~21%, 281
+% fracobit = length(union(bostobiit,bostobiot,'rows'))/length(bostoutbst) % ~35%, 452
 
 
-%% plot of comparing times of LFEs from different catalog
-for i = 1: length(dates)
+% %% plot of comparing times of LFEs from different catalog
+% for i = 1: length(dates)
   
-  date = dates(i);
-  year = floor(date/1000);
-  jday = floor(date-year*1000);
-  a = jul2dat(year,jday);
-  dy = num2str(a(2));
-  yr = num2str(a(3));
+%   date = dates(i);
+%   year = floor(date/1000);
+%   jday = floor(date-year*1000);
+%   a = jul2dat(year,jday);
+%   dy = num2str(a(2));
+%   yr = num2str(a(3));
 
-  %Bostock's LFE catalog on the same date
-  bostdayi = bostdayia(bostdayia(:,2)==year & bostdayia(:,3)==a(1) & bostdayia(:,4)==a(2),:);
-  bostdayi = sortrows(bostdayi, 5); %MB 002/246 LFEs of a certain date
-  bostoutbsti = bostoutbst(bostoutbst(:,2)==year & bostoutbst(:,3)==a(1) & bostoutbst(:,4)==a(2),:);
-  bostoutbsti = sortrows(bostoutbsti, 5); %MB 002/246 LFEs, same date, but outside bursts
-  bost = bosta(bosta(:,2)==year & bosta(:,3)==a(1) & bosta(:,4)==a(2),:);
-  bost = sortrows(bost, 5); %MB 002/246 LFEs, same date, inside bursts
-  bostmiss = bostmissa(bostmissa(:,2)==year & bostmissa(:,3)==a(1) & bostmissa(:,4)==a(2),:);
-  bostmiss = sortrows(bostmiss, 5);
+%   %Bostock's LFE catalog on the same date
+%   bostdayi = bostdayia(bostdayia(:,2)==year & bostdayia(:,3)==a(1) & bostdayia(:,4)==a(2),:);
+%   bostdayi = sortrows(bostdayi, 5); %MB 002/246 LFEs of a certain date
+%   bostoutbsti = bostoutbst(bostoutbst(:,2)==year & bostoutbst(:,3)==a(1) & bostoutbst(:,4)==a(2),:);
+%   bostoutbsti = sortrows(bostoutbsti, 5); %MB 002/246 LFEs, same date, but outside bursts
+%   bost = bosta(bosta(:,2)==year & bosta(:,3)==a(1) & bosta(:,4)==a(2),:);
+%   bost = sortrows(bost, 5); %MB 002/246 LFEs, same date, inside bursts
+%   bostmiss = bostmissa(bostmissa(:,2)==year & bostmissa(:,3)==a(1) & bostmissa(:,4)==a(2),:);
+%   bostmiss = sortrows(bostmiss, 5);
   
-  %bursts and 4-s detections of the same day
-  rangetemp = trange(trange(:,1)==date, :);
-  hfdayi = hfbnd(hfbnd(:,daycol)==date, :);  % inside bound of the day
-  hfdayo = hfout(hfout(:,daycol)==date, :);  % outside bound of the day
+%   %bursts and 4-s detections of the same day
+%   rangetemp = trange(trange(:,1)==date, :);
+%   hfdayi = hfbnd(hfbnd(:,daycol)==date, :);  % inside bound of the day
+%   hfdayo = hfout(hfout(:,daycol)==date, :);  % outside bound of the day
   
-  %bursts and 4-s detections of the same day outside the ellipse
-  rangeouttemp = trangeout(trangeout(:,1)==date, :);
+%   %bursts and 4-s detections of the same day outside the ellipse
+%   rangeouttemp = trangeout(trangeout(:,1)==date, :);
   
-  tmaxi = hfdayi(:, seccol); % starting time of max power rate of half sec inside the ellipse
-  tmaxo = hfdayo(:, seccol); % starting time of max power rate of half sec outside the ellipse
-  tcnti = hfdayi(:, 15);  % the center of detecting win is the 15th col
-  tcnto = hfdayo(:, 15);  % the center of detecting win is the 15th col
-  tbosti = bostdayi(:,5); % (peak arrival) time of Bostock's LFE catalog inside the rectangle
-  tbostobi = bostoutbsti(:,5);    
-  tbost = bost(:,5);
-  tbostmiss = bostmiss(:,5);
+%   tmaxi = hfdayi(:, seccol); % starting time of max power rate of half sec inside the ellipse
+%   tmaxo = hfdayo(:, seccol); % starting time of max power rate of half sec outside the ellipse
+%   tcnti = hfdayi(:, 15);  % the center of detecting win is the 15th col
+%   tcnto = hfdayo(:, 15);  % the center of detecting win is the 15th col
+%   tbosti = bostdayi(:,5); % (peak arrival) time of Bostock's LFE catalog inside the rectangle
+%   tbostobi = bostoutbsti(:,5);    
+%   tbost = bost(:,5);
+%   tbostmiss = bostmiss(:,5);
   
-  %Bostock's LFEs of other fams 
-  bostdayofi = bostdayofa(bostdayofa(:,2)==year & bostdayofa(:,3)==a(1) & bostdayofa(:,4)==a(2),:);
-  bostdayofi = sortrows(bostdayofi, 5);
-  tbostof = bostdayofi(:,5);
-  %compute the temporal density
-  subwlen = 60*sps;
-  ovlplen = 0;
-  twins = movingwins(1,86400*sps,subwlen,ovlplen,0);
-  twincnt = floor(mean(twins,2));
-  %find which subwin this lfe's time belongs to
-  iwin = findwhichrange(tbostof*sps,twins);
-  nwin = length(twins);
-  tempden = zeros(nwin,1);
-  for j = 1:nwin
-    tempden(j) = sum(iwin == j);
-  end
-  tempden = [twincnt tempden];
-  tempden = tempden(tempden(:,2)>0, :);
+%   %Bostock's LFEs of other fams 
+%   bostdayofi = bostdayofa(bostdayofa(:,2)==year & bostdayofa(:,3)==a(1) & bostdayofa(:,4)==a(2),:);
+%   bostdayofi = sortrows(bostdayofi, 5);
+%   tbostof = bostdayofi(:,5);
+%   %compute the temporal density
+%   subwlen = 60*sps;
+%   ovlplen = 0;
+%   twins = movingwins(1,86400*sps,subwlen,ovlplen,0);
+%   twincnt = floor(mean(twins,2));
+%   %find which subwin this lfe's time belongs to
+%   iwin = findwhichrange(tbostof*sps,twins);
+%   nwin = length(twins);
+%   tempden = zeros(nwin,1);
+%   for j = 1:nwin
+%     tempden(j) = sum(iwin == j);
+%   end
+%   tempden = [twincnt tempden];
+%   tempden = tempden(tempden(:,2)>0, :);
   
-  widin = 15;  % maximum width allowed is 8.5 inches
-  htin = 9;   % maximum height allowed is 11 inches
-  nrow = 6;
-  ncol = 1;
-  f = initfig(widin,htin,nrow,ncol); %initialize fig
-  xran = [0.06 0.96]; yran = [0.06 0.98];
-  xsep = 0.05; ysep = 0.04;
-  optaxpos(f,nrow,ncol,xran,yran,xsep,ysep);
+%   widin = 15;  % maximum width allowed is 8.5 inches
+%   htin = 9;   % maximum height allowed is 11 inches
+%   nrow = 6;
+%   ncol = 1;
+%   f = initfig(widin,htin,nrow,ncol); %initialize fig
+%   xran = [0.06 0.96]; yran = [0.06 0.98];
+%   xsep = 0.05; ysep = 0.04;
+%   optaxpos(f,nrow,ncol,xran,yran,xsep,ysep);
 
-  for j = 1: nrow
-    ax=f.ax(j);
-    hold(ax,'on'); ax.Box='on'; grid(ax,'on');
-    ylim(ax,[0 1]);
+%   for j = 1: nrow
+%     ax=f.ax(j);
+%     hold(ax,'on'); ax.Box='on'; grid(ax,'on');
+%     ylim(ax,[0 1]);
     
-    %%%plot 4-s tremor detections outside ellipse
-    barst = tcnto-2;
-    bared = tcnto+2;
-    yloc = ax.YLim(1)+(ax.YLim(2)-ax.YLim(1))*0.1;
-    for ii = 1: length(tcnto)
-      p1=plot(ax,[barst(ii) bared(ii)]/3600,[yloc yloc],'-','linew',2.5,'color',[.6 .6 .6]);
-    end
-    %%%plot auto-determined tremor burst windows from 4-s tremors outside ellipse
-    yloc = ax.YLim(1)+(ax.YLim(2)-ax.YLim(1))*0.2;
-    for ii = 1: size(rangeouttemp,1)
-      tst = rangeouttemp(ii,2); % start and end time of bursts
-      ted = rangeouttemp(ii,3);
-      p2=plot(ax,[tst ted]/3600,[yloc yloc],'c-','linew',2.5);
-    end
-    %%%plot 4-s tremor detections inside ellipse
-    barst = tcnti-2;
-    bared = tcnti+2;
-    yloc = ax.YLim(1)+(ax.YLim(2)-ax.YLim(1))*0.3;
-    for ii = 1: length(tcnti)
-      p3=plot(ax,[barst(ii) bared(ii)]/3600,[yloc yloc],'k-','linew',2.5);
-    end
-    %%%plot auto-determined tremor burst windows, same windows for deconvolution
-    yloc = ax.YLim(1)+(ax.YLim(2)-ax.YLim(1))*0.4;
-    for ii = 1: size(rangetemp,1)
-      tst = rangetemp(ii,2); % start and end time of bursts
-      ted = rangetemp(ii,3);
-      indtmaxi = find(tmaxi>=tst-0.1 & tmaxi<=ted+0.1);
-      tstbuf = min(tcnti(indtmaxi)-2);
-      tedbuf = max(tcnti(indtmaxi)+2);
-      p4=plot(ax,[tstbuf tedbuf]/3600,[yloc yloc],'b-','linew',2.5);
-    end
+%     %%%plot 4-s tremor detections outside ellipse
+%     barst = tcnto-2;
+%     bared = tcnto+2;
+%     yloc = ax.YLim(1)+(ax.YLim(2)-ax.YLim(1))*0.1;
+%     for ii = 1: length(tcnto)
+%       p1=plot(ax,[barst(ii) bared(ii)]/3600,[yloc yloc],'-','linew',2.5,'color',[.6 .6 .6]);
+%     end
+%     %%%plot auto-determined tremor burst windows from 4-s tremors outside ellipse
+%     yloc = ax.YLim(1)+(ax.YLim(2)-ax.YLim(1))*0.2;
+%     for ii = 1: size(rangeouttemp,1)
+%       tst = rangeouttemp(ii,2); % start and end time of bursts
+%       ted = rangeouttemp(ii,3);
+%       p2=plot(ax,[tst ted]/3600,[yloc yloc],'c-','linew',2.5);
+%     end
+%     %%%plot 4-s tremor detections inside ellipse
+%     barst = tcnti-2;
+%     bared = tcnti+2;
+%     yloc = ax.YLim(1)+(ax.YLim(2)-ax.YLim(1))*0.3;
+%     for ii = 1: length(tcnti)
+%       p3=plot(ax,[barst(ii) bared(ii)]/3600,[yloc yloc],'k-','linew',2.5);
+%     end
+%     %%%plot auto-determined tremor burst windows, same windows for deconvolution
+%     yloc = ax.YLim(1)+(ax.YLim(2)-ax.YLim(1))*0.4;
+%     for ii = 1: size(rangetemp,1)
+%       tst = rangetemp(ii,2); % start and end time of bursts
+%       ted = rangetemp(ii,3);
+%       indtmaxi = find(tmaxi>=tst-0.1 & tmaxi<=ted+0.1);
+%       tstbuf = min(tcnti(indtmaxi)-2);
+%       tedbuf = max(tcnti(indtmaxi)+2);
+%       p4=plot(ax,[tstbuf tedbuf]/3600,[yloc yloc],'b-','linew',2.5);
+%     end
     
-    %%%plot MB's LFEs of the same dates, but outside my bursts
-    yloc = ax.YLim(1)+(ax.YLim(2)-ax.YLim(1))*0.55;
-    p5=scatter(ax,tbostobi/3600, yloc*ones(size(tbostobi)),5,'r','linew',0.5);
-    %%%plot MB's LFEs fall into my burst windows
-    yloc = ax.YLim(1)+(ax.YLim(2)-ax.YLim(1))*0.65;
-    p6=scatter(ax,tbost/3600, yloc*ones(size(tbost)),6,'r','filled');
-%     %%%plot MB's LFEs common with mine
-%     bostcomm = bostcomma(bostcomma(:,2)==year & bostcomma(:,3)==a(1) & bostcomma(:,4)==a(2),:);
-%     bostcomm = sortrows(bostcomm, 5);
-%     tbostcomm = bostcomm(:,5);
-%     yloc = ax.YLim(1)+(ax.YLim(2)-ax.YLim(1))*0.85;
-%     p6=scatter(ax,tbostcomm/3600, yloc*ones(size(tbostcomm)),12,'g','filled');
-    %%%plot MB's LFEs inside bursts but I missed
-    yloc = ax.YLim(1)+(ax.YLim(2)-ax.YLim(1))*0.75;
-    p7=scatter(ax,tbostmiss/3600, yloc*ones(size(tbostmiss)),6,'g','filled');
-    %%%plot MB's LFEs of other fams, in terms of density in 1-win windows
-    yloc = ax.YLim(1)+(ax.YLim(2)-ax.YLim(1))*0.92;
-    p8=scatter(ax,tempden(:,1)/sps/3600, yloc*ones(size(tempden(:,1))),20,tempden(:,2),'filled');%,'MarkerEdgeColor','k'
-    colormap(ax,flipud(colormap(ax,'gray')));
-    xlim(ax,[(j-1)*24/nrow j*24/nrow]);
-    longticks(ax,5);
-    nolabels(ax,2);
-    if j==1
-      legend(ax,[p1 p2 p3 p4 p5 p6 p7 p8],'4-s tremors out ell','burst wins out ell',...
-        '4-s tremors in ell','burst wins','MB LFEs out bursts','MB LFEs in bursts',...
-        'MB in-burst LFEs I missed','# MB LFEs of other fams per min',...
-        'location','best');
-    end
-    if j==nrow
-      xlabel(sprintf('Time (hr) on %d %d %d, %d',a(3),a(1),a(2),date),'FontSize',12);
-    end
+%     %%%plot MB's LFEs of the same dates, but outside my bursts
+%     yloc = ax.YLim(1)+(ax.YLim(2)-ax.YLim(1))*0.55;
+%     p5=scatter(ax,tbostobi/3600, yloc*ones(size(tbostobi)),5,'r','linew',0.5);
+%     %%%plot MB's LFEs fall into my burst windows
+%     yloc = ax.YLim(1)+(ax.YLim(2)-ax.YLim(1))*0.65;
+%     p6=scatter(ax,tbost/3600, yloc*ones(size(tbost)),6,'r','filled');
+% %     %%%plot MB's LFEs common with mine
+% %     bostcomm = bostcomma(bostcomma(:,2)==year & bostcomma(:,3)==a(1) & bostcomma(:,4)==a(2),:);
+% %     bostcomm = sortrows(bostcomm, 5);
+% %     tbostcomm = bostcomm(:,5);
+% %     yloc = ax.YLim(1)+(ax.YLim(2)-ax.YLim(1))*0.85;
+% %     p6=scatter(ax,tbostcomm/3600, yloc*ones(size(tbostcomm)),12,'g','filled');
+%     %%%plot MB's LFEs inside bursts but I missed
+%     yloc = ax.YLim(1)+(ax.YLim(2)-ax.YLim(1))*0.75;
+%     p7=scatter(ax,tbostmiss/3600, yloc*ones(size(tbostmiss)),6,'g','filled');
+%     %%%plot MB's LFEs of other fams, in terms of density in 1-win windows
+%     yloc = ax.YLim(1)+(ax.YLim(2)-ax.YLim(1))*0.92;
+%     p8=scatter(ax,tempden(:,1)/sps/3600, yloc*ones(size(tempden(:,1))),20,tempden(:,2),'filled');%,'MarkerEdgeColor','k'
+%     colormap(ax,flipud(colormap(ax,'gray')));
+%     xlim(ax,[(j-1)*24/nrow j*24/nrow]);
+%     longticks(ax,5);
+%     nolabels(ax,2);
+%     if j==1
+%       legend(ax,[p1 p2 p3 p4 p5 p6 p7 p8],'4-s tremors out ell','burst wins out ell',...
+%         '4-s tremors in ell','burst wins','MB LFEs out bursts','MB LFEs in bursts',...
+%         'MB in-burst LFEs I missed','# MB LFEs of other fams per min',...
+%         'location','best');
+%     end
+%     if j==nrow
+%       xlabel(sprintf('Time (hr) on %d %d %d, %d',a(3),a(1),a(2),date),'FontSize',12);
+%     end
     
-  end
-  orient(f.fig,'landscape');
-  f1name{i,1} = strcat('mblfes',num2zeropadstr(i,2),'.pdf');
-  print(f.fig,'-dpdf','-fillpage',strcat('/home/chaosong/Pictures/',f1name{i,1}));
+%   end
+%   orient(f.fig,'landscape');
+%   f1name{i,1} = strcat('mblfes',num2zeropadstr(i,2),'.pdf');
+%   print(f.fig,'-dpdf','-fillpage',strcat('/home/chaosong/Pictures/',f1name{i,1}));
   
-end  
+% end  
 
-%% merge all figures into a single pdf file
-status = system('rm -f /home/chaosong/Pictures/mblfessum.pdf');
-for i = 1:size(f1name,1)
-  fname{i} = strcat('/home/chaosong/Pictures/',f1name{i});
-end
-append_pdfs('/home/chaosong/Pictures/mblfessum.pdf',fname);
+% %% merge all figures into a single pdf file
+% status = system('rm -f /home/chaosong/Pictures/mblfessum.pdf');
+% for i = 1:size(f1name,1)
+%   fname{i} = strcat('/home/chaosong/Pictures/',f1name{i});
+% end
+% append_pdfs('/home/chaosong/Pictures/mblfessum.pdf',fname);
 
 
 

@@ -28,7 +28,7 @@ function [f] = plt_decon_summary_ref(sigsta,resgrp,pkindepsave,impindepst,sps,tm
 %%%all migrations
 f.fig = figure;
 f.fig.Renderer = 'painters';
-widin = 8.5;  % maximum width allowed is 8.5 inches
+widin = 8.3;  % maximum width allowed is 8.5 inches
 htin = 10;   % maximum height allowed is 11 inches
 % get the scrsz in pixels and number of pixels per inch of monitor 1
 [scrsz, resol] = pixelperinch(1);

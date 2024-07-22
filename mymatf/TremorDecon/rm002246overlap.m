@@ -1,4 +1,4 @@
-% rm002246overlap.m
+function rm002246overlap(flag)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Through 'locateMBlfe.m' by locating all MB LFEs in the newest, most reliable
 % catalog 'total_mag_detect_0000_cull_NEW.txt' which has the updated moment
@@ -7,6 +7,18 @@
 % we want to use the geodetic constraint for total moment, etc.
 % Here we firts plot out LFEs from both fams, and see which ones are unique,
 % then come up a way to combine them.
+% --2024/03/30, make this a function, and make 'flag' an option to indicate
+% which Michael's LFE catalog to use, the main difference should the meoment
+% estimate. '/BOSTOCK/update20230916/total_mag_detect_0000_cull_',flag,'.txt',
+% where 'AMR' is updated within 2-4 Hz, while 'NEW' is within 1-1.5 Hz. 
+% --On average, "AMR/new" moments are lower, ie., AMR at a higher freq is lower
+% in moment, which meets the expectation
+% --From MB's email:
+%  I attach the original as the "NEW" file  (should be the same as the 
+% information on ERI slow earthquake data base, with moment determined from 
+% maximum frequency chosen between 1 and 1.5 Hz), and the "AMR" file is that 
+% for maximum frequency chosen between 2 and 4 Hz as per your specs.
+%
 %
 %
 %
@@ -14,9 +26,11 @@
 % First created date:   2023/03/22
 % Last modified date:   2023/03/22
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-clear
-clc
-close all
+% clear
+% clc
+% close all
+
+defval('flag','NEW');
 
 famnum = [2; 246];
 
@@ -50,7 +64,7 @@ loc0 = lfeloc(lfeloc(:,1)==2,:); %obtain the location of fam 002, lon0 and lat0
 %this specifies which MB LFE catalog to use, 'AMR' is updated within 2-4 Hz
 %while 'NEW' is within 0.5-1 Hz
 % flag = 'NEW';
-flag = 'AMR';
+% flag = 'AMR';
 bostname = strcat('/BOSTOCK/update20230916/total_mag_detect_0000_cull_',flag,'.txt');
 bostcat = ReformBostock(loc0(3),loc0(2),1,bostname);
 % keyboard

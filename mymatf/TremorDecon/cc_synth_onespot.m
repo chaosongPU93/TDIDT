@@ -33,9 +33,6 @@ close all
 defval('normflag',0); %whether to normalize templates
 defval('rccmwsec',0.5); %moving win len in sec for computing RCC
 
-tdura = 0.25;  %must be consistent with what synthetics actually used
-% tdura = 0.4;
-
 %% Initialization
 %%% SAME if focusing on the same region (i.e. same PERMROTS and POLROTS)
 %%% AND if using the same family, same station trio
@@ -166,7 +163,18 @@ tempflag = 'chao';
 
 adatapath = '/home/data2/chaosong/matlab/allan/matfils/';  %path for Allan's data
 
+stas=['PGC  '
+  'SSIB '
+  'SILB '
+  %   'LZB  '
+  %   'TWKB '
+  %   'MGCB '
+  'KLNB '
+  ]; % determine the trio and order, here the 1st sta is PGC
+nsta=size(stas,1);         %  number of stations
+
 if strcmp(tempflag,'chao')
+  fam = '002';   % family number
   sps = 160;
   templensec = 60;
   ccstack = [];
@@ -182,11 +190,14 @@ elseif strcmp(tempflag,'allan')
   fname = ['PGCopt_002_1-15Hz_2pass_100sps.le14sh0.75-15Hz_le14sh_0.5-15Hz_CC1.25-6.5Hz_le20shift';
     'SSIopt_002_1-15Hz_2pass_100sps.le14sh0.75-15Hz_le14sh_0.5-15Hz_CC1.25-6.5Hz_le20shift';
     'SILopt_002_1-15Hz_2pass_100sps.le14sh0.75-15Hz_le14sh_0.5-15Hz_CC1.25-6.5Hz_le20shift'];
+  %   templensec = 60;
+  %   fname = ['PGCopt_002_1-15Hz_2pass_100sps.le14sh0.75-15Hz_le14sh0.5-15Hz_le14sh';
+  %            'SSIopt_002_1-15Hz_2pass_100sps.le14sh0.75-15Hz_le14sh0.5-15Hz_le14sh';
+  %            'SILopt_002_1-15Hz_2pass_100sps.le14sh0.75-15Hz_le14sh0.5-15Hz_le14sh'];
   for ista=1:nsta
     temp=load(strcat(adatapath,fname(ista,:)));
     STA(:,ista)=detrend(temp(:,1))/350;
   end
-  
 end
 
 % %plot the raw templates, not filtered, not best aligned
@@ -282,14 +293,25 @@ ccwlen = 10*sps;
 loffmax = 5*sps/40;
 ccmin = 0.01;  % depending on the length of trace, cc could be very low
 iup = 1;    % times of upsampling
-[off12con,off13con,cc] = constrained_cc_interp(tmpwletf(:,1:3)',ccmid,...
+[off12conf,off13conf,ccf] = constrained_cc_interp(tmpwletf(:,1:3)',ccmid,...
+  ccwlen,mshiftadd,loffmax,ccmin,iup);
+offwlet1if(1) = 0;
+offwlet1if(2) = round(off12conf);
+offwlet1if(3) = round(off13conf);
+if nsta>3
+  for ista = 4: nsta
+    [mcoef,offwlet1if(ista)] = xcorrmax(tmpwletf(:,1), tmpwletf(:,ista), mshiftadd, 'coeff');
+  end
+end
+%%%for the broadband templates as well
+[off12con,off13con,cc] = constrained_cc_interp(tmpwlet(:,1:3)',ccmid,...
   ccwlen,mshiftadd,loffmax,ccmin,iup);
 offwlet1i(1) = 0;
 offwlet1i(2) = round(off12con);
 offwlet1i(3) = round(off13con);
 if nsta>3
   for ista = 4: nsta
-    [mcoef,offwlet1i(ista)] = xcorrmax(tmpwletf(:,1), tmpwletf(:,ista), mshiftadd, 'coeff');
+    [mcoef,offwlet1i(ista)] = xcorrmax(tmpwlet(:,1), tmpwlet(:,ista), mshiftadd, 'coeff');
   end
 end
 
@@ -298,15 +320,23 @@ end
 [~,imax] = max(tmpwletf(:,1));
 [~,zcsta1] = min(abs(tmpwletf(imin:imax,1)));
 zcsta1 = zcsta1+imin-1;
+[~,imin] = min(tmpwlet(:,1));
+[~,imax] = max(tmpwlet(:,1));
+[~,zcsta2] = min(abs(tmpwlet(imin:imax,1)));
+zcsta2 = zcsta2+imin-1;
 greenlen = pow2(9)*sps/40;
 green = zeros(greenlen,nsta); % no bandpass
 greenf = zeros(greenlen,nsta);  % bandpassed version
 ppeaks = zeros(nsta,1); % positive peaks
 npeaks = zeros(nsta,1); % negative peaks
+zcrosses = zeros(nsta,1);
+ppeaksf = zeros(nsta,1); % positive peaks
+npeaksf = zeros(nsta,1); % negative peaks
+zcrossesf = zeros(nsta,1);
 for ista = 1: nsta
   %cut according to the zero-crossing and the time shift from the constrained CC
-  green(:,ista) = tmpwlet(zcsta1+8*sps-greenlen+1-offwlet1i(ista): zcsta1+8*sps-offwlet1i(ista), ista);
-  greenf(:,ista) = tmpwletf(zcsta1+8*sps-greenlen+1-offwlet1i(ista): zcsta1+8*sps-offwlet1i(ista), ista);
+  green(:,ista) = tmpwlet(zcsta2+8*sps-greenlen+1-offwlet1i(ista): zcsta2+8*sps-offwlet1i(ista), ista);
+  greenf(:,ista) = tmpwletf(zcsta1+8*sps-greenlen+1-offwlet1if(ista): zcsta1+8*sps-offwlet1if(ista), ista);
   %detrend again for caution
   green(:,ista) = detrend(green(:,ista));
   greenf(:,ista) = detrend(greenf(:,ista));
@@ -319,12 +349,14 @@ for ista = 1: nsta
   ppeaks(ista) = imax;
   npeaks(ista) = imin;
   
+  %for bandpassed templates
   [~,imin] = min(greenf(:,ista));
   [~,imax] = max(greenf(:,ista));
   [~,zcrossesf(ista)] = min(abs(greenf(imin:imax,ista)));
   zcrossesf(ista) = zcrossesf(ista)+imin-1;
   ppeaksf(ista) = imax;
   npeaksf(ista) = imin;
+  
 end
 %the following is just a check, because now the templates must be best aligned
 ccmid = round(size(greenf,1)/2);
@@ -345,12 +377,24 @@ if nsta>3
     end
   end
 end
+[off12con,off13con,cc] = constrained_cc_interp(green(:,1:3)',ccmid,...
+  ccwlen,mshiftadd,loffmax,ccmin,iup);
+if ~(off12con==0 && off13con==0)
+  disp('Broadband templates are NOT best aligned \n');
+end
+if nsta>3
+  for ista = 4: nsta
+    [mcoef,mlag] = xcorrmax(green(:,1), green(:,ista), mshiftadd, 'coeff');
+    if mlag~=0   % offset in samples
+      fprintf('Broadband templates are NOT best aligned at %s \n',stas(ista,:));
+    end
+  end
+end
 
 amprat(1,:) = minmax(greenf(:,1)')./minmax(greenf(:,2)');	% amp ratio between max at sta 3 and 2 or min
 amprat(2,:) = minmax(greenf(:,1)')./minmax(greenf(:,3)');	% amp ratio between max at sta 3 and 1 or min
 amprat(3,:) = minmax(greenf(:,2)')./minmax(greenf(:,3)');	% amp ratio between max at sta 3 and 1 or min
-spread = range(green);   % range of the amp of template
-spreadf = range(greenf);
+spread = range(greenf);   % range of the amp of template
 
 %%%plot the unfiltered and filtered templates
 % plt_templates(green,greenf,stas,[],[],lowlet,hiwlet,sps);
@@ -358,219 +402,103 @@ spreadf = range(greenf);
 %just the filtered templates
 % plt_templates_bp(greenf,stas,lowlet,hiwlet,sps);
 
-%% generate synthetic sources
+% plt_templates(green(:,1:3),greenf(:,1:3),stas(1:3,:),[],[],lowlet,hiwlet,sps);
+% zcrosses
+% 2*(ppeaks-npeaks)/sps
+%
+% zcrossesf
+% 2*(ppeaksf-npeaksf)/sps
+% keyboard
+
+%% load synthetic seismograms
 %%%Specify the amplitude-frequency (counts) distribution
 distr='UN'  % uniform distribution
 
-%%%specify distribution for source location
-% distrloc = 'custompdf'; %using a custom PDF function
-distrloc = 'uniform'; %uniformly random in a specified region,
-
-Twin=0.5*3600+3+2*ceil(greenlen/sps); %Early and late portions will be deleted. Twin includes only the early portion. In seconds.
-winlen=Twin*sps+1;
-%   winlen = size(xnoi,1)+greenlen-1;
-%   Twin = winlen/sps;
-skiplen=greenlen;
-%%%for the duration of templates, there are several options
-%%%1. (ppeak-npeak)*2 of the bb template: 44;54;38
-%%%2. direct eyeballing for between zerocrossings: ~65
-%%%3. binned peak-to-peak separation for decently saturated unfiltered synthetics: ~37
-%%%4. similar to 3, but synthetics are filtered first: ~37
-% tdura = 0.4;  % duration from Chao's broadband template, width is about 795-730=65 spls at 160 hz
-satn=1/tdura*Twin   % if just saturated, how many templates can be fit in? a single peak is ~20 samples wide; maybe a little less (at 100 sps).
-%Twin is window duration in seconds. Events can fall within Twin of
-%the start, but the synthetics will go to Twin*(sample rate)+Greenlen to
-%avoid checking for subscript overrrun.  When "synths" are written from "synth" in the
-%subroutine, Greenlen from the start and end will not be written.
 fracelsew=0; %0.25 %0.5; %0.6; %The ratio of elsewhere events to local events.  Zero for Discrete Ide.
-nsat=[0.4 1 2 4 10 20 40 100];  % times of saturation
-%   nsat=[0.05];  % times of saturation
-nnsat = length(nsat);
-writes=round(nsat*satn) %how many templates to throw in, under different degrees of saturation
-
-synth=zeros(winlen+greenlen,nsta);
-
-nouts=length(writes);
-seed=round(writes(4)/5e3); %for random number generator
-%   seed=2;
-
-%%%specify which time is uniform in time
-% timetype = 'tarvl';
-timetype = 'tori';
-
-%%%specify if considering the physical size of each source
-% physicalsize = 1;
-physicalsize = 0;
 
 %%%specify regime for transformation from time offset to map location
 % ftrans = 'interpArmb';
 % ftrans = 'interpArmbreloc';
 ftrans = 'interpchao';
 
-%%%whether to plot to check the synthetics
-%   pltsynflag = 0;
-pltsynflag = 1;
-
-%%%whether to plot to check the new synthetics with added noise
-%   pltnewsynflag = 0;
-pltnewsynflag = 1;
-
-%%%specify if forcing a min speration of arrival time for 2 events from the same spot
-% forcesep = 1;
-forcesep = 0;
-
-b=999. %>150 for uniform size distribution
-
-%which location transformation to use
-if strcmp(ftrans,'interpArmb')
-  xygrid=load('xygridArmb'); %Made from /ARMMAP/MAPS/2021/interpgrid.m; format PGSS, PGSI, dx, dy
-  size(xygrid) %this grid is 40 sps!
-elseif strcmp(ftrans,'interpArmbreloc') || strcmp(ftrans,'interpchao')
-  [loc, indinput] = off2space002([],sps,ftrans,0);
-  % loc has 8 cols, format: dx,dy,lon,lat,dep,ttrvl,off12,off13
-  iup = sps/40;
-  %     xygrid(:,3)=griddata(loc(:,7)/iup,loc(:,8)/iup,loc(:,1),xygrid(:,1),xygrid(:,2));
-  %     xygrid(:,4)=griddata(loc(:,7)/iup,loc(:,8)/iup,loc(:,2),xygrid(:,1),xygrid(:,2));
-  xygrid = [loc(:,7)/iup,loc(:,8)/iup,loc(:,1),loc(:,2)];
-end
-
-%choose only one spot
-%   xygrid = xygrid(xygrid(:,1)==0 & xygrid(:,2)==0, :); %use [0,0]
-xygrid = xygrid(xygrid(:,1)==2/iup & xygrid(:,2)==2/iup, :);  %use [2,2]
-
-diam=0;
-
-[synths,mommax,sources,greensts]=csplaw3c(writes,winlen,skiplen,synth,green,b,...
-  xygrid,sps,fracelsew,seed,timetype,ftrans,stas);
-
-tmpgrid = xygrid;
-tmpgrid(:,1:2)=round(sps/40*tmpgrid(:,1:2)); % *4 to get to 160 sps from 40.
-
-%   insat = 2;  %which saturation to look at
-%   n=writes(insat);
-%   a = squeeze(sources(1:n,:,insat));
-%   b = a(any(a,2),:);
-%   source=b;
-%   off = tmpgrid(source(:,2),1:2); %note that 'tmpgrid' has the desired sps
-%   [~,off(:,3)] = pred_tarvl_at4thsta(stas(4,:),off(:,1),off(:,2));
-
-%% compose new synthetic waveform and carry out deconvolution
-%%%flag for validating if ground truth of sources can recover the record
-%   testsrcflag = 1;
-testsrcflag = 0;
-
-%%%flag for validing if the spectral shapes of data and templates are similar
-% testfreqflag = 1;
-testfreqflag = 0;
-
-%%%flag for plot the data
-%   pltdataflag = 1;
-pltdataflag = 0;
-
-%%%flag for plot the ground truth distribution
-%   pltgtflag = 1;
-pltgtflag = 0;
-
-%%%flag for plot the decon src distribution after grouping
-%   pltsrcflag1 = 1;
-pltsrcflag1 = 0;
-
-%%%flag for plot the decon src distribution after removing 2ndary src
-%   pltsrcflag2 = 1;
-pltsrcflag2 = 0;
-
-%%%flag for plot the decon src distribution after checking at 4th stas
-%   pltsrcflag3 = 1;
-pltsrcflag3 = 0;
-
 %different percent of noise
 perctrial = 0.1*(0:2:16)';
 ntrial = length(perctrial);
 
-impgrp = cell(nnsat,ntrial);
-imp = cell(nnsat,ntrial);
-imp4th = cell(nnsat,ntrial);
+%times of saturation
+% nsat=[0.1 0.4 1 2 4 10 20 40 100];
+nsat=[0.4 1 2 4 10 20 40 100];
+nnsat = length(nsat);
+
+nrun = 6;
+
+%length of each simulation
+sps = 160;
+greenlen = pow2(9)*sps/40;
+bufsec = 1;
+msftaddm = bufsec*sps;  %buffer range for later CC alignment, +1 for safety
+rccmwsec = 0.5;
+rccmwlen = rccmwsec*sps;  %window length for computing RCC
+overshoot = rccmwlen/2; %RCC points to the center of computing window, so extra room is needed
+%   Twin=3*3600+(greenlen+msftaddm*2+overshoot*2-2)/sps; %Early and late portions will be deleted. Twin includes only the early portion. In seconds.
+Twin=0.5*3600+(greenlen+msftaddm*2+overshoot*2-2)/sps; %Early and late portions will be deleted. Twin includes only the early portion. In seconds.
+
+tdura = 0.25;  %must be consistent with what synthetics actually used
+% tdura = 0.4;
+
+if tdura == 0.25
+  %     savefile = strcat('rst_decon_synth_onespot','_td',num2str(tdura),'.mat');
+  %     savefile = strcat('rst_decon_synth_onespotnitm8500','_td',num2str(tdura),'.mat'));
+  savefile = strcat('rst_decon_synth_onespotmedwtcoef','_td',num2str(tdura),'.mat');
+elseif tdura == 0.4
+  %     savefile = ''rst_synth_onespot.mat';
+  %     savefile = ''rst_synth_onespotnitm8500.mat';
+  savefile = 'rst_decon_synth_onespotmedwtcoef.mat';
+end
+load(strcat(workpath,'/synthetics/',savefile));
+
+% flagrecalc = 0;
+flagrecalc = 1;
+if flagrecalc
 
 %%%loop for noise level
 for iperc = 1: ntrial
-  
   perc = perctrial(iperc);
   disp(perc);
   
-  synnew = synths;  %time, station, sat
+  fname = ['/synthetics/STAS.',distr,'.',int2str(sps),'sps.',...
+      'onespot','.noi',num2str(perc),'.else',num2str(fracelsew,2),...
+      'nsat'];
   
   %%%loop for saturation level
   for insat = 1: nnsat
     %   insat = 1;
     disp(nsat(insat));
+
+    sigstacat = [];   %cat preprocessed seismograms from all runs
     
-    %%%load synthetics of certain saturation level
-    %       optseg = load(strcat(workpath,fname,num2str(nsat(insat))));
-    optseg = synths(:,:,insat);
-    
-    %%% make noise by amp spectrum of synthetics and random phase
-    %obtain the amp and phase spectra of records via fft
-    nfft = size(optseg,1); % number of points in fft
-    [xf,ft,amp,pha] = fftspectrum(optseg(:,1:end), nfft, sps,'twosided');
-    
-    %uniform, random phase with the same span [-pi,pi];
-    mpharan = minmax(pha');
-    
-    rng(seed);
-    pharand = (rand(nfft,nsta)-0.5)*2*pi;  %make the phases span from -pi to pi
-    
-    %construct record with the same amplitude but random phase
-    xfrand = amp.*nfft.*exp(1i.*pharand);
-    optsegnoi = real(ifft(xfrand,nfft));
-    
-    xnoi1 = optsegnoi; %synthetic noise
-    
-    xnoi = xnoi1;
-    % ind = find(impindepst(:,1)/sps >= xnoi(1) & impindepst(:,1)/sps <= xnoi(2));
-    
-    %%%Different scaling schemes
-    %       %1. To make noise have the median amp of data
-    %       sclfact = median(envelope(detrend(optseg(:,2:end))));
-    %2. To make noise have the same fluctuation as data
-    env = envelope(detrend(optseg(:,1:end)));
-    % sclfact = env./range(env);  %normalize
-    sclfact = env;
-    %       %3. To make noise have the median amp of decon sources from data
-    %       sclfact = 6.4461e-01*mean(spread(1:3))/2;
-    
-    %scale the noise so that it has amp fluctuation as data
-    %       xnoi = xnoi .* sclfact;
-    
-    %normalize so that noi has the same median env as data
-    envn = envelope(detrend(xnoi));
-    xnoi = xnoi .* median(env) ./ median(envn);
-    median(env) - median(envelope(detrend(xnoi)))
-    
-    %%
-    %some percent of assembled noise
-    noiseg = xnoi .*perc;
-    
-    %add simulated noise to the current burst window
-    tmp = synths(:,:,insat);
-    synnew(:,:,insat) = tmp + noiseg;
-    
-    %% load synthetics of certain saturation level
-    STAopt = synnew(:,:,insat);
-    
-    %%%load sources
-    n=writes(insat);
-    a = squeeze(sources(1:n,:,insat));
-    b = a(any(a,2),:);
-    synsrc=b;
-    tmp = tmpgrid(synsrc(:,2),:);
-    synsrc = [synsrc(:,1) tmp(:,1:4) ones(length(tmp),1)];  %[indtarvl, off12, off13, loce, locn, amp]
-    
-    % keyboard
-    %%%load starting indices of added sources at sta 1
-    synsrcstind = squeeze(greensts{insat}{1});
+    %loop for each run (each segment of synthetics to be combined later)
+    for irun = 1: nrun
+      irunstr = num2str(irun);
+      
+    if tdura == 0.25
+      %%%load synthetics of certain saturation level, (time, station, sat)
+      STAopt = load(strcat(workpath,fname,num2str(nsat(insat)),'tdura',...
+        num2str(tdura),'T',num2str(round(Twin)),'p',irunstr));
+      %%%load sources
+      synsrc = load(strcat(workpath,fname,num2str(nsat(insat)),'tdura',...
+        num2str(tdura),'T',num2str(round(Twin)),'p',irunstr,'_sources'));
+      %%%load starting indices of added sources at sta 1
+      synsrcstind = load(strcat(workpath,fname,num2str(nsat(insat)),'tdura',...
+        num2str(tdura),'T',num2str(round(Twin)),'p',irunstr,'_stind'));
+    elseif tdura == 0.4
+      STAopt = load(strcat(workpath,fname,num2str(nsat(insat))));
+      synsrc = load(strcat(workpath,fname,num2str(nsat(insat)),'_sources'));
+      synsrcstind = load(strcat(workpath,fname,num2str(nsat(insat)),'_stind'));
+    end 
     
     %% filter data (and templates)
-    %%filter data
+    %%%filter data
     hisig=6.3; % this will give a similar spectral shape between template and signal
     losig=1.8;
     optseg = [];
@@ -578,18 +506,124 @@ for iperc = 1: ntrial
       optseg(:,ista) = Bandpass(STAopt(:,ista), sps, losig, hisig, 2, 2, 'butter');
     end
     
-    %% Best alignment for the whole window
+    
+    %% break into short windows
     %some params
     bufsec = 1;
-    msftaddm = bufsec*sps;  %buffer range for later CC alignment
+    msftaddm = bufsec*sps;  %buffer range for later CC alignment, +1 for safety
     rccmwsec = 0.5;
     rccmwlen = rccmwsec*sps;  %window length for computing RCC
     overshoot = rccmwlen/2; %RCC points to the center of computing window, so extra room is needed
     
+    indst = 1+msftaddm;
+    inded = size(optseg,1)-msftaddm;
+    subwsec = 25;
+    subwlen = subwsec*sps;
+    %since the rcc would lose rccmwlen/2 at both ends, this results in overlapping of 'rccmwlen' in rcc
+    %across consecutive windows; if use 'ovlplen' of rccmwlen, then rcc has no overlapping at all
+    %       ovlplen = rccmwlen*2;
+    ovlplen = rccmwlen;
+    windows = movingwins(indst,inded,subwlen,ovlplen,0);
+    
+    nwin =  size(windows,1);
+    
+    off1iw = zeros(nwin,nsta);  % the best alignment between sta2, sta3 wrt sta1 for each subwin
+    ccaliw = zeros(nwin,1+nsta-3);  % CC value using the best alignment, including 4th stas
+    
+    ircccat = [];   % concatenated indices of RCC
+    irccran = zeros(nwin,2);  % start and end indices (range) of RCC of all subwins
+    rcccat = [];  % average concatenated RCC
+    rcc1icat = [];  % concatenated RCC between sta 1 and 4
+    rccpaircat = [];  % concatenated RCC between each station pair, order is 12, 13, 23
+    mrccwpair = []; % median of concatenated RCC between each station pair
+    ccwpair = []; % 0-lag overall cc of each subwin, between each station pair, order is 12, 13, 23
+    ccw1i = []; % same as above, but between sta 1 and 4
+    
+    for iwin = 1: nwin
+      isubwst = windows(iwin,1);
+      isubwed = windows(iwin,2);
+      
+      %align records
+      optcc = detrend(optseg(isubwst: isubwed,:));
+      msftadd = (round(max(abs([off12ran off13ran])))+1)*sps/40;  %+1 for safety
+      loffmax = 4*sps/40;
+      ccmid = ceil(size(optcc,1)/2);
+      ccwlen = round(size(optcc,1)-2*(msftadd+1));  % minus ensures successful shifting of records
+      ccmin = 0.01;  % depending on the length of trace, cc could be very low
+      iup = 1;    % times of upsampling
+      [off12con,off13con,ccaliw(iwin,1)] = constrained_cc_interp(optcc(:,1:3)',ccmid,...
+        ccwlen,msftadd,loffmax,ccmin,iup);
+      % if a better alignment cannot be achieved, use 0,0
+      if off12con == msftadd+1 && off13con == msftadd+1
+        fprintf('Short window %d cannot be properly aligned, double-check needed \n',iwin);
+        off12con = 0;
+        off13con = 0;
+        cc12 = xcorr(optcc(:,1), optcc(:,2),0,'normalized');  %0-lag maximum cc based on current alignment
+        cc13 = xcorr(optcc(:,1), optcc(:,3),0,'normalized');
+        cc23 = xcorr(optcc(:,2), optcc(:,3),0,'normalized');
+        ccaliw(iwin,1) = (cc12+cc13+cc23)/3;
+      end
+      off1iw(iwin,1) = 0;
+      off1iw(iwin,2) = round(off12con);
+      off1iw(iwin,3) = round(off13con);
+      
+      for ista = 4: nsta
+        [ccaliw(iwin,ista-2),off1iw(iwin,ista)] = xcorrmax(optcc(:,1),optcc(:,ista), 1.5*msftadd, 'coeff');
+      end
+      
+      %Align records
+      optdat = [];  % win +/-3 s, segment of interest,first 1s will be tapered
+      optdat(:, 1) = optseg(isubwst: isubwed, 1); % time column
+      for ista = 1: nsta
+        optdat(:, ista) = optseg(isubwst-off1iw(iwin,ista): isubwed-off1iw(iwin,ista), ista);
+      end
+      
+      subw = zeros(size(optdat,1), nsta);
+      for ista = 1: nsta
+        tmp = optdat(:,ista); %best aligned, filtered
+        %detrend and taper only the data, NOT the noise
+        tmp = detrend(tmp);
+        subw(:,ista) = tmp;
+      end
+      %compute running CC between 3 stations
+      [irccw,rccw12,rccw13,rccw23] = RunningCC3sta(subw,rccmwlen);
+      rccw = (rccw12+rccw13+rccw23)/3;
+      irccw = irccw + windows(iwin,1) - windows(1,1);   %convert to global index
+      %         if iwin == 1
+      irccw = irccw - overshoot;
+      %         end
+      %         plot(irccw, rccw);
+      
+      ircccat = [ircccat; irccw];
+      irccran(iwin,:) = [irccw(1) irccw(end)];
+      rcccat = [rcccat; rccw];
+      rccpaircat = [rccpaircat; rccw12 rccw13 rccw23];
+      mrccwpair = [mrccwpair; median(rccw12) median(rccw13) median(rccw23)];
+      
+      rccw1i = [];  % between 4th stas and 1st sta
+      for ista = 4:nsta
+        [~,rccw1i(:,ista-3)] = RunningCC(subw(:,1), subw(:,ista), rccmwlen);
+      end
+      rcc1icat = [rcc1icat; rccw1i];
+      
+      ccw12 = xcorr(subw(:,1), subw(:,2),0,'normalized');  %0-lag maximum cc based on current alignment
+      ccw13 = xcorr(subw(:,1), subw(:,3),0,'normalized');
+      ccw23 = xcorr(subw(:,2), subw(:,3),0,'normalized');
+      ccwpair = [ccwpair; ccw12 ccw13 ccw23];
+      tmp = zeros(1,nsta-3);
+      for ista = 4:nsta
+        tmp(1,ista-3) = xcorr(subw(:,1), subw(:,ista),0,'normalized');
+      end
+      ccw1i = [ccw1i; tmp];
+    end
+    
+    %if only use the mean RCC from pair 12 and 13
+    rcccat = mean(rccpaircat(:,[1 2]), 2);
+    
+    %% Best alignment for the whole window
     %%%obtain a single best alignment based on the entire win
     optcc = detrend(optseg(1+msftaddm: end-msftaddm, :));
-    msftadd = 10*sps/40;
-    loffmax = 4*sps/40;
+    %       msftadd = 10*sps/40;
     ccmid = ceil(size(optcc,1)/2);
     ccwlen = round(size(optcc,1)-2*(msftadd+1));  % minus ensures successful shifting of records
     ccmin = 0.01;  % depending on the length of trace, cc could be very low
@@ -598,13 +632,13 @@ for iperc = 1: ntrial
       ccwlen,msftadd,loffmax,ccmin,iup);
     % if a better alignment cannot be achieved, use 0,0
     if off12con == msftadd+1 && off13con == msftadd+1
+      fprintf('Whole window cannot be properly aligned, double-check needed \n');
       off12con = 0;
       off13con = 0;
       cc12 = xcorr(optcc(:,1), optcc(:,2),0,'normalized');  %0-lag maximum cc based on current alignment
       cc13 = xcorr(optcc(:,1), optcc(:,3),0,'normalized');
       cc23 = xcorr(optcc(:,2), optcc(:,3),0,'normalized');
       ccali = (cc12+cc13+cc23)/3;
-      fprintf('Current window cannot be properly aligned, double-check needed \n');
     end
     off1i = zeros(nsta,1);
     off1i(2) = round(off12con);
@@ -619,14 +653,15 @@ for iperc = 1: ntrial
       [mcoef(ista-3),off1i(ista)] = xcorrmax(optcc(:,1), optcc(:,ista), msftadd, 'coeff');
       mlag(ista-3) = off1i(ista);
     end
-    %       keyboard
     
-    %if you want to avoid the case when the alignment is way off the centroid
-    %by chance while the saturation level is low, you can force it to be the
-    %an average location, this reference value is from the abs location of the
-    %the centroid (0.2,0.2), and prediction of off14 from plane fit model
-    off1i(2:3) = [2 2];
-    [~,off1i(4)] = pred_tarvl_at4thsta(stas(4,:),off1i(2),off1i(3));
+    %       %%%%%%%%%%%%%%%%%%%%%%%%%%
+    %       %if you want to avoid the case when the alignment is way off the centroid
+    %       %by chance while the saturation level is low, you can force it to be the
+    %       %an average location, this reference value is from the abs location of the
+    %       %the centroid (0.2,0.2), and prediction of off14 from plane fit model
+    %       off1i(2:3) = [2 2];
+    %       [~,off1i(4)] = pred_tarvl_at4thsta(stas(4,:),off1i(2),off1i(3));
+    %       %%%%%%%%%%%%%%%%%%%%%%%%%%
     
     %%%Align and compute the RCC based on the entire win, and take that as the input signal!
     optdat = [];  % win segment of interest
@@ -635,7 +670,7 @@ for iperc = 1: ntrial
     end
     
     %location of the whole-win best alignment
-    [loc0, indinput] = off2space002([off1i(2) off1i(3)],sps,ftrans,0);
+    loc0 = off2space002([off1i(2) off1i(3)],sps,ftrans,0);
     % loc has 8 cols, format: dx,dy,lon,lat,dep,ttrvl,off12,off13
     
     %%%2022/06/06, do NOT taper whatsoever!!
@@ -652,8 +687,7 @@ for iperc = 1: ntrial
     rccpair = [rcc12 rcc13 rcc23];
     %if only use the mean RCC from pair 12 and 13
     rcc = mean(rccpair(:,[1 2]), 2);
-    rccsat(:,insat,iperc) = rcc;
-    mrcc(insat,iperc) = median(rcc);
+    mrcc = median(rcc);
     
     rcc1i = zeros(length(rcc),nsta-3);
     for ista = 4:nsta
@@ -671,16 +705,20 @@ for iperc = 1: ntrial
       cc1i(ista-3) = xcorr(sigsta(:,1), sigsta(:,ista),0,'normalized');
     end
     ccpair = [cc12 cc13 cc23];
-    mcc(insat,iperc) = (cc12+cc13)/2;  %if only use the pair 12 and 13
+    mcc = (cc12+cc13)/2;  %if only use the pair 12 and 13
+        
+    sigstacat = [sigstacat; sigsta];
     
-%     %envelope of the trace
-%     for i = 1:nsta
-%       [envup,~] = envelope(detrend(sigsta(:,i)));
-%       prc = 90;
-%       envhi(i,insat,iperc) = prctile(envup,prc);
-%       envlo(i,insat,iperc) = prctile(envup,100-prc);
-%       envmed(i,insat,iperc) = median(envup);
-%     end
+    end
+    
+    %%%envelope of the trace
+    for i = 1:nsta
+      [envup,~] = envelope(detrend(sigstacat(:,i)));
+      prc = 95;
+      envhi(i,insat,ireg) = prctile(envup,prc);
+      envlo(i,insat,ireg) = prctile(envup,100-prc);
+      envmed(i,insat,ireg) = prctile(envup,50);
+    end
     
     % %a qucik look of the data
     % figure
@@ -699,16 +737,21 @@ for iperc = 1: ntrial
   % toc
 end
 
+end %if need to recalculate
+
 
 %% RCC vs. saturation rate & region size
 %%%load the LFE catalog, 25-s-win
-savefile = 'deconv_stats4th_allbstsig.mat';
+% savefile = 'deconv_stats4th_allbstsig.mat';
+savefile = 'deconv_stats4th_no23_allbstsig.mat';
 allsig = load(strcat(rstpath, '/MAPS/',savefile));
 rccbst = allsig.allbstsig.rccbst; %cat rcc; whole-win rcc; same for noise
 ccwpairk = allsig.allbstsig.ccwpairk; %zero-lag CC of 25-s-window
+mrccwpairk = allsig.allbstsig.mrccwpairk; %median RCC of 25-s-windows
 
 %%%load the LFE catalog, whole-win
-savefile = 'deconv1win_stats4th_allbstsig.mat';
+% savefile = 'deconv1win_stats4th_allbstsig.mat';
+savefile = 'deconv1win_stats4th_no23_allbstsig.mat';
 allsig1win = load(strcat(rstpath, '/MAPS/',savefile));
 rccbst1win = allsig1win.allbstsig.rccbst; %whole-win rcc; same for noise
 ccpair1win = allsig1win.allbstsig.ccpair; %whole-win 0-lag cc paris
@@ -778,17 +821,20 @@ mccreal = median(templump3);
 %median lumped 0-lag CC from all data bursts, whole-win version
 mccreal1win = median(templump2);
 
-%%
-%%%plot of median RCC/CC value wrt saturation & region size
+%% plot of median RCC/CC value wrt saturation & region size
+rcccat = allsyn.rcccatk;
+ccwpair = allsyn.ccwpairk;
+
 f = initfig(8,4.5,1,2); %initialize fig
-color = jet(ntrial);
+color = gradientblue(ntrial);
 ax=f.ax(1);
 hold(ax,'on'); ax.Box='on'; grid(ax,'on');
 for iperc = 1: ntrial
-  mrcc = median(rccsat(:,:,iperc),1);  %median of rcc
-%   plot(ax,log10(nsat),mrcc,'-o','markersize',4,'color',color(iperc,:));
-  plot(ax,log10(nsat),mrcc,'-','Color',color(iperc,:),'linew',1);
-  scatter(ax,log10(nsat),mrcc,20,color(iperc,:),'filled','MarkerEdgeColor','k');
+  for insat = 1: nnsat
+    mrcc(insat,iperc) = median(rcccat{insat,iperc});  %median of rcc
+  end%   plot(ax,log10(nsat),mrcc,'-o','markersize',4,'color',color(iperc,:));
+  plot(ax,log10(nsat),mrcc(:,iperc),'-','Color',color(iperc,:),'linew',1);
+  scatter(ax,log10(nsat),mrcc(:,iperc),20,color(iperc,:),'filled','MarkerEdgeColor','k');
 end
 plot(ax,ax.XLim,[mrccreal mrccreal],'k--','linew',1);
 xlabel(ax,'log_{10}(Saturation)');
@@ -800,7 +846,12 @@ ax=f.ax(2);
 hold(ax,'on'); ax.Box='on'; grid(ax,'on');
 p=[]; label=[];
 for iperc = 1: ntrial
-%   plot(ax,log10(nsat),mcc(:,iperc),'-o','markersize',4,'color',color(iperc,:));
+  for insat = 1: nnsat
+    aa = ccwpair{insat,iperc}; %0-lag CC between 3 pairs from all 25-s wins
+    bb = mean(aa(:,[1 2]), 2); %mean pof pairs 12 and 13
+    mcc(insat,iperc) = median(bb);  %use median
+  end
+  %   plot(ax,log10(nsat),mcc(:,iperc),'-o','markersize',4,'color',color(iperc,:));
   p(iperc) = plot(ax,log10(nsat),mcc(:,iperc),'-','Color',color(iperc,:),'linew',1);
   scatter(ax,log10(nsat),mcc(:,iperc),20,color(iperc,:),'filled','MarkerEdgeColor','k');
   label{iperc} = sprintf('Noise=%.1f',perctrial(iperc));
@@ -816,27 +867,29 @@ ylim(ax,[0 1]);
 
 keyboard
 
-%%
-%%%plot of the cdf of RCC wrt saturation & region size
-f = initfig(12,8,3,3); %initialize fig
-color = jet(nnsat);
-k=0;
-for iperc =  1: ntrial
-  k=k+1;
-  ax=f.ax(k);
-  hold(ax,'on'); ax.Box='on'; grid(ax,'on');
-  p(1)=plot(ax,rccreal(:,1),rccreal(:,2),'k-','LineWidth',1);
-  label2{1}='Med of data';
-  for i = 1: nnsat
-    temp = sort(rccsat(:,i,iperc),'ascend');
-    temp(:,2) = (1:size(temp,1))/size(temp,1);
-    p(i+1) = plot(ax,temp(:,1),temp(:,2),'-','color',color(i,:));
-    label2{i+1} = sprintf('Satur=%.1f',nsat(i));
-  end
-  title(ax,sprintf('noise=%.1f',perctrial(iperc)));
-  if k==1
-    legend(ax,p,label2);
-  end
-  xlabel(ax,'RCC');
-  ylabel(ax,'CDF');
-end
+%% plot of the cdf of RCC wrt saturation & region size
+% f = initfig(12,8,3,3); %initialize fig
+% color = jet(nnsat);
+% k=0;
+% for iperc =  1: ntrial
+%   k=k+1;
+%   ax=f.ax(k);
+%   hold(ax,'on'); ax.Box='on'; grid(ax,'on');
+%   p(1)=plot(ax,rccreal(:,1),rccreal(:,2),'k-','LineWidth',1);
+%   label2{1}='Med of data';
+%   for i = 1: nnsat
+%     temp = sort(rccsat(:,i,iperc),'ascend');
+%     temp(:,2) = (1:size(temp,1))/size(temp,1);
+%     p(i+1) = plot(ax,temp(:,1),temp(:,2),'-','color',color(i,:));
+%     label2{i+1} = sprintf('Satur=%.1f',nsat(i));
+%   end
+%   title(ax,sprintf('noise=%.1f',perctrial(iperc)));
+%   if k==1
+%     legend(ax,p,label2);
+%   end
+%   xlabel(ax,'RCC');
+%   ylabel(ax,'CDF');
+% end
+
+
+

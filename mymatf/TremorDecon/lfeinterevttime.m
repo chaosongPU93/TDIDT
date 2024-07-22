@@ -64,9 +64,11 @@ rmse = planefit.gof{4}.rmse;
 offmax = round(2.0*rmse);
 
 %%%load data
-savefile = 'deconv_stats4th_allbstsig.mat';
+% savefile = 'deconv_stats4th_allbstsig.mat';
+savefile = 'deconv_stats4th_no23_allbstsig.mat';
 load(strcat(rstpath, '/MAPS/',savefile));
-savefile = 'deconv_stats4th_allbstnoi.mat';
+% savefile = 'deconv_stats4th_allbstnoi.mat';
+savefile = 'deconv_stats4th_no23_allbstnoi.mat';
 load(strcat(rstpath, '/MAPS/',savefile));
  
 % keyboard
@@ -86,26 +88,6 @@ off1in = allbstnoi.off1i;
 supertstr = 'Secondary sources removed';
 fnsuffix = [];
 
-% dtarvlnn1 = allbstsig.dtarvlnn1all;
-% dtarvlnn2 = allbstsig.dtarvlnn2all;
-% dtarvlnn3 = allbstsig.dtarvlnn3all;
-% dtarvlnn4 = allbstsig.dtarvlnn4all;
-% dtarvlnn5 = allbstsig.dtarvlnn5all;
-% dtarvlnn6 = allbstsig.dtarvlnn6all;
-% dtarvlnn7 = allbstsig.dtarvlnn7all;
-% dtarvlnn8 = allbstsig.dtarvlnn8all;
-% dtarvlnn1n = allbstnoi.dtarvlnn1all;
-% dtarvlnn2n = allbstnoi.dtarvlnn2all;
-% dtarvlnn3n = allbstnoi.dtarvlnn3all;
-% dtarvlnn4n = allbstnoi.dtarvlnn4all;
-% dtarvlnn5n = allbstnoi.dtarvlnn5all;
-% dtarvlnn6n = allbstnoi.dtarvlnn6all;
-% dtarvlnn7n = allbstnoi.dtarvlnn7all;
-% dtarvlnn8n = allbstnoi.dtarvlnn8all;
-% dtarvlplt = dtarvlnn1;
-% dtarvlpltn = dtarvlnn1n;
-% m = 5;
-
 % %%%param for further checked at KLNB
 % locxyprojall = allbstsig.locxyproj4thall;
 % tarvlsplstall = allbstsig.impindep4thall(:,1);
@@ -118,26 +100,9 @@ fnsuffix = [];
 % supertstr = 'Further checked at KLNB';
 % fnsuffix = '4th';
 
-typepltnoi = 1; %plot noise
-% typepltnoi = 2; %plot data -noise
-
 % keyboard
 
-
-%% fraction of 'isolated' events, eg, when m=1, evts whose minimum interevt time >0.375s
-%%%2 definitions of inter-event times, one is what we have been used
-%%%the other is the smaller one of the diff time to the left and right
-nbst = size(trange,1);
-m = 1;
-
 %% Seismic amplitude or envelope associated with each detection
-workpath = getenv('ALLAN');
-datapath = strcat(workpath,'/data-no-resp');
-temppath = strcat(datapath, '/templates/PGCtrio/');
-rstpath = strcat(datapath, '/PGCtrio');
-
-freqflag='hf';  % flag to indicate whether to do hf or lf;
-
 FLAG = 'PGC'; % detector
   
 fam = '002';   % family number
@@ -231,6 +196,15 @@ sps = 160;
 rccmwlen=rccmwsec*sps;
 
 wlensec = 6;
+
+%%%Flag to indicate if it is necessary to recalculate everything
+flagrecalc = 0;
+% flagrecalc = 1;
+
+savefile = strcat('medseisampbetweenlfes',fnsuffix,num2str(wlensec),'s.mat');
+
+if flagrecalc
+
 seisamp=[];
 seisampn=[];
 
@@ -380,9 +354,8 @@ for iii = 1: nbst
       end
       
       seisamp=[seisamp;ampi];
-      
-      
-      %%%%%% now deal with noise %%%%%%%%%%%%%%%%%%%%%%%%5
+            
+      %%%%%%%%%%%%%%%%%%%%%% now deal with noise %%%%%%%%%%%%%%%%%%%%%%%%
       %obtain the amp and phase spectra of records via fft
       nfft = size(optseg,1); % number of points in fft
       [xf,ft,amp,pha] = fftspectrum(optseg(:,2:end), nfft, sps,'twosided');
@@ -469,21 +442,24 @@ for iii = 1: nbst
       end
       
       seisampn=[seisampn;ampin];
-      %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+      %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+end
+  save(strcat(rstpath, '/MAPS/',savefile), 'seisampn','seisamp');
+  
+else
+  load(strcat(rstpath, '/MAPS/',savefile));
 end
 
-%%
+%% fraction of 'isolated' events, eg, when m=1, evts whose minimum interevt time >0.375s
+%%%2 definitions of inter-event times, one is what we have been used
+%%%the other is the smaller one of the diff time to the left and right
+m = 1;
 dtcut = 0.25*m+0.125;
+
 mindtinter=[];
 dtinter=[];
-mindtintern=[];
-dtintern=[];
 minmamp=[];
 mamp=[];
-minmampn=[];
-mampn=[];
-
 for i = 1: nbst
   if nsrc(i) == 0
     continue
@@ -499,8 +475,9 @@ for i = 1: nbst
     dtbackpad = [dtback; zeros(m,1)];
     tmp1 = [dtforpad dtbackpad];  %time to N-m and N+m for each N
     %choose the min time to neighbors to find isolated ones
-    tmp2 = [dtbackpad(1:m); min(tmp1(m+1: end-m, :),[],2); dtforpad(1:m)];
+    tmp2 = [dtbackpad(1:m); min(tmp1(m+1: end-m, :),[],2); dtforpad(end-m+1:end)];
   else
+    dtfor = [];
     tmp2 = [];
   end
   mindtinter = [mindtinter; tmp2];
@@ -526,8 +503,17 @@ for i = 1: nbst
   
   mamp=[mamp; mampi];
   minmamp = [minmamp; minmampi];
-  
-  %%%%%%%%%%%% for noise
+end
+
+%%%%%%%%%%%% for noise
+mindtintern=[];
+dtintern=[];
+minmampn=[];
+mampn=[];
+for i = 1: nbst
+  if nsrcn(i) == 0
+    continue
+  end
   ist = sum(nsrcn(1:i-1))+1;
   ied = ist+nsrcn(i)-1;
   impin = impn(ist:ied,:);
@@ -537,8 +523,9 @@ for i = 1: nbst
     dtbackn = diffcustom(impin(:,1), m,'backward'); %to its following one
     dtbackpadn = [dtbackn; zeros(m,1)]; 
     tmp1n = [dtforpadn dtbackpadn];  %time to N-m and N+m for each N     
-    tmp2n = [dtbackpadn(1:m); min(tmp1n(m+1: end-m, :),[],2); dtforpadn(1:m)];
+    tmp2n = [dtbackpadn(1:m); min(tmp1n(m+1: end-m, :),[],2); dtforpadn(end-m+1:end)];
   else
+    dtforn = [];
     tmp2n = [];
   end   
   mindtintern = [mindtintern; tmp2n];
@@ -578,16 +565,35 @@ fraciso = nevtiso/length(imp);
 nevtison = sum(mindtintern/sps>dtcut);
 fracison = nevtison/length(impn);
 
+
 %% bin the interevent time by the seismic amp of at times of associated sources
 nbin=5;
-binedge=0:0.1:12;
-color = jet(nbin);
+% binedge=0:0.1:12;
+binedge=[0 0.375:0.25:ceil(max(dtinter)/sps)];  % 1st bin [0 0.375], then 0.25 increment
+% color = jet(nbin);
+% color = viridis(nbin);
+% color = flipud(gradientblue(nbin));
+color = gradientblue(nbin);
+% color = ['m';'b';'c';'k';'r';];
+% xran = [0 ceil(max(dtinter)/sps)];
+xran = [0 7];
+yran = [1e-4 1];
 
-f=initfig(12,9,2,2); %initialize fig
+widin = 6.5;  % maximum width allowed is 8.5 inches
+htin = 5.5;   % maximum height allowed is 11 inches
+nrow = 2;
+ncol = 2;
+f = initfig(widin,htin,nrow,ncol); %initialize fig
+pltxran = [0.08 0.98]; pltyran = [0.08 0.98]; % optimal axis location
+pltxsep = 0.02; pltysep = 0.09;
+f = initfig(widin,htin,nrow,ncol);
+optaxpos(f,nrow,ncol,pltxran,pltyran,pltxsep,pltysep);
 
 ax=f.ax(1); hold(ax,'on'); ax.Box='on'; grid(ax,'on'); set(ax,'YScale','log');
 [ampbin,indbin,n] = binxeqnum(mamp(:,2),nbin);  %bin by amp with same number
+plot(ax,[0 30],[1/mode(n) 1/mode(n)],'k--');
 medmampbin = zeros(nbin,1);  %median amp of each amp bin
+N1dn = [];
 for i = 1: nbin
   indi = indbin{i};
   medmampbin(i) = median(ampbin{i});
@@ -598,15 +604,55 @@ for i = 1: nbin
   p1d(i)=stairs(ax,binedge,N1dn(:,i),'color',color(i,:),'LineWidth',1);
   label1d{i} = sprintf('amp of %.2f',medmampbin(i));
 end
-legend(ax,p1d,label1d);
-xlabel(ax,'Time (s) from each to its preceding');
-ylabel(ax,'Count');
-xlim(ax,[0 6]);
-text(ax,0.3,0.95,'Data','Units','normalized')
+legend(ax,p1d(nbin:-1:1),label1d{nbin:-1:1},'FontSize',8);
+% xlabel(ax,'Time (s) from each to its preceding');
+xlabel(ax,'Time delay (s)');
+ylabel(ax,'Normalized count');
+xlim(ax,xran);
+ylim(ax,yran);
+text(ax,0.02,0.40,'Data','Units','normalized','FontSize',11);
+text(ax,0.02,0.25,sprintf('From each to its \npreceding'),'Units','normalized',...
+  'FontSize',9);
+text(ax,0.02,0.08,'a','FontSize',11,'unit','normalized','EdgeColor','k',...
+  'Margin',1,'backgroundcolor','w');
+longticks(ax,2);
+hold(ax,'off');
+
+ax=f.ax(2); hold(ax,'on'); ax.Box='on'; grid(ax,'on'); set(ax,'YScale','log');
+[ampbin,indbin,n] = binxeqnum(minmamp(:,2),nbin);  %bin by amp with same number
+plot(ax,[0 30],[1/mode(n) 1/mode(n)],'k--');
+medminmampbin = zeros(nbin,1);  %median amp of each amp bin
+N2dn = [];
+for i = 1: nbin
+  indi = indbin{i};
+  medminmampbin(i) = median(ampbin{i});
+  mindtinterbin{i} = mindtinter(indi);
+  N2d=histcounts(mindtinterbin{i}/sps,binedge,'normalization','count');
+  N2d=[N2d N2d(end)];
+  N2dn(:,i) = reshape(N2d,[],1)./mode(n);
+  p2d(i)=stairs(ax,binedge,N2dn(:,i),'color',color(i,:),'LineWidth',1);
+  label2d{i} = sprintf('amp of %.2f',medminmampbin(i));
+end
+legend(ax,p2d(nbin:-1:1),label2d{nbin:-1:1},'FontSize',8);
+xlabel(ax,'Time delay (s)');
+% xlabel(ax,'Time (s) from each to its nearest neighbor');
+% ylabel(ax,'Normalized count');
+xlim(ax,xran);
+ylim(ax,yran);
+text(ax,0.02,0.40,'Data','Units','normalized','FontSize',11);
+text(ax,0.02,0.25,sprintf('From each to its \nnearest neighbor'),'Units','normalized',...
+  'FontSize',9);
+text(ax,0.02,0.08,'b','FontSize',11,'unit','normalized','EdgeColor','k',...
+  'Margin',1,'backgroundcolor','w');
+longticks(ax,2);
+nolabels(ax,2);
+hold(ax,'off');
 
 ax=f.ax(3); hold(ax,'on'); ax.Box='on'; grid(ax,'on'); set(ax,'YScale','log');
 [ampbinn,indbinn,nn] = binxeqnum(mampn(:,2),nbin);  %bin by amp with same number
+plot(ax,[0 30],[1/mode(n) 1/mode(n)],'k--');
 medmampbinn = zeros(nbin,1);  %median amp of each amp bin
+N1nn = [];
 for i = 1: nbin
   indi = indbinn{i};
   medmampbinn(i) = median(ampbinn{i});
@@ -617,35 +663,27 @@ for i = 1: nbin
   p1n(i)=stairs(ax,binedge,N1nn(:,i),'color',color(i,:),'LineWidth',1);
   label1n{i} = sprintf('amp of %.2f',medmampbinn(i));
 end
-legend(ax,p1n,label1n);
-xlabel(ax,'Time (s) from each to its preceding');
-ylabel(ax,'Count');
-xlim(ax,[0 6]);
-text(ax,0.3,0.95,'Synthetic noise','Units','normalized');
-
-ax=f.ax(2); hold(ax,'on'); ax.Box='on'; grid(ax,'on'); set(ax,'YScale','log');
-[ampbin,indbin,n] = binxeqnum(minmamp(:,2),nbin);  %bin by amp with same number
-medminmampbin = zeros(nbin,1);  %median amp of each amp bin
-for i = 1: nbin
-  indi = indbin{i};
-  medminmampbin(i) = median(ampbin{i});
-  mindtinterbin{i} = mindtinter(indi);
-  N2d=histcounts(mindtinterbin{i}/sps,binedge,'normalization','count');
-  N2d=[N2d N2d(end)];
-  N2dn(:,i) = reshape(N2d,[],1)./mode(n);
-  p2d(i)=stairs(ax,binedge,N2dn(:,i),'color',color(i,:),'LineWidth',1);
-  label2{i} = sprintf('amp of %.2f',medminmampbin(i));
-end
-legend(ax,p2d,label2);
-xlabel(ax,'Time (s) from each to nearest neighbor');
-ylabel(ax,'Count');
-xlim(ax,[0 6]);
-text(ax,0.3,0.95,'Data','Units','normalized')
+legend(ax,p1n(nbin:-1:1),label1n{nbin:-1:1},'FontSize',8);
+% xlabel(ax,'Time (s) from each to its preceding');
+ylabel(ax,'Normalized count');
+xlim(ax,xran);
+ylim(ax,yran);
+text(ax,0.02,0.40,'Noise','Units','normalized','FontSize',11);
+text(ax,0.02,0.25,sprintf('From each to its \npreceding'),'Units','normalized',...
+  'FontSize',9);
+text(ax,0.02,0.08,'c','FontSize',11,'unit','normalized','EdgeColor','k',...
+  'Margin',1,'backgroundcolor','w');
+longticks(ax,2);
+nolabels(ax,1);
+hold(ax,'off');
 
 ax=f.ax(4); hold(ax,'on'); ax.Box='on'; grid(ax,'on'); set(ax,'YScale','log');
 [ampbinn,indbinn,nn] = binxeqnum(minmampn(:,2),nbin);  %bin by amp with same number
+plot(ax,[0 30],[1/mode(n) 1/mode(n)],'k--');
 medminmampbinn = zeros(nbin,1);  %median amp of each amp bin
+N2nn = [];
 for i = 1: nbin
+% for i = nbin:-1:1 
   indi = indbinn{i};
   medminmampbinn(i) = median(ampbinn{i});
   mindtinterbinn{i} = mindtintern(indi);
@@ -655,16 +693,128 @@ for i = 1: nbin
   p2n(i)=stairs(ax,binedge,N2nn(:,i),'color',color(i,:),'LineWidth',1);
   label2n{i} = sprintf('amp of %.2f',medminmampbinn(i));
 end
-legend(ax,p2n,label2n);
-xlabel(ax,'Time (s) from each to nearest neighbor');
-ylabel(ax,'Count');
-xlim(ax,[0 6]);
-text(ax,0.3,0.95,'Synthetic noise','Units','normalized');
+legend(ax,p2n(nbin:-1:1),label2n{nbin:-1:1},'FontSize',8);
+% xlabel(ax,'Time (s) from each to its nearest neighbor');
+% ylabel(ax,'Normalized count');
+xlim(ax,xran);
+ylim(ax,yran);
+text(ax,0.02,0.40,'Noise','Units','normalized','FontSize',11);
+text(ax,0.02,0.25,sprintf('From each to its \nnearest neighbor'),'Units','normalized',...
+  'FontSize',9);
+text(ax,0.02,0.08,'d','FontSize',11,'unit','normalized','EdgeColor','k',...
+  'Margin',1,'backgroundcolor','w');
+longticks(ax,2);
+nolabels(ax,3);
+hold(ax,'off');
+
+fname = strcat('lfeintertime.pdf');
+print(f.fig,'-dpdf',...
+  strcat('/home/data2/chaosong/CurrentResearch/Song_Rubin_2024/figures/',fname));
+keyboard
+
+
+%% distribution without binning by amp 
+widin = 6.5;  % maximum width allowed is 8.5 inches
+htin = 3.5;   % maximum height allowed is 11 inches
+nrow = 1;
+ncol = 2;
+f = initfig(widin,htin,nrow,ncol); %initialize fig
+pltxran = [0.08 0.98]; pltyran = [0.12 0.98]; % optimal axis location
+pltxsep = 0.02; pltysep = 0.09;
+f = initfig(widin,htin,nrow,ncol);
+optaxpos(f,nrow,ncol,pltxran,pltyran,pltxsep,pltysep);
+
+xran = [0 7];
+yran = [1e-4 1];
+
+ax=f.ax(1); hold(ax,'on'); ax.Box='on'; grid(ax,'on'); set(ax,'YScale','log');
+[N1d]=histcounts(dtinter/sps,binedge,'normalization','count');
+[N1n]=histcounts(dtintern/sps,binedge,'normalization','count');
+N1d=[N1d N1d(end)];
+N1dn = reshape(N1d,[],1)./length(dtinter);
+N1n=[N1n N1n(end)];
+N1nn = reshape(N1n,[],1)./length(dtinter);
+p1d=stairs(ax,binedge,N1dn,'b','LineWidth',1);
+p1n=stairs(ax,binedge,N1nn,'r','LineWidth',1);
+fitxran = [2 xran(2)]; 
+ind = find(binedge>=fitxran(1) & binedge<=fitxran(2));
+fitstruct=robustexpfit(binedge(ind),N1dn(ind),'log10',[1e3 -1]);
+fitobj=fitstruct.fitobj;
+coef=coeffvalues(fitobj); slp1d=coef(2);
+yfit1d = feval(fitobj,binedge);
+plot(ax,binedge,yfit1d,'b--');
+fitstruct=robustexpfit(binedge(ind),N1nn(ind),'log10',[1e3 -1]);
+fitobj=fitstruct.fitobj;
+coef=coeffvalues(fitobj); slp1n=coef(2);
+yfit1n = feval(fitobj,binedge);
+plot(ax,binedge,yfit1n,'r--');
+% xlabel(ax,'Time (s) from each to its preceding');
+xlabel(ax,'Time delay (s)');
+ylabel(ax,'Normalized count');
+xlim(ax,xran);
+ylim(ax,yran);
+legend(ax,[p1d,p1n],'Data','Synthetic noise');
+text(ax,0.02,0.35,sprintf('[%.1f, %.1f] s',fitxran(1),fitxran(2)),'Units',...
+  'normalized','FontSize',9);
+text(ax,0.02,0.25,sprintf('From each to its \npreceding'),'Units','normalized',...
+  'FontSize',9);
+text(ax,0.02,0.08,'a','FontSize',11,'unit','normalized','EdgeColor','k',...
+  'Margin',1,'backgroundcolor','w');
+% [lambdahat,lambdaci] = poissfit(dtinter/sps)
+% x=0:1:12;
+% y=poisspdf(x,lambdahat);
+% plot(ax,x,y,'r-','linew',2);
+% keyboard
+longticks(ax,2);
+hold(ax,'off');
+
+ax=f.ax(2); hold(ax,'on'); ax.Box='on'; grid(ax,'on'); set(ax,'YScale','log');
+[N2d]=histcounts(mindtinter/sps,binedge,'normalization','count');
+[N2n]=histcounts(mindtintern/sps,binedge,'normalization','count');
+N2d=[N2d N2d(end)];
+N2dn = reshape(N2d,[],1)./length(mindtinter);
+N2n=[N2n N2n(end)];
+N2nn = reshape(N2n,[],1)./length(mindtinter);
+stairs(ax,binedge,N2dn,'b','LineWidth',1);
+stairs(ax,binedge,N2nn,'r','LineWidth',1);
+fitxran = [1.5 4]; 
+ind = find(binedge>=fitxran(1) & binedge<=fitxran(2));
+fitstruct=robustexpfit(binedge(ind),N2dn(ind),'log10',[1e3 -1]);
+fitobj=fitstruct.fitobj;
+coef=coeffvalues(fitobj); slp2d=coef(2);
+yfit2d = feval(fitobj,binedge);
+plot(ax,binedge,yfit2d,'b--');
+fitstruct=robustexpfit(binedge(ind),N2nn(ind),'log10',[1e3 -1]);
+fitobj=fitstruct.fitobj;
+coef=coeffvalues(fitobj); slp2n=coef(2);
+yfit2n = feval(fitobj,binedge);
+plot(ax,binedge,yfit2n,'r--');
+% xlabel(ax,'Time (s) from each to its preceding');
+xlabel(ax,'Time delay (s)');
+% ylabel(ax,'Normalized count');
+xlim(ax,xran);
+ylim(ax,yran);
+text(ax,0.02,0.35,sprintf('[%.1f, %.1f] s',fitxran(1),fitxran(2)),'Units',...
+  'normalized','FontSize',9);
+text(ax,0.02,0.25,sprintf('From each to its \nnearest neighbor'),'Units','normalized',...
+  'FontSize',9);
+text(ax,0.02,0.08,'b','FontSize',11,'unit','normalized','EdgeColor','k',...
+  'Margin',1,'backgroundcolor','w');
+longticks(ax,2);
+nolabels(ax,2);
+hold(ax,'off');
+
+fname = strcat('lfeintertimelump.pdf');
+print(f.fig,'-dpdf',...
+  strcat('/home/data2/chaosong/CurrentResearch/Song_Rubin_2024/figures/',fname));
+% keyboard
+
+
 
 %%
 f=initfig(12,9,2,2); %initialize fig
 ax=f.ax(1); hold(ax,'on'); ax.Box='on'; grid(ax,'on'); set(ax,'YScale','log');
-binedge=0:0.1:12;
+% binedge=0:0.1:12;
 [N1d]=histcounts(dtinter/sps,binedge,'normalization','count');
 [N1n]=histcounts(dtintern/sps,binedge,'normalization','count');
 N1d=[N1d N1d(end)];
@@ -683,8 +833,8 @@ fitobj=fitstruct.fitobj;
 coef=coeffvalues(fitobj); slp1n=coef(2);
 yfit1n = feval(fitobj,binedge);
 plot(ax,binedge,yfit1n,'r--');
-xlabel(ax,'Time (s) from each to its preceding');
-ylabel(ax,'Count');
+% xlabel(ax,'Time (s) from each to its preceding');
+% ylabel(ax,'Count');
 xlim(ax,[0 6]);
 legend(ax,[p1d,p1n],'Data','Synthetic noise');
 % [lambdahat,lambdaci] = poissfit(dtinter/sps)

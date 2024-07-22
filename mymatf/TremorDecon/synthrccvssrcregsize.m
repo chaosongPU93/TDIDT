@@ -243,7 +243,7 @@ mcc = zeros(length(sigmatry), 1);
 nsrc = zeros(length(sigmatry), 1);
 ntot = zeros(length(sigmatry), 1);
 
-for i = 1: length(sigmatry)
+for i = 10: length(sigmatry)
   % i = 1;
   %use the designed covariance matrix to create the PDF of the 2D normal distribution
 %   mu = [0 0];

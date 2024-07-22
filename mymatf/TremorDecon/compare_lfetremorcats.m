@@ -28,8 +28,6 @@ clc
 close all
 
 %% for easy testing
-defval('idxbst',1:195); %global indices of bursts to run 
-
 set(0,'DefaultFigureVisible','on');
 % set(0,'DefaultFigureVisible','off');   % switch to show the plots or not
 
@@ -140,21 +138,50 @@ hfout = sortrows(hfout, [daycol, seccol]);
 %%%   in(1:nstanew) loff(1:nstanew) ioff(1:nstanew) ccmaxave(1:nstanew)
 
 ttol = 35;
-trange = load(strcat(rstpath, '/MAPS/tdec.bstran',num2str(ttol),'s.pgc002.',cutout(1:4)));
-tlen = trange(:,3)-trange(:,2);
+ntol = 3;
+% trange = load(strcat(rstpath, '/MAPS/tdec.bstran',num2str(ttol),'s.pgc002.',cutout(1:4)));
+% trange = trange(1:end-1,:);
+trange = load(strcat(rstpath, '/MAPS/tdec.bstran',num2str(ttol),'s.',num2str(ntol),'.pgc002.',...
+  cutout(1:4)));
 nbst = size(trange,1);
+
+dates = unique(trange(:,1));
+years = unique(floor(dates/1000));
+nets = length(years);
+
+trangeout = load(strcat(rstpath, '/MAPS/tdec.bstran',num2str(ttol),'s.',num2str(ntol),'.pgcout002.',...
+  cutout(1:4)));
 
 %%%load the empirical model param of time offset 14 for each addtional stations
 off14mod = load(strcat(rstpath, '/MAPS/timeoff_planefitparam_4thsta_160sps'),'w+');
 
 %% load other catalogs
-%%% load the LFE catalog of Michael Bostock, inside and outside the rectangle in 'locinterp002_4s.m'
+%%%load the LFE catalog of Michael Bostock, inside and outside the rectangle in 'locinterp002_4s.m'
+%%%his time is approximately corrected to the postive waveform peak 
 %obtain the location of fam 002, lon0 and lat0
 ftrans = 'interpchao';
-loc0 = off2space002([0 0],sps*iup,ftrans,0); % 8 cols, format: dx,dy,lon,lat,dep,ttrvl,off12,off13
-%format: [fam yyyy mm dd sec dx dy lon lat dep magnitude number-of-stations], 12 cols
-%time should point to the peak, zero-crossing?
-bostcat = ReformBostock(loc0(3),loc0(4),0);
+% loc0 = off2space002([0 0],sps*iup,ftrans,0); % 8 cols, format: dx,dy,lon,lat,dep,ttrvl,off12,off13
+% %format: [fam yyyy mm dd sec dx dy lon lat dep magnitude number-of-stations], 12 cols
+% %time should point to the peak, zero-crossing?
+% bostcat = ReformBostock(loc0(3),loc0(4),0);
+
+bosdir = ('/home/data2/chaosong/matlab/allan/BOSTOCK');
+lfefnm = ('newlfeloc');
+lfeloc = load(fullfile(bosdir, lfefnm));
+loc0 = lfeloc(lfeloc(:,1)==2,:);
+%%%if still use the catalog separated by each fam
+%this specifies which MB LFE catalog to use, 'AMR' is updated within 2-4 Hz
+%while 'NEW' is within 0.5-1 Hz
+flag = 'NEW';
+% flag = 'AMR';
+bostname = strcat('/BOSTOCK/update20230916/total_mag_detect_0000_cull_',flag,'.txt');
+bostcatof = ReformBostock(loc0(3),loc0(2),1,bostname);
+bostcatof = bostcatof(bostcatof(:,2)==2003 | bostcatof(:,2)==2004 | bostcatof(:,2)==2005, :);
+bostcatof = bostcatof(bostcatof(:,1)~=2 & bostcatof(:,1)~=47 & bostcatof(:,1)~=246, :);
+bostcatof(:,13) = mag2moment(bostcatof(:,11));
+
+%%%if use the lumped catalog that combine unique events from 002 and 246
+bostcat = load(strcat(bosdir,'/002-246_lumped.2003-2005_cull_',flag,'_chao'));
 
 %the cut-out boundary of 4-s detections
 cutout = 'ellipse';
@@ -182,6 +209,11 @@ isinbnd = iin | ion;
 bostcati = bostcat(isinbnd == 1, :);
 bostcato = bostcat(isinbnd ~= 1, :);
 clear bostcat
+
+%convert moment mag to moment, Mw = (2/3)*log_10(M0)-10.7, where M0 has the unit of dyne.cm
+%(10^-7 N.m), so Mw = (2/3)*log_10(M0)-6 if M0 has the unit of N.m
+bostcati(:,13) = mag2moment(bostcati(:,11));
+bostcato(:,13) = mag2moment(bostcato(:,11));
 
 %%%load the tremor catalog of John Armbruster, 
 %%%2022/06/29, not really very useful as the detecting window could be 128-s long (not sure)
@@ -434,15 +466,12 @@ rccsrc2n = allnoi1win.allbstnoi.rccsrcall;
 propang2n = allnoi1win.allbstnoi.propang;
 proppear2n = allnoi1win.allbstnoi.proppear;
 
-clrcode = 'tarvl';
-clrcode = 'rcc';
+colorcoding = 'tarvl';
+colorcoding = 'rcc';
 
 idxbst = 181;
 idxbst = 1:length(trange);
 
-dates = unique(trange(:,1));
-years = unique(floor(dates/1000));
-nets = length(years);
 for iii = 1: length(idxbst)
   [iets,i,j] = indofburst(trange,idxbst(iii));
 
@@ -502,7 +531,7 @@ for iii = 1: length(idxbst)
   tlenbuf(idxbst(iii)) = tedbuf-tstbuf;
   tmrloc = hfdayi(hfdayi(:, seccol)>=tstbuf & hfdayi(:, seccol)<=tedbuf, :);
 
-  if strcmp(clrcode, 'tarvl') 
+  if strcmp(colorcoding, 'tarvl') 
     %%%plot
     widin = 8;  % maximum width allowed is 8.5 inches
     htin = 8;   % maximum height allowed is 11 inches
@@ -628,7 +657,7 @@ for iii = 1: length(idxbst)
     axis(ax,[xran yran]);
     longticks(ax,2);
   
-  elseif strcmp(clrcode, 'rcc')
+  elseif strcmp(colorcoding, 'rcc')
     %%%plot
     widin = 8;  % maximum width allowed is 8.5 inches
     htin = 8;   % maximum height allowed is 11 inches
@@ -802,14 +831,14 @@ for iii = 1: length(idxbst)
 end
 
 %% merge all figures into a single pdf file
-if strcmp(clrcode, 'tarvl') 
+if strcmp(colorcoding, 'tarvl') 
   status = system('rm -f /home/data2/chaosong/matlab/allan/data-no-resp/PGCtrio/FIGS/lfevstremor_tarvl.pdf');
   for i = 1:size(fignm,1)
     mergenm{i} = fullfile(rstpath, '/FIGS/',fignm{i});
   end
   append_pdfs(fullfile(rstpath, '/FIGS/lfevstremor_tarvl.pdf'),mergenm);
   
-elseif strcmp(clrcode, 'rcc')  
+elseif strcmp(colorcoding, 'rcc')  
   status = system('rm -f /home/data2/chaosong/matlab/allan/data-no-resp/PGCtrio/FIGS/lfevstremor_rcc.pdf');
   for i = 1:size(fignm,1)
     mergenm{i} = fullfile(rstpath, '/FIGS/',fignm{i});

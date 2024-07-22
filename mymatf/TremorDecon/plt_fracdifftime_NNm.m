@@ -57,7 +57,8 @@ ax=f.ax(1); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
 %%%%%%%%%% if bin by amp with a equal number
 % nbin = 5;
 [ampbin,indbin,n] = binxeqnum(ampplt,nbin);
-color = jet(nbin);
+color = gradientblue(nbin);
+% color = plasma(nbin);
 % color = gray(nbin+1);
 % color = flipud(color(1:end-1,:));
 % color = flipud(kelicmap(nbin));

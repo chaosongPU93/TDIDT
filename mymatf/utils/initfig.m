@@ -18,8 +18,8 @@ function [f] = initfig(widin,htin,nrow,ncol,ifig)
 % First created date:   2022/03/12
 % Last modified date:   2022/03/12
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-defval('widin',6);
-defval('htin',5);
+defval('widin',5);
+defval('htin',4);
 defval('nrow',1);
 defval('ncol',1);
 defval('ifig',[]);
@@ -33,16 +33,17 @@ else
   f.fig = figure(ifig);
 end
 f.fig.Renderer = 'painters';
-set(f.fig,'Position',[1*scrsz(3)/20 scrsz(4)/10 widin*resol htin*resol]);
+set(f.fig,'Position',[10*scrsz(3)/20 scrsz(4)/10 widin*resol htin*resol]);
 
 for isub = 1:nrow*ncol
     f.ax(isub) = subplot(nrow,ncol,isub);
     f.ax(isub).Box = 'on';
 %     grid(f.ax(isub),'on');
 %     f.ax(isub).YAxis.Exponent = 3;
+    longticks(f.ax(isub),2);
 end
 
-xran = [0.1 0.96]; yran = [0.1 0.96];
+xran = [0.15 0.95]; yran = [0.15 0.95];
 xsep = 0.1; ysep = 0.1;
 optaxpos(f,nrow,ncol,xran,yran,xsep,ysep);
 

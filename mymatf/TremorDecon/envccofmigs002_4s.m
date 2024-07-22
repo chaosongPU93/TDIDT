@@ -146,6 +146,15 @@ nmig = size(tranmig,1);
 
 % median(tranmig(:,3)-tranmig(:,2))
 
+%% load HF decon results for the alignment of 25-s windows
+% savefile = 'deconv_stats4th_allbstsig.mat';
+savefile = 'deconv_stats4th_no23_allbstsig.mat';
+load(strcat(rstpath, '/MAPS/',savefile));
+
+% off1i = allbstsig.off1i;
+% off1i(1:3,:)
+
+
 %%
 % dates and ets
 %%% NOTE: 'dates' is the dates that the tremor is active at the region of interest, so that the
@@ -204,7 +213,11 @@ lagb123 = zeros(nibst, 3); %lag of CC within sta 1,2,3 for bursts
 ccb45 = zeros(nibst, 6);  %coef of CC within sta 4,5,6,7 for bursts
 lagb45 = zeros(nibst, 6); %lag of CC within sta 4,5,6,7 for bursts
 
-envprct = zeros(nibst, 3, nsta);  % 10 and 90 percentiles of the envelope
+% prct = [10 50 90];
+prct = [5 50 95];
+envprct = zeros(nibst, 3, nsta);  % percentiles of the envelope
+envortprct = zeros(nibst, 3, nsta);  % percentiles of the envelope, ort comp.
+envvertprct = zeros(nibst, 3, nsta);  % percentiles of the envelope, vert comp.
 
 %%%Flag to indicate if it is necessary to recalculate everything
 flagrecalc = 0;
@@ -257,6 +270,11 @@ if flagrecalc
       fprintf('Day %s / %s will be omitted because of missing files. \n', yr, JDAY);
       continue    % continue to the next day
     end
+    
+    %read vertical components too, as we want to have a sense of the SNR at the orthogonal and vertical
+    %components
+    [STAvert,~,~,fileflag] = rd_daily_bpdata(year,jday,prename,stas,PERMSTA,POLSTA,...
+      PERMROTS,POLROTS,sps,losig,hisig,npo,npa,[],[],[],[],'Z');
     
     %   %%%CC between stations for migration windows
     %   for j = 1: size(mig,1)
@@ -312,11 +330,34 @@ if flagrecalc
 %     tstbuf = tstbuf - tlenbuf;
 %     tedbuf = tedbuf + tlenbuf;
     
-    optcc = STAopt(max(floor((tstbuf+1)*sps+1),1): min(floor((tedbuf-1)*sps),86400*sps), 2:nsta+1);
+    %max allowable shift in best alignment
+    msftaddm = 1.5*sps+1;  %+1 for safety
+
+    %have some overshoot, so that the resulted rcc would have the same length as the signal
+    rccmwsec=0.5;
+    rccmwlen=rccmwsec*sps;
+    overshoot = rccmwlen/2;
+
+    %%%%2022/09/26, obtain all information for data before decon, so that you know the threshold
+    %%%%being used, although this was used mainly for noise experiment, we still use it here
+    %chop a record segment
+    optseg = STAopt(max(floor(tstbuf*sps+1-overshoot-msftaddm),1): ...
+      min(floor(tedbuf*sps+overshoot+msftaddm),86400*sps), :); % sta 1
+    ortseg = STAort(max(floor(tstbuf*sps+1-overshoot-msftaddm),1): ...
+      min(floor(tedbuf*sps+overshoot+msftaddm),86400*sps), :);
+    vertseg = STAvert(max(floor(tstbuf*sps+1-overshoot-msftaddm),1): ...
+      min(floor(tedbuf*sps+overshoot+msftaddm),86400*sps), :);
+
+    %save room for memory
+    clear STAopt STAort STAvert
+
+    %%%obtain a single best alignment based on the entire win
+    %       optcc = optseg(:, 2:end);
+    optcc = detrend(optseg(1+msftaddm: end-msftaddm, 2:end));
     msftadd = 10/40*sps;
+    loffmax = 4*sps/40;
     ccmid = ceil(size(optcc,1)/2);
     ccwlen = round(size(optcc,1)-2*(msftadd+1));
-    loffmax = 4*sps/40;
     ccmin = 0.01;  % depending on the length of trace, cc could be very low
     iup = 1;    % times of upsampling
     [off12con,off13con,ccali(icount),iloopoff,loopoff] = constrained_cc_interp(optcc(:,1:3)',ccmid,...
@@ -336,27 +377,102 @@ if flagrecalc
       [mcoef, idx] = max(coef);   % max of master raw cc
       off1i(icount,ista) = lag(idx);   % offset in samples
     end
-    
-    %Align records
+
+    %%%Align and compute the RCC based on the entire win, and take that as the input signal!
     optdat = [];  % win segment of interest
     ortdat = [];
-    optdat(:, 1:2) = STAopt(max(floor(tstbuf*sps+1),1): min(floor(tedbuf*sps),86400*sps), 1:2); % sta 1
-    ortdat(:, 1:2) = STAort(max(floor(tstbuf*sps+1),1): min(floor(tedbuf*sps),86400*sps), 1:2);
-    for ista = 2: nsta
-      optdat(:, ista+1) = STAopt(max(floor(tstbuf*sps+1)-off1i(icount,ista),1): ...
-        min(floor(tedbuf*sps)-off1i(icount,ista),86400*sps), ista+1); % sta 2
-      ortdat(:, ista+1) = STAort(max(floor(tstbuf*sps+1)-off1i(icount,ista),1): ...
-        min(floor(tedbuf*sps)-off1i(icount,ista),86400*sps), ista+1);
+    vertdat = [];
+    optdat(:, 1) = optseg(1+msftaddm: end-msftaddm, 1); % time column
+    ortdat(:, 1) = ortseg(1+msftaddm: end-msftaddm, 1);
+    vertdat(:, 1) = vertseg(1+msftaddm: end-msftaddm, 1);
+    for ista = 1: nsta
+      optdat(:, ista+1) = optseg(1+msftaddm-off1i(icount,ista): ...
+        end-msftaddm-off1i(icount,ista), ista+1);
+      ortdat(:, ista+1) = ortseg(1+msftaddm-off1i(icount,ista): ...
+        end-msftaddm-off1i(icount,ista), ista+1);
+      vertdat(:, ista+1) = vertseg(1+msftaddm-off1i(icount,ista): ...
+        end-msftaddm-off1i(icount,ista), ista+1);
     end
     
-    %%%obtain envelope directly from signal
-    [envseg,~] = envelope(optdat(:,2:end));
+    %%%for optimal comp
+    sigsta = zeros(size(optdat,1), nsta);
+    for ista = 1:nsta
+      tmp = optdat(:,ista+1); %best aligned, filtered
+      tmp = detrend(tmp);
+      sigsta(:,ista) = tmp;
+    end
+    sigsta = detrend(sigsta(overshoot+1:end-overshoot, :));  %excluding the overshoot
     
-    %get some estimate of the amplitude range/variation, using envelope
-    envprct(icount,1,:) = prctile(envseg,10);
-    envprct(icount,2,:) = prctile(envseg,90);
-    envprct(icount,3,:) = prctile(envseg,50);
+    %%%for orthogonal comp
+    sigstaort = zeros(size(ortdat,1), nsta);
+    for ista = 1:nsta
+      tmp = ortdat(:,ista+1); %best aligned, filtered
+      tmp = detrend(tmp);
+      sigstaort(:,ista) = tmp;
+    end
+    sigstaort = detrend(sigstaort(overshoot+1:end-overshoot, :));  %excluding the overshoot
+    
+    %%%for vertical comp
+    sigstavert = zeros(size(vertdat,1), nsta);
+    for ista = 1:nsta
+      tmp = vertdat(:,ista+1); %best aligned, filtered
+      tmp = detrend(tmp);
+      sigstavert(:,ista) = tmp;
+    end
+    sigstavert = detrend(sigstavert(overshoot+1:end-overshoot, :));  %excluding the overshoot
 
+%     optcc = STAopt(max(floor((tstbuf+1)*sps+1),1): min(floor((tedbuf-1)*sps),86400*sps), 2:nsta+1);
+%     msftadd = 10/40*sps;
+%     ccmid = ceil(size(optcc,1)/2);
+%     ccwlen = round(size(optcc,1)-2*(msftadd+1));
+%     loffmax = 4*sps/40;
+%     ccmin = 0.01;  % depending on the length of trace, cc could be very low
+%     iup = 1;    % times of upsampling
+%     [off12con,off13con,ccali(icount),iloopoff,loopoff] = constrained_cc_interp(optcc(:,1:3)',ccmid,...
+%       ccwlen,msftadd,loffmax,ccmin,iup);
+%     % if a better alignment cannot be achieved, use 0,0
+%     if off12con == msftadd+1 && off13con == msftadd+1
+%       off12con = 0;
+%       off13con = 0;
+%       fprintf('Tremor burst %d cannot be properly aligned, double-check needed \n',icount);
+%     end
+%     off1i(icount,1) = 0;
+%     off1i(icount,2) = round(off12con);
+%     off1i(icount,3) = round(off13con);
+%     
+%     for ista = 4: nsta
+%       [coef,lag] = xcorr(detrend(optcc(:,1)), detrend(optcc(:,ista)), msftadd, 'coeff');
+%       [mcoef, idx] = max(coef);   % max of master raw cc
+%       off1i(icount,ista) = lag(idx);   % offset in samples
+%     end
+%     
+%     %Align records
+%     optdat = [];  % win segment of interest
+%     ortdat = [];
+%     optdat(:, 1:2) = STAopt(max(floor(tstbuf*sps+1),1): min(floor(tedbuf*sps),86400*sps), 1:2); % sta 1
+%     ortdat(:, 1:2) = STAort(max(floor(tstbuf*sps+1),1): min(floor(tedbuf*sps),86400*sps), 1:2);
+%     for ista = 2: nsta
+%       optdat(:, ista+1) = STAopt(max(floor(tstbuf*sps+1)-off1i(icount,ista),1): ...
+%         min(floor(tedbuf*sps)-off1i(icount,ista),86400*sps), ista+1); % sta 2
+%       ortdat(:, ista+1) = STAort(max(floor(tstbuf*sps+1)-off1i(icount,ista),1): ...
+%         min(floor(tedbuf*sps)-off1i(icount,ista),86400*sps), ista+1);
+%     end
+%     
+%     %%%obtain envelope directly from signal
+%     [envseg,~] = envelope(optdat(:,2:end));
+
+
+    %%%obtain envelope directly from signal
+    [envseg,~] = envelope(sigsta);
+    [envortseg,~] = envelope(sigstaort);
+    [envvertseg,~] = envelope(sigstavert);
+
+    %get some estimate of the amplitude range/variation, using envelope
+    for ip = 1: 3
+      envprct(icount,ip,:) = prctile(envseg,prct(ip));
+      envortprct(icount,ip,:) = prctile(envortseg,prct(ip));
+      envvertprct(icount,ip,:) = prctile(envvertseg,prct(ip));
+    end
     
     maxlag = 2*sps;
     
@@ -401,178 +517,444 @@ if flagrecalc
   end
   
   %%% save some variables
-  savefile = 'rst_envcc_dtr.mat';
+%   savefile = 'rst_envcc_dtr.mat';
+%   savefile = strcat('rst_envcc',num2str(prct(end)),'_dtr.mat');
+  savefile = strcat('rst_envcc_3comps',num2str(prct(end)),'_dtr.mat');
   save(strcat(rstpath, '/MAPS/',savefile), 'off1i','ccbij','lagbij','ccb123','lagb123','ccb45',...
-    'lagb45','envprct');
+    'lagb45','envprct','envortprct','envvertprct');
   
 else
   maxlag = 2*sps;
-  savefile = 'rst_envcc_dtr.mat';
+%   savefile = strcat('rst_envcc',num2str(prct(end)),'_dtr.mat');
+  savefile = strcat('rst_envcc_3comps',num2str(prct(end)),'_dtr.mat');
   load(strcat(rstpath, '/MAPS/',savefile));
 end
 
 keyboard
 
 %% target some high-correlation bursts
-% ind = find(ccboo(:,1)>=prctile(ccboo(:,1),75) & ccboo(:,2)>=prctile(ccboo(:,2),75) & ...
-%   ccboo(:,3)>=prctile(ccboo(:,3),75));
-% ind = [20,23,59,60,80,113,116,120,134,189,194];
-% 
-ind123 = find(ccb123(:,1)>=prctile(ccb123(:,1),75) & ccb123(:,2)>=prctile(ccb123(:,2),75) & ...
-  ccb123(:,3)>=prctile(ccb123(:,3),75));
-% ind123 = [1,3,8,10,31,67,78,81,82,91,102,108,114,116,121,129,146,153,167,175];
+% % ind = find(ccboo(:,1)>=prctile(ccboo(:,1),75) & ccboo(:,2)>=prctile(ccboo(:,2),75) & ...
+% %   ccboo(:,3)>=prctile(ccboo(:,3),75));
+% % ind = [20,23,59,60,80,113,116,120,134,189,194];
+% % 
+% ind123 = find(ccb123(:,1)>=prctile(ccb123(:,1),75) & ccb123(:,2)>=prctile(ccb123(:,2),75) & ...
+%   ccb123(:,3)>=prctile(ccb123(:,3),75));
+% % ind123 = [1,3,8,10,31,67,78,81,82,91,102,108,114,116,121,129,146,153,167,175];
 
-%% envelope (amplitude) range VS. burst #
-widin = 12;
-htin = 9;
-nrow = 3;
-ncol = 1;
-pltxran = [0.06 0.96]; pltyran = [0.06 0.96]; % optimal axis location
-pltxsep = 0.03; pltysep = 0.03;
+%% scatter between envelope (amplitude) range and median
+widin = 6.5;
+htin = 6.8;
+nrow = 2;
+ncol = 2;
+pltxran = [0.1 0.96]; pltyran = [0.1 0.96]; % optimal axis location
+pltxsep = 0.05; pltysep = 0.04;
 f = initfig(widin,htin,nrow,ncol);
 optaxpos(f,nrow,ncol,pltxran,pltyran,pltxsep,pltysep);
-itime = [1 69; 70 138; 139 195];
-iyr = ['2003';'2004';'2005'];
-color = jet(nsta);
-sybl = ['o';'x';'s';'d';'^';'v';'p'];
-for isub = 1: nrow*ncol
+color=['r';'b';'k';'c'];
+sybl = ['o';'^';'v';'d'];
+p=[];
+xran=[-2.2 -0.2];
+yran=[0 2];
+for i = 1: 4
+  ax=f.ax(i); hold(ax,'on'); ax.Box='on'; grid(ax,'on'); axis(ax,'equal');
+  envmed(:,i) = envprct(:,2,i);
+  envran(:,i) = envprct(:,end,i)./envprct(:,1,i);
+  axis(ax,[xran yran]);
+  plot(ax, ax.XLim, [median(log10(envran(:,i))) median(log10(envran(:,i)))],...
+    '--','Color',color(i,:),'Linew',2);
+  p(i)=scatter(ax,log10(envmed(:,i)),log10(envran(:,i)),30,...
+      color(i,:),sybl(i,:),'filled','markeredgec','w');
+  text(ax,0.98,0.95,stas(i,:),'Units','normalized','HorizontalAlignment',...
+    'right','FontSize',12);
+end
+ylabel(f.ax(3),'log_{10}{Envelope range}');
+xlabel(f.ax(3),'log_{10}{Median envelope}');
+% legend(f.ax(3),p,stas(1:4,:),'Location','northwest');
+
+fname = strcat('bstenvran',num2str(prct(end)),num2str(prct(1)),'vsmed.pdf');
+print(f.fig,'-dpdf',...
+  strcat('/home/data2/chaosong/CurrentResearch/Song_Rubin_2024/figures/',fname));
+
+%% ort comp. scatter between envelope (amplitude) range and median
+widin = 6.5;
+htin = 6.8;
+nrow = 2;
+ncol = 2;
+pltxran = [0.1 0.96]; pltyran = [0.1 0.96]; % optimal axis location
+pltxsep = 0.05; pltysep = 0.04;
+f = initfig(widin,htin,nrow,ncol);
+optaxpos(f,nrow,ncol,pltxran,pltyran,pltxsep,pltysep);
+color=['r';'b';'k';'c'];
+sybl = ['o';'^';'v';'d'];
+p=[];
+xran=[-2.2 -0.2];
+yran=[0 2];
+for i = 1: 4
+  ax=f.ax(i); hold(ax,'on'); ax.Box='on'; grid(ax,'on'); axis(ax,'equal');
+  envortmed(:,i) = envortprct(:,2,i);
+  envortran(:,i) = envortprct(:,end,i)./envortprct(:,1,i);
+  axis(ax,[xran yran]);
+  plot(ax, ax.XLim, [median(log10(envortran(:,i))) median(log10(envortran(:,i)))],...
+    '--','Color',color(i,:),'Linew',2);
+  p(i)=scatter(ax,log10(envortmed(:,i)),log10(envortran(:,i)),30,...
+      color(i,:),sybl(i,:),'filled','markeredgec','w');
+  text(ax,0.98,0.95,stas(i,:),'Units','normalized','HorizontalAlignment',...
+    'right','FontSize',12);
+  text(ax,0.02,0.95,'Orthogonal','Units','normalized','HorizontalAlignment',...
+    'left','FontSize',12);
+end
+ylabel(f.ax(3),'log_{10}{Envelope range}');
+xlabel(f.ax(3),'log_{10}{Median envelope}');
+% legend(f.ax(3),p,stas(1:4,:),'Location','northwest');
+
+fname = strcat('bstenvortran',num2str(prct(end)),num2str(prct(1)),'vsmed.pdf');
+print(f.fig,'-dpdf',...
+  strcat('/home/data2/chaosong/CurrentResearch/Song_Rubin_2024/figures/',fname));
+
+
+%% vert comp. scatter between envelope (amplitude) range and median
+widin = 6.5;
+htin = 6.8;
+nrow = 2;
+ncol = 2;
+pltxran = [0.1 0.96]; pltyran = [0.1 0.96]; % optimal axis location
+pltxsep = 0.05; pltysep = 0.04;
+f = initfig(widin,htin,nrow,ncol);
+optaxpos(f,nrow,ncol,pltxran,pltyran,pltxsep,pltysep);
+color=['r';'b';'k';'c'];
+sybl = ['o';'^';'v';'d'];
+p=[];
+xran=[-2.2 -0.2];
+yran=[0 2];
+for i = 1: 4
+  ax=f.ax(i); hold(ax,'on'); ax.Box='on'; grid(ax,'on'); axis(ax,'equal');
+  envvertmed(:,i) = envvertprct(:,2,i);
+  envvertran(:,i) = envvertprct(:,end,i)./envvertprct(:,1,i);
+  axis(ax,[xran yran]);
+  plot(ax, ax.XLim, [median(log10(envvertran(:,i))) median(log10(envvertran(:,i)))],...
+    '--','Color',color(i,:),'Linew',2);
+  p(i)=scatter(ax,log10(envvertmed(:,i)),log10(envvertran(:,i)),30,...
+      color(i,:),sybl(i,:),'filled','markeredgec','w');
+  text(ax,0.98,0.95,stas(i,:),'Units','normalized','HorizontalAlignment',...
+    'right','FontSize',12);
+  text(ax,0.02,0.95,'Vertical','Units','normalized','HorizontalAlignment',...
+    'left','FontSize',12);
+end
+ylabel(f.ax(3),'log_{10}{Envelope range}');
+xlabel(f.ax(3),'log_{10}{Median envelope}');
+% legend(f.ax(3),p,stas(1:4,:),'Location','northwest');
+
+fname = strcat('bstenvvertran',num2str(prct(end)),num2str(prct(1)),'vsmed.pdf');
+print(f.fig,'-dpdf',...
+  strcat('/home/data2/chaosong/CurrentResearch/Song_Rubin_2024/figures/',fname));
+
+%% histogram of envelope (amplitude) range
+% widin = 6.5;
+% htin = 7;
+% nrow = 2;
+% ncol = 2;
+% pltxran = [0.1 0.96]; pltyran = [0.1 0.96]; % optimal axis location
+% pltxsep = 0.05; pltysep = 0.05;
+% f = initfig(widin,htin,nrow,ncol);
+% optaxpos(f,nrow,ncol,pltxran,pltyran,pltxsep,pltysep);
+% color=['r';'b';'k';'c'];
+% binw=0.05;
+% p=[];
+% for i = 1: 4
+%   ax=f.ax(i); hold(ax,'on'); ax.Box='on'; grid(ax,'on');%  set(ax,'XScale','log');
+%   envran(:,i) = envprct(:,end,i)./envprct(:,1,i);
+%   histogram(ax,log10(envran(:,i)),'binw',binw,'Facec',color(i,:),'edgec','none');
+% %   [N, binedge] = histcounts(log10(envran(:,i)),'binw',binw,'normalization','pdf');
+% %   N=[N N(end)];
+% %   p(i)=stairs(ax,binedge,N,'color',color(i,:),'LineWidth',1);
+%   plot(ax,[median(log10(envran(:,i))) median(log10(envran(:,i)))], ax.YLim, ...
+%     '--','Color',color(i,:),'Linew',2);
+% %   xlim(ax,[0.5 1]);
+%   xlim(ax,[0 2]);
+%   text(ax,0.98,0.95,stas(i,:),'Units','normalized','HorizontalAlignment',...
+%     'right','FontSize',12);
+% end
+% xlabel(f.ax(3),'log_{10}{Envelope range}');
+% ylabel(f.ax(3),'Count');
+% % legend(f.ax(3),p,stas(1:4,:),'Location','northwest');
+% 
+% fname = strcat('bstenvran',num2str(prct(end)),num2str(prct(1)),'hist.pdf');
+% print(f.fig,'-dpdf',...
+%   strcat('/home/data2/chaosong/CurrentResearch/Song_Rubin_2024/figures/',fname));
+
+
+%% envelope (amplitude) range VS. burst #
+% widin = 12;
+% htin = 9;
+% nrow = 3;
+% ncol = 1;
+% pltxran = [0.06 0.96]; pltyran = [0.06 0.96]; % optimal axis location
+% pltxsep = 0.03; pltysep = 0.03;
+% f = initfig(widin,htin,nrow,ncol);
+% optaxpos(f,nrow,ncol,pltxran,pltyran,pltxsep,pltysep);
+% itime = [1 69; 70 138; 139 195];
+% iyr = ['2003';'2004';'2005'];
+% color = jet(nsta);
+% sybl = ['o';'x';'s';'^';'d';'v';'p'];
+% for isub = 1: nrow*ncol
+%   ax = f.ax(isub);
+%   hold(ax,'on');
+%   ax.Box = 'on';
+%   grid(ax,'on');
+%   
+% %   %bar plot range bar
+% %   for ii = 1: nsta
+% %     for jj = 1: nibst
+% %       if jj == 1
+% %         p(ii)=plot(ax,[jj jj],[log10(envprct(jj,1,ii)) log10(envprct(jj,2,ii))],'-','Marker',sybl(ii,:),...
+% %           'markersize',4,'color',color(ii,:));
+% %       else
+% %         plot(ax,[jj jj],[log10(envprct(jj,1,ii)) log10(envprct(jj,2,ii))],'-','Marker',sybl(ii,:),'markersize',4,...
+% %           'color',color(ii,:));
+% %       end
+% %     end
+% %   end
+%   
+%   %line plot
+%   for ii = 1: nsta
+%     p(ii)=plot(ax,log10(envprct(:,3,ii)),'o-','Color',color(ii,:),'linew',1.5,'markersize',2.5);
+%   end
+%   for ii = 1: nsta
+%     plot(ax,log10(envprct(:,1,ii)),':','Color',color(ii,:),'linew',1);   
+%   end
+% 
+%   xlim(ax,[itime(isub,1) itime(isub,2)]);
+% %   ylim(ax,[0 0.8]);
+%   ylim(ax,[-2.5 0]);
+%   text(ax,0.5,0.95,iyr(isub,:),'Units','normalized','FontSize',12);
+%   if isub == 1
+%     legend(ax,p,stas,'Location','northwest');
+%   end
+%   if isub == nrow
+%     xlabel(ax,'Burst #');
+%     ylabel(ax,'log_{10}{10--90 prctile of env}');
+%   end
+% end
+
+%% envelope (amplitude) range VS. med env.
+% widin = 9;
+% htin = 9;
+% nrow = 3;
+% ncol = 1;
+% pltxran = [0.08 0.96]; pltyran = [0.08 0.96]; % optimal axis location
+% pltxsep = 0.03; pltysep = 0.04;
+% f = initfig(widin,htin,nrow,ncol);
+% optaxpos(f,nrow,ncol,pltxran,pltyran,pltxsep,pltysep);
+% color = jet(nsta);
+% sybl = ['o';'^';'v';'s';'d';'p';'h'];
+% 
+% %just scatter plot, env median vs 90-10 percentile
+% ax = f.ax(1);
+% hold(ax,'on');
+% ax.Box = 'on';
+% grid(ax,'on');
+% for ii = 1: nsta
+%   p(ii)=scatter(ax,log10(envprct(:,3,ii)),log10(envprct(:,2,ii))-log10(envprct(:,1,ii)),20,...
+%     color(ii,:),sybl(ii,:),'filled');
+% end
+% %   text(ax,0.5,0.95,iyr(isub,:),'Units','normalized','FontSize',12);
+% legend(ax,p,stas,'Location','northeast');
+% xlabel(ax,'log_{10}{Median env}');
+% ylabel(ax,'log_{10}{90th prctile}-log_{10}{10th prctile}');
+% nolabels(ax,1);
+% 
+% %bin according to median env, median + error bar
+% ax = f.ax(2);
+% hold(ax,'on');
+% ax.Box = 'on';
+% grid(ax,'on');
+% nbin = 10;
+% xcnt = zeros(nbin,nsta);
+% ycnt = zeros(nbin,nsta);
+% y1sig = zeros(nbin,nsta);
+% x = reshape(log10(envprct(:,3,:)),[],1);
+% binw = (max(x)-min(x))/nbin;
+% binEdges = min(x): binw: min(x)+nbin*binw;
+% for ii = 1: nsta
+%   [xcnt(:,ii),ycnt(:,ii),y1sig(:,ii)] = ranybinx(log10(envprct(:,3,ii)),...
+%     log10(envprct(:,2,ii))-log10(envprct(:,1,ii)),'median',[],[],binEdges);
+%   p(ii)=errorbar(ax,xcnt(:,ii),ycnt(:,ii),-y1sig(:,ii),y1sig(:,ii),'vertical',sybl(ii,:),...
+%     'markersize',5,'color','k','linewidth',0.8,'MarkerEdgeColor','none',...
+%     'MarkerFaceColor',color(ii,:),'CapSize',4);
+% end
+% xlabel(ax,'Bin center');
+% ylabel(ax,'Median of each bin');
+% nolabels(ax,1);
+% 
+% %bin according to median env, median, connect with line
+% ax = f.ax(3);
+% hold(ax,'on');
+% ax.Box = 'on';
+% grid(ax,'on');
+% for ii = 1: nsta
+%   plot(ax,xcnt(:,ii),ycnt(:,ii),'-','Color',color(ii,:),'linew',1.5);
+% end
+% xlabel(ax,'Bin center');
+% ylabel(ax,'Median of each bin');
+% 
+% for isub = 1:nrow*ncol
+%   ax = f.ax(isub);
+%   axis(ax,'equal');
+%   xlim(ax,[-2.2 -0.2]);
+%   ylim(ax,[0.4 1.2]);
+%   xticks(ax,-2.2:0.1:-0.2);
+%   yticks(ax,0.4:0.1:1.2);
+%   longticks(ax,4);
+% end
+% 
+% keyboard
+
+
+%% burst windows for stas 1/2/3
+%load the plane fit model and gradient computation between the trio stations
+savefile = 'timeoff_plfitmap_160sps.mat';
+load(strcat(rstpath, '/MAPS/',savefile));
+
+nrow = 1;
+ncol = 3;
+widin = ncol*2.2;
+htin = nrow*2.4;
+pltxran = [0.10 0.96]; pltyran = [0.15 0.96]; % optimal axis location
+pltxsep = 0.025; pltysep = 0.02;
+f = initfig(widin,htin,nrow,ncol);
+optaxpos(f,nrow,ncol,pltxran,pltyran,pltxsep,pltysep);
+
+for isub = 1:3
   ax = f.ax(isub);
   hold(ax,'on');
   ax.Box = 'on';
   grid(ax,'on');
-  
-%   %bar plot range bar
-%   for ii = 1: nsta
-%     for jj = 1: nibst
-%       if jj == 1
-%         p(ii)=plot(ax,[jj jj],[log10(envprct(jj,1,ii)) log10(envprct(jj,2,ii))],'-','Marker',sybl(ii,:),...
-%           'markersize',4,'color',color(ii,:));
-%       else
-%         plot(ax,[jj jj],[log10(envprct(jj,1,ii)) log10(envprct(jj,2,ii))],'-','Marker',sybl(ii,:),'markersize',4,...
-%           'color',color(ii,:));
-%       end
-%     end
-%   end
-  
-  %line plot
-  for ii = 1: nsta
-    p(ii)=plot(ax,log10(envprct(:,2,ii)),'o-','Color',color(ii,:),'linew',1.5,'markersize',2.5);
+  scatter(ax,lagb123(:,isub)/sps,ccb123(:,isub),10,...
+    'MarkerFaceColor','k','MarkerEdgeColor','none','MarkerFaceAlpha',.2);
+  scatter(ax,median(lagb123(:,isub)/sps),median(ccb123(:,isub)),40,'^',...
+    'MarkerFaceColor','r','MarkerEdgeColor','k');
+  ylim(ax,[0.0 0.8]);
+  yticks(ax,0:0.2:0.8);
+  xlim(ax,[-maxlag,maxlag]/sps);
+  xticks(ax,-maxlag/sps: 1: maxlag/sps);
+  if isub ==1
+    text(ax,0.98,0.95,sprintf('%s-%s',strtrim(stas(1,:)),strtrim(stas(2,:))),'Units',...
+      'normalized','HorizontalAlignment','right');
+%     text(ax,0.02,0.13,strcat("$\partial\Delta{t}_{12} / \partial x'=$",...
+%       sprintf(' %.3f',doffdprojloc(isub,1))),'FontSize',9,...
+%       'unit','normalized','interpreter','latex','HorizontalAlignment','left');
+%     text(ax,0.02,0.05,strcat("$\partial\Delta{t}_{12} / \partial y'=$",...
+%       sprintf(' %.3f',doffdprojloc(isub,2))),'FontSize',9,...
+%       'unit','normalized','interpreter','latex','HorizontalAlignment','left');
+  elseif isub ==2
+    text(ax,0.98,0.95,sprintf('%s-%s',strtrim(stas(1,:)),strtrim(stas(3,:))),'Units',...
+      'normalized','HorizontalAlignment','right');
+%     text(ax,0.02,0.13,strcat("$\partial\Delta{t}_{13} / \partial x'=$",...
+%       sprintf(' %.3f',doffdprojloc(isub,1))),'FontSize',9,...
+%       'unit','normalized','interpreter','latex','HorizontalAlignment','left');
+%     text(ax,0.02,0.05,strcat("$\partial\Delta{t}_{13} / \partial y'=$",...
+%       sprintf(' %.3f',doffdprojloc(isub,2))),'FontSize',9,...
+%       'unit','normalized','interpreter','latex','HorizontalAlignment','left');
+  else
+    text(ax,0.98,0.95,sprintf('%s-%s',strtrim(stas(2,:)),strtrim(stas(3,:))),'Units',...
+      'normalized','HorizontalAlignment','right');
+%     text(ax,0.02,0.13,strcat("$\partial\Delta{t}_{23} / \partial x'=$",...
+%       sprintf(' %.3f',doffdprojloc(isub,1))),'FontSize',9,...
+%       'unit','normalized','interpreter','latex','HorizontalAlignment','left');
+%     text(ax,0.02,0.05,strcat("$\partial\Delta{t}_{23} / \partial y'=$",...
+%       sprintf(' %.3f',doffdprojloc(isub,2))),'FontSize',9,...
+%       'unit','normalized','interpreter','latex','HorizontalAlignment','left');
   end
-  for ii = 1: nsta
-    plot(ax,log10(envprct(:,1,ii)),':','Color',color(ii,:),'linew',1);   
+%   text(ax,0.98,0.05,sprintf('%.2f, %.2f',median(lagb123(:,isub)/sps),median(ccb123(:,isub))),...
+%     'Units','normalized','HorizontalAlignment','right','FontSize',8);
+  if isub~=1
+    nolabels(ax,2);
   end
-
-  xlim(ax,[itime(isub,1) itime(isub,2)]);
-%   ylim(ax,[0 0.8]);
-  ylim(ax,[-2.5 0]);
-  text(ax,0.5,0.95,iyr(isub,:),'Units','normalized','FontSize',12);
-  if isub == 1
-    legend(ax,p,stas,'Location','northwest');
+  if isub==1
+    xlabel(ax,'Time lag to reach max CC (s)');
+    ylabel(ax,'Max CC');
   end
-  if isub == nrow
-    xlabel(ax,'Burst #');
-    ylabel(ax,'log_10{10--90 prctile of env}');
-  end
+  longticks(ax,1.5);
 end
+% supertit(f.ax(1:ncol),'cc of sig env; extended bursts; among trio stas');
+fname = strcat('sigenvcctrio.pdf');
+print(f.fig,'-dpdf',...
+  strcat('/home/data2/chaosong/CurrentResearch/Song_Rubin_2024/figures/',fname));
 
-%% envelope (amplitude) range VS. med env.
-widin = 9;
-htin = 9;
-nrow = 3;
-ncol = 1;
-pltxran = [0.08 0.96]; pltyran = [0.08 0.96]; % optimal axis location
-pltxsep = 0.03; pltysep = 0.04;
-f = initfig(widin,htin,nrow,ncol);
-optaxpos(f,nrow,ncol,pltxran,pltyran,pltxsep,pltysep);
-color = jet(nsta);
-sybl = ['o';'^';'v';'s';'d';'p';'h'];
+% keyboard
 
-%just scatter plot, env median vs 90-10 percentile
-ax = f.ax(1);
-hold(ax,'on');
-ax.Box = 'on';
-grid(ax,'on');
-for ii = 1: nsta
-  p(ii)=scatter(ax,log10(envprct(:,3,ii)),log10(envprct(:,2,ii))-log10(envprct(:,1,ii)),20,...
-    color(ii,:),sybl(ii,:),'filled');
-end
-%   text(ax,0.5,0.95,iyr(isub,:),'Units','normalized','FontSize',12);
-legend(ax,p,stas,'Location','northeast');
-xlabel(ax,'log_{10}{Median env}');
-ylabel(ax,'log_{10}{90th prctile}-log_{10}{10th prctile}');
-nolabels(ax,1);
 
-%bin according to median env, median + error bar
-ax = f.ax(2);
-hold(ax,'on');
-ax.Box = 'on';
-grid(ax,'on');
-nbin = 10;
-xcnt = zeros(nbin,nsta);
-ycnt = zeros(nbin,nsta);
-y1sig = zeros(nbin,nsta);
-x = reshape(log10(envprct(:,3,:)),[],1);
-binw = (max(x)-min(x))/nbin;
-binEdges = min(x): binw: min(x)+nbin*binw;
-for ii = 1: nsta
-  [xcnt(:,ii),ycnt(:,ii),y1sig(:,ii)] = ranybinx(log10(envprct(:,3,ii)),...
-    log10(envprct(:,2,ii))-log10(envprct(:,1,ii)),'median',[],[],binEdges);
-  p(ii)=errorbar(ax,xcnt(:,ii),ycnt(:,ii),-y1sig(:,ii),y1sig(:,ii),'vertical',sybl(ii,:),...
-    'markersize',5,'color','k','linewidth',0.8,'MarkerEdgeColor','none',...
-    'MarkerFaceColor',color(ii,:),'CapSize',4);
-end
-xlabel(ax,'Bin center');
-ylabel(ax,'Median of each bin');
-nolabels(ax,1);
-
-%bin according to median env, median, connect with line
-ax = f.ax(3);
-hold(ax,'on');
-ax.Box = 'on';
-grid(ax,'on');
-for ii = 1: nsta
-  plot(ax,xcnt(:,ii),ycnt(:,ii),'-','Color',color(ii,:),'linew',1.5);
-end
-xlabel(ax,'Bin center');
-ylabel(ax,'Median of each bin');
-
-for isub = 1:nrow*ncol
-  ax = f.ax(isub);
-  axis(ax,'equal');
-  xlim(ax,[-2.2 -0.2]);
-  ylim(ax,[0.4 1.2]);
-  xticks(ax,-2.2:0.1:-0.2);
-  yticks(ax,0.4:0.1:1.2);
-  longticks(ax,4);
-end
-
-keyboard
 %% burst windows for stas 4/5/6/7 vs. 1/2/3
+%%%if off14 = a*x+b*y+c, then d(off14)/dx = a, d(off14)/dy = b, where x and y
+%%%are map locations in N and E in km. If you instead want to know the gradient
+%%%along a custom coordinate frame x' and y' where x' is rotated from x by
+%%%theta, so [x; y] = [cos(theta) -sin(theta); sin(theta) cos(theta)]* [x'; y'].
+%%%Then, the new gradient is d(off14)/dx' = a*cos(theta)+b*sin(theta);
+%%%d(off14)/dy' = b*cos(theta)-a*sin(theta);
+%load the plane fit model and gradient computation between the trio stations
+savefile = 'timeoff_plfitmap_4thsta_160sps.mat';
+load(strcat(rstpath, '/MAPS/',savefile));
+modparammap = [modparammap(4,:); modparammap(1:3,:)];  %the station order is a bit different 
+doff14dloc = [doff14dloc(4,:); doff14dloc(1:3,:)];  %the station order is a bit different  
+doff14dprojloc = [doff14dprojloc(4,:); doff14dprojloc(1:3,:)];  %the station order is a bit different  
+
 %%%scatter of lag and CC 
-widin = 12;
-htin = 9;
 nrow = 3;
 ncol = nsta-3;
+widin = ncol*2.1;
+htin = nrow*2.1;
 pltxran = [0.06 0.96]; pltyran = [0.06 0.96]; % optimal axis location
-pltxsep = 0.03; pltysep = 0.03;
+pltxsep = 0.02; pltysep = 0.02;
 f = initfig(widin,htin,nrow,ncol);
 optaxpos(f,nrow,ncol,pltxran,pltyran,pltxsep,pltysep);
 
 for ii = 1:nrow
   for jj = 1:ncol
     isub = (ii-1)*ncol+jj;
-    ax = f.ax(isub);
-    hold(ax,'on');
-    ax.Box = 'on';
-    grid(ax,'on');
-    scatter(ax,lagbij(ii,:,jj)/sps,ccbij(ii,:,jj),16,...
-    'MarkerFaceColor','k','MarkerEdgeColor','none','MarkerFaceAlpha',.15);
+    ax = f.ax(isub); hold(ax,'on'); ax.Box = 'on'; grid(ax,'on');
+    scatter(ax,lagbij(ii,:,jj)/sps,ccbij(ii,:,jj),10,...
+      'MarkerFaceColor','k','MarkerEdgeColor','none','MarkerFaceAlpha',.2);
+    scatter(ax,median(lagbij(ii,:,jj)/sps),median(ccbij(ii,:,jj)),40,'^',...
+      'MarkerFaceColor','r','MarkerEdgeColor','k');
     ylim(ax,[0.0 0.7]);
+    yticks(ax,0:0.1:0.7);
     xlim(ax,[-maxlag,maxlag]/sps);
-    text(ax,0.02,0.05,sprintf('%s-%s',strtrim(stas(jj+3,:)),strtrim(stas(ii,:))),'Units',...
-      'normalized');
-    text(ax,0.98,0.05,sprintf('%.2f, %.2f',median(lagbij(ii,:,jj)/sps),median(ccbij(ii,:,jj))),...
-      'Units','normalized','HorizontalAlignment','right');
+    xticks(ax,-maxlag/sps: 1: maxlag/sps);
+    text(ax,0.98,0.95,sprintf('%s-%s',strtrim(stas(ii,:)),strtrim(stas(jj+3,:))),'Units',...
+      'normalized','HorizontalAlignment','right');
+%     text(ax,0.98,0.05,sprintf('%.2f, %.2f',median(lagbij(ii,:,jj)/sps),median(ccbij(ii,:,jj))),...
+%       'Units','normalized','HorizontalAlignment','right','FontSize',8);
+%     text(ax,0.02,0.2,'$\frac{\partial\Delta{t}_{14}}{\partial x}=0.02$','FontSize',11,...
+%       'unit','normalized','interpreter','latex','HorizontalAlignment','left');
+%     if ii == 1  
+%       text(ax,0.02,0.29,strcat('$\partial\Delta{t}_{14} / \partial x=$',...
+%         sprintf(' %.3f',doff14dloc(jj,1))),'FontSize',9,...
+%         'unit','normalized','interpreter','latex','HorizontalAlignment','left');
+%       text(ax,0.02,0.21,strcat('$\partial\Delta{t}_{14} / \partial y=$',...
+%         sprintf(' %.3f',doff14dloc(jj,2))),'FontSize',9,...
+%         'unit','normalized','interpreter','latex','HorizontalAlignment','left');
+%       text(ax,0.02,0.14,strcat("$\partial\Delta{t}_{14} / \partial x'=$",...
+%         sprintf(' %.3f',doff14dprojloc(jj,1))),'FontSize',10,...
+%         'unit','normalized','interpreter','latex','HorizontalAlignment','left');
+%       text(ax,0.02,0.05,strcat("$\partial\Delta{t}_{14} / \partial y'=$",...
+%         sprintf(' %.3f',doff14dprojloc(jj,2))),'FontSize',10,...
+%         'unit','normalized','interpreter','latex','HorizontalAlignment','left');
+%     elseif ii == 2  
+%       text(ax,0.02,0.14,strcat("$\partial\Delta{t}_{24} / \partial x'=$",...
+%         sprintf(' %.3f',doff14dprojloc(jj,1)-doffdprojloc(ii-1,1))),'FontSize',10,...
+%         'unit','normalized','interpreter','latex','HorizontalAlignment','left');
+%       text(ax,0.02,0.05,strcat("$\partial\Delta{t}_{24} / \partial y'=$",...
+%         sprintf(' %.3f',doff14dprojloc(jj,2)-doffdprojloc(ii-1,2))),'FontSize',10,...
+%         'unit','normalized','interpreter','latex','HorizontalAlignment','left');
+%     elseif ii == 3  
+%       text(ax,0.02,0.14,strcat("$\partial\Delta{t}_{34} / \partial x'=$",...
+%         sprintf(' %.3f',doff14dprojloc(jj,1)-doffdprojloc(ii-1,1))),'FontSize',10,...
+%         'unit','normalized','interpreter','latex','HorizontalAlignment','left');
+%       text(ax,0.02,0.05,strcat("$\partial\Delta{t}_{34} / \partial y'=$",...
+%         sprintf(' %.3f',doff14dprojloc(jj,2)-doffdprojloc(ii-1,2))),'FontSize',10,...
+%         'unit','normalized','interpreter','latex','HorizontalAlignment','left');
+%     end
+
     if jj ~= 1
       nolabels(ax,2);
     end
@@ -580,13 +962,24 @@ for ii = 1:nrow
       nolabels(ax,1);
     end
     if ii == nrow && jj==1
-      xlabel(ax,'Lag (s) of max CC');
+      xlabel(ax,'Time lag to reach max CC (s)');
       ylabel(ax,'Max CC');
     end
-    longticks(ax,2);
+    longticks(ax,1.5);
   end
 end
-supertit(f.ax(1:ncol),'cc of sig env; extended bursts; 4th stas vs. trio stas');
+% supertit(f.ax(1:ncol),'cc of sig env; extended bursts; 4th stas vs. trio stas');
+fname = strcat('sigenvcc4thvstrio.pdf');
+print(f.fig,'-dpdf',...
+  strcat('/home/data2/chaosong/CurrentResearch/Song_Rubin_2024/figures/',fname));
+
+%%
+for i = 1: nsta-3
+  for j = 1:2
+    gradratx(i,j) = doff14dprojloc(i,1)/doffdprojloc(j,1);
+    gradraty(i,j) = doff14dprojloc(i,2)/doffdprojloc(j,2);
+  end
+end
 
 
 %% burst windows for stas 4/5/6/7 
@@ -632,50 +1025,7 @@ end
 supertit(f.ax(1:ncol),'cc of sig env; extended bursts; among 4th stas');
 
 
-%% burst windows for stas 1/2/3
-widin = 9;
-htin = 3.5;
-nrow = 1;
-ncol = 3;
-pltxran = [0.08 0.96]; pltyran = [0.12 0.94]; % optimal axis location
-pltxsep = 0.03; pltysep = 0.03;
-f = initfig(widin,htin,nrow,ncol);
-optaxpos(f,nrow,ncol,pltxran,pltyran,pltxsep,pltysep);
 
-for isub = 1:3
-  ax = f.ax(isub);
-  hold(ax,'on');
-  ax.Box = 'on';
-  grid(ax,'on');
-  scatter(ax,lagb123(:,isub)/sps,ccb123(:,isub),16,...
-    'MarkerFaceColor','k','MarkerEdgeColor','none','MarkerFaceAlpha',.15);
-  ylim(ax,[0.0 0.8]);
-  xlim(ax,[-maxlag,maxlag]/sps);
-  if isub ==1
-    text(ax,0.02,0.05,sprintf('%s-%s',strtrim(stas(1,:)),strtrim(stas(2,:))),'Units',...
-      'normalized');
-  elseif isub ==2
-    text(ax,0.02,0.05,sprintf('%s-%s',strtrim(stas(1,:)),strtrim(stas(3,:))),'Units',...
-      'normalized');
-  else
-    text(ax,0.02,0.05,sprintf('%s-%s',strtrim(stas(2,:)),strtrim(stas(3,:))),'Units',...
-      'normalized');
-  end
-  text(ax,0.98,0.05,sprintf('%.2f, %.2f',median(lagb123(:,isub)/sps),median(ccb123(:,isub))),...
-    'Units','normalized','HorizontalAlignment','right');
-  if isub~=1
-    nolabels(ax,2);
-  end
-
-  if isub==1
-    xlabel(ax,'Lag (s) of max CC');
-    ylabel(ax,'Max CC');
-  end
-  longticks(ax,2);
-end
-supertit(f.ax(1:ncol),'cc of sig env; extended bursts; among trio stas');
-
-% keyboard
 
 % %% burst windows for stas 4/5/6/7 vs. 1/2/3, minus reference
 % widin = 12;

@@ -1,6 +1,6 @@
 function color = colormatch(vect,cran,cmap,nbin)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% color = colormatch(vect,cmap,ncolor)
+% color = colormatch(vect,cran,cmap,nbin)
 %
 % In codes like 'scatter', you can easily use a data vector as the colorcoding
 % by project the data point to the correct bin of the colormap. Here we want

@@ -49,8 +49,9 @@ planefit = load(strcat(rstpath, '/MAPS/',modname));
 rmse = planefit.gof{4}.rmse;
 offmax = round(2.0*rmse);
 
+%% load synthetic seismograms
 %flag to decide which type of synthetics to use
-singleflag = 0;
+singleflag = 0; 
 tdura = 0.25;
 if ~singleflag  %%%synthetics from different region sizes and saturation levels 
   if tdura == 0.25
@@ -80,16 +81,17 @@ else  %%%synthetics from different noise and saturation levels, sources at a sin
   nround = ntrial;
 end
 
-%%%load data
-savefile = 'deconv_stats4th_allbstsig.mat';
+%% load data
+% savefile = 'deconv_stats4th_allbstsig.mat';
+savefile = 'deconv_stats4th_no23_allbstsig.mat';
 load(strcat(rstpath, '/MAPS/',savefile));
-savefile = 'deconv_stats4th_allbstnoi.mat';
+% savefile = 'deconv_stats4th_allbstnoi.mat';
+savefile = 'deconv_stats4th_no23_allbstnoi.mat';
 load(strcat(rstpath, '/MAPS/',savefile));
 nbst = size(trange,1);
 sps = 160;
 
 
-%%
 %%%param for secondary sources removed
 ttstr2 = '2ndary removed';
 fnsuffix = [];

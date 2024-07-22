@@ -158,11 +158,13 @@ tranmigrubin = [
            2005255 9.57 10.11; %6g, <->#174-175, <->#103
            2005255 16.12 16.55; %fig 4 and 6h, <->#181, <->#109
            ];
-                      
+
+%%%corresponding indices in 'tranmig' of migrations in Rubin et al. 2013 
 indplt = [3; 12; 15; 23; 24; 27; 37; 57; 58; 69; 70; 71; 72; 73; 74;
           92; 93; 94; 95; 98; 100; 103; 109];
-           
-xran = [-7 3];
+
+%range as 4-s tremor density
+xran = [-6 4];
 yran = [-4 4];
 
 angle = 0:5:355;
@@ -175,15 +177,17 @@ angslopehf = zeros(size(indplt,1),1);
 % create fit object with free constraints
 fttpfree = fittype( @(a,b,x) a*x+b);
 
-x0 = 0.2;
+%the cut-out boundary of 4-s detections
+cutout = 'ellipse';
+x0 = 0.2; 
 y0 = 0.2;
 semia = 1.75;
-semib = 1.0;
+semib = 1.25;
 angrot = 45;
-[xell, yell] = ellipse_chao(x0,y0,semia,semib,0.01,angrot,[x0,y0]);
+[xcut, ycut] = ellipse_chao(x0,y0,semia,semib,0.01,angrot,[x0,y0]);
         
 % for i = 1: size(trange,1)
-for i = 1: size(indplt,1)
+for i = 23: size(indplt,1)
     %     i=46;
   % disp(trange(i,:));
   disp(tranmig(indplt(i)));
@@ -227,7 +231,176 @@ for i = 1: size(indplt,1)
   end
   angslopehf(i) = angle(ind6(1));
                     
-                    
+  
+  %% LFE-style plot
+  widin = 8.3;  % maximum width allowed is 8.5 inches
+  htin = 4;   % maximum height allowed is 11 inches
+  nrow = 1;
+  ncol = 2;
+  f1 = initfig(widin,htin,nrow,ncol); %initialize fig
+
+  % subplot 1 of figure i
+  ax=f1.ax(1); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
+  hold(ax,'on');
+  plot(ax,[-100 100],[0 0],'k--');
+  plot(ax,[0 0],[-100 100],'k--');
+  plot(ax,xcut,ycut,'k-','linew',1.5);
+  ax.FontSize = 9;
+  mighf = sortrows(mighf,-seccol);
+  scatter(ax,mighf(:,1),mighf(:,2), 20, mighf(:,seccol)/3600, 'filled','o');  %, 'MarkerEdgeColor', 'w')
+  % colormap(ax,'jet');
+  colormap(ax,'viridis');
+  c=colorbar(ax,'SouthOutside');
+  pos = ax.Position;
+  c.Position = [pos(1), pos(2)-0.018, pos(3), 0.02];
+  %     c.TickLabels=[];
+  juldate = num2str(tranmig(indplt(i),1));
+  yr = str2double(juldate(1:4));
+  date = str2double(juldate(5:end));
+  a = jul2dat(yr,date);
+  mo = a(1);
+  if mo == 9
+    mo = {' Sep. '};
+  elseif mo == 7
+    mo = {' Jul. '};
+  else
+    mo = {' Mar. '};
+  end
+  day = num2str(a(2));
+  yr = num2str(a(3));
+  c.Label.String = strcat({'Time (hr) on '}, day, mo, yr);
+  %     c.Label.String = strcat(num2str(trange(i,1)),' of HF',' (hr)');
+  c.Label.FontSize = 11;
+  caxis(ax,[tranmig(indplt(i),2)/3600 tranmig(indplt(i),3)/3600])
+  % text(f.ax(1),0.85,0.1,'HF','FontSize',12,'unit','normalized');
+%   text(ax,0.04,0.93,'a','FontSize',11,'unit','normalized','EdgeColor','k','Margin',2);
+  text(ax,0.04,0.1,'PGC','FontSize',11,'unit','normalized','EdgeColor','k','Margin',2);
+  axis(ax, 'equal');
+  ax.GridLineStyle = '--';
+  ax.XAxisLocation = 'top';
+  medxhf = median(mighf(:,1));
+  medyhf = median(mighf(:,2));
+  [rotx, roty] = complex_rot(0,1,-angrmsehf(i));
+  xvect = [medxhf-rotx medxhf+rotx];
+  yvect = [medyhf-roty medyhf+roty];
+  drawArrow(ax,xvect,yvect,xran,yran,'linewidth',1.5);
+  [rotx, roty] = complex_rot(0,1,-angslopehf(i));
+  xvect = [medxhf-rotx medxhf+rotx];
+  yvect = [medyhf-roty medyhf+roty];
+  drawArrow(ax,xvect,yvect,xran,yran,'linewidth',1.5,'linestyle','--','color',[0.4 0.4 0.4]);
+  xticks(ax,xran(1):1:xran(2));
+  yticks(ax,yran(1):1:yran(2));
+  xlabel(ax,'E (km)','fontsize',11);
+  ylabel(ax,'N (km)','fontsize',11);
+  axis(ax,[xran yran]);
+  % text(f.ax(1),0.5,0.1,num2str(i),'FontSize',12,'unit','normalized');
+  text(ax,0.84,0.95,strcat(num2str(size(mighf,1)),{' detections'}),'FontSize',8,...
+    'unit','normalized','horizontalalignment','center');
+  text(ax,0.84,0.90,strcat({'in '},num2str(tranmig(indplt(i),3)-tranmig(indplt(i),2)),{' s'}),'FontSize',8,...
+    'unit','normalized','horizontalalignment','center');
+  rate = sprintf('%.3f',size(mighf,1)/(tranmig(indplt(i),3)-tranmig(indplt(i),2)));
+  text(ax,0.84,0.85,strcat({'rate: '},rate),'FontSize',8,...
+    'unit','normalized','horizontalalignment','center');
+  text(ax,0.84,0.78,strcat(num2str(angrmsehf(i)),{'{\circ}'}),'FontSize',10,...
+    'unit','normalized','horizontalalignment','center');
+  hold(ax,'off');
+  
+  % subplot 2 of figure i
+  ax=f1.ax(2); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
+  %%% Actually used is the pre-determined best prop direc to do the fitting
+  mighfdum = mighf;
+  for j = 1: size(mighf,1)
+    x0 = mighfdum(j,1);
+    y0 = mighfdum(j,2);
+    [newx,newy] = coordinate_rot(x0,y0,-(angrmsehf(i)-90),[0 0]);
+    mighfdum(j,1) = newx;
+    mighfdum(j,2) = newy;
+  end
+  ax.FontSize = 9;
+  scatter(ax,mighfdum(:,seccol)/3600,mighfdum(:,1),20,[0.6 0.6 0.6],'filled','o',...
+    'MarkerEdgeColor','k');
+  colormap(ax,'viridis');
+  c=colorbar(ax,'SouthOutside');
+  pos = ax.Position;
+  c.Position = [pos(1), pos(2)-0.018, pos(3), 0.02];
+  caxis(ax,[0 250]);
+  % create fit object  
+  [fitobjhfprop,gofhfprop,outphfprop] = fit(mighfdum(:,seccol)/3600, mighfdum(:,1),fttpfree,'Robust',...
+    'Bisquare','StartPoint',[1 1]);
+  % output fit parameters
+  coefprop = coeffvalues(fitobjhfprop);
+  slopeprophf(i) = coefprop(1);
+  intcptprophf(i) = coefprop(2);
+  fitprophf = feval(fitobjhfprop,mighfdum(:,seccol)/3600);
+  plot(ax,mighfdum(:,seccol)/3600,fitprophf,'-','linewidth',2,'color',[0.6 0.6 0.6]);
+  
+  ax.GridLineStyle = '--';
+  xran1 = [tranmig(indplt(i),2)/3600 tranmig(indplt(i),3)/3600];
+  %     yran1 = [round(min([mighfdum(:,1);miglfdum(:,1)]))-1 ...
+  %              round(max([mighfdum(:,1);miglfdum(:,1)]))+1];
+  aa = round(prctile(mighfdum(:,1), 98));
+  bb = round(prctile(mighfdum(:,1), 2));
+  aap = aa + ceil((aa-bb)/6);
+  bbp = bb - ceil((aa-bb)/3);
+  yran1 = [bbp aap];
+  xlim(ax,xran1);
+  % ylim(ax,yran1);
+  ylim(ax,[-5 2]);
+%   text(ax,0.04,0.91,'c','FontSize',11,'unit','normalized','EdgeColor','k','Margin',2);
+  xlabel(ax,'Time (hr)','fontsize',11);
+  ylabel(ax,'Dist. along prop. (km)','fontsize',11);
+  
+  % compute the HF weights in robust linear regression, see NOTES above
+  rhf = outphfprop.residuals;   % usual residuals
+  x = [mighfdum(:,seccol)/3600];
+  hatmat = x*inv(x'*x)*x';
+  h = zeros(size(hatmat,1),1);    % leverage of least square
+  for jj = 1 : size(hatmat,1)
+    h(jj) = hatmat(jj,jj);
+  end
+  radj = rhf./sqrt(1-h);      % adjusted residuals
+  K = 4.685;
+  s = mad(rhf,1)/0.6745;
+  u = radj/(K*s);
+  wthf = zeros(length(u),1);    % rubust weight of next iteration
+  for jj = 1 : length(u)
+    if abs(u(jj)) < 1
+      wthf(jj) = (1-(u(jj))^2)^2;
+    else
+      wthf(jj) = 0;
+    end
+  end
+  
+  % get the standard error of the estimated parameters, may indicate the compare the quality
+  % of fitting cross different RTMs, NOTE that rmse, mse are definitely not a good measure
+  % the obtained CI is comfirmed to be correct by comparing it with the 'fitobjhfprop'
+  slopesehf = gofhfprop.rmse./sqrt(sum((x-mean(x)).^2));
+  est = slopeprophf(i);
+  slopeprophfCI(i,:) = confidence_interval_general(est,slopesehf,length(x)-2,95);
+  interceptsehf = slopesehf.*sqrt(sum(x.^2)./length(x));
+  est = intcptprophf(i);
+  intcptprophfCI(i,:) = confidence_interval_general(est,interceptsehf,length(x)-2,95);
+  sehf(i, :) = [gofhfprop.rmse slopesehf interceptsehf];
+  
+  x = mighfdum(:,seccol)/3600;
+  y = mighfdum(:,1);
+  x_bar = wt_mean(x,wthf);
+  y_bar = wt_mean(y,wthf);
+  x_var = sum(wthf.*(x-x_bar).^2) / sum(wthf);
+  y_var = sum(wthf.*(y-y_bar).^2) / sum(wthf);
+  xy_cov = sum(wthf.*(x-x_bar).*(y-y_bar)) / sum(wthf);
+  pearwthf(i) = xy_cov / sqrt(x_var*y_var);
+  
+  text(ax,0.45,0.2,sprintf('Slope: %.1f km/h',slopeprophf(i)),'FontSize',8,...
+    'unit','normalized','horizontalalignment','left');
+  text(ax,0.97,0.2,sprintf('SE: %.2f',slopesehf),'FontSize',8,...
+    'unit','normalized','horizontalalignment','right');
+  text(ax,0.45,0.13,sprintf('Pearson: %.3f',pearwthf(i)),'FontSize',8,...
+    'unit','normalized','horizontalalignment','left');
+  hold(ax,'off');
+
+  keyboard
+  
   %%% define and position the figure frame and axes of each plot
   widin = 8;  % maximum width allowed is 8.5 inches
   htin = 9;   % maximum height allowed is 11 inches

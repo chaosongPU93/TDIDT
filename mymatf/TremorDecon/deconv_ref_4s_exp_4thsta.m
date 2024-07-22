@@ -30,8 +30,8 @@ clear
 clc
 close all
 
-set(0,'DefaultFigureVisible','on');
-% set(0,'DefaultFigureVisible','off');   % switch to show the plots or not
+% set(0,'DefaultFigureVisible','on');
+set(0,'DefaultFigureVisible','off');   % switch to show the plots or not
 
 [scrsz, resol] = pixelperinch(1);
 
@@ -46,7 +46,8 @@ rstpath = strcat(datapath, '/PGCtrio');
 cutout = 'ellipse';
 ttol = 35;
 ntol = 3;
-trange = load(strcat(rstpath, '/MAPS/tdec.bstran',num2str(ttol),'s.pgc002.',cutout(1:4)));
+trange = load(strcat(rstpath, '/MAPS/tdec.bstran',num2str(ttol),'s.',...
+  num2str(ntol),'.pgc002.',cutout(1:4)));
 % trange = trange(1:end-1,:);
 tlen = trange(:,3)-trange(:,2);
 tlensum = sum(tlen);
@@ -119,38 +120,59 @@ sps = 160;
 
 %% call function 'deconv_ref_4s_exp_rand_fn', all bursts, DATA VS NOISE
 %%%Flag to indicate if it is necessary to recalculate everything
-flagrecalc = 0;
-% flagrecalc = 1;
+% flagrecalc = 0;
+flagrecalc = 1;
 
 if flagrecalc
   normflag = 0; %do not normalize the templates
-  pltflag = 0;  %do not create summary plots for each choice of inputs
-  % rccmwsec = 0.25; %use 0.5s or 0.25s 
+  pltflag = 0;  %do not create summary plots for each burst
+%   rccmwsec = 0.25; %use 0.5s or 0.25s 
   rccmwsec = 0.5; %use 0.5s or 0.25s
   
   %%all bursts using real data
   noiseflag = 0;
   allbstsig = deconv_ref_4s_exp_4thsta_fn(1:size(trange,1),normflag,noiseflag,pltflag,rccmwsec); %
-  savefile = 'deconv_stats4th_allbstsig.mat';
+  % savefile = 'deconv_stats4th_allbstsig.mat';
+  savefile = 'deconv_stats4th_no23_allbstsig.mat';
+%   savefile = 'deconv_stats4th_no23_allbstsig0.25s.mat';
   save(strcat(rstpath, '/MAPS/',savefile), 'allbstsig');
-  
+
   %%%all bursts using synthetic noise
   noiseflag = 1;
   allbstnoi = deconv_ref_4s_exp_4thsta_fn(1:size(trange,1),normflag,noiseflag,pltflag,rccmwsec);  %
-  savefile = 'deconv_stats4th_allbstnoi.mat';
+  % savefile = 'deconv_stats4th_allbstnoi.mat';
+  savefile = 'deconv_stats4th_no23_allbstnoi.mat';
+%   savefile = 'deconv_stats4th_no23_allbstnoi0.25s.mat';
   save(strcat(rstpath, '/MAPS/',savefile), 'allbstnoi');
+  
 else
-  savefile = 'deconv_stats4th_allbstsig.mat';
+%   savefile = 'deconv_stats4th_allbstsig.mat';
+  savefile = 'deconv_stats4th_no23_allbstsig.mat';
   load(strcat(rstpath, '/MAPS/',savefile));
-  savefile = 'deconv_stats4th_allbstnoi.mat';
+%   savefile = 'deconv_stats4th_allbstnoi.mat';
+  savefile = 'deconv_stats4th_no23_allbstnoi.mat';
   load(strcat(rstpath, '/MAPS/',savefile));
 end
 
-% keyboard
+keyboard
 
 % bstsig = allbstsig;
 % bstnoi = allbstnoi;
 
+% %%
+% idxbst = 1:size(trange,1);
+% for iii = 1: length(idxbst)  
+%   f1name{idxbst(iii),1} = sprintf('shortwinmapprojboth_bst%s.pdf',...
+%     num2zeropadstr(idxbst(iii), 3));
+% end
+% for i = 1:size(f1name,1)
+%   fname{i} = fullfile(rstpath, '/FIGS/',f1name{i});
+% end
+% 
+% status = system('rm -f /home/data2/chaosong/matlab/allan/data-no-resp/PGCtrio/FIGS/shortwinmapprojboth.pdf');
+% append_pdfs('/home/data2/chaosong/matlab/allan/data-no-resp/PGCtrio/FIGS/shortwinmapprojboth.pdf',fname{:});
+% status = system('rm -f /home/data2/chaosong/matlab/allan/data-no-resp/PGCtrio/FIGS/shortwinmapprojboth_bst*.pdf');
+        
 %% call function 'deconv_ref_4s_exp_rand_fn', all bursts, DATA VS NOISE, use 0.25-s win for RCC
 %%%Flag to indicate if it is necessary to recalculate everything
 % flagrecalc = 0;

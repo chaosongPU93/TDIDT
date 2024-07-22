@@ -32,7 +32,7 @@ set(0,'DefaultFigureVisible','on');
 [scrsz, res] = pixelperinch(1);
 
 %% generate a grid of offsets around fam 002, then transform the offset grid to relative locations
-sps = 100;
+sps = 160;
 offmax = round(4*sps/40); % make it compatible to different sps
 %grid of time offsets
 i = 1;
@@ -44,17 +44,18 @@ for off12 = -offmax: 1: offmax
 end
 
 %transform to locations
-[evtloc, indinput] = off2space002(offset,sps,'directhypo',0); 
+ftrans = 'interpchao';
+[evtloc, indinput] = off2space002(offset,sps,ftrans,0); 
 nevt = size(evtloc,1);
 
 %% compute the travel time difference using Taup at all stations
 stas=['PGC  '
       'SSIB '
       'SILB '
+      'KLNB '
       'LZB  '
       'TWKB '
       'MGCB '
-      'KLNB '
       ];
 nsta = size(stas,1);
 
@@ -93,7 +94,7 @@ for i = 1: nevt
   end
 end
           
-dtts_taup = tts-tts(:,1);  % differential traveltime realative to main sta PGC, in sec
+dtts_taup = tts(:,1)-tts;  % differential traveltime realative to main sta PGC, in sec
 dttsspl_taup = dtts_taup*sps; % differential traveltime in samples from taup
 
 %%
@@ -106,13 +107,14 @@ POLSTA=['SSIB '           % polaris station names
     'TWKB '];
 
 %%%We need the 4th col of the rot params, for the traveltime difference at stations from the lfe fam
-datapath = strcat(getenv('ALLAN'),'/data-no-resp');
-if sps==40 || sps==80
-  CATA = 'fixed';
-elseif sps == 100
-  CATA = 'new';
-end
-[PERMROTS, POLROTS] = GetRotsCommon('PGC','002',CATA,datapath,0,0);
+workpath = getenv('ALLAN');
+datapath = strcat(workpath,'/data-no-resp');
+CATA = 'new';
+FLAG = 'PGC'; % detector
+fam = '002';   % family number
+sft2=0;     % centroid shift of station 2
+sft3=0;     % centroid shift of station 3
+[PERMROTS, POLROTS] = GetRotsCommon(FLAG,fam,CATA,datapath,sft2,sft3);
 if ~isequal(CATA, 'fixed')
   reftime = PERMROTS(1,4);     % reftime is the reference time at the 1st station,depends on the choice of 1st station
   PERMROTS(:,4) = PERMROTS(:,4)-reftime;    % to make sure that 1st station is 0
@@ -137,7 +139,7 @@ for i = 1: nsta
 end
 
 % differential traveltime in samples from hypoinverse
-dttsspl_hypo = [constpgc(2)-offset(:,1) constpgc(3)-offset(:,2)];  % similar to hypoinverse input
+dttsspl_hypo = [offset(:,1)-constpgc(2) offset(:,2)-constpgc(3)];  % similar to hypoinverse input
 dtts_hypo = dttsspl_hypo/sps;   % differential traveltime in sec
 
 %% plot the difference of prediction on differential traveltime between Hypoinverse and Taup
@@ -208,30 +210,32 @@ end
 figure
 for i = 1:3
   subplot(2,2,i)
-  scatter(offset(:,1),offset(:,2),50,offpred1(:,i),'filled');
-  oldc = colormap('kelicol');
-  newc = flipud(oldc);
-  colormap(newc);
+  scatter(offset(:,1)/sps,offset(:,2)/sps,50,offpred1(:,i)/sps,'filled');
+%   oldc = colormap('kelicol');
+%   newc = flipud(oldc);
+%   colormap(newc);
+  colormap('bluewhitered');
   c=colorbar;
-  title(sprintf('Offset in samples PGC-%s at %d Hz', stas(i,:),sps));
+  title(sprintf('Offset (s) PGC-%s', stas(i,:)));
 end          
-xlabel(sprintf('Offset in samples PGC-SSIB at %d Hz',sps));
-ylabel(sprintf('Offset in samples PGC-SILB at %d Hz',sps));
+xlabel(sprintf('Offset (s) PGC-SSIB'));
+ylabel(sprintf('Offset (s) PGC-SILB'));
           
 figure
 for i = 4:nsta
   subplot(2,2,i-3)
-  scatter(offset(:,1),offset(:,2),50,offpred1(:,i),'filled');
-  oldc = colormap('kelicol');
-  newc = flipud(oldc);
-  colormap(newc);
+  scatter(offset(:,1)/sps,offset(:,2)/sps,50,offpred1(:,i)/sps,'filled');
+%   oldc = colormap('kelicol');
+%   newc = flipud(oldc);
+%   colormap(newc);
+  colormap('bluewhitered');
   c=colorbar;
-  title(sprintf('Offset in samples PGC-%s at %d Hz', stas(i,:),sps));
-end
-xlabel(sprintf('Offset in samples PGC-SSIB at %d Hz',sps));
-ylabel(sprintf('Offset in samples PGC-SILB at %d Hz',sps));
+  title(sprintf('Offset (s) PGC-%s', stas(i,:)));
+end          
+xlabel(sprintf('Offset (s) PGC-SSIB'));
+ylabel(sprintf('Offset (s) PGC-SILB'));
           
-
+%%
 %%%Use relative correction
 rdifori = (constpgc-dttsspl_taup(ind,:))./dttsspl_taup(ind,:);  % relative difference
 rdifori(1) = 0;
@@ -247,28 +251,30 @@ end
 figure
 for i = 1:3
   subplot(2,2,i)
-  scatter(offset(:,1),offset(:,2),50,offpred2(:,i),'filled');
-  oldc = colormap('kelicol');
-  newc = flipud(oldc);
-  colormap(newc);
+  scatter(offset(:,1)/sps,offset(:,2)/sps,50,offpred2(:,i)/sps,'filled');
+%   oldc = colormap('kelicol');
+%   newc = flipud(oldc);
+%   colormap(newc);
+  colormap('bluewhitered');
   c=colorbar;
-  title(sprintf('Offset in samples PGC-%s at %d Hz', stas(i,:),sps));
+  title(sprintf('Offset (s) PGC-%s', stas(i,:)));
 end          
-xlabel(sprintf('Offset in samples PGC-SSIB at %d Hz',sps));
-ylabel(sprintf('Offset in samples PGC-SILB at %d Hz',sps));
+xlabel(sprintf('Offset (s) PGC-SSIB'));
+ylabel(sprintf('Offset (s) PGC-SILB'));
           
 figure
 for i = 4:nsta
   subplot(2,2,i-3)
-  scatter(offset(:,1),offset(:,2),50,offpred2(:,i),'filled');
-  oldc = colormap('kelicol');
-  newc = flipud(oldc);
-  colormap(newc);
+  scatter(offset(:,1),offset(:,2),50,offpred2(:,i)/sps,'filled');
+%   oldc = colormap('kelicol');
+%   newc = flipud(oldc);
+%   colormap(newc);
+  colormap('bluewhitered');
   c=colorbar;
-  title(sprintf('Offset in samples PGC-%s at %d Hz', stas(i,:),sps));
+  title(sprintf('Offset (s) PGC-%s', stas(i,:)));
 end
-xlabel(sprintf('Offset in samples PGC-SSIB at %d Hz',sps));
-ylabel(sprintf('Offset in samples PGC-SILB at %d Hz',sps));
+xlabel(sprintf('Offset (s) PGC-SSIB'));
+ylabel(sprintf('Offset (s) PGC-SILB'));
 
 
           

@@ -24,10 +24,10 @@
 format short e   % Set the format to 5-digit floating point
 clear
 clc
-% close all
+close all
 
-set(0,'DefaultFigureVisible','on');
-% set(0,'DefaultFigureVisible','off');   % switch to show the plots or not
+% set(0,'DefaultFigureVisible','on');
+set(0,'DefaultFigureVisible','off');   % switch to show the plots or not
 
 [scrsz, resol] = pixelperinch(1);
 
@@ -41,8 +41,10 @@ rstpath = strcat(datapath, '/PGCtrio');
 
 cutout = 'ellipse';
 ttol = 35;
-trange = load(strcat(rstpath, '/MAPS/tdec.bstran',num2str(ttol),'s.pgc002.',cutout(1:4)));
-trange = trange(1:end-1,:);
+ntol = 3;
+trange = load(strcat(rstpath, '/MAPS/tdec.bstran',num2str(ttol),'s.',...
+  num2str(ntol),'.pgc002.',cutout(1:4)));
+tlen = trange(:,3)-trange(:,2);
 
 modname = 'timeoff_plfit_4thsta_160sps.mat';
 planefit = load(strcat(rstpath, '/MAPS/',modname));
@@ -112,8 +114,8 @@ sps = 160;
 
 %% call function 'deconv_ref_4s_exp_rand_fn', all bursts, DATA VS NOISE
 %%%Flag to indicate if it is necessary to recalculate everything
-flagrecalc = 0;
-% flagrecalc = 1;
+% flagrecalc = 0;
+flagrecalc = 1;
 
 if flagrecalc
   normflag = 0; %do not normalize the templates
@@ -124,18 +126,22 @@ if flagrecalc
   %%%all bursts using real data
   noiseflag = 0;
   allbstsig = deconv_4s_exp_4thsta_fn(1:size(trange,1),normflag,noiseflag,pltflag,rccmwsec); %
-  savefile = 'deconv1win_stats4th_allbstsig.mat';
+  % savefile = 'deconv1win_stats4th_allbstsig.mat';
+  savefile = 'deconv1win_stats4th_no23_allbstsig.mat';
   save(strcat(rstpath, '/MAPS/',savefile), 'allbstsig');
   
   %%%all bursts using synthetic noise
   noiseflag = 1;
   allbstnoi = deconv_4s_exp_4thsta_fn(1:size(trange,1),normflag,noiseflag,pltflag,rccmwsec);  %
-  savefile = 'deconv1win_stats4th_allbstnoi.mat';
+  % savefile = 'deconv1win_stats4th_allbstnoi.mat';
+  savefile = 'deconv1win_stats4th_no23_allbstnoi.mat';
   save(strcat(rstpath, '/MAPS/',savefile), 'allbstnoi');
 else
-  savefile = 'deconv1win_stats4th_allbstsig.mat';
+%   savefile = 'deconv1win_stats4th_allbstsig.mat';
+  savefile = 'deconv1win_stats4th_no23_allbstsig.mat';
   load(strcat(rstpath, '/MAPS/',savefile));
-  savefile = 'deconv1win_stats4th_allbstnoi.mat';
+%   savefile = 'deconv1win_stats4th_allbstnoi.mat';
+  savefile = 'deconv1win_stats4th_no23_allbstnoi.mat';
   load(strcat(rstpath, '/MAPS/',savefile));
 end
 

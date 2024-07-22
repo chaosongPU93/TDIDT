@@ -962,26 +962,26 @@ for ifam = 1: size(fampool,1)
       box on
       
       %% Write results into files
-      % save analytics of all detections (nin), contain double counting
-      fid = fopen([rstpath,'/MAPS/tdecmapup',IDENTIF,'_',num2str(lo),'-',num2str(hi),'_',...
-        num2str(winlen/sps),'s',num2str(sps),'sps'],'w+');
-      fprintf(fid,'%9.1f %6.2f %6.2f %8.3f %7.2f %10.3e %10.3f %7.3f %10.3e %10.3e %10.3e %10.3e %10.3e %10.3e %10.3e %10.3e %10.3e %7.3f %7.3f %7.3f %7.3f %7.3f %5.2f %5.2f %7.3f %7.3f %7.3f %6.2f %6.2f %6.2f \n',...
-        mapfile(1:nin,:)');
-      fclose(fid);
-      
-      % save time traces of all detections (nin), contain double counting
-      fid = fopen(strcat(rstpath, '/MAPS/tdectraceup_',IDENTIF,'_',num2str(lo),'-',num2str(hi),'_',...
-        num2str(winlen/sps),'s',num2str(sps),'sps'),'w+');
-      tracefile = [STA1file(1:nin*winlen,:) STA2file(1:nin*winlen,2) STA3file(1:nin*winlen,2)];
-      fprintf(fid,'%.4f %.6f %.6f %.6f \n',tracefile');
-      fclose(fid);
-      
-      % save time traces of original rotated velocity seismogram, after bandpassing
-      fid = fopen(strcat(rstpath, '/MAPS/tdectrace1dup_',IDENTIF,'_',num2str(lo),'-',num2str(hi),'_',...
-        num2str(winlen/sps),'s',num2str(sps),'sps'),'w+');
-      oritracefile = [timsSTA' STAopt'];
-      fprintf(fid,'%.4f %.6f %.6f %.6f \n',oritracefile');
-      fclose(fid);
+%       % save analytics of all detections (nin), contain double counting
+%       fid = fopen([rstpath,'/MAPS/tdecmapup',IDENTIF,'_',num2str(lo),'-',num2str(hi),'_',...
+%         num2str(winlen/sps),'s',num2str(sps),'sps'],'w+');
+%       fprintf(fid,'%9.1f %6.2f %6.2f %8.3f %7.2f %10.3e %10.3f %7.3f %10.3e %10.3e %10.3e %10.3e %10.3e %10.3e %10.3e %10.3e %10.3e %7.3f %7.3f %7.3f %7.3f %7.3f %5.2f %5.2f %7.3f %7.3f %7.3f %6.2f %6.2f %6.2f \n',...
+%         mapfile(1:nin,:)');
+%       fclose(fid);
+%       
+%       % save time traces of all detections (nin), contain double counting
+%       fid = fopen(strcat(rstpath, '/MAPS/tdectraceup_',IDENTIF,'_',num2str(lo),'-',num2str(hi),'_',...
+%         num2str(winlen/sps),'s',num2str(sps),'sps'),'w+');
+%       tracefile = [STA1file(1:nin*winlen,:) STA2file(1:nin*winlen,2) STA3file(1:nin*winlen,2)];
+%       fprintf(fid,'%.4f %.6f %.6f %.6f \n',tracefile');
+%       fclose(fid);
+%       
+%       % save time traces of original rotated velocity seismogram, after bandpassing
+%       fid = fopen(strcat(rstpath, '/MAPS/tdectrace1dup_',IDENTIF,'_',num2str(lo),'-',num2str(hi),'_',...
+%         num2str(winlen/sps),'s',num2str(sps),'sps'),'w+');
+%       oritracefile = [timsSTA' STAopt'];
+%       fprintf(fid,'%.4f %.6f %.6f %.6f \n',oritracefile');
+%       fclose(fid);
     
       
     %% METHOD 1 to add additional stations for checking 
@@ -1120,7 +1120,11 @@ for ifam = 1: size(fampool,1)
             ioff(istanew,n)=round((cc1max * lag1(icc1) + ...
                                    cc2max * lag2(icc2) + ...
                                    cc3max * lag3(icc3)) / ...
-                                  (cc1max+cc2max+cc3max));
+                                  (cc1max+cc2max+cc3max));                                                    
+            aaa(istanew,n)=(cc1max * lag1(icc1) + ...
+                                   cc2max * lag2(icc2) + ...
+                                   cc3max * lag3(icc3)) / ...
+                                  (cc1max+cc2max+cc3max);              
             %%% NOTE:
             %%% in first year report, the following criteria was used, so did the hf counterpart 
             %%% if abs(icc12)<=2 && abs(icc13)<=2 && abs(icc23)<=2 && ccmaxave(istanew,n)>1*xcmaxAVEnmin

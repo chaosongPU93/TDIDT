@@ -1,4 +1,5 @@
-function [f1,f2,clppk,clnpk] = plt_deconpk_sigpk_comp(sigsta,zcrssrc,ppksrc,npksrc,greenf)
+function [f1,f2,clppk,clnpk] = plt_deconpk_sigpk_comp(sigsta,zcrssrc,ppksrc,...
+  npksrc,greenf,pltflag)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % [f1,f2,clppk,clnpk] = plt_deconpk_sigpk_comp(sigsta,zcrssrc,ppksrc,npksrc,greenf)
 %
@@ -16,6 +17,9 @@ function [f1,f2,clppk,clnpk] = plt_deconpk_sigpk_comp(sigsta,zcrssrc,ppksrc,npks
 % First created date:   2022/09/08
 % Last modified date:   2022/09/08 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+defval('pltflag',1);
+
+nsta = size(sigsta,2); 
 
 f1.fig = figure;
 f1.fig.Renderer = 'painters';
@@ -23,7 +27,6 @@ widin = 12;  % maximum width allowed is 8.5 inches
 htin = 6;   % maximum height allowed is 11 inches
 [scrsz, resol] = pixelperinch(1);
 set(f1.fig,'Position',[1*scrsz(3)/20 scrsz(4)/10 widin*resol htin*resol]);
-nsta = size(sigsta,2); 
 nrow = nsta;
 ncol = 1;
 for isub = 1:nrow*ncol
@@ -43,7 +46,7 @@ end
 ym = max(abs(sigsta(:)));
 yran=1.2*[-ym ym];
 
-lsig = size(sigsta,1); 
+lsig = size(sigsta,1);
 
 ppkhtwf = cell(nsta,1);  %positve peak height of the waveform
 ppkwf = cell(nsta,1); %positive peak index of the waveform
@@ -52,7 +55,7 @@ npkwf = cell(nsta,1); %negative peak index of the waveform
 for i = 1: nrow
   ax=f1.ax(i);
   hold(ax,'on');
-  plot(ax, sigsta(:,i), '-','Color',color(i,:)); 
+  plot(ax, sigsta(:,i), '-','Color',color(i,:));
   xlim(ax,[0,lsig]); ylim(ax,yran);
   [ppkhtwf{i}, ppkwf{i}] = findpeaks(sigsta(:,i));
   [npkhtwf{i}, npkwf{i}] = findpeaks(-sigsta(:,i));
@@ -61,23 +64,23 @@ for i = 1: nrow
   for j = 1: size(zcrssrc,1)
     plot(ax,[zcrssrc(j,(i-1)*2+1) zcrssrc(j,(i-1)*2+1)], ax.YLim, '--','Color',[.7 .7 .7]);
   end
-%   for j = 1: size(ppkisave,1)
-%     plot(ax,[ppkisave(j,(i-1)*2+1) ppkisave(j,(i-1)*2+1)], [0 ppkisave(j,i*2).*max(greenf(:,i))],...
-%       '-','Color',[.5 .5 .5],'linew',1);
-%   end
-%   scatter(ax,ppkisave(:,(i-1)*2+1),ppkisave(:,i*2).*max(greenf(:,i)),10,[.5 .5 .5],'filled');
-%   for j = 1: size(npkisave,1)
-%     plot(ax,[npkisave(j,(i-1)*2+1) npkisave(j,(i-1)*2+1)], [0 npkisave(j,i*2).*min(greenf(:,i))],...
-%       '-','Color',[.5 .5 .5],'linew',1);
-%   end
-%   scatter(ax,npkisave(:,(i-1)*2+1),npkisave(:,i*2).*min(greenf(:,i)),10,[.5 .5 .5],'filled');
+  %   for j = 1: size(ppkisave,1)
+  %     plot(ax,[ppkisave(j,(i-1)*2+1) ppkisave(j,(i-1)*2+1)], [0 ppkisave(j,i*2).*max(greenf(:,i))],...
+  %       '-','Color',[.5 .5 .5],'linew',1);
+  %   end
+  %   scatter(ax,ppkisave(:,(i-1)*2+1),ppkisave(:,i*2).*max(greenf(:,i)),10,[.5 .5 .5],'filled');
+  %   for j = 1: size(npkisave,1)
+  %     plot(ax,[npkisave(j,(i-1)*2+1) npkisave(j,(i-1)*2+1)], [0 npkisave(j,i*2).*min(greenf(:,i))],...
+  %       '-','Color',[.5 .5 .5],'linew',1);
+  %   end
+  %   scatter(ax,npkisave(:,(i-1)*2+1),npkisave(:,i*2).*min(greenf(:,i)),10,[.5 .5 .5],'filled');
   stem(ax,ppksrc(:,(i-1)*2+1),ppksrc(:,i*2).*max(greenf(:,i)),'LineStyle','-','MarkerFaceColor',...
     [.5 .5 .5],'MarkerEdgeColor',[.5 .5 .5],'Color',[.5 .5 .5],'linew',1,'MarkerSize',2);
   stem(ax,npksrc(:,(i-1)*2+1),npksrc(:,i*2).*min(greenf(:,i)),'LineStyle','-','MarkerFaceColor',...
-    [.5 .5 .5],'MarkerEdgeColor',[.5 .5 .5],'Color',[.5 .5 .5],'linew',1,'MarkerSize',2); 
-
-  ax.Box='on'; 
-%   grid(ax,'on');
+    [.5 .5 .5],'MarkerEdgeColor',[.5 .5 .5],'Color',[.5 .5 .5],'linew',1,'MarkerSize',2);
+  
+  ax.Box='on';
+  %   grid(ax,'on');
 end
 xlabel(f1.ax(nrow),'Samples');
 ylabel(f1.ax(nrow),'Amplitude');
@@ -89,7 +92,7 @@ f2.fig.Renderer = 'painters';
 widin = 12;  % maximum width allowed is 8.5 inches
 htin = 6;   % maximum height allowed is 11 inches
 set(f2.fig,'Position',[1*scrsz(3)/20 scrsz(4)/10 widin*resol htin*resol]);
-nrow = 4; 
+nrow = 4;
 ncol = 1;
 for isub = 1:nrow*ncol
   f2.ax(isub) = subplot(nrow,ncol,isub);
@@ -159,6 +162,12 @@ xlabel(ax,'Samples');
 ylabel(ax,'Deconvolved source amplitude');
 xlim(ax,[lsig/2,lsig]);
 
+if ~pltflag
+  close(f1.fig);
+  close(f2.fig);
+  f1=[];
+  f2=[];
+end
 
 %%%beside the plot, we want to identify the nearest, ie, related pair of waveform pos&neg peaks and 
 %%%the deconvolved sources shown by the scaled templates that also have a pos&neg peaks

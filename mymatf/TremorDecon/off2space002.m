@@ -57,7 +57,7 @@ function [locuse, indinput] = off2space002(offset,sps,ftrans,fplt)
 defval('offset',[]);
 defval('sps',100);
 defval('ftrans','interpchao');
-defval('fplt',1);
+defval('fplt',0);
 
 %%%Find the exact match directly from the inversion using a grid of time offsets with the same
 %%%sampling rate, NOT recommended any more!

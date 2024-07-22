@@ -1,4 +1,4 @@
-% detection_synth.m
+% tmrdetection_synth.m
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % --This script aims to detect and locate 4-s tremor catalog from the
 % synthetic sesimograms generated from 'synthshift_chao.m'. The detection
@@ -68,9 +68,7 @@ else
     'KLNB '
     ]; % determine the trio and order, here the 1st sta is PGC
   nsta=size(stas,1);         %  number of stations
-  
-  sps = 160;
-  
+    
   %% load synthetic seismograms
   %%%specify distribution for source location
   distr='UN';  % uniform distribution
@@ -116,27 +114,51 @@ else
   
   %variation of source region size
   if strcmp(srcregion,'ellipse')
-    semia = 1.75*(0.6:0.2:2.0);
-    semib = 1.25*(0.6:0.2:2.0);
+%     semia = 1.75*(0.6:0.2:2.0);
+%     semib = 1.25*(0.6:0.2:2.0);
+%     nreg = length(semia);
+    semia = 3;
+    semib = 1.5;
     nreg = length(semia);
   end
-  
+
+  tdura = 0.25;  %must be consistent with what synthetics actually used
+% tdura = 0.4;
+
   %times of saturation
-  % nsat=[0.1 0.4 1 2 4 10 20 40 100];
-  nsat=[0.4 1 2 4 10 20 40 100];
+%   nsat=[0.1 0.4 1 2 4 10 20 40 100];
+%   nsat=[0.4 1 2 4 10 20 40 100];
+  nsat=[0.1 0.4 1 2 4 10 20 40];
   nnsat = length(nsat);
+  
+  %length of each simulation
+  datasps = 160;%Sampling rate of the data will be used, samples per second
+  greenlen = pow2(9)*datasps/40;
+  bufsec = 1;
+  msftaddm = bufsec*datasps;  %buffer range for later CC alignment, +1 for safety
+  rccmwsec = 0.5;
+  rccmwlen = rccmwsec*datasps;  %window length for computing RCC
+  overshoot = rccmwlen/2; %RCC points to the center of computing window, so extra room is needed
+
+  % Twin=0.5*3600+(greenlen+msftaddm*2+overshoot*2-2)/sps; %Early and late portions will be deleted. Twin includes only the early portion. In seconds.
+  % nrun = 6;
+
+  Twin=3*3600+(greenlen+msftaddm*2+overshoot*2-2)/datasps; %Early and late portions will be deleted. Twin includes only the early portion. In seconds.
+  nrun = 1;
   
   %%%loop for region size
   for ireg = 1: nreg
     % ireg = 3;
-    disp(semia(ireg));
-    disp(semib(ireg));
+    fprintf('reg: %f*%f; %d/%d \n',semia(ireg),semib(ireg),ireg,nreg);
     
     %params of limited source region, subject to variation!
     if strcmp(srcregion,'circle')
       shiftor=[0.2 0.2]; %(in km) %center of the same ellipse of my 4-s catalog
       radi=1.25; %radius
       [xcut,ycut] = circle_chao(shiftor(1),shiftor(2),radi,0.01);
+      fname = ['/synthetics/STAS.',distr,'.',int2str(datasps),'sps.',srcregion(1:3),...
+        '_',num2str(radi),'.diam',num2str(diam),'.else',num2str(fracelsew,2),...
+        'nsat'];
     elseif strcmp(srcregion,'ellipse')
       xaxis = semia(ireg);
       yaxis = semib(ireg);
@@ -144,53 +166,82 @@ else
       % yaxis=1.25;
       shiftor=[0.2 0.2]; %(in km) %center of the same ellipse of my 4-s catalog
       [xcut,ycut] = ellipse_chao(shiftor(1),shiftor(2),xaxis,yaxis,0.01,45,shiftor);
-    end
-    
-    %%%load synthetics
-    if strcmp(srcregion,'ellipse')
-      fname = ['/synthetics/STAS.',distr,'.',int2str(sps),'sps.',srcregion(1:3),'_',...
+      fname = ['/synthetics/STAS.',distr,'.',int2str(datasps),'sps.',srcregion(1:3),'_',...
         num2str(xaxis),'-',num2str(yaxis),'.diam',num2str(diam),'.else',num2str(fracelsew,2),...
-        'nsat'];
-    elseif strcmp(srcregion,'circle')
-      fname = ['/synthetics/STAS.',distr,'.',int2str(sps),'sps.',srcregion(1:3),...
-        '_',num2str(radi),'.diam',num2str(diam),'.else',num2str(fracelsew,2),...
         'nsat'];
     end
     % fname = '/synthetics/STAS.UN.160sps.ell_2-1.25.diam0.3.else0nsat';
     
     if pltsrc
       %initialize figs
-      f1 = initfig(16,8,2,4,(ireg-1)*3+1); %offset circuit vs. CC
-      f2 = initfig(16,8,2,4,(ireg-1)*3+2); %map loc for srcs no double-counting
-      f3 = initfig(16,8,2,4,ireg*3); %cumu density of srcs
+      widin = 16;  % maximum width allowed is 8.5 inches
+      htin = 6;   % maximum height allowed is 11 inches
+      nrow = 2;
+      ncol = 4;
+      pltxran = [0.06 0.98]; pltyran = [0.06 0.98]; % optimal axis location
+      pltxsep = 0.05; pltysep = 0.05;
+      
+      f1 = initfig(widin,htin,nrow,ncol,(ireg-1)*3+1); %offset circuit vs. CC
+      optaxpos(f1,nrow,ncol,pltxran,pltyran,pltxsep,pltysep);  
+      
+      f2 = initfig(widin,htin,nrow,ncol,(ireg-1)*3+2); %map loc for srcs no double-counting
+      optaxpos(f2,nrow,ncol,pltxran,pltyran,pltxsep,pltysep);
+      
+      f3 = initfig(widin,htin,nrow,ncol,ireg*3); %cumu density of srcs
+      optaxpos(f3,nrow,ncol,pltxran,pltyran,pltxsep,pltysep);
+      
     end
     
     %%%loop for saturation level
     for insat = 1: nnsat
       % insat = 1;
-      disp(nsat(insat));
+      sat = nsat(insat);
+      disp(sat);
       
-      %%%load synthetics of certain saturation level
-      synopt = load(strcat(workpath,fname,num2str(nsat(insat))));
-      
-      %%%load sources
-      synsrc = load(strcat(workpath,fname,num2str(nsat(insat)),'_sources'));
-      
-      %Sampling rate of the data will be used
-      sps=160;     % samples per second
+      irun = 1;
+      if tdura == 0.25
+        %%%load synthetics of certain saturation level
+        synopt = load(strcat(workpath,fname,num2str(sat),'tdura',...
+          num2str(tdura),'T',num2str(round(Twin)),'p',num2str(irun)));
+        %%%load sources
+        synsrc = load(strcat(workpath,fname,num2str(sat),'tdura',...
+          num2str(tdura),'T',num2str(round(Twin)),'p',num2str(irun),'_sources'));
+        %%%load starting indices of added sources at sta 1
+        synsrcstind = load(strcat(workpath,fname,num2str(sat),'tdura',...
+          num2str(tdura),'T',num2str(round(Twin)),'p',num2str(irun),'_stind'));
+      elseif tdura == 0.4
+        synopt = load(strcat(workpath,fname,num2str(sat)));
+        synsrc = load(strcat(workpath,fname,num2str(sat),'_sources'));
+        synsrcstind = load(strcat(workpath,fname,num2str(sat),'_stind'));
+      end      
+            
+      if strcmp(distrloc, 'uniform')
+        if strcmp(srcregion,'ellipse')
+          xygrid = load([workpath,'/synthetics/synsrcloc.',distr,'.',int2str(datasps),'sps.',srcregion(1:3),...
+            '_',num2str(xaxis),'-',num2str(yaxis),'.diam',num2str(diam),...
+            'T',num2str(round(Twin)),'p',num2str(irun),'_grd']);
+        elseif strcmp(srcregion,'circle')
+          xygrid = load([workpath,'/synthetics/synsrcloc.',distr,'.',int2str(datasps),'sps.',srcregion(1:3),...
+            '_',num2str(radi),'.diam',num2str(diam),'T',num2str(round(Twin)),'p',num2str(irun),'_grd']);
+        end
+        tmp = xygrid(synsrc(:,2),:);
+        synsrc = [synsrc(:,1) tmp(:,1:4) ones(length(tmp),1)];  %[indtarvl, off12, off13, loce, locn, amp]
+      elseif strcmp(distrloc, 'custompdf')
+        loc = off2space002(synsrc(:,2:3),datasps,ftrans,0);
+        synsrc = [synsrc(:,1) loc(:,1:4) ones(length(loc),1)];  %[indtarvl, off12, off13, loce, locn, amp]
+      end
+    % keyboard
+
       
       %%% IMPORTANT, NEED change sometimes
       %Basics of the cross-correlation:  Window length, number of windows, filter parameters, etc.
+%       detsps = 40;
+      detsps = datasps;
+      
       winlensec=4;     % offsec = 3 was used in first-year report
       winoffsec=1;        % window offset in sec, which is the step of a moving window
-      winlen=winlensec*sps;      % length in smaples
-      winoff=winoffsec*sps;      % offset in samples
-      tracelen=size(synopt,1); %one day of data at 40 sps, overall trace length, 24*3600
-      cutsec = 1;
-      winbig=2*(tracelen/2-(cutsec*sps)); %ignore 2 seconds at each end of day, bigger window contains positive and negative, why tracelen/2?, -4s
-      timbig=winbig/(2*sps); %half that time, in seconds, half day - 2s
-      igstart=floor(tracelen/2-winbig/2)+1; %start counting seis data from here, 2*sps+1, floor(1.8)==1
-      nwin=floor((winbig-winlen)/winoff)+1;    % number of windows, first one not included, ADD +1 by Chao, 2019/02/17
+      winlen=winlensec*detsps;      % length in smaples
+      winoff=winoffsec*detsps;      % offset in samples
       
       hi=6.5; %if using the same as to 4-s tremor catalog to data
       lo=1.25;
@@ -201,21 +252,33 @@ else
       %   mshift=24; %19; %maximum shift for the x-correlations. 19 for 002 Stanford,    % in sps, 0.5s*40sps=20
       %   loopoffmax=5; %1.5 for standard 1.5-6Hz; 4 for 0.5-1.5Hz.  2 for non-interpolated.   % what is loopoffmax, the circuit of time offsets
       %   xcmaxAVEnmin=0.6; %0.44; %0.44 for 002 Stanford %0.45; %0.36 for 4s 1-12 Hz; %0.4 for 4s 1.5-6 Hz and 6s 0.5-1.5Hz; 0.36 for 4s2-8 Hz ; 0.38 for 4s0.75-6 Hz; 0.094 for 128s 2-8Hz;  0.1 for 128s 1.5-6Hz; 0.44 for 3-s window?
-      mshift=26*sps/40; %19; %maximum shift for the x-correlations. 19 for 002 Stanford,    % in sps, 0.5s*40sps=20
-      loopoffmax=2.1*sps/40; %1.5 for standard 1.5-6Hz; 4 for 0.5-1.5Hz.  2 for non-interpolated.   % what is loopoffmax, the circuit of time offsets
+%       mshift=26*sps/40; %19; %maximum shift for the x-correlations. 19 for 002 Stanford,    % in sps, 0.5s*40sps=20
+%       mshift=6*sps/40; %19; %maximum shift for the x-correlations. 19 for 002 Stanford,    % in sps, 0.5s*40sps=20
+%       loopoffmax=2.1*sps/40; %1.5 for standard 1.5-6Hz; 4 for 0.5-1.5Hz.  2 for non-interpolated.   % what is loopoffmax, the circuit of time offsets
       xcmaxAVEnmin=0.44; %0.44; %0.44 for 002 Stanford %0.45; %0.36 for 4s 1-12 Hz; %0.4 for 4s 1.5-6 Hz and 6s 0.5-1.5Hz; 0.36 for 4s2-8 Hz ; 0.38 for 4s0.75-6 Hz; 0.094 for 128s 2-8Hz;  0.1 for 128s 1.5-6Hz; 0.44 for 3-s window?
+      mshift=19*detsps/40; %19; %maximum shift for the x-correlations. 19 for 002 Stanford,    % in sps, 0.5s*40sps=20
+      loopoffmax=1.5*detsps/40; %1.5 for standard 1.5-6Hz; 4 for 0.5-1.5Hz.  2 for non-interpolated.   % what is loopoffmax, the circuit of time offsets
       
       %% filter data (and templates)
       %%filter data
       optseg = [];
       for ista = 1:3
-        optseg(:,ista) = Bandpass(synopt(:,ista), sps, lo, hi, 2, 2, 'butter');
+        opt(:,ista) = Bandpass(synopt(:,ista), datasps, lo, hi, 2, 2, 'butter');
+        optseg(:,ista)=resample(opt(:,ista),1,round(datasps/detsps));
       end
       
       STAopt = optseg';
-      timsSTA = (1:length(STAopt))/sps;
+      timsSTA = (1:length(STAopt))/detsps;
+
+      tracelen=size(STAopt,2); %one day of data at 40 sps, overall trace length, 24*3600
+      cutsec = 1;
+      winbig=2*(tracelen/2-(cutsec*detsps)); %ignore 2 seconds at each end of day, bigger window contains positive and negative, why tracelen/2?, -4s
+      timbig=winbig/(2*detsps); %half that time, in seconds, half day - 2s
+      igstart=floor(tracelen/2-winbig/2)+1; %start counting seis data from here, 2*sps+1, floor(1.8)==1
+      nwin=floor((winbig-winlen)/winoff)+1;    % number of windows, first one not included, ADD +1 by Chao, 2019/02/17
       
       STAauto=STAopt.*STAopt;
+%       STAsq=cumsum(STAauto,2);
       lenx=tracelen-2*mshift;     % 86400*sps-19*2
       STA12x=zeros(lenx, 2*mshift+1);    % 19*2+1
       STA13x=zeros(lenx, 2*mshift+1);    % stas: 1->PGC, 2->SSIB, 3->SILB
@@ -251,6 +314,8 @@ else
         sumsSTA32(n,:)=sum(STA32x(istart-mshift: iend-mshift, :));
         sumsSTA1sq(n,:)=sum(STAauto(1, istart: iend));
         sumsSTA3Bsq(n,:)=sum(STAauto(3, istart: iend));
+%         aa=STAsq(1,iend)-STAsq(1,istart-1);  %PGC2 is cumsummed. Yes, +mshift.  No, no mshift (7/06/18)
+%         bb=STAsq(3,iend)-STAsq(3,istart-1); %Similar, for the SILB-SSIB connection.        
         for m=-mshift:mshift
           sumsSTA2sq(n,m+mshift+1)=sum(STAauto(2, istart-m: iend-m)); %+m??? (yes).
           sumsSTA3sq(n,m+mshift+1)=sum(STAauto(3, istart-m: iend-m));
@@ -258,11 +323,11 @@ else
         
       end
       
-      %An attempt to bypass glitches in data.  Min value of good data typically ~10^{-2}
-      glitches=1.e-7;
-      sumsSTA1sq=max(sumsSTA1sq,glitches);
-      sumsSTA2sq=max(sumsSTA2sq,glitches);
-      sumsSTA3sq=max(sumsSTA3sq,glitches);    % return maximum between A and B
+%       %An attempt to bypass glitches in data.  Min value of good data typically ~10^{-2}
+%       glitches=1.e-7;
+%       sumsSTA1sq=max(sumsSTA1sq,glitches);
+%       sumsSTA2sq=max(sumsSTA2sq,glitches);
+%       sumsSTA3sq=max(sumsSTA3sq,glitches);    % return maximum between A and B
       %
       denomSTA12n=realsqrt(sumsSTA1sq.*sumsSTA2sq);    % Real square root, An error is produced if X is negative
       denomSTA13n=realsqrt(sumsSTA1sq.*sumsSTA3sq);
@@ -328,10 +393,10 @@ else
       xmaxSTA32ntmp=xmaxSTA32n;
       
       %% find the strongest 0.5s window with main arrival
-      iup=1;
+      iup=datasps/detsps;
       nin=0;      % subscript flag, to count the successful detections
       concentration=0.5; %in seconds; how concentrated is the coherent energy within the window?
-      cncntr=concentration*sps;   % in samples, 20
+      cncntr=concentration*detsps;   % in samples, 20
       offset=round(0.5*cncntr);   % +- 1/2*cncntr, 10 samples, 0.25s
       
       % Roo = -1*ones(1,nwin);  % R_o/o in Peng et al. 2015
@@ -375,6 +440,31 @@ else
             end
           end
           %%%%%%%%%% END, USE THIS SECTION IF USING UPSAMPLING %%%%%%%%%%%%%%%%%%%%%%%
+%           %%%%%%%%%%%%% START, USE THIS SECTION IF NOT UPSAMPLING %%%%%%%%%%%%%%%%%%%%%%%
+%             xcmaxconprev=-99999.;  %used to be 0; not good with glitches
+%             imaxSTA12n=imaxSTA12(n); %This "n" for nth window; other "n's" for "normalized".  Unfortunately.
+%             imaxSTA13n=imaxSTA13(n);  % imaxSTA13 is the max CC coef's index
+%             imaxSTA32n=imaxSTA32(n);
+%             sumsSTA12nn=sumsSTA12n(n,:);   % xxx'n' for normalized,
+%             sumsSTA13nn=sumsSTA13n(n,:);   % sumsSTA12n is the CC function (coef)
+%             sumsSTA32nn=sumsSTA32n(n,:);
+%             % Usually, the loop is happened between imaxSTA12n +- floor(loopoffmax+1)
+%             %%% floor(2.5)=2; floor(-2.6)=-3
+%             for iSTA12 =     max(1,imaxSTA12n-floor(loopoffmax+1)): min(imaxSTA12n+floor(loopoffmax+1),2*mshift+1)
+%                 for iSTA13 = max(1,imaxSTA13n-floor(loopoffmax+1)): min(imaxSTA13n+floor(loopoffmax+1),2*mshift+1)
+%                     ibangon = (mshift+1)-iSTA13+iSTA12;     %%% SEE NOTES #2019/03/17# page 66 to understand better 
+%                     %%% i.e., -mshift <= -iSTA13+iSTA12 <= mshift
+%                     if ibangon >= 1 && ibangon <= 2*mshift+1
+%                         xcmaxcon=sumsSTA12nn(iSTA12)+sumsSTA13nn(iSTA13)+sumsSTA32nn(ibangon);
+%                         if xcmaxcon > xcmaxconprev
+%                             xcmaxconprev=xcmaxcon;
+%                             iSTA12bang=iSTA12;
+%                             iSTA13bang=iSTA13;
+%                         end
+%                     end
+%                 end
+%             end
+% %           %%%%%%%%%%%%% END, USE THIS SECTION IF NOT UPSAMPLING %%%%%%%%%%%%%%%%%%%%%%%
           %%% will result in the max xcmaxcon and corresponding iSTA12,
           %%% iSTA13, and save them into xcmaxconprev, iSTA12bang and iSTA13bang
           
@@ -418,11 +508,11 @@ else
             imid=round((istart+iend)/2);
             %Check power spectrum for reasonableness
             %%% pwelch is a built-in function, [Pxx F] = pwelch(X, WINDOW, NOVERLAP, NFFT, Fs)
-            [STA1xx fp] = pwelch(STAopt(1,istart:iend),[],[],[],sps); %40 is sps
+            [STA1xx fp] = pwelch(STAopt(1,istart:iend),[],[],[],detsps); %40 is sps
             STA1xx=STA1xx/max(STA1xx);    % normalization
-            [STA2xx fp] = pwelch(STAopt(2,istart-imaxSTA12wr:iend-imaxSTA12wr),[],[],[],sps);  % WHY substract imaxSTA12wr ???
+            [STA2xx fp] = pwelch(STAopt(2,istart-imaxSTA12wr:iend-imaxSTA12wr),[],[],[],detsps);  % WHY substract imaxSTA12wr ???
             STA2xx=STA2xx/max(STA2xx);
-            [STA3xx fp] = pwelch(STAopt(3,istart-imaxSTA13wr:iend-imaxSTA13wr),[],[],[],sps);
+            [STA3xx fp] = pwelch(STAopt(3,istart-imaxSTA13wr:iend-imaxSTA13wr),[],[],[],detsps);
             STA3xx=STA3xx/max(STA3xx);
             flo=find(fp > lo,1)-1;    % find(fp > lo,1) finds the first 1 indice that satisfies fp > lo
             fhi=find(fp > hi,1)+1;    %extra 1 for good measure
@@ -545,11 +635,11 @@ else
               clear dummy
               
               %CC in prior 4 seconds, with offset
-              if isdiff > 4*sps+(mshift-cyclskip)+offset   % >winsec*sps+19+10
-                dummy(1,:)=STAopt(1,isdiff-4*sps-offset:isdiff-1-offset);   % this is 12.5s much more than 4s, maybe the previous winlen is 4s
-                dummy(2,:)=STAopt(2,isdiff-imaxSTA12wr-4*sps-offset:...
+              if isdiff > 4*detsps+(mshift-cyclskip)+offset   % >winsec*sps+19+10
+                dummy(1,:)=STAopt(1,isdiff-4*detsps-offset:isdiff-1-offset);   % this is 12.5s much more than 4s, maybe the previous winlen is 4s
+                dummy(2,:)=STAopt(2,isdiff-imaxSTA12wr-4*detsps-offset:...
                   isdiff-imaxSTA12wr-1-offset);
-                dummy(3,:)=STAopt(3,isdiff-imaxSTA13wr-4*sps-offset:...
+                dummy(3,:)=STAopt(3,isdiff-imaxSTA13wr-4*detsps-offset:...
                   isdiff-imaxSTA13wr-1-offset);
               else
                 dummy(1,:)=STAopt(1,(mshift-cyclskip):isdiff-1-offset);   % 19: isdiff-1    % MIGHT this part be a mistake? no symmetry, with offset
@@ -586,12 +676,12 @@ else
               %                         ccpost(nin+1)=0;
               
               %CC in following 4 seconds, with offset
-              if iediff+4*sps+(mshift-cyclskip)+offset <= size(STAopt,2)
-                dummy(1,:)=STAopt(1,iediff+1+offset:iediff+4*sps+offset);  % 1.25s win after 0.5s after 2*offset
+              if iediff+4*detsps+(mshift-cyclskip)+offset <= size(STAopt,2)
+                dummy(1,:)=STAopt(1,iediff+1+offset:iediff+4*detsps+offset);  % 1.25s win after 0.5s after 2*offset
                 dummy(2,:)=STAopt(2,iediff+1-imaxSTA12wr+offset:...
-                  iediff-imaxSTA12wr+4*sps+offset);
+                  iediff-imaxSTA12wr+4*detsps+offset);
                 dummy(3,:)=STAopt(3,iediff+1-imaxSTA13wr+offset:...
-                  iediff-imaxSTA13wr+4*sps+offset);
+                  iediff-imaxSTA13wr+4*detsps+offset);
               else
                 dummy(1,:)=STAopt(1,iediff+1+offset: size(STAopt,2)-(mshift-cyclskip));  % 1.25s win after 0.5s after 2*offset
                 dummy(2,:)=STAopt(2,iediff+1-imaxSTA12wr+offset:...
@@ -644,11 +734,11 @@ else
               clear dummy
               
               %Energy in prior 4 s
-              if isdiff > 4*sps +(mshift-cyclskip)+offset
-                dummy=STAopt(1,isdiff-4*sps -offset:isdiff-offset-1).^2+ ...
-                  STAopt(2,isdiff-4*sps -imaxSTA12wr-offset:...
+              if isdiff > 4*detsps +(mshift-cyclskip)+offset
+                dummy=STAopt(1,isdiff-4*detsps -offset:isdiff-offset-1).^2+ ...
+                  STAopt(2,isdiff-4*detsps -imaxSTA12wr-offset:...
                   isdiff-imaxSTA12wr-offset-1).^2+ ...
-                  STAopt(3,isdiff-4*sps -imaxSTA13wr-offset:...
+                  STAopt(3,isdiff-4*detsps -imaxSTA13wr-offset:...
                   isdiff-imaxSTA13wr-offset-1).^2;
               else
                 dummy=STAopt(1,(mshift-cyclskip):isdiff-1-offset).^2+ ...
@@ -682,12 +772,12 @@ else
               clear dummy
               
               % energy (amp squared sum) in post 4 s window, with offset
-              if iediff+4*sps+(mshift-cyclskip)+offset <= size(STAopt,2)
-                dummy=STAopt(1,iediff+1+offset:iediff+4*sps+offset).^2+ ...
+              if iediff+4*detsps+(mshift-cyclskip)+offset <= size(STAopt,2)
+                dummy=STAopt(1,iediff+1+offset:iediff+4*detsps+offset).^2+ ...
                   STAopt(2,iediff+1-imaxSTA12wr+offset:...
-                  iediff-imaxSTA12wr+4*sps+offset).^2+ ...
+                  iediff-imaxSTA12wr+4*detsps+offset).^2+ ...
                   STAopt(3,iediff+1-imaxSTA13wr+offset:...
-                  iediff-imaxSTA13wr+4*sps+offset).^2;
+                  iediff-imaxSTA13wr+4*detsps+offset).^2;
               else
                 dummy=STAopt(1,iediff+1+offset: size(STAopt,2)-(mshift-cyclskip)).^2+ ...
                   STAopt(2,iediff+1-imaxSTA12wr+offset:...
@@ -793,7 +883,7 @@ else
               %%% 30 cols, 2021/03/20
               mapfile(nin,:)=[timswin(n) xmaxSTA12ntmp(n) xmaxSTA13ntmp(n) ...
                 xcmaxAVEnbang(nin) loopoff(n) cumsumtrdiff ...
-                timswin(n)-winlensec/2+(idiff+1)/sps ...
+                timswin(n)-winlensec/2+(idiff+1)/detsps ...
                 cumsumtrdiff/cumsumtr(winlen) Ampsq(nin) ...
                 Prior(nin) Post(nin) Prior4(nin) Post4(nin) Prior8(nin) ...
                 Post8(nin) Prior16(nin) Post16(nin) cc(nin) ccprior(nin) ...
@@ -870,7 +960,8 @@ else
           if insat == 1
             c.Label.String = 'Diff. in sum of amp^2 between consecutive windows';
             ylabel(ax,'Average CC');
-            xlabel(ax,'Summed time offsets between station pairs (samples at 160 Hz)');
+            xlabel(ax,...
+              sprintf('Summed time offsets between station pairs (samples at %d Hz)',detsps));
           end
           % keyboard
           % close(102)
@@ -878,7 +969,7 @@ else
         
         %% save results
         % save analytics of all detections (nin), contain double counting
-        fid = fopen([workpath,'/synthetics/tmr',num2str(winlensec),'.',distr,'.',int2str(sps),...
+        fid = fopen([workpath,'/synthetics/tmr',num2str(winlensec),'.',distr,'.',int2str(datasps),...
           'sps.',srcregion(1:3),'_',num2str(xaxis),'-',num2str(yaxis),'.diam',num2str(diam),...
           '.else',num2str(fracelsew,2),'nsat',num2str(nsat(insat))],'w');
         fprintf(fid,'%9.1f %6.2f %6.2f %8.3f %7.2f %10.3e %10.3f %7.3f %10.3e %10.3e %10.3e %10.3e %10.3e %10.3e %10.3e %10.3e %10.3e %7.3f %7.3f %7.3f %7.3f %7.3f %5.2f %5.2f %7.3f %7.3f %7.3f %6.2f %6.2f %6.2f \n',...
@@ -886,7 +977,7 @@ else
         fclose(fid);
         
         % save time traces of all detections (nin), contain double counting
-        fid = fopen([workpath,'/synthetics/tmrtrace',num2str(winlensec),'.',distr,'.',int2str(sps),...
+        fid = fopen([workpath,'/synthetics/tmrtrace',num2str(winlensec),'.',distr,'.',int2str(datasps),...
           'sps.',srcregion(1:3),'_',num2str(xaxis),'-',num2str(yaxis),'.diam',num2str(diam),...
           '.else',num2str(fracelsew,2),'nsat',num2str(nsat(insat))],'w');
         tracefile = [STA1file(1:nin*winlen,:) STA2file(1:nin*winlen,2) STA3file(1:nin*winlen,2)];
@@ -904,7 +995,7 @@ else
         nstanew=size(stasnew,1);
         
         ista = 4;
-        optseg = Bandpass(synopt(:,ista), sps, lo, hi, 2, 2, 'butter');
+        optseg = Bandpass(synopt(:,ista), detsps, lo, hi, 2, 2, 'butter');
         
         STAopt=zeros(nstanew,nin*winlen);
         for istanew=1:nstanew
@@ -1006,7 +1097,7 @@ else
         
         %% Write checking result into files
         addrstfile = [in(:,1:nin); loff(:,1:nin) ; ioff(:,1:nin); ccmaxave(:,1:nin)]';      % number of columns should be 4*nstanew
-        fid = fopen([workpath,'/synthetics/tmradd',num2str(winlensec),'.',distr,'.',int2str(sps),...
+        fid = fopen([workpath,'/synthetics/tmradd',num2str(winlensec),'.',distr,'.',int2str(datasps),...
           'sps.',srcregion(1:3),'_',num2str(xaxis),'-',num2str(yaxis),'.diam',num2str(diam),...
           '.else',num2str(fracelsew,2),'nsat',num2str(nsat(insat)),stasnew(nstanew,:)],'w');
         fprintf(fid,'%d %.4f %d %.3f \n',addrstfile');  % 4*1 col
@@ -1094,14 +1185,14 @@ else
         end
         
         %%% Write results into files
-        fid = fopen([workpath,'/synthetics/tmrall',num2str(winlensec),'.',distr,'.',int2str(sps),...
+        fid = fopen([workpath,'/synthetics/tmrall',num2str(winlensec),'.',distr,'.',int2str(datasps),...
           'sps.',srcregion(1:3),'_',num2str(xaxis),'-',num2str(yaxis),'.diam',num2str(diam),...
           '.else',num2str(fracelsew,2),'nsat',num2str(nsat(insat)),stasnew(nstanew,:)],'w');
         fprintf(fid,'%9.1f %6.2f %6.2f %8.3f %7.2f %10.3e %10.3f %7.3f %10.3e %10.3e %10.3e %10.3e %10.3e %10.3e %10.3e %10.3e %10.3e %7.3f %7.3f %7.3f %7.3f %7.3f %5.2f %5.2f %7.3f %7.3f %7.3f %6.2f %6.2f %6.2f %d %.4f %d %.3f \n',...
           allrst_new(1:nin_new,:)');
         fclose(fid);
         
-        fid = fopen([workpath,'/synthetics/tmrtraceall',num2str(winlensec),'.',distr,'.',int2str(sps),...
+        fid = fopen([workpath,'/synthetics/tmrtraceall',num2str(winlensec),'.',distr,'.',int2str(datasps),...
           'sps.',srcregion(1:3),'_',num2str(xaxis),'-',num2str(yaxis),'.diam',num2str(diam),...
           '.else',num2str(fracelsew,2),'nsat',num2str(nsat(insat)),stasnew(nstanew,:)],'w');
         tracefile = [STA1file_new(1:nin_new*winlen,:) STA2file_new(1:nin_new*winlen,2) ...
@@ -1152,14 +1243,17 @@ else
         % axis(ax,[xran yran],'equal');
         % xticks(ax,xran(1): 1 : xran(2));
         % yticks(ax,yran(1): 1 : yran(2));
-        
+%%
+        rst2plt = allrst;
+%         rst2plt = rst2plt;
+        rst2plt(:,2:3)=rst2plt(:,2:3)*datasps/detsps;
         %location of the whole-win best alignment
-        loc = off2space002(allrst_new(:,2:3),sps,ftrans,0);
+        loc = off2space002(rst2plt(:,2:3),datasps,ftrans,0);
         % loc has 8 cols, format: dx,dy,lon,lat,dep,ttrvl,off12,off13
         
         %between Nth and (N-1)th source; Nth and (N-2)th; Nth and (N-3)th
         m = 1;
-        [dtarvl,dneloc,eucdist] = srcdistNtoNm(allrst_new(:,7)*sps, loc, m);
+        [dtarvl,dneloc,eucdist] = srcdistNtoNm(rst2plt(:,7)*datasps, loc, m);
         
         %median consecutive dist along min-scatter
         projang = 135;
@@ -1168,8 +1262,8 @@ else
         if pltproj
           if ~isempty(dprojxy)
             nsep = 1;
-            [f] = plt_customprojdist(allrst_new(:,7)*sps,loc,dtarvl{nsep},eucdist{nsep},...
-              projxy,dprojxy,projang,sps,'tarvl');
+            [f] = plt_customprojdist(rst2plt(:,7)*datasps,loc,dtarvl{nsep},eucdist{nsep},...
+              projxy,dprojxy,projang,datasps,'tarvl');
             hold(f.ax(1),'on');
             plot(f.ax(1),xcut,ycut,'k-','linew',2);
           end
@@ -1177,33 +1271,33 @@ else
         mprojxnn1(insat,ireg) = median(abs(dprojxy(:,1)));
         
         %For each LFE source, get its distance to all other LFEs, maybe we don't care that long separation in time
-        [~,dprojxy2all] = srcdistall(allrst_new(:,7)*sps,projxy,[0 50*sps]);
+        [~,dprojxy2all] = srcdistall(rst2plt(:,7)*datasps,projxy,[0 50*datasps]);
         mprojx2all(insat,ireg) = median(abs(dprojxy2all(:,1)));
         
         %plot the cumulative density and summed amp of detections
-        density1d = density_pixel(allrst_new(:,2),allrst_new(:,3));
-        locuni = off2space002(density1d(:,1:2),sps,ftrans,0); % 8 cols, format: dx,dy,lon,lat,dep,ttrvl,off12,off13
+        density1d = density_pixel(rst2plt(:,2),rst2plt(:,3));
+        locuni = off2space002(density1d(:,1:2),datasps,ftrans,0); % 8 cols, format: dx,dy,lon,lat,dep,ttrvl,off12,off13
         density1d = [locuni(:,1:2) density1d(:,3)];
         
         if pltsrc
           %plot the loc vs time for sources
           ax=f2.ax(insat); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
-          wt = allrst_new(:,6);
+          wt = rst2plt(:,6);
           wtmax = prctile(wt,95); %use percentile in case
           refscl = wt./wtmax;
           refscl(refscl>=1) = 1;  %force the larger amp to be plotted as the same size in case of saturation
-          scatter(ax,loc(:,1),loc(:,2),20*refscl,allrst_new(:,7),'filled',...
+          scatter(ax,loc(:,1),loc(:,2),20*refscl,rst2plt(:,7),'filled',...
             'MarkerEdgeColor',[.5 .5 .5]);
           plot(ax,xcut,ycut,'k-','linew',2);
           colormap(ax,flipud(colormap(ax,'kelicol')));
-          text(ax,0.98,0.05,sprintf('%d events',size(allrst_new,1)),'Units','normalized',...
+          text(ax,0.98,0.05,sprintf('%d events',size(rst2plt,1)),'Units','normalized',...
             'HorizontalAlignment','right');
           text(ax,0.98,0.95,sprintf('Satur=%.1f',nsat(insat)),'Units','normalized',...
             'HorizontalAlignment','right');
           text(ax,0.02,0.05,sprintf('%.2fkm',mprojx2all(insat,ireg)),'Units','normalized',...
             'HorizontalAlignment','left');
           axis(ax, 'equal');
-          xran = [-4 4];
+          xran = [-6 4];
           yran = [-4 4];
           xlim(ax,xran); xticks(ax,xran(1): 1 : xran(2));
           ylim(ax,yran); yticks(ax,yran(1): 1 : yran(2));
@@ -1231,15 +1325,15 @@ else
           scatter(ax,dum(:,1),dum(:,2),15,dum(:,3),'o','filled','MarkerEdgeColor',[.5 .5 .5]);
           plot(ax,xcut,ycut,'k-','linew',2);
           colormap(ax,flipud(colormap(ax,'kelicol')));
-          text(ax,0.98,0.05,sprintf('%d events',size(allrst_new,1)),'Units','normalized',...
+          text(ax,0.98,0.05,sprintf('%d events',size(rst2plt,1)),'Units','normalized',...
             'HorizontalAlignment','right');
           text(ax,0.98,0.95,sprintf('Satur=%.1f',nsat(insat)),'Units','normalized',...
             'HorizontalAlignment','right');
           text(ax,0.02,0.05,sprintf('%.2f',mprojx2all(insat,ireg)),'Units','normalized',...
             'HorizontalAlignment','left');
           axis(ax, 'equal');
-          xran = [-4 4];
-          yran = [-4 4];
+%           xran = [-4 4];
+%           yran = [-4 4];
           xlim(ax,xran); xticks(ax,xran(1): 1 : xran(2));
           ylim(ax,yran); yticks(ax,yran(1): 1 : yran(2));
           c=colorbar(ax);

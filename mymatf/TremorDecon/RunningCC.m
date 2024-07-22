@@ -20,9 +20,9 @@ defval('method','cumsum');
 
 % length of signal
 lsig = length(trace1);
-  trace1 = detrend(trace1); %just in case
-  trace2 = detrend(trace2);
-  
+trace1 = detrend(trace1); %just in case
+trace2 = detrend(trace2);
+
 
 if strcmp(method,'cumsum')  
   %auto dot products
@@ -74,7 +74,9 @@ elseif strcmp(method,'xcorr')
   for i = 1: length(irunccn)
     icnt = irunccn(i);
     ind = max(icnt-cclen/2, 1): min(icnt+cclen/2-1, lsig);
-    runccn(i) = xcorr(trace1(ind), trace2(ind),0,'normalized');  %0-lag maximum cc based on current alignment
+    tr1 = detrend(trace1(ind)); %remove mean
+    tr2 = detrend(trace2(ind)); %remove mean
+    runccn(i) = xcorr(tr1,tr2,0,'normalized');  %0-lag maximum cc based on current alignment
   end
   runccn(isnan(runccn) | isinf(runccn)) = 0;   % force the undefined portion to be 0 in case of denominator being 0  
 

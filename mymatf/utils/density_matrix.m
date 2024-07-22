@@ -15,8 +15,8 @@ function [density1d,indgrid,xgrid,ygrid,densitygrid] = density_matrix(x,y,xran,y
 % Last modified date:   2022/03/14
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-nx = (xran(end) - xran(1))/ dx;
-ny = (yran(end) - yran(1))/ dy;
+nx = floor((xran(end) - xran(1))/dx) +1;
+ny = floor((yran(end) - yran(1))/dy) +1;
 
 % xloc1d = zeros(nx*ny,1);
 % yloc1d = zeros(nx*ny,1);

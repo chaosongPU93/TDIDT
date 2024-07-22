@@ -1,6 +1,6 @@
 function [locxyproj,dlocxyproj,stats] = srcprojdistNtoNm(timevec,locxy,m,sps)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% [dprojxy,stats] = srcprojdistNtoNm(timevec,locxy,m,sps)
+% [locxyproj,dlocxyproj,stats] = srcprojdistNtoNm(timevec,locxy,m,sps)
 %
 % Compute the projected distance between the sources N and N-1 until N and
 % N-m, in the sequential order of origin time or arrival time,
@@ -12,6 +12,8 @@ function [locxyproj,dlocxyproj,stats] = srcprojdistNtoNm(timevec,locxy,m,sps)
 % First created date:   2023/03/08
 % Last modified date:   2023/03/08
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+defval('m',1);
+defval('sps',160);
 
 %%%number of sources has to be larger than 2, otherwise there can be only 1 possible line to fit 
 if size(locxy,1) <= 2

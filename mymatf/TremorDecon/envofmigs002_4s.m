@@ -244,7 +244,6 @@ bostdayofa = cat(1,bostdayof{:});   %MB other fams' lfes of the same dates I cas
 clear bostdayof
 
 %%
-
 %filtering passband for reading data, confirmed by 'spectrabursts002_4s.m'
 hisig=6.3; % this will give a similar spectral shape between template and signal
 losig=1.8;
@@ -252,7 +251,7 @@ losig=1.8;
 k = 0;  %deconvolution burst win count
 n = 0;  %auto-determined migration win count
 
-widin = 8.5;  % maximum width allowed is 8.5 inches
+widin = 8.3;  % maximum width allowed is 8.5 inches
 htin = 10.5;   % maximum height allowed is 11 inches
 nrow = 4;
 ncol = 1;

@@ -118,13 +118,15 @@ elseif isequal(ftrans,'interpArmb') || isequal(ftrans,'interpArmbreloc')
 end
 
 %%
-% avemed = average_pixel(hfuse(:,1),hfuse(:,2),[hfuse(:,9:10) hfuse(:,10)-hfuse(:,9)],'median');
-avemean = average_pixel(hfuse(:,1),hfuse(:,2),[hfuse(:,9:10) hfuse(:,10)-hfuse(:,9)],'mean');
+%%%obtain the mean of median of off12 (t1-t2), off13 (t1-t3), and
+%%%off23 (t2-t3==off13-off12). off12+off23-off13 == 0
+ave = average_pixel(hfuse(:,1),hfuse(:,2),[hfuse(:,9:10) hfuse(:,10)-hfuse(:,9)],'median');
+% ave = average_pixel(hfuse(:,1),hfuse(:,2),[hfuse(:,9:10) hfuse(:,10)-hfuse(:,9)],'mean');
 
 %get the 1-D derivative of offset wrt. relative location
 for i = 1: 3
-  dzdx(:,i) = dfxdx(avemean(:,2+i), avemean(:,1));
-  dzdy(:,i) = dfxdx(avemean(:,2+i), avemean(:,2));
+  dzdx(:,i) = dfxdx(ave(:,2+i), ave(:,1));
+  dzdy(:,i) = dfxdx(ave(:,2+i), ave(:,2));
 end
 %vector orientation at each point
 % vecang = atan2d(dzdy,dzdx);
@@ -134,45 +136,47 @@ end
 % vecang(vecang>360) = vecang(vecang>360)-90;
 
 vecang = atan2d(dzdy,dzdx);
-mvecang = median(vecang);
+mvecang = (90-median(vecang));
 
 %%
 %simply scatter the detections to check the spatial resolution
 xran = [-8 3];
 yran = [-4 4];
-figure
+f = initfig(8.5,4,1,3); %initialize fig
 for i = 1: 3
-  subplot(3,1,i)
-  scatter(avemean(:,1),avemean(:,2),10,avemean(:,2+i),'filled');
-  colormap('jet');
-  axis equal
-%   axis([xran yran]);
+  ax=f.ax(i); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
+  scatter(ax,ave(:,1),ave(:,2),10,ave(:,2+i),'filled');
+  colormap(ax,'jet');
+  axis(ax,'equal');
+  axis(ax,[xran yran]);
   [rotx, roty] = complex_rot(0,1,-mvecang(i));
-  xvect = [0-rotx 0+rotx];
-  yvect = [0-roty 0+roty];
-  drawArrow(gca,xvect,yvect,xran,yran,'linewidth',1);
-  c=colorbar;
-  caxis([-15 15]);
+  xarrow = [0-rotx 0+rotx];
+  yarrow = [0-roty 0+roty];
+  p1=annotation('arrow','color','k','linestyle','-','linewidth',1);
+  p1.Parent = ax;
+  p1.Position = [xarrow(1), yarrow(1), xarrow(2)-xarrow(1), yarrow(2)-yarrow(1)] ;
+  c=colorbar(ax);
+  caxis(ax,[-15 15]);
   box on
   if i==1
-    title('PGC-SSIB (off12)');
+    title(ax,'PGC-SSIB (off12)');
   elseif i==2
-    title('PGC-SILB (off13)');
+    title(ax,'PGC-SILB (off13)');
   else
-    title('SSIB-SILB (off23)');
+    title(ax,'SSIB-SILB (off23)');
   end
-  longticks(gca,1);
-  if i == 3
-    xlabel('E (km)');
-    ylabel('N (km)');
+  longticks(ax,1);
+  if i == 1
+    xlabel(ax,'E (km)');
+    ylabel(ax,'N (km)');
     c.Label.String = sprintf('mean offset (samples) at %d Hz',sps);
   end
 
 end
 
 %%
-% avemed = average_pixel(hfuse(:,9),hfuse(:,10),[hfuse(:,9:10) hfuse(:,10)-hfuse(:,9)],'median');
-avemean = average_pixel(hfuse(:,9),hfuse(:,10),[hfuse(:,9:10) hfuse(:,10)-hfuse(:,9)],'mean');
+% ave = average_pixel(hfuse(:,9),hfuse(:,10),[hfuse(:,9:10) hfuse(:,10)-hfuse(:,9)],'median');
+ave = average_pixel(hfuse(:,9),hfuse(:,10),[hfuse(:,9:10) hfuse(:,10)-hfuse(:,9)],'mean');
 
 %simply scatter the detections to check the spatial resolution
 xran = [-30 30];
@@ -180,7 +184,7 @@ yran = [-20 20];
 figure
 for i = 1: 3
   subplot(3,1,i)
-  scatter(avemean(:,1),avemean(:,2),10,avemean(:,2+i),'filled');
+  scatter(ave(:,1),ave(:,2),10,ave(:,2+i),'filled');
   colormap('jet');
   axis equal
   axis([xran yran]);

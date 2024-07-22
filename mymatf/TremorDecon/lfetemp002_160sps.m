@@ -23,8 +23,10 @@ ccmethod = 2; % only using lfes passed the cc thresholds (ccmethod=1); using all
 ccbp = [2 8];
 plflag = 0;
 
-[dstack,ccstack,dstackort,ccstackort] = mk_bbtemp_PGC(fam,CATA,sps,templensec,ccmethod,ccbp,plflag);
-           
+[dstack,ccstack,dstackort,ccstackort,dstackvert,ccstackvert] = ...
+  mk_bbtemp_PGC(fam,CATA,sps,templensec,ccmethod,ccbp,plflag);
+
+%%
 %write into files, NOTE the remade stacks contain all 7 stations
 allstas=['PGC  '
   'SSIB '
@@ -65,12 +67,28 @@ for ista = 1: allnsta
   grid on
 end
 
+figure;
+for ista = 1: allnsta
+  subplot(allnsta,1,ista);
+  plot(dstackvert(ista, mid-5*sps: mid+5*sps), 'k', 'linewidth', 1); hold on
+  plot(ccstackvert(ista, mid-5*sps: mid+5*sps), 'r', 'linewidth', 1);
+  title(strcat('Stacked template (vertical) with/without CC at station', {' '}, ...
+    strtrim(allstas(ista, :))));
+  legend('Direct stack', 'CC stack');
+  xlabel('Samples');
+  ylabel('Amplitude');
+  box on
+  grid on
+end
+
+%%
 %write into files
 workpath = getenv('ALLAN');
 datapath = strcat(workpath,'/data-no-resp');
 temppath = strcat(datapath, '/templates/PGCtrio/');
 suffix = '_catnew';
 for ista = 1: allnsta
+  %%%optimal components
   fidds = fopen(strcat(temppath, fam, '_', strtrim(allstas(ista, :)), '_', ...
     num2str(sps), 'sps_', num2str(templensec), 's_', ...
     'BBDS_', 'opt_Nof_Non_Chao',suffix), 'w+');  % bandpassed direct stack, no filter, no norm
@@ -82,6 +100,7 @@ for ista = 1: allnsta
   fprintf(fidccs, '%f \n', ccstack(ista, :)');
   fclose(fidccs);
   
+  %%%orthogonal components
   fidds = fopen(strcat(temppath, fam, '_', strtrim(allstas(ista, :)), '_', ...
     num2str(sps), 'sps_', num2str(templensec), 's_', ...
     'BBDS_', 'ort_Nof_Non_Chao',suffix), 'w+');  % bandpassed direct stack, no filter, no norm
@@ -92,6 +111,19 @@ for ista = 1: allnsta
   fclose(fidds);
   fprintf(fidccs, '%f \n', ccstackort(ista, :)');
   fclose(fidccs);
+  
+  %%%vertical components
+  fidds = fopen(strcat(temppath, fam, '_', strtrim(allstas(ista, :)), '_', ...
+    num2str(sps), 'sps_', num2str(templensec), 's_', ...
+    'BBDS_', 'vert_Nof_Non_Chao',suffix), 'w+');  % bandpassed direct stack, no filter, no norm
+  fidccs = fopen(strcat(temppath, fam, '_', strtrim(allstas(ista, :)), '_', ...
+    num2str(sps), 'sps_', num2str(templensec), 's_', ...
+    'BBCCS_', 'vert_Nof_Non_Chao',suffix), 'w+');  % bandpassed cc stack, no filter, no norm
+  fprintf(fidds, '%f \n', dstackvert(ista, :)');
+  fclose(fidds);
+  fprintf(fidccs, '%f \n', ccstackvert(ista, :)');
+  fclose(fidccs);
+
 end
 
 

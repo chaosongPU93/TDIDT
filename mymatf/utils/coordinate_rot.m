@@ -1,6 +1,6 @@
 function [newx,newy] = coordinate_rot(oldx,oldy,angle,rotcnt)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% [newx,newy] = coordinate_rot(oldx,oldy,angle,rotcnt)
+% [newx,newy] = COORDINATE_ROT(oldx,oldy,angle,rotcnt)
 %
 % This function is used to rotate the 2-D coodinate system X-Y counter-clockwise 
 % by an 'angle' to get the location of points (oldx,oldy) in the new coord system 
@@ -13,7 +13,8 @@ function [newx,newy] = coordinate_rot(oldx,oldy,angle,rotcnt)
 % INPUT:  
 %   oldx:     original x, one point or vector
 %   oldy:     original y, one point or vector
-%   angle:  calculated counter-clockwise. in degree, add '-' to incate clockwise rotation
+%   angle:    calculated counter-clockwise in degree from east, 4-quadurant
+%             convention. Negative to incate rotation clockwise 
 %   rotcnt:   rotation center in the original X-Y-Z, default is (0,0)
 % 
 % OUTPUT:

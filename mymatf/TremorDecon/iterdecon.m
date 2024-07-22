@@ -1,4 +1,4 @@
-function [sigdecon,pred,res,dresit,mfitit,ampit,nit,fighdl,rf] = ...
+function [sigdecon,pred,res,dresit,mfitit,ccchgit,ampit,nit,fighdl,rf] = ...
   iterdecon(sig,wlet,rcc,noi,fixthr,dt,twlet,width,dres_min,mfit_min,nit_max,nimp_max,fpltit,fpltend,fpltchk)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % [sigdecon,pred,res,dresit,mfitit,nit,rf] = ...
@@ -93,7 +93,7 @@ function [sigdecon,pred,res,dresit,mfitit,ampit,nit,fighdl,rf] = ...
 % First created date:   2021/11/12
 % Last modified date:   2021/11/12
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-tic
+% tic
 %% default value for easy debugging or no input
 % defval('shift','0');
 % defval('width','2.5');
@@ -143,7 +143,7 @@ sig = reshape(sig, [],1); % reshape to a vector if not
 lsig = size(sig, 1);   % length of signal
 wlet = reshape(wlet, [],1); % reshape to a vector if not
 lwlet = size(wlet, 1);  % length of wavelet, usually shorter than signal
-if nargout == 9   % meanning rf is also among the outputs
+if nargout == 10   % meanning rf is also among the outputs
   nfft = pow2(nextpow2(lsig));  % length that is easy for fft, etc. NOT necessary if no fft is needed
   %pad input with zeros to the same length of next power of 2
   sig = [sig; zeros(nfft-lsig, 1)];
@@ -198,7 +198,7 @@ if isempty(fixthr)
 else
   medwtcoef = fixthr;
 end
-medwtcoef
+% medwtcoef
 
 mwtcoef = medwtcoef*1.1;  % intial amplitude of max master CC weighted by rcc, value doesn't really matter 
 medrccpeak = median(rcc(pkind));
@@ -247,7 +247,11 @@ while mwtcoef>medwtcoef   %if discard hard limit on max num of iters, USED FOR R
 % while max(abs(predchg))>std(noi) && nit<nit_max % if you believe the noise is gaussian distributed
 % while amp>ampnoin && mad(res)>mad(noi) && nit<nit_max
 
-  nit = nit+1
+  nit = nit+1;
+  
+%  if rem(nit,100) == 0
+%    nit
+%  end
 
   %%%%%%%% segment of find max CC location and Amp. from reference %%%%%%%%%%%%
 %   %find cross-correlation
@@ -413,12 +417,16 @@ while mwtcoef>medwtcoef   %if discard hard limit on max num of iters, USED FOR R
   res_new = sig-pred;   % residual
 %   dres = abs((sum(res.^2)-sum(res_new.^2))./sum(res.^2));  % target evaluation objective
 %   dres = abs(norm(res).^2-norm(res_new).^2)./norm(res).^2;  % this is equivalent to the above
-  varred = abs(var(res)-var(res_new))./var(res);  % again equivalent to the above, but called variance reduction
+%   dres = abs(norm(res)-norm(res_new))./norm(res);  % this is equivalent to the above
+  dres = abs(var(res)-var(res_new))./var(res);  % again equivalent to the above, but called variance reduction
 %   dres = sum((res-res_new).^2)./sum(res.^2);  % alternative evaluation objective
 %   mfit = sum(res_new.^2)./sum(sig.^2);  % misfit objective, we want the residual to decrease to 0
-  mfit = norm(res_new);  % alternative misfit objective
-  dresit(nit) = varred*100;   % store them, make the relative change in percent
+%   mfit = norm(res_new);  % alternative misfit objective
+  mfit = var(res_new);
+  dresit(nit) = dres*100;   % store them, make the relative change in percent
   mfitit(nit) = mfit;
+  ccchgit(nit,1) = xcorr(sig,pred,0,'normalized');  %CC between signal and prediction, should increase
+  ccchgit(nit,2) = xcorr(sig,res_new,0,'normalized');  %CC between signal and res, should decrease
   
 %   %For benchmark, the following 3 values should be identical according to theory in the reference 
 %   sum(res_new.^2) 
@@ -429,7 +437,7 @@ while mwtcoef>medwtcoef   %if discard hard limit on max num of iters, USED FOR R
   %this can be used only when there will be a global minimum and pre-compute for a large iterations
   dof = 1*nit;  % number of free params, for each iteration nit, only the index time idximp is free
   if var(noi)>0
-    AIC(nit) = mfit^2/var(noi)+2*dof; % variance of background noise
+    AIC(nit) = norm(res_new)^2/var(noi)+2*dof; % variance of background noise
   else
     AIC(nit) = 0;
   end
@@ -546,33 +554,33 @@ sigdecon = sigdecon(1:lsig);  %cut deconvolved signal
 dresit = dresit(:);
 mfitit = mfitit(:);
   
-%Disp information if some stopping criteria have been met 
-if idximp>=1 && idximp<=nfft   % notify if index is out of bounds
-  if varred*100<=dres_min
-    fprintf('Relative change in L2-norm of residual has reached dres_min=%f%% \n',dres_min);
-  end
-  if mfit<=mfit_min
-    fprintf('L2-norm of residual has reached mfit_min=%e \n',mfit_min);
-  end
-  if mad(res)<=mad(noi)
-    fprintf('MAD of residual has been no larger than that of noise \n');
-  end
-  if max(abs(predchg))<=mad(noi)
-    fprintf('Max of change in prediction has been no larger than MAD of noise \n');
-  end
-  if amp<=ampnoin
-    fprintf('Ampltidue of new impulses has been no larger than noise level \n');
-  end
-  if nit>=nit_max
-    fprintf('Number of iterations has reached nit_max=%d \n',nit_max);
-  end
-  if nimp>=nimp_max
-    fprintf('Number of impulses has reached nimp_max=%d \n',nimp_max);
-  end
-end
+% %Disp information if some stopping criteria have been met 
+% if idximp>=1 && idximp<=nfft   % notify if index is out of bounds
+%   if varred*100<=dres_min
+%     fprintf('Relative change in L2-norm of residual has reached dres_min=%f%% \n',dres_min);
+%   end
+%   if mfit<=mfit_min
+%     fprintf('L2-norm of residual has reached mfit_min=%e \n',mfit_min);
+%   end
+%   if mad(res)<=mad(noi)
+%     fprintf('MAD of residual has been no larger than that of noise \n');
+%   end
+%   if max(abs(predchg))<=mad(noi)
+%     fprintf('Max of change in prediction has been no larger than MAD of noise \n');
+%   end
+%   if amp<=ampnoin
+%     fprintf('Ampltidue of new impulses has been no larger than noise level \n');
+%   end
+%   if nit>=nit_max
+%     fprintf('Number of iterations has reached nit_max=%d \n',nit_max);
+%   end
+%   if nimp>=nimp_max
+%     fprintf('Number of impulses has reached nimp_max=%d \n',nimp_max);
+%   end
+% end
 
 % if required, create receiver function rf, i.e., impulses with a finite width
-if nargout == 9   % meanning rf is also among the outputs
+if nargout == 10   % meanning rf is also among the outputs
   if width   % if the width is not 0
     %     synpdf = normpdf(xx,mu,sigma);
     Gauss = gauss_zerophase(nfft,dt,width);
@@ -588,7 +596,7 @@ if nargout == 9   % meanning rf is also among the outputs
   rf = rf(1:lsig);
 end
 
-toc
+% toc
 
 %% plot for the final iteration
 if fpltend
@@ -616,13 +624,11 @@ if fpltend
   title(ax,sprintf('Total Iterations: %d',nit));
   axsym(ax,2);
   axranexp(ax,6,10);
-  if lwlet < lsig
-    shrink(ax,lsig/lwlet,1);
-    ax.Position(1)=axpos(1,1);
-    nolabels(ax,1); 
-%   else
-%     longticks(ax,2); 
-  end
+%   if lwlet < lsig
+%     shrink(ax,lsig/lwlet,1);
+%     ax.Position(1)=axpos(1,1);
+%     nolabels(ax,1); 
+%   end
   ax.Box='on'; grid(ax,'on');longticks(ax,2); 
 
   ax=f2.ax(2);
@@ -656,32 +662,44 @@ if fpltend
   p1=plot(ax,res, 'c-'); xlim(ax,[0,lsig]); ylim(ax,yran); hold(ax,'on');
   p2=plot(ax,noi,'-','color',[.7 .7 .7]);
   legend(ax,[p1,p2],'Residual','Noise');
-  xlabel(sprintf('Samples at %d Hz',sps),'FontSize',12);
-  ylabel('Amplitude','FontSize',12);
+  xlabel(ax,sprintf('Samples at %d Hz',sps),'FontSize',12);
+  ylabel(ax,'Amplitude','FontSize',12);
   longticks(ax,2); ax.Box='on'; grid(ax,'on'); hold(ax,'off'); 
-  f2.ax(1).XTick = ax.XTick;
+%   f2.ax(1).XTick = ax.XTick;
   fighdl{2} = f2;
 
   
   %%%Iteration performance
   f3.fig = figure(300); clf(f3.fig);
   f3.fig.Renderer = 'painters';
-  ax = gca; box on; grid on;
+  ax = subplot(121); box on; grid on;
   hold(ax,'on');
   yyaxis(ax,'left');
   p1=plot(ax,1:nit,dresit,'b-');
   scatter(ax,nit,dresit(end),20,'b','filled');
-  text(ax,round(nit*4/5), dresit(end)+0.15, num2str(dresit(end)));
-  ylabel(ax,'Variance reduction (%)');
+%   text(ax,round(nit*4/5), dresit(end)+0.15, num2str(dresit(end)));
+  ylabel(ax,'Relative change in misfit (%)');
   yyaxis(ax,'right');
   p2=plot(ax,1:nit,mfitit,'r-');
   scatter(ax,nit,mfitit(end),20,'r','filled');
-  text(ax,round(nit*4/5), mfitit(end)+0.15, num2str(mfitit(end)));
-  ylabel(ax,'L2-norm');
-  legend(ax,[p1,p2],'Variance reduction of residual (dres)','L2-norm of residual, or data misfit (mfit)');
+%   text(ax,round(nit*4/5), mfitit(end)+0.15, num2str(mfitit(end)));
+  ylabel(ax,'Misfit');
+  legend(ax,[p1,p2],'Relative change in variance','Variance of residual');
+%   legend(ax,[p1,p2],'Relative change in L2-norm','L2-norm of residual');
   xlabel(ax,'Iteration number');
   hold(ax,'off');
+  ax = subplot(122); box on; grid on;
+  hold(ax,'on');
+  p1=plot(ax,1:nit,ccchgit(:,1),'b-');
+  scatter(ax,nit,ccchgit(end,1),20,'b','filled');
+  p2=plot(ax,1:nit,ccchgit(:,2),'r-');
+  scatter(ax,nit,ccchgit(end,2),20,'r','filled');
+  legend(ax,[p1,p2],'Sig-Pred','Sig-Res');
+  xlabel(ax,'Iteration number');  
+  ylabel(ax,'CC');
+  hold(ax,'off');
   fighdl{3} = f3;
+  
   
   %%%AIC variation
   f4.fig = figure(400); clf(f4.fig);

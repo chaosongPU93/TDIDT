@@ -143,6 +143,7 @@ for m=1:mmax
 
 end
 
+%%%% PLOT
 color = jet(mmaxnonzero);
 for m = 1:mmaxnonzero
   %plot data

@@ -27,6 +27,7 @@ else
   ncol = 1;
 end
 f = initfig(widin,htin,nrow,ncol); %initialize fig
+optaxpos(f,nrow,ncol);
 
 %cumulative density
 ax=f.ax(1);
@@ -45,9 +46,8 @@ end
 scatter(ax,dum(:,1),dum(:,2),msize,dum(:,3),symbol,'filled','MarkerEdgeColor','none');
 text(ax,0.98,0.05,sprintf('%d events',sum(density1d(:,3))),'Units','normalized',...
   'HorizontalAlignment','right','FontSize',9);
-oldc = colormap(ax,'kelicol');
-newc = flipud(oldc);
-colormap(ax,newc);
+% colormap(ax,flipud(colormap(ax,'kelicol')));
+colormap(ax,'plasma');
 c=colorbar(ax,'SouthOutside');
 ax.CLim(2) = prctile(dum(:,3),99);
 if strcmp(scale,'log10')
@@ -75,9 +75,8 @@ if ~isempty(sumz1d)
     sumz1d(:,3) = log10(sumz1d(:,3));
   end
   scatter(ax,sumz1d(:,1),sumz1d(:,2),msize,sumz1d(:,3),symbol,'filled','MarkerEdgeColor','none');
-  oldc = colormap(ax,'kelicol');
-  newc = flipud(oldc);
-  colormap(ax,newc);
+% colormap(ax,flipud(colormap(ax,'kelicol')));
+  colormap(ax,'plasma');
   c=colorbar(ax,'SouthOutside');
 %   ax.CLim(2) = prctile(sumz1d(:,3),99);
   caxis(ax,[prctile(sumz1d(:,3),1) prctile(sumz1d(:,3),99)]);

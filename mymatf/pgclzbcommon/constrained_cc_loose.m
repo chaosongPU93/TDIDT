@@ -1,4 +1,5 @@
-function [off12,off13,cc,iloff] = constrained_cc_loose(trace,mid,wlen,mshift,ccmin,iup)
+function [off12,off13,cc,iloff] = ...
+  constrained_cc_loose(trace,mid,wlen,mshift,ccmin,iup)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Similar to 'constrained_cc_interp.m', this function is to carry out a 
 % constrained cross-correlation between waveforms at 3 stations to best 
@@ -30,6 +31,10 @@ function [off12,off13,cc,iloff] = constrained_cc_loose(trace,mid,wlen,mshift,ccm
 % Last modified date:   2022/09/21
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%in case it has non-zero mean
+for i = 1:size(trace,1)
+  trace(i,:) = detrend(trace(i,:));   
+end
 stackauto = trace.*trace;
 templen = size(trace,2);
 lenx = templen-2*mshift;

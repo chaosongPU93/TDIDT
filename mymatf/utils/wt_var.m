@@ -14,13 +14,16 @@ function [var_wt] = wt_var(x, wt, WtTypeFlag)
 %       WtTypeFlag:     flag to indicate which weighting scheme is 
 %                       used to compute unbiased weighted variance
 %                       and degree of freedom, reliability weights (1)
-%                       frequency weights (2), OR biased type (0)     
+%                       frequency weights (2, default), OR 
+%                       biased type (0)     
 %       
 %
 %
 % By Chao Song, chaosong@princeton.edu
 % First created date:   2020/10/19
 % Last modified date:   2020/10/19
+
+defval('WtTypeFlag',2);
 
 mean_wt = wt_mean(x, wt);
 sqsum = sum(wt .* (x - mean_wt).^2, 1);

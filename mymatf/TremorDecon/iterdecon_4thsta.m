@@ -122,7 +122,7 @@ if isempty(fixthr)
 else
   medwtcoef = fixthr;
 end
-medwtcoef
+% medwtcoef
 %%%%%%%%%%%%%%%%%%
 
 %% iteration >= 1 
@@ -217,9 +217,18 @@ for isrc = 1: size(impindep,1)
   else
     offdiff = 0;
   end
+  
+%   if ~isempty(off1iw)
+%     iwin = findwhichrange(impindep(isrc,1),irccran);
+%     %use that subwin to compute the difference in alignment bewteen subwin and entire win
+%     offdiff = off1iw(iwin); %just a single value
+%   else
+%     offdiff = off1i;
+%   end
+  
   %source arrival prediction from plane fitting, including calibrating the arrival prediction in the
   %context of prealigned signal, note sign is '+' 
-  idxpred = pred_tarvl_at4thsta(stas,impindep(isrc,7),impindep(isrc,8),impindep(isrc,1),offdiff);
+  [idxpred, off14_plfit] = pred_tarvl_at4thsta(stas,impindep(isrc,7),impindep(isrc,8),impindep(isrc,1),offdiff);
   %find peaks within allowable range, and height is positive??
   indclose = find(abs(wtcoef(:,1)-(idxpred-round(ldiff/2)))<=offmax & pkhgt(indabvthr)>=0); %context of indices of 'coefeff'
   if isempty(indclose)

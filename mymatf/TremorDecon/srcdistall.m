@@ -19,6 +19,7 @@ function [dtime,dlocxy,eucdist] = srcdistall(timevec,locxy,septran)
 % are using 'abs' or not.  If you want to focus on events within a certain 
 % length of window X sec, meaning that the first and last events are differed
 % by at most X sec, essentially the 'septran' should be [0 X/2] sec.
+% --2024/04/12, for 'dtime', do not use 'abs' anymore!
 %
 %
 % Chao Song, chaosong@princeton.edu
@@ -45,7 +46,7 @@ for i = 1: nsrc-1
     ind = 1:length(othersrc);
   end
   
-  dtime{i} = abs(temptime(ind)-timevec(i));  
+  dtime{i} = temptime(ind)-timevec(i);  %not using abs anymore!
   dlocxy{i} = [temploc(ind,1)-locxy(i,1) temploc(ind,2)-locxy(i,2)];
   eucdist{i} = sqrt((temploc(ind,1)-locxy(i,1)).^2 + (temploc(ind,2)-locxy(i,2)).^2);
   

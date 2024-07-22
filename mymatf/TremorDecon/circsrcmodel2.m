@@ -9,12 +9,19 @@
 % --This code can be considered as the supplementary information for getting
 % the distance from each source to all other sources whose ABS arrival time
 % difference is within 10 s, +/- 10s == 20 s.
+% --as of 2024/03/07, the window length is set to be 25/2 s, 25 s is fine as
+% it is also the window length for LFE detection.
+% --Lots of information is shown in this resulting plot of each window,
+% including the distance between N and N-1, and each to others, projection
+% direction, etc.
+% --Other stuff, like the location difference (sign preserved) are now moved
+% to 'lfedloc_incustomwin.m' for lumped statistics.
 %
 %
 %
 % Chao Song, chaosong@princeton.edu
 % First created date:   2024/01/08
-% Last modified date:   2024/01/08
+% Last modified date:   2024/03/07
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Initialization
 %%% SAME if focusing on the same region (i.e. same PERMROTS and POLROTS)
@@ -116,12 +123,6 @@ subwsectar = 25/2;  %target subwindow length in sec
 k = 0;  % count of the total subplots
 n = 1;  %between N and N-n
 m = 1;  %max n to compute
-dtnn1cat=[];
-dlocnn1cat=[];
-dloc_splnn1cat=[];
-dloc2allcat=[];
-dt2allcat=[];
-dloc2all_splcat=[];
 distnn1cat=[];
 dist2allcat=[];
 dprojxy1nn1cat=[];
@@ -164,24 +165,6 @@ for i = 1: nbst
       k=k+1;
       ampi(k,1) = median(mean(impiwin(:,[2 4 6]),2));
 
-      %%%%%% diff loc within short win, able to be combined to analyse later
-      %compute the diff loc between N and N-m, and each to all others in the
-      %short window, no projection is applied
-      [dloc,dt,dloc_spl,dloc2all,dt2all,dloc2all_spl]=dloc_evtcustom(impiwin,implociwin,sps,ftrans,m,'tarvl');
-      mdtnn1(k,1)=median(dt{n});
-      mdlocnn1(k,:)=median(dloc{n});
-      mdloc_splnn1(k,:)=median(dloc_spl{n});
-      mdloc2all(k,:)=median(dloc2all);
-      mdt2all(k,1)=median(dt2all);
-      mdloc2all_spl(k,:)=median(dloc2all_spl);
-      dtnn1cat=[dtnn1cat; dt{n}];
-      dlocnn1cat=[dlocnn1cat; dloc{n}];
-      dloc_splnn1cat=[dloc_splnn1cat; dloc_spl{n}];
-      dloc2allcat=[dloc2allcat; dloc2all];
-      dt2allcat=[dt2allcat; dt2all];
-      dloc2all_splcat=[dloc2all_splcat; dloc2all_spl];
-      %%%%%%%%%%
-
       %%%%%% distance, etc for each short win
       %compute the abs distance between N and N-m, and each to all others in the
       %short window. For all srcs in each win, apply the PCA, and project to 
@@ -213,257 +196,73 @@ end
 
 %% which type of location difference or distance to look at
 % %%%%%%%% between consecutive ones
-% dloc_spl = dloc_splnn1cat;
-% dloc = dlocnn1cat;
-% dt = dtnn1cat;
 % dist = distnn1cat;
 % dprojxy1 = dprojxy1nn1cat;
 % dprojxy2 = dprojxy2nn1cat;
+% mdist = mdistnn1;
+% mdprojx1 = mdprojx1nn1;
+% mdprojx2 = mdprojx2nn1;
 % str=sprintf('between N and N-%d',n);
 %%%%%%%% between each to all others
-dloc_spl = dloc2all_splcat;
-dloc = dloc2allcat;
-dt = dt2allcat;
 dist = dist2allcat;
 dprojxy1 = dprojxy12allcat;
 dprojxy2 = dprojxy22allcat;
+mdist = mdist2all;
+mdprojx1 = mdprojx12all;
+mdprojx2 = mdprojx22all;
 str=sprintf('between each to others');
 
-%% summariz the location difference between consecutive ones, and each to all others
-%plot the diff location in samples, bin by pixel
-smoothsigma=1;
-contintvl=1;
-[coeff,score,angle,anglegeo,x0,y0,semia,semib,ellx,elly]=pcaellipse(dloc_spl);
-cstr={'# events / pixel'}; xran=[-40 40]; yran=[-40 40]; dx=1; dy=1;
-[f,den1d_spl,conmat]=plt_srcdlocinmap(dt/sps,dloc_spl,[],'spl',timetype,...
-  8,cstr,'o','linear','pixel',xran,yran,dx,dy,1,smoothsigma,contintvl);
-ax=f.ax(2);
-hold(ax,'on');
-plot(ax,ellx,elly,'k-','linew',2);
-plot(ax,x0+10*[coeff(1,2),-coeff(1,2)],y0+10*[coeff(2,2),-coeff(2,2)],'k--','linew',2);
-plot(ax,x0+10*[coeff(1,1),-coeff(1,1)],y0+10*[coeff(2,1),-coeff(2,1)],'k--','linew',2);
-text(ax,0.98,0.15,sprintf('%d ^o',round(anglegeo(2))),'Units','normalized',...
-  'HorizontalAlignment','right','FontSize',9);
-text(ax,0.98,0.1,sprintf('asprat: %.1f',semia/semib),'Units','normalized',...
-  'HorizontalAlignment','right','FontSize',9);
-supertit(f.ax, strcat({'location difference '},str));
-hold(ax,'off');
-ax=f.ax(3);
-hold(ax,'on');
-text(ax,0.75,0.1,sprintf('smooth sigma: %.1f',smoothsigma),'Units','normalized',...
-  'HorizontalAlignment','right','FontSize',9);
-text(ax,0.75,0.05,sprintf('interval: %d',contintvl),'Units','normalized',...
-  'HorizontalAlignment','right','FontSize',9);
-hold(ax,'off');
-% keyboard
-
-%%
-%plot the diff location in map, bin by grid
-smoothsigma=1;
-contintvl=1;
-[coeff,score,angle,anglegeo,x0,y0,semia,semib,ellx,elly]=pcaellipse(dloc);
-cstr={'# events / grid'}; xran=[-4 4]; yran=[-4 4]; dx=0.1; dy=0.1;
-[f,den1d,conmat]=plt_srcdlocinmap(dt/sps,dloc,[],'km',timetype,...
-  8,cstr,'o','linear','grid',xran,yran,dx,dy,1,smoothsigma,contintvl);
-ax=f.ax(2);
-hold(ax,'on');
-plot(ax,ellx,elly,'k-','linew',2);
-plot(ax,x0+[coeff(1,2),-coeff(1,2)],y0+[coeff(2,2),-coeff(2,2)],'k--','linew',2);
-plot(ax,x0+[coeff(1,1),-coeff(1,1)],y0+[coeff(2,1),-coeff(2,1)],'k--','linew',2);
-text(ax,0.98,0.15,sprintf('%d ^o',round(anglegeo(2))),'Units','normalized',...
-  'HorizontalAlignment','right','FontSize',9);
-text(ax,0.98,0.1,sprintf('asprat: %.1f',semia/semib),'Units','normalized',...
-  'HorizontalAlignment','right','FontSize',9);
-hold(ax,'off');
-ax=f.ax(3);
-hold(ax,'on');
-F = scatteredInterpolant(conmat(:,3),conmat(:,4),conmat(:,1),'linear','none');
-%a line cross (0,0) in the projection direction
-x = reshape(xran(1):0.01:xran(2), [], 1);
-yopt = linefcn(x,tand(angle(2)),0);
-yopt1 = linefcn(x,tand(angle(2)),0.25/cosd(angle(2)));
-yopt2 = linefcn(x,tand(angle(2)),-0.25/cosd(angle(2)));
-plot(ax,x,yopt,'k-','linew',2);
-plot(ax,x,yopt1,'k--','linew',1);
-plot(ax,x,yopt2,'k-.','linew',1);
-%a line cross (0,0) in the orthogonal direction
-yort = linefcn(x,tand(angle(1)),0);
-yort1 = linefcn(x,tand(angle(1)),-0.25/cosd(angle(1)));
-yort2 = linefcn(x,tand(angle(1)),0.25/cosd(angle(1)));
-plot(ax,x,yort,'-','linew',2,'color',[.5 .5 .5]);
-plot(ax,x,yort1,'--','linew',1,'color',[.5 .5 .5]);
-plot(ax,x,yort2,'-.','linew',1,'color',[.5 .5 .5]);
-text(ax,0.75,0.1,sprintf('smooth sigma: %.1f',smoothsigma),'Units','normalized',...
-  'HorizontalAlignment','right','FontSize',9);
-text(ax,0.75,0.05,sprintf('interval: %d',contintvl),'Units','normalized',...
-  'HorizontalAlignment','right','FontSize',9);
-hold(ax,'off');
-
-supertit(f.ax, strcat({'Map-view, location difference '},str));
-
-
-%% overall diff loc distribution and the projection
-f = initfig(8,4.5,1,2);
-optaxpos(f,1,2);
-supertit(f.ax(1:2),sprintf('all, %d dpts',size(dloc,1)),10);
-xran=[-4 4]; binw=0.1; legendstr1={'E','N'};
-normopt='custom'; normalizer=length(dloc);
-f.ax(1)=plt_dlochist(f.ax(1),dloc,xran,binw,legendstr1,normopt,normalizer);
-
-legendstr2={sprintf('%d ^o',round(anglegeo(2))), ...
-  sprintf('%d ^o',round(anglegeo(1)))};
-[~,~,dprojloc] = customprojection(dloc(:,1:2),anglegeo(2));
-f.ax(2)=plt_dlochist(f.ax(2),dprojloc,xran,binw,legendstr2,normopt,normalizer);
-distprojloc=median(abs(dprojloc(:,1)));
-
-%% if choosing a line intersecting with the contour
-f = initfig(8,4.5,1,2);
-optaxpos(f,1,2);
-[f.ax(1),muopt,sigmaopt,mdistprojopt]=plt_dloccrssect(f.ax(1),F,x,yopt,anglegeo(2),...
-  [0 0 0; 0 0 1],xran,normalizer,yopt1,yopt2);
-
-[f.ax(2),muort,sigmaort,mdistprojort]=plt_dloccrssect(f.ax(2),F,x,yort,anglegeo(1),...
-  [.5 .5 .5; 1 0 0],xran,normalizer,yort1,yort2);
-
-
-%% if choose a strip with a finite width in the PCA direction
-[~,~,dprojloc] = customprojection(dloc(:,1:2),anglegeo(2));
-
-wid=0.45;
-cstr={'# events / grid'}; xran=[-4 4]; yran=[-4 4]; dx=0.1; dy=0.1;
-[f,den1d]=plt_srcdlocinmap(dt/sps,dprojloc,[],'km',timetype,...
-  8,cstr,'o','linear','grid',xran,yran,dx,dy,0);
-ax=f.ax(2);
-hold(ax,'on');
-plot(ax,ax.XLim,[wid wid],'-','linew',2,'color',[.7 .7 .7]);
-plot(ax,ax.XLim,[-wid -wid],'-','linew',2,'color',[.7 .7 .7]);
-hold(ax,'off');
-ax=f.ax(1);
-hold(ax,'on');
-plot(ax,ax.XLim,[wid wid],'-','linew',2,'color',[.7 .7 .7]);
-plot(ax,ax.XLim,[-wid -wid],'-','linew',2,'color',[.7 .7 .7]);
-hold(ax,'off');
-
-f = initfig(8,8,2,2);
-supertit(f.ax(1:2),sprintf('all, %d dpts',size(dloc,1)),10);
-xran=[-4 4]; binw=0.2; legendstr1={'E','N'}; 
-normopt='custom'; normalizer=length(dloc);
-f.ax(1)=plt_dlochist(f.ax(1),dloc,xran,binw,legendstr1,normopt,normalizer);
-legendstr2={sprintf('%d ^o',round(anglegeo(2))), ...
-  sprintf('%d ^o',round(anglegeo(1)))};
-f.ax(2)=plt_dlochist(f.ax(2),dprojloc,xran,binw,legendstr2,normopt,normalizer);  
-distprojlocnn1=median(abs(dprojloc(:,1)));
-
-%strip along the short direction
-ind1=find(abs(dprojloc(:,2))<=wid);
-dlocplt1=dloc(ind1,:);
-dprojlocplt1=dprojloc(ind1,:);
-dlocsplplt1=dloc_spl(ind1,:);
-title(f.ax(3),sprintf('Along %d^o, %.1f km wide, %d dpts',...
-  round(anglegeo(2)),2*wid,size(dlocplt1,1)));
-% legendstr1={'E','N'};
-% f.ax(3)=plt_dlochist(f.ax(3),dlocplt,xran,binw,legendstr1,normopt);
-normopt='custom'; normalizer=length(dlocplt1);
-legendstr2={sprintf('%d ^o',round(anglegeo(2)))};
-f.ax(3)=plt_dlochist(f.ax(3),dprojlocplt1(:,1),xran,binw,legendstr2,...
-  normopt,normalizer);  
-distprojlocplt1=median(abs(dprojlocplt1(:,1)));
-
-xedge=xran(1)+binw/2:binw:xran(2)-binw/2;
-xcnt=0.5*(xedge(1:end-1)+xedge(2:end));
-nunispl=zeros(length(xedge)-1,1);
-nuni=zeros(length(xedge)-1,1);
-Nnspl=zeros(length(xedge)-1,1);
-Nn=zeros(length(xedge)-1,1);
-for j=1:length(xedge)-1
-  ind=find(dprojlocplt1(:,1)>=xedge(j)&dprojlocplt1(:,1)<xedge(j+1));
-  if ~isempty(ind)      
-    nunispl(j)=size(unique(dlocsplplt1(ind,:),'row'),1);
-    nuni(j)=size(unique(dlocplt1(ind,:),'row'),1);
-    Nnspl(j)=length(ind)/nunispl(j);
-    Nn(j)=length(ind)/nuni(j);
-  end
-end
-f1=initfig(8,4,1,2);
-ax=f1.ax(1); hold(ax,'on'); ax.Box = 'on'; grid(ax,'on');
-bar(ax,xcnt,nuni,1,'stacked','b','facea',0.6);
-bar(ax,xcnt,nunispl,1,'stacked','r','facea',0.6);
-legend(ax,'relative loc.','sample space');
-ylabel(ax,'Unique points');
-xlabel(ax,'Location difference (km)');
-ax=f1.ax(2); hold(ax,'on'); ax.Box = 'on'; grid(ax,'on');
-bar(ax,xcnt,Nn,1,'stacked','b','facea',0.6);
-bar(ax,xcnt,Nnspl,1,'stacked','r','facea',0.6);
-ylabel(ax,'Normalized count');
-xlabel(ax,'Location difference (km)');
-
-%strip along the short direction
-% wid2=0.15;
-ind2=find(abs(dprojloc(:,1))<=wid);
-dlocplt2=dloc(ind2,:);
-dprojlocplt2=dprojloc(ind2,:);
-dlocsplplt2=dloc_spl(ind2,:);
-title(f.ax(4),sprintf('Along %d^o, %.1f km wide, %d dpts',...
-  round(anglegeo(1)),2*wid,size(dlocplt2,1)));
-% xran=[-4 4]; binw=0.1; legendstr1={'E','N'}; normopt='countdensity';
-% f.ax(3)=plt_dlochist(f.ax(3),dlocplt,xran,binw,legendstr1,normopt);
-legendstr2={sprintf('%d ^o',round(anglegeo(1)))};
-f.ax(4)=plt_dlochist(f.ax(4),dprojlocplt2(:,2),xran,binw,legendstr2,...
-  normopt,normalizer);    
-distprojlocplt2=median(abs(dprojlocplt2(:,1)));
-
-
 %% summarize the distance comparison between consecutive ones, and each to all others
-% f = initfig(12,4.5,1,3);
-% ax=f.ax(1); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
-% % p1=histogram(ax,distnn1cat,'binw',0.05,'normalization','count','Facec','b');
-% p2=histogram(ax,dist2allcat,'binw',0.05,'normalization','count','Facec','r');
-% % plot(ax,[median(distnn1cat) median(distnn1cat)],ax.YLim,'b--','LineWidth',1);
-% plot(ax,[median(dist2allcat) median(dist2allcat)],ax.YLim,'r--','LineWidth',1);
-% xlabel(ax,'Absolute distance (km)');
-% ylabel(ax,'Count');
-% legend(ax,[p2],'each to others');
-% ax=f.ax(2); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
-% % histogram(ax,abs(dprojxy1nn1cat(:,1)),'binw',0.05,'normalization','count','Facec','b');
-% histogram(ax,abs(dprojxy12allcat(:,1)),'binw',0.05,'normalization','count','Facec','r');
-% % plot(ax,[median(abs(dprojxy1nn1cat(:,1))) median(abs(dprojxy1nn1cat(:,1)))],ax.YLim,'b--','LineWidth',1);
-% plot(ax,[median(abs(dprojxy12allcat(:,1))) median(abs(dprojxy12allcat(:,1)))],ax.YLim,'r--','LineWidth',1);
-% xlabel(ax,'Distance along the 2nd PC (km)');
-% ylabel(ax,'Count');
-% ax=f.ax(3); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
-% % histogram(ax,abs(dprojxy2nn1cat(:,1)),'binw',0.05,'normalization','count','Facec','b');
-% histogram(ax,abs(dprojxy22allcat(:,1)),'binw',0.05,'normalization','count','Facec','r');
-% % plot(ax,[median(abs(dprojxy2nn1cat(:,1))) median(abs(dprojxy2nn1cat(:,1)))],ax.YLim,'b--','LineWidth',1);
-% plot(ax,[median(abs(dprojxy22allcat(:,1))) median(abs(dprojxy22allcat(:,1)))],ax.YLim,'r--','LineWidth',1);
-% xlabel(ax,'Distance along the prop. direc. (km)');
-% ylabel(ax,'Count');
-% keyboard
+f = initfig(12,4.5,1,3);
+ax=f.ax(1); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
+% p1=histogram(ax,distnn1cat,'binw',0.05,'normalization','count','Facec','b');
+p2=histogram(ax,dist2allcat,'binw',0.05,'normalization','count','Facec','r');
+% plot(ax,[median(distnn1cat) median(distnn1cat)],ax.YLim,'b--','LineWidth',1);
+plot(ax,[median(dist2allcat) median(dist2allcat)],ax.YLim,'r--','LineWidth',1);
+xlabel(ax,'Absolute distance (km)');
+ylabel(ax,'Count');
+legend(ax,[p2],'each to others');
+ax=f.ax(2); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
+% histogram(ax,abs(dprojxy1nn1cat(:,1)),'binw',0.05,'normalization','count','Facec','b');
+histogram(ax,abs(dprojxy12allcat(:,1)),'binw',0.05,'normalization','count','Facec','r');
+% plot(ax,[median(abs(dprojxy1nn1cat(:,1))) median(abs(dprojxy1nn1cat(:,1)))],ax.YLim,'b--','LineWidth',1);
+plot(ax,[median(abs(dprojxy12allcat(:,1))) median(abs(dprojxy12allcat(:,1)))],ax.YLim,'r--','LineWidth',1);
+xlabel(ax,'Distance along the 2nd PC (km)');
+ylabel(ax,'Count');
+ax=f.ax(3); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
+% histogram(ax,abs(dprojxy2nn1cat(:,1)),'binw',0.05,'normalization','count','Facec','b');
+histogram(ax,abs(dprojxy22allcat(:,1)),'binw',0.05,'normalization','count','Facec','r');
+% plot(ax,[median(abs(dprojxy2nn1cat(:,1))) median(abs(dprojxy2nn1cat(:,1)))],ax.YLim,'b--','LineWidth',1);
+plot(ax,[median(abs(dprojxy22allcat(:,1))) median(abs(dprojxy22allcat(:,1)))],ax.YLim,'r--','LineWidth',1);
+xlabel(ax,'Distance along the prop. direc. (km)');
+ylabel(ax,'Count');
+keyboard
 
 %% summarize the MEDIAN distance comparison between consecutive ones, and each to all others
 f = initfig(12,4.5,1,3);
 ax=f.ax(1); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
-p1=histogram(ax,mdistnn1,'binw',0.05,'normalization','count','Facec','b');
-p2=histogram(ax,mdist2all,'binw',0.05,'normalization','count','Facec','r');
-plot(ax,[median(mdistnn1) median(mdistnn1)],ax.YLim,'b--','LineWidth',1);
-plot(ax,[median(mdist2all) median(mdist2all)],ax.YLim,'r--','LineWidth',1);
+% p1=histogram(ax,mdistnn1,'binw',0.05,'normalization','count','Facec','b');
+p2=histogram(ax,mdist,'binw',0.05,'normalization','count');
+% plot(ax,[median(mdistnn1) median(mdistnn1)],ax.YLim,'b--','LineWidth',1);
+plot(ax,[median(mdist) median(mdist)],ax.YLim,'k--','LineWidth',1);
 xlabel(ax,'Absolute distance (km)');
 ylabel(ax,'Count');
-legend(ax,[p1,p2],'N and N-1','each to others');
+legend(ax,[p2],str);
 ax=f.ax(2); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
-histogram(ax,mdprojx1nn1,'binw',0.05,'normalization','count','Facec','b');
-histogram(ax,mdprojx12all,'binw',0.05,'normalization','count','Facec','r');
-plot(ax,[median(mdprojx1nn1) median(mdprojx1nn1)],ax.YLim,'b--','LineWidth',1);
-plot(ax,[median(mdprojx12all) median(mdprojx12all)],ax.YLim,'r--','LineWidth',1);
+% histogram(ax,mdprojx1nn1,'binw',0.05,'normalization','count','Facec','b');
+histogram(ax,mdprojx1,'binw',0.05,'normalization','count');
+% plot(ax,[median(mdprojx1nn1) median(mdprojx1nn1)],ax.YLim,'b--','LineWidth',1);
+plot(ax,[median(mdprojx1) median(mdprojx1)],ax.YLim,'k--','LineWidth',1);
 xlabel(ax,'Distance along the 2nd PC (km)');
 ylabel(ax,'Count');
 ax=f.ax(3); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
-histogram(ax,mdprojx2nn1,'binw',0.05,'normalization','count','Facec','b');
-histogram(ax,mdprojx22all,'binw',0.05,'normalization','count','Facec','r');
-plot(ax,[median(mdprojx2nn1) median(mdprojx2nn1)],ax.YLim,'b--','LineWidth',1);
-plot(ax,[median(mdprojx22all) median(mdprojx22all)],ax.YLim,'r--','LineWidth',1);
+% histogram(ax,mdprojx2nn1,'binw',0.05,'normalization','count','Facec','b');
+histogram(ax,mdprojx2,'binw',0.05,'normalization','count');
+% plot(ax,[median(mdprojx2nn1) median(mdprojx2nn1)],ax.YLim,'b--','LineWidth',1);
+plot(ax,[median(mdprojx2) median(mdprojx2)],ax.YLim,'k--','LineWidth',1);
 xlabel(ax,'Distance along the prop. direc. (km)');
 ylabel(ax,'Count');
-figname = sprintf('distcomp_wlen%ds_nwin%d.pdf',subwsec,k);
+figname = sprintf('distcomp_wlen%ds_nwin%d.pdf',subwsectar,k);
 orient(f.fig,'landscape');
 print(f.fig,'-dpdf','-bestfit',strcat('/home/chaosong/Pictures/',figname));
 keyboard
@@ -475,9 +274,7 @@ diams = [0.1 0.3 0.5 0.7];
 for ii = 4: length(diams)
   diam=diams(ii);
   radi=0.5*diam;
-  
-  subwsec=20;
-  
+    
   nrow1 = 4; % rows and cols of subplots in each figure
   ncol1 = 5;
   widin1 = 11; % size of each figure
@@ -490,8 +287,8 @@ for ii = 4: length(diams)
   f1 = initfig(widin1,htin1,nrow1,ncol1,ifig1);
   axpos1 = optaxpos(f1,nrow1,ncol1,pltxran1,pltyran1,pltxsep1,pltysep1);
   axtit = f1.ax(1: ncol1);
-  supertit(axtit, sprintf('Fig %s, wlen=%d s, diam=%.1f km',...
-    num2zeropadstr(ifig1, 3),subwsec,diam),10);
+  supertit(axtit, sprintf('Fig %s, wlen=%.1f s, diam=%.1f km',...
+    num2zeropadstr(ifig1, 3),subwsectar,diam),10);
   xlabel(f1.ax((nrow1-1)*ncol1+1),'E (km)','fontsize',10);
   ylabel(f1.ax((nrow1-1)*ncol1+1),'N (km)','fontsize',10);
   orient(f1.fig,'landscape');
@@ -507,11 +304,11 @@ for ii = 4: length(diams)
     
     %bursts and 4-s detections of the same day
     indst=1;
-    inded=tlen(i)*sps;
-    if tlen(i)<20
-      subwsec=tlen(i);
+    inded=tlennew(i)*sps;
+    if tlennew(i)<subwsectar
+      subwsec=tlennew(i);
     else
-      subwsec=20;
+      subwsec=subwsectar;
     end
     subwlen=subwsec*sps;
     ovlplen=0;
@@ -529,16 +326,16 @@ for ii = 4: length(diams)
       isub = isub+1;
       if isub > nrow1*ncol1
         %print the current figure f1
-        f1name{ifig1,1} = sprintf('circloc_Fig%s_wlen%ds_%.1fkm.pdf',...
-          num2zeropadstr(ifig1, 3),subwsec,diam);
+        f1name{ifig1,1} = sprintf('circloc_Fig%s_wlen%.1fs_%.1fkm.pdf',...
+          num2zeropadstr(ifig1, 3),subwsectar,diam);
         print(f1.fig,'-dpdf','-fillpage',strcat('/home/chaosong/Pictures/',f1name{ifig1,1}));
         %move on to next figure f1
         ifig1 = ifig1+1;  %initialize another figure
         f1 = initfig(widin1,htin1,nrow1,ncol1,ifig1);
         axpos1 = optaxpos(f1,nrow1,ncol1,pltxran1,pltyran1,pltxsep1,pltysep1);
         axtit = f1.ax(1: ncol1);
-        supertit(axtit, sprintf('Fig %s, wlen=%d s, diam=%.1f km',...
-          num2zeropadstr(ifig1, 3),subwsec,diam),10);
+        supertit(axtit, sprintf('Fig %s, wlen=%.1f s, diam=%.1f km',...
+          num2zeropadstr(ifig1, 3),subwsectar,diam),10);
         xlabel(f1.ax((nrow1-1)*ncol1+1),'E (km)','fontsize',10);
         ylabel(f1.ax((nrow1-1)*ncol1+1),'N (km)','fontsize',10);
         orient(f1.fig,'landscape');
@@ -576,10 +373,10 @@ for ii = 4: length(diams)
       text(ax,0.98,0.15,sprintf('%.2f; %.2f km',mdistnn1(k,1),mdist2all(k,1)),...
         'Units','normalized','HorizontalAlignment','right','fontsize',7);
       text(ax,0.98,0.1,sprintf('%d / %d ^o; %.2f; %.2f km',round(projang1(k,1)),...
-        round(projang1(k,1))+180,mprojx1nn1(k,1),mprojx12all(k,1)),...
+        round(projang1(k,1))+180,mdprojx1nn1(k,1),mdprojx12all(k,1)),...
         'Units','normalized','HorizontalAlignment','right','fontsize',7);
       text(ax,0.98,0.05,sprintf('%d ^o; %.2f; %.2f km',round(projang2(k,1)),...
-        mprojx2nn1(k,1),mprojx22all(k,1)),...
+        mdprojx2nn1(k,1),mdprojx22all(k,1)),...
         'Units','normalized','HorizontalAlignment','right','fontsize',7);
       xlim(ax,[-4 4]);
       ylim(ax,[-4 4]);
@@ -591,12 +388,12 @@ for ii = 4: length(diams)
   % arearat{ii}=arearati;
   
   %if all clusters have been plotted, print the current figure f1
-  f1name{ifig1,1} = sprintf('circloc_Fig%s_wlen%ds_%.1fkm.pdf',...
-    num2zeropadstr(ifig1, 3),subwsec,diam);
+  f1name{ifig1,1} = sprintf('circloc_Fig%s_wlen%.1fs_%.1fkm.pdf',...
+    num2zeropadstr(ifig1, 3),subwsectar,diam);
   print(f1.fig,'-dpdf','-fillpage',strcat('/home/chaosong/Pictures/',f1name{ifig1,1}));
   
   %merge all figures into a single pdf file
-  mergef1name=sprintf('circloc_wlen%ds_%.1fkm.pdf',subwsec,diam);
+  mergef1name=sprintf('circloc_wlen%.1fs_%.1fkm.pdf',subwsectar,diam);
   str=strcat('rm -f /home/chaosong/Pictures/',mergef1name);
   status = system(str);
   % status = system('rm -f /home/chaosong/Pictures/circloc.pdf');
@@ -626,8 +423,8 @@ for ii = 1:length(diams)
   ylabel(ax,'Count');
   xlim(ax,[0 1]);
 end
-supertit(f.ax(1:2),sprintf('wlen=%d s, nwin=%d',subwsec,k),10);
+supertit(f.ax(1:2),sprintf('wlen=%.1f s, nwin=%d',subwsectar,k),10);
 % keyboard
-figname = sprintf('arearat_wlen%ds_nwin%d.pdf',subwsec,k);
+figname = sprintf('arearat_wlen%.1fs_nwin%d.pdf',subwsectar,k);
 print(f.fig,'-dpdf',strcat('/home/chaosong/Pictures/',figname));
 

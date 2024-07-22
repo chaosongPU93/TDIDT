@@ -1,4 +1,5 @@
-function [f] = plt_cumulative_density(hfplt,lfplt,xran,yran,binmethod,msizehf,msizelf,dxhf,dyhf,contourflag,scale)
+function [f] = plt_cumulative_density(hfplt,lfplt,xran,yran,binmethod,msizehf,...
+  msizelf,dxhf,dyhf,contourflag,scale)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % function [f] = plt_cumulative_density(hfplt,lfplt,xran,yran,binmethod,msizehf,dxhf,dyhf)
 % This function is to plot the cumulative density map of the hf and lf 

@@ -20,7 +20,9 @@ function [newsrc,indremove,pkinds,mindis,nearpk] = removesecondarysrc(oldsrc,sig
 %   on the residual, which the algorithm iteratively targets. 
 %
 % --Revision 200220607, if at least at one station, the deconvolved positive 
-%   peaks are pointing to the same peak, throw the secondary ones.
+%   peaks are pointing to the same peak, throw the secondary ones. In other
+%   words, a different, and preserved source after this process would point to
+%   DIFFERENT closest waveform peaks at ALL stations.
 %
 % --Add an option to ask if sources themselves are too close. 
 %   This requires a hard threshold where sources close within that
@@ -95,12 +97,13 @@ for ii = 1: nsrc
         indtest = ind(jj);
         
         %does it match with the same peak as the target triplet does?
-        match = sum(nearpk(indtest,:) == nearpk(ii,:));
+        match = sum(nearpk(indtest,:) == nearpk(ii,:)); %the number of matches
 
-        %if at all stations, the matched peak are the same, and the later deconvolved one is indeed
+        %if at ANY station, the matched peaks are the same, AND the later deconvolved one is indeed
         %smaller in amplitude, then we will discard it in the end
-        %In other words, if at >=1 station the nearest peak is NOT the same one, we say it is NOT
-        %secondary source and preserve it!
+        %In other words, if at >=1 station the nearest peak is the same one, we say it is
+        %secondary source and discard it! So primary and preserved sources need to point
+        %to DIFFERENT sources at ALL stations
         if isempty(minsrcsep)   % if sources themselves are not required to be well separated
           if match>=1 && sum(oldsrc(indtest,[2 4 6]),2) < sum(oldsrc(ii,[2 4 6]),2)
             indremove = [indremove; indtest];
@@ -133,6 +136,7 @@ for ii = 1: nsrc
 end
 
 %discard the sources that are determined to be too close and secondary compared to a major source
+%NOTE that 'indremove' may contain duplicates
 newsrc(indremove, :) = [];
 
 % keyboard

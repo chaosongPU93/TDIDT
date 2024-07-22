@@ -1,5 +1,5 @@
-function [f,ampbincnt,Nbnall,fracdtb,Nbnnall,fracdtbn]=...
-  plt_fracdt_NNm_mmax(f,nbst,imp,nsrc,impn,nsrcn,mmax,sps,typepltnoi,scale)
+function [ax,ampbincnt,Nbnall,fracdtb,Nbnnall,fracdtbn]=...
+  plt_fracdt_NNm_mmax(ax,nbst,imp,nsrc,impn,nsrcn,mmax,sps,typepltnoi,scale)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % [f,ampbincnt,Nbnall,fracb,Nbnnall,fracbn]=...
 %   plt_fracdt_NNm_mmax(f,nbst,imp,nsrc,impn,nsrcn,mmax,sps,typepltnoi)
@@ -48,7 +48,7 @@ for m=1:mmax
 
   %for larger m, use fewer bins for useful statistics
   if m<=2
-    nbin = 10;
+    nbin = 8;
   elseif m>2 && m<=6
     nbin = 5;
   elseif m>6 && m<=10
@@ -115,10 +115,11 @@ for m=1:mmax
 
 end
 
-color = jet(mmaxnonzero);
+% color = plasma(mmaxnonzero);
+color = flipud(gradientblue(mmaxnonzero));
 for m = 1:mmaxnonzero
   %plot data
-  ax=f.ax(1); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
+  hold(ax,'on'); ax.Box='on'; grid(ax,'on');
   tmp1 = ampbincnt{m};
   tmp2 = fracdtb{m};
   tmp3 = fracdtbn{m};
@@ -126,16 +127,22 @@ for m = 1:mmaxnonzero
   tmp1 = tmp1(tmp2>0);
   tmp2 = tmp2(tmp2>0);
   tmp4 = tmp4(tmp2>0);
-  if strcmp(scale,'log')
-    tmp2 = log10(tmp2);
+  if strcmp(scale,'log10')
+    ax.YAxis.Scale = 'log'; %make y axis log10 scale
+    yticks(ax,[0.1 0.2 0.5 1 2 5 10 20 50 100]);
+    % tmp2 = log10(tmp2);
 %     ylblstr = 'log_{10}{Frac. of diff. arrival w/i 0.25*m+0.125 s}';
-    ylblstr = 'log_{10}{Fraction}';
-    tmp3 = log10(tmp3);
-    ylim(ax,[-2.5 0]);
+    % ylblstr = 'log_{10}{Fraction}';
+    % tmp3 = log10(tmp3);
+    % ylim(ax,[-2.5 0]);
+    % ylblstr = '% of measurements';
+    ylblstr = 'Fraction';
+    ylim(ax,[0.1 100]);
 %     ylim(ax,[-3 0]);
   else
 %     ylblstr = 'Frac. of diff. arrival w/i 0.25*m+0.125 s';
     ylblstr = 'Fraction';
+    % ylblstr = '% of measurements';
     ylim(ax,[0 1]);
   end
 %   p(m) = plot(ax,log10(tmp1),tmp2,'-','Color',color(m,:),'linew',1,...
@@ -145,12 +152,13 @@ for m = 1:mmaxnonzero
   label{m} = sprintf('m=%d',m);
   xlabel(ax,'log_{10}{Median amp.}');
   ylabel(ax,ylblstr);
-  xlim(ax,[-0.9 0.1]);
+%   xlim(ax,[-0.9 0.1]);
+  xlim(ax,[-1 0.2]);
 %   title(ax,'Data');
   longticks(ax,2);
-%   if typepltnoi == 1
-%     scatter(ax,abs_loc_on_axis(ax.XLim,0.98),tmp3(1),20,color(m,:),'^','LineWidth',1);
-%   end
+  if typepltnoi == 1
+    scatter(ax,abs_loc_on_axis(ax.XLim,0.98),tmp3(1),20,color(m,:),'^','LineWidth',1);
+  end
 %   text(ax,abs_loc_on_axis(ax.XLim,0.02),tmp2(1),label{m});
 
 %   if strcmp(scale,'linear')
@@ -210,11 +218,14 @@ for m = 1:mmaxnonzero
 % %   end
 end
 
-if strcmp(scale,'log')
-  legend(f.ax(1),p,label,'NumColumns',4,'Location','south');
+if strcmp(scale,'log10')
+  legend(ax,p,label,'NumColumns',2,'Location','south');
 else
-  legend(f.ax(1),p,label,'NumColumns',4,'Location','north');
+  legend(ax,p,label,'NumColumns',2,'Location','north');
 end
-  
+
+% ax.YAxis.Scale = 'log'; %make y axis log10 scale
+% yticks(ax,[0.1 0.2 0.5 1 2 5 10 20 50 100]);
+
 %  keyboard 
 

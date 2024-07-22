@@ -12,12 +12,12 @@ function color = kelicmap(n)
 
 colorraw = kelicol; %first generate denser colors
 
-ncol = size(colorraw,1);
+ncolor = size(colorraw,1);
 
-if n >= ncol
+if n >= ncolor
   color = colorraw;
 else
-  ind = round(linspace(1,ncol,n));
+  ind = round(linspace(1,ncolor,n));
   color = colorraw(ind,:);
 end
 

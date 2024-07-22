@@ -7,9 +7,10 @@ function meddist = median_of_wt_data_pdf(pdfx, pdf)
 % of the data with a certain distribution, you could obtain the CDF. Then the 
 % median is just the point where the probability at this point is exactly 0.5
 %
-% the built-in empirical cdf function 'ecdf' is not suitable
+% --the built-in empirical cdf function 'ecdf' is not suitable
 % for this case because the input needs to be counts, not the
 % the pdf
+% --See also 'wt_median.m'. slightly different method, similar result
 %
 % By Chao Song, chaosong@princeton.edu
 % First created date:   2020/10/05

@@ -1,6 +1,6 @@
-% function synthshift_chao
+% synthshift_chao.m
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% THIS should be the modified version of Allan's code 'synthshift',
+% THIS is the modified version of Allan's code 'synthshift',
 % integrating my own codes to make synthetic seismograms from LFE
 % templates.
 % It is now able to do a lot of different things by turning on/off
@@ -192,14 +192,25 @@ ccwlen = 10*sps;
 loffmax = 5*sps/40;
 ccmin = 0.01;  % depending on the length of trace, cc could be very low
 iup = 1;    % times of upsampling
-[off12con,off13con,cc] = constrained_cc_interp(tmpwletf(:,1:3)',ccmid,...
+[off12conf,off13conf,ccf] = constrained_cc_interp(tmpwletf(:,1:3)',ccmid,...
+  ccwlen,mshiftadd,loffmax,ccmin,iup);
+offwlet1if(1) = 0;
+offwlet1if(2) = round(off12conf);
+offwlet1if(3) = round(off13conf);
+if nsta>3 
+  for ista = 4: nsta
+    [mcoef,offwlet1if(ista)] = xcorrmax(tmpwletf(:,1), tmpwletf(:,ista), mshiftadd, 'coeff');
+  end
+end
+%%%for the broadband templates as well
+[off12con,off13con,cc] = constrained_cc_interp(tmpwlet(:,1:3)',ccmid,...
   ccwlen,mshiftadd,loffmax,ccmin,iup);
 offwlet1i(1) = 0;
 offwlet1i(2) = round(off12con);
 offwlet1i(3) = round(off13con);
 if nsta>3 
   for ista = 4: nsta
-    [mcoef,offwlet1i(ista)] = xcorrmax(tmpwletf(:,1), tmpwletf(:,ista), mshiftadd, 'coeff');
+    [mcoef,offwlet1i(ista)] = xcorrmax(tmpwlet(:,1), tmpwlet(:,ista), mshiftadd, 'coeff');
   end
 end
 
@@ -208,15 +219,23 @@ end
 [~,imax] = max(tmpwletf(:,1));
 [~,zcsta1] = min(abs(tmpwletf(imin:imax,1)));
 zcsta1 = zcsta1+imin-1;
+[~,imin] = min(tmpwlet(:,1));
+[~,imax] = max(tmpwlet(:,1));
+[~,zcsta2] = min(abs(tmpwlet(imin:imax,1)));
+zcsta2 = zcsta2+imin-1;
 greenlen = pow2(9)*sps/40;
 green = zeros(greenlen,nsta); % no bandpass
 greenf = zeros(greenlen,nsta);  % bandpassed version
 ppeaks = zeros(nsta,1); % positive peaks
 npeaks = zeros(nsta,1); % negative peaks
+zcrosses = zeros(nsta,1);
+ppeaksf = zeros(nsta,1); % positive peaks
+npeaksf = zeros(nsta,1); % negative peaks
+zcrossesf = zeros(nsta,1);
 for ista = 1: nsta
   %cut according to the zero-crossing and the time shift from the constrained CC
-  green(:,ista) = tmpwlet(zcsta1+8*sps-greenlen+1-offwlet1i(ista): zcsta1+8*sps-offwlet1i(ista), ista);
-  greenf(:,ista) = tmpwletf(zcsta1+8*sps-greenlen+1-offwlet1i(ista): zcsta1+8*sps-offwlet1i(ista), ista);
+  green(:,ista) = tmpwlet(zcsta2+8*sps-greenlen+1-offwlet1i(ista): zcsta2+8*sps-offwlet1i(ista), ista);
+  greenf(:,ista) = tmpwletf(zcsta1+8*sps-greenlen+1-offwlet1if(ista): zcsta1+8*sps-offwlet1if(ista), ista);
   %detrend again for caution
   green(:,ista) = detrend(green(:,ista));
   greenf(:,ista) = detrend(greenf(:,ista));
@@ -229,6 +248,7 @@ for ista = 1: nsta
   ppeaks(ista) = imax;
   npeaks(ista) = imin;
   
+  %for bandpassed templates
   [~,imin] = min(greenf(:,ista));
   [~,imax] = max(greenf(:,ista));
   [~,zcrossesf(ista)] = min(abs(greenf(imin:imax,ista)));
@@ -253,6 +273,19 @@ if nsta>3
     [mcoef,mlag] = xcorrmax(greenf(:,1), greenf(:,ista), mshiftadd, 'coeff');
     if mlag~=0   % offset in samples
       fprintf('Filtered templates are NOT best aligned at %s \n',stas(ista,:));
+    end
+  end
+end
+[off12con,off13con,cc] = constrained_cc_interp(green(:,1:3)',ccmid,...
+  ccwlen,mshiftadd,loffmax,ccmin,iup);
+if ~(off12con==0 && off13con==0)
+  disp('Broadband templates are NOT best aligned \n');
+end
+if nsta>3 
+  for ista = 4: nsta
+    [mcoef,mlag] = xcorrmax(green(:,1), green(:,ista), mshiftadd, 'coeff');
+    if mlag~=0   % offset in samples
+      fprintf('Broadband templates are NOT best aligned at %s \n',stas(ista,:));
     end
   end
 end
@@ -284,7 +317,7 @@ Twin=0.5*3600+3+2*ceil(greenlen/sps); %Early and late portions will be deleted. 
 winlen=Twin*sps+1;
 skiplen=greenlen;
 %%%for the duration of templates, there are several options
-%%%1. (ppeak-npeak)*2 of the bb template: 44;54;38, 0.275s, 0.337s, 0.25s
+%%%1. (ppeak-npeak)*2 of the BB template: 44;54;38;38 0.275s, 0.3375s, 0.2375s, 0.2375s
 %%%2. direct eyeballing for between zerocrossings: ~65, 0.4s
 %%%3. binned peak-to-peak separation for decently saturated unfiltered synthetics: ~37, 0.25s
 %%%4. similar to 3, but synthetics are filtered first: ~37, 0.25s
@@ -304,7 +337,7 @@ rng('default');
 % noistd = 5e-2;
 % noistd = 2.e-7;
 % noistd = 2.0e-4;
-noistd = 0; %noise-free
+noistd = 0; %NOISE-FREE
 synth=noistd*(randn(winlen+greenlen+2*10,nsta)-0.5); %+2*10 a little extra, for jiggering 2nd & 3rd stations.% for ista=1:nsta
 
 nouts=length(writes);
@@ -320,8 +353,8 @@ distrloc = 'uniform'; %uniformly random in a specified region,
 timetype = 'tori';
 
 %%%specify if considering the physical size of each source
-physicalsize = 1;
-% physicalsize = 0;
+% physicalsize = 1;
+physicalsize = 0;
 
 %%%specify shape of the source region
 srcregion='ellipse';
@@ -609,7 +642,7 @@ elseif strcmp(distrloc,'uniform')
     semia = 1.75*(0.6:0.2:2.0);
     semib = 1.25*(0.6:0.2:2.0);
     nreg = length(semia);
-    ireg = 4;
+    ireg = 3;
     xaxis = semia(ireg); %axis length of the same ellipse of my 4-s catalog
     yaxis = semib(ireg);
     % xaxis=1.75; %axis length of the same ellipse of my 4-s catalog
@@ -675,9 +708,9 @@ elseif strcmp(distrloc,'uniform')
   end
   size(xygrid)
 
-  keyboard
+%   keyboard
   %whether to force a min speration if 2 events from the same spot separated by less than the template duration
-  %USE unfiltered templates to generate synthetics, then bandpass before deconvolution
+  %USE broadband templates to generate synthetics, then bandpass before deconvolution
   if forcesep
     [synths,mommax,sources,greensts]=csplaw3d(writes,winlen,skiplen,synth,green,b,...
       xygrid,sps,fracelsew,seed,tdura,timetype,ftrans,stas); 

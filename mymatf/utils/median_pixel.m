@@ -6,9 +6,10 @@ function medval = median_pixel(x,y,val,method)
 % x,y. Given that a unique location (x,y) might have several data points, you
 % want to have a stable estimate (median/mean) of the value of each unique
 % location. 
-% --output 'MEDVAL' now has 7 columns: [x y num median/mean min max std], so the
+% --Output 'MEDVAL' now has 7 columns: [x y num median/mean min max std], so the
 %   the first 3 columns are the same as in 'density_pixel'. Use 'density_pixel'
 %   if you are interested in counts a unique locations only.
+% --See also 'average_pixel.m'
 %
 %
 % By Chao Song, chaosong@princeton.edu

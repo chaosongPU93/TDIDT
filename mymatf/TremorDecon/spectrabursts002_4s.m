@@ -509,7 +509,7 @@ clear pcetsoptbb pcetsopt
 xran = [0.1 20];
 yran = [1e-3 1e1];
 [f] = plt_spectra_of_bursts(years,stas,pcft,pcallbb,xran,yran);
-orient(f.fig,'landscape');
+% orient(f.fig,'landscape');
 fname = 'bb_spectra_of_bursts.pdf';
 print(f.fig,'-dpdf',...
   strcat('/home/data2/chaosong/CurrentResearch/Song_Rubin_2024/figures/',fname));
@@ -517,7 +517,7 @@ print(f.fig,'-dpdf',...
 
 yran = [5e-5 5e-1];
 [f] = plt_spectra_of_bursts(years,stas,pcft,pcall,xran,yran);
-orient(f.fig,'landscape');
+% orient(f.fig,'landscape');
 fname = 'bp_spectra_of_bursts.pdf';
 print(f.fig,'-dpdf',...
   strcat('/home/data2/chaosong/CurrentResearch/Song_Rubin_2024/figures/',fname));
@@ -527,14 +527,14 @@ xran = [0.1 20];
 yran = [5e-2 5e2];
 minfnorm = 1.8; maxfnorm = 6.3;
 [f] = plt_spectra_of_bursts_norm(years,stas,pcft,pcallbb,minfnorm,maxfnorm,xran,yran);  
-orient(f.fig,'landscape');
+% orient(f.fig,'landscape');
 fname = 'bbnorm_spectra_of_bursts.pdf';
 print(f.fig,'-dpdf',...
   strcat('/home/data2/chaosong/CurrentResearch/Song_Rubin_2024/figures/',fname));
 
 yran = [1e-3 1e1];
 [f] = plt_spectra_of_bursts_norm(years,stas,pcft,pcall,minfnorm,maxfnorm,xran,yran);  
-orient(f.fig,'landscape');
+% orient(f.fig,'landscape');
 fname = 'bpnorm_spectra_of_bursts.pdf';
 print(f.fig,'-dpdf',...
   strcat('/home/data2/chaosong/CurrentResearch/Song_Rubin_2024/figures/',fname));

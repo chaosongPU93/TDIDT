@@ -1,11 +1,14 @@
 function [projx,projy,projxy] = customprojection(locxy,projang)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% [propx,orty,nlocxy] = customprojection(olocxy,propang)
+% [projx,projy,projxy] = CUSTOMPROJECTION(locxy,projang)
 %
-% Sometimes you might have the need to project the location coordinate
-% of sources to along a custom direction. Basically it is a coordinate 
+% Sometimes you might have the need to project the location coordinate 'locxy'
+% of sources to along a custom direction 'projang'. Basically it is a coordinate 
 % frame transformation, ie., get the location in a custom frame. Call
 % the 'coordinate_rot' for actual transform.
+% --Here 'projang' follows the geographic convention, ie, measure from N 
+%   clockwise, range is [0 360]. Be sure to convert from four-quadrant 
+%   convention which measures from E cclockwise to 180, cclockwise to -180.
 %
 %
 % Chao Song, chaosong@princeton.edu

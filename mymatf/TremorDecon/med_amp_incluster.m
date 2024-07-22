@@ -1,4 +1,5 @@
-function [ampplt,dtplt,indimpdtcut]=med_amp_incluster(nbst,imp,nsrc,m,dtcut,sps,timetype)
+function [ampplt,dtplt,indimpdtcut,inddtcutbst]=...
+  med_amp_incluster(nbst,imp,nsrc,m,dtcut,sps,timetype,ftrans)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % [ampplt,dtplt,indimpdtcut]=med_amp_incluster(nbst,imp,nsrc,m,dtcut,sps,timetype)
 %
@@ -13,6 +14,9 @@ function [ampplt,dtplt,indimpdtcut]=med_amp_incluster(nbst,imp,nsrc,m,dtcut,sps,
 % diff time cutoff in sec 'dtcut' is assigned. 
 % --Added option for choosing the type of time of each event, 'timetype' 
 % either using 'tarvl' or 'tori'. 
+% --Now, for a cluster, not only the time separation between N and N-m needs to
+% be smaller than 'dtcut', but also the max time separation between each
+% consecutive events needs to smaller than 0.25+0.125 s. 
 % 
 % 
 %
@@ -23,8 +27,9 @@ function [ampplt,dtplt,indimpdtcut]=med_amp_incluster(nbst,imp,nsrc,m,dtcut,sps,
 defval('dtcut',[]);
 defval('sps',160);
 defval('timetype','tarvl');
+defval('ftrans','interpchao');
 
-ftrans = 'interpchao';
+% ftrans = 'interpchao';
 [imploc0, ~] = off2space002([0 0],sps,ftrans,0);  % a ref source at 0,0
 
 % nsrcsep = nsrc-m;
@@ -51,19 +56,25 @@ for i = 1: nbst
   if isempty(dtevt)
     continue
   end
+  %between consecutive events only
+  dtevtnn1 = diffcustom(tevt, 1,'forward');
   
   %meidan amp of the inclusive cluster
-  ampcont = [];
+  ampclus = zeros(nsrc(i)-m, 1);
+  %max separation time of N & N-1 in each cluster of m+1 events
+  maxdtevtnn1clus = zeros(nsrc(i)-m, 1);  
   for j = 1: nsrc(i)-m
     impcont = impi(j: j+m,:);
-    ampcont(j,1) = median(mean(impcont(:,[2 4 6]),2));
+    ampclus(j,1) = median(mean(impcont(:,[2 4 6]),2));
+    maxdtevtnn1clus(j,1) = max(dtevtnn1(j: j+m-1));
   end
   
   %if assigned any dtcut, then return the indices of evts in the clusters defined by N&N-m
   if ~isempty(dtcut)
-    ind = find(dtevt <= dtcut*sps); 
+%     ind = find(dtevt <= dtcut*sps); +5
+    ind = find(dtevt <= dtcut*sps & maxdtevtnn1clus <= (0.25+0.125)*sps); %/m
     dtevt = dtevt(ind);
-    ampcont = ampcont(ind); %cut correspondingly
+    ampclus = ampclus(ind); %cut correspondingly
     indimp = [];  %indices of evts in the clusters whose diff time between start and end is w/i dtcut
     for j = 1: length(ind)
       indimp{j,1} = reshape(ind(j):ind(j)+m, [], 1);
@@ -72,7 +83,7 @@ for i = 1: nbst
   end
   
   dtplt = [dtplt; [dtevt i*ones(size(dtevt,1),1)]]; %add 2nd col as burst #
-  ampplt = [ampplt; [ampcont i*ones(size(ampcont,1),1)]]; %add 2nd col as burst #
+  ampplt = [ampplt; [ampclus i*ones(size(ampclus,1),1)]]; %add 2nd col as burst #
   
 end
 

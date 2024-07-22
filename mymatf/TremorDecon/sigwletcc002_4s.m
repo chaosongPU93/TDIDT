@@ -26,7 +26,6 @@
 % First created date:   2022/10/20
 % Last modified date:   2022/10/20
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
  
 %% Initialization
 %%% SAME if focusing on the same region (i.e. same PERMROTS and POLROTS)
@@ -390,8 +389,6 @@ losig=1.8;
 k = 0;  %deconvolution burst win count
 n = 0;  %auto-determined migration win count
 
-sps = 160;
-
 %empirically determined indices of bursts fall into local day times (noisier)
 %or night times (quieter)
 inbst = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,...
@@ -644,7 +641,7 @@ else
   savefile = 'rst_sigwletcc_dtr.mat';
   load(strcat(rstpath, '/MAPS/',savefile));
 end
-  
+keyboard  
 
 %% target some high-correlation bursts
 % ind = find(ccboo(:,1)>=prctile(ccboo(:,1),75) & ccboo(:,2)>=prctile(ccboo(:,2),75) & ...
@@ -666,30 +663,31 @@ ind123 = find(ccb123(:,1)>=prctile(ccb123(:,1),75) & ccb123(:,2)>=prctile(ccb123
 
 %% burst windows for stas 4/5/6/7 vs. 1/2/3
 %%%scatter of lag and CC 
-widin = 12;
-htin = 9;
 nrow = 3;
 ncol = nsta-3;
+widin = ncol*2.1;
+htin = nrow*2.1;
 pltxran = [0.06 0.96]; pltyran = [0.06 0.96]; % optimal axis location
-pltxsep = 0.03; pltysep = 0.03;
+pltxsep = 0.02; pltysep = 0.02;
 f = initfig(widin,htin,nrow,ncol);
 optaxpos(f,nrow,ncol,pltxran,pltyran,pltxsep,pltysep);
 
 for ii = 1:nrow
   for jj = 1:ncol
     isub = (ii-1)*ncol+jj;
-    ax = f.ax(isub);
-    hold(ax,'on');
-    ax.Box = 'on';
-    grid(ax,'on');
-    scatter(ax,lagbij(ii,:,jj)/sps,ccbij(ii,:,jj),16,...
-    'MarkerFaceColor','k','MarkerEdgeColor','none','MarkerFaceAlpha',.15);
+    ax = f.ax(isub); hold(ax,'on'); ax.Box = 'on'; grid(ax,'on');
+    scatter(ax,lagbij(ii,:,jj)/sps,ccbij(ii,:,jj),10,...
+      'MarkerFaceColor','k','MarkerEdgeColor','none','MarkerFaceAlpha',.2);
+    scatter(ax,median(lagbij(ii,:,jj)/sps),median(ccbij(ii,:,jj)),40,'^',...
+      'MarkerFaceColor','r','MarkerEdgeColor','k');
     ylim(ax,[0.0 0.7]);
+    yticks(ax,0:0.1:0.7);
     xlim(ax,[-maxlag,maxlag]/sps);
-    text(ax,0.02,0.05,sprintf('%s-%s',strtrim(stas(jj+3,:)),strtrim(stas(ii,:))),'Units',...
-      'normalized');
+    xticks(ax,-maxlag/sps: 1: maxlag/sps);
+    text(ax,0.98,0.95,sprintf('%s-%s',strtrim(stas(jj+3,:)),strtrim(stas(ii,:))),'Units',...
+      'normalized','HorizontalAlignment','right');
     text(ax,0.98,0.05,sprintf('%.2f, %.2f',median(lagbij(ii,:,jj)/sps),median(ccbij(ii,:,jj))),...
-      'Units','normalized','HorizontalAlignment','right');
+      'Units','normalized','HorizontalAlignment','right','FontSize',8);
     if jj ~= 1
       nolabels(ax,2);
     end
@@ -697,13 +695,16 @@ for ii = 1:nrow
       nolabels(ax,1);
     end
     if ii == nrow && jj==1
-      xlabel(ax,'Lag (s) of max CC');
+      xlabel(ax,'Time lag to reach max CC (s)');
       ylabel(ax,'Max CC');
     end
-    longticks(ax,2);
+    longticks(ax,1.5);
   end
 end
-supertit(f.ax(1:ncol),'cc of sig-wlet cc; bursts; 4th stas vs. trio stas');
+% supertit(f.ax(1:ncol),'cc of sig-wlet cc; bursts; 4th stas vs. trio stas');
+fname = strcat('sigwletcc4thvstrio.pdf');
+print(f.fig,'-dpdf',...
+  strcat('/home/data2/chaosong/CurrentResearch/Song_Rubin_2024/figures/',fname));
 
 % %%%CDF of CC 
 % figure
@@ -736,7 +737,6 @@ supertit(f.ax(1:ncol),'cc of sig-wlet cc; bursts; 4th stas vs. trio stas');
 %     legend(p,stas(ncol:end, :),'Location','southeast');
 %   end
 % end
-
 
 %% burst windows for stas 4/5/6/7 
 %%%scatter of lag and CC 
@@ -783,12 +783,12 @@ supertit(f.ax(1:ncol),'cc of sig-wlet cc; bursts; among 4th stas');
 
 %% burst windows for stas 1/2/3
 %%%scatter of lag and CC 
-widin = 9;
-htin = 3.5;
 nrow = 1;
 ncol = 3;
-pltxran = [0.06 0.96]; pltyran = [0.12 0.94]; % optimal axis location
-pltxsep = 0.03; pltysep = 0.03;
+widin = ncol*2.2;
+htin = nrow*2.4;
+pltxran = [0.10 0.96]; pltyran = [0.15 0.96]; % optimal axis location
+pltxsep = 0.025; pltysep = 0.02;
 f = initfig(widin,htin,nrow,ncol);
 optaxpos(f,nrow,ncol,pltxran,pltyran,pltxsep,pltysep);
 
@@ -797,32 +797,39 @@ for isub = 1:3
   hold(ax,'on');
   ax.Box = 'on';
   grid(ax,'on');
-  scatter(ax,lagb123(:,isub)/sps,ccb123(:,isub),16,...
+  scatter(ax,lagb123(:,isub)/sps,ccb123(:,isub),10,...
     'MarkerFaceColor','k','MarkerEdgeColor','none','MarkerFaceAlpha',.15);
-  ylim(ax,[0.1 0.8]);
+  scatter(ax,median(lagb123(:,isub)/sps),median(ccb123(:,isub)),40,'^',...
+    'MarkerFaceColor','r','MarkerEdgeColor','k');
+  ylim(ax,[0.0 0.8]);
+  yticks(ax,0:0.2:0.8);
   xlim(ax,[-maxlag,maxlag]/sps);
+  xticks(ax,-maxlag/sps: 1: maxlag/sps);
   if isub ==1
-    text(ax,0.02,0.05,sprintf('%s-%s',strtrim(stas(1,:)),strtrim(stas(2,:))),'Units',...
-      'normalized');
+    text(ax,0.98,0.95,sprintf('%s-%s',strtrim(stas(1,:)),strtrim(stas(2,:))),'Units',...
+      'normalized','HorizontalAlignment','right');
   elseif isub ==2
-    text(ax,0.02,0.05,sprintf('%s-%s',strtrim(stas(1,:)),strtrim(stas(3,:))),'Units',...
-      'normalized');
+    text(ax,0.98,0.95,sprintf('%s-%s',strtrim(stas(1,:)),strtrim(stas(3,:))),'Units',...
+      'normalized','HorizontalAlignment','right');
   else
-    text(ax,0.02,0.05,sprintf('%s-%s',strtrim(stas(2,:)),strtrim(stas(3,:))),'Units',...
-      'normalized');
+    text(ax,0.98,0.95,sprintf('%s-%s',strtrim(stas(2,:)),strtrim(stas(3,:))),'Units',...
+      'normalized','HorizontalAlignment','right');
   end
   text(ax,0.98,0.05,sprintf('%.2f, %.2f',median(lagb123(:,isub)/sps),median(ccb123(:,isub))),...
-    'Units','normalized','HorizontalAlignment','right');
+    'Units','normalized','HorizontalAlignment','right','FontSize',8);
   if isub~=1
     nolabels(ax,2);
   end
   if isub==1
-    xlabel(ax,'Lag (s) of max CC');
+    xlabel(ax,'Time lag to reach max CC (s)');
     ylabel(ax,'Max CC');
   end
-  longticks(ax,2);
+  longticks(ax,1.5);
 end
-supertit(f.ax(1:ncol),'cc of sig-wlet cc; bursts; among trio stas');
+% supertit(f.ax(1:ncol),'cc of sig-wlet cc; bursts; among trio stas');
+fname = strcat('sigwletcctrio.pdf');
+print(f.fig,'-dpdf',...
+  strcat('/home/data2/chaosong/CurrentResearch/Song_Rubin_2024/figures/',fname));
 
 % %%%CDF of CC 
 % figure

@@ -1,10 +1,10 @@
-function f1 = plt_selsigpredres(sigsta,predgrp,resgrp,l2normred,stas,pltsta,sps)
+function f = plt_selsigpredres(sigsta,predgrp,resgrp,varred1,stas,pltsta,sps,xzoom,detecttype,saveflag)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% f1 = plt_selsigpredres(sigsta,predgrp,resgrp,resred,pltsta)
+% f = plt_selsigpredres(sigsta,predgrp,resgrp,varred1,stas,pltsta,sps,xzoom,detecttype,saveflag)
 %
 % This is a simple function to plot signal, prediction from deconvolved 
 % sources, and residual at selected station indices defined in 'pltsta'. 
-% Text out the relative change in L2-norm, or misfit.
+% Text out the relative change in variance, or misfit.
 % 
 % 
 %
@@ -12,50 +12,74 @@ function f1 = plt_selsigpredres(sigsta,predgrp,resgrp,l2normred,stas,pltsta,sps)
 % First created date:   2022/11/17
 % Last modified date:   2022/11/17
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 defval('sps',160);
+defval('xzoom',[]);
+defval('detecttype',[]);  %default is short-win detections
+defval('saveflag',1);
 
-widin = 12;  % maximum width allowed is 8.5 inches
-htin = 9;   % maximum height allowed is 11 inches
-nrow = length(pltsta);
+nsta = length(pltsta);
+
+widin = 8.3;  % maximum width allowed is 8.5 inches
+htin = 1.3*nsta;   % maximum height allowed is 11 inches
+nrow = nsta;
 ncol = 1;
-f1 = initfig(widin,htin,nrow,ncol);
+f = initfig(widin,htin,nrow,ncol);
 
-pltxran = [0.06 0.96]; pltyran = [0.06 0.96];
-pltxsep = 0.02; pltysep = 0.02;
-optaxpos(f1,nrow,ncol,pltxran,pltyran,pltxsep,pltysep);
+pltxran = [0.05 0.98]; pltyran = [0.1 0.98]; % optimal axis location
+pltxsep = 0.05; pltysep = 0.025;
+optaxpos(f,nrow,ncol,pltxran,pltyran,pltxsep,pltysep);
 
 ym = max(abs(sigsta(:)));
-yran=1.3*[-ym ym];
+yran=1.4*[-ym ym];
 
 lsig = size(sigsta,1);
 
-l2normred = squeeze(l2normred);
+varred1 = squeeze(varred1);
 
 for jj = 1:length(pltsta)
   ista = pltsta(jj);
-  ax = f1.ax(jj);
+  ax = f.ax(jj);
   hold(ax,'on'); ax.Box = 'on'; grid(ax, 'on');
-  p1=plot(ax,(1:lsig)/sps,sigsta(:,ista)+0.5*ym,'k');
-  p2=plot(ax,(1:lsig)/sps,predgrp(:,ista)+0.5*ym,'r');
-  p3=plot(ax,(1:lsig)/sps,resgrp(:,ista)-0.5*ym,'Color',[.7 .7 .7]);
-  text(ax,0.98,0.9,sprintf('%.2f; %.2f; %.1f%%',l2normred(ista,1),l2normred(ista,2),l2normred(ista,3)),...
+  p1=plot(ax,(1:lsig)/sps,sigsta(:,ista)+0.5*ym,'k','linew',1);
+  p2=plot(ax,(1:lsig)/sps,predgrp(:,ista)+0.5*ym,'r','linew',1);
+  p3=plot(ax,(1:lsig)/sps,resgrp(:,ista)-0.5*ym,'Color',[.5 .5 .5],'linew',1); %
+%   text(ax,0.98,0.9,sprintf('%.2f; %.2f; %.1f%%',l2normred(ista,1),l2normred(ista,2),l2normred(ista,3)),...
+%     'Units','normalized','HorizontalAlignment','right','fontsize',10);
+  text(ax,0.99,0.1,sprintf('VR: %.1f%%',varred1(ista,3)),...
     'Units','normalized','HorizontalAlignment','right','fontsize',10);
-  text(ax,0.98,0.1,sprintf('%s',strtrim(stas(ista,:))),...
-    'Units','normalized','HorizontalAlignment','right','fontsize',11);
+  text(ax,0.99,0.9,sprintf('%s',strtrim(stas(ista,:))),...
+    'Units','normalized','HorizontalAlignment','right','fontsize',12);
   ylim(ax,yran);
-  xlim(ax,[0 lsig/sps]);
+  if isempty(xzoom)
+    xlim(ax,[0 lsig]/sps);
+  else
+    xlim(ax,xzoom);
+  end
   longticks(ax,6);
   if jj~=nrow
     nolabels(ax,1);
   else
-    xlabel(ax,'Time (s)','fontsize',11);
-    ylabel(ax,'Amplitude','fontsize',11);
+    xlabel(ax,'Time (s)','fontsize',10);
+    ylabel(ax,'Amplitude','fontsize',10);
   end
   if jj==1
     legend(ax,[p1,p2,p3],'Signal','Prediction','Residual','Location','south',...
-      'NumColumns',3)
+      'Orientation','horizontal');
   end
 end
 
+if saveflag
+  if nsta == 3
+  %   orient(f.fig,'landscape');
+    fname = strcat('varredaftgrp',detecttype,'.pdf');
+    print(f.fig,'-dpdf',...
+      strcat('/home/data2/chaosong/CurrentResearch/Song_Rubin_2024/figures/',fname));
+  elseif nsta == 4 && strcmp(strtrim(stas(pltsta(end),:)),'KLNB')
+  %   orient(f.fig,'landscape');
+    fname = strcat('varred4th',detecttype,'.pdf');
+    print(f.fig,'-dpdf',...
+      strcat('/home/data2/chaosong/CurrentResearch/Song_Rubin_2024/figures/',fname));
+    
+  end
+end
 

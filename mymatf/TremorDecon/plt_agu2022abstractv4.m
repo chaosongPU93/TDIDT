@@ -24,7 +24,7 @@ defval('maptype','km');
 %%%all migrations
 f.fig = figure;
 f.fig.Renderer = 'painters';
-widin = 8.5;  % maximum width allowed is 8.5 inches
+widin = 8.4;  % maximum width allowed is 8.5 inches
 htin = 6.5;   % maximum height allowed is 11 inches
 % get the scrsz in pixels and number of pixels per inch of monitor 1
 [scrsz, resol] = pixelperinch(1);

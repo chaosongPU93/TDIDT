@@ -16,8 +16,8 @@ defval('ttol',[]);
 
 nrow = 3;
 ncol = 1;
-widin = 8;  % maximum width allowed is 8.5 inches
-htin = 6;   % maximum height allowed is 11 inches
+widin = 10;  % maximum width allowed is 8.5 inches
+htin = 5.5;   % maximum height allowed is 11 inches
 f = initfig(widin,htin,nrow,ncol);
 
 pltxran = [0.08 0.95]; pltyran = [0.1 0.95];
@@ -37,10 +37,12 @@ for j = 1: size(newt03,1)
 end
 scatter(ax, hfinter03(:,1), hfinter03(:,2), msizehf, 'filled','ro');  %, 'MarkerEdgeColor', 'w')
 plot(ax, ax.XLim, [ttol(1) ttol(1)], 'b--');
-text(ax,0.93,0.9,'2003','FontSize',11,'unit','normalized','horizontalalignment','left',...
-    'EdgeColor','k','Margin',2);
+text(ax,ax.XLim(1)+0.99*(range(ax.XLim)),1.2*ttol(1),sprintf('%d s',...
+  round(ttol(1)*86400)),'FontSize',11,'horizontalalignment','right');
+text(ax,0.99,0.85,'2003','FontSize',11,'unit','normalized','horizontalalignment',...
+  'right','EdgeColor','k','Margin',2);
 % ylabel(ax, 'Time (day) to the preceding detection');
-xlabel(ax, 'Time (day) since Mar. 1, 2003');
+xlabel(ax, 'Time (day) since 01 Mar. 2003');
 ylim(ax,[0, ymax]);
 longticks(ax,4);
 hold(ax,'off');
@@ -56,10 +58,12 @@ for j = 1: size(newt04,1)
 end
 scatter(ax, hfinter04(:,1), hfinter04(:,2), msizehf, 'filled','ro');  %, 'MarkerEdgeColor', 'w')
 plot(ax, ax.XLim, [ttol(2) ttol(2)], 'b--');
-text(ax,0.93,0.9,'2004','FontSize',11,'unit','normalized','horizontalalignment','left',...
-    'EdgeColor','k','Margin',2);
+text(ax,ax.XLim(1)+0.99*(range(ax.XLim)),1.2*ttol(2),sprintf('%d s',...
+  round(ttol(2)*86400)),'FontSize',11,'horizontalalignment','right');
+text(ax,0.99,0.85,'2004','FontSize',11,'unit','normalized','horizontalalignment',...
+  'right','EdgeColor','k','Margin',2);
 % ylabel(ax, 'Time (day) to the preceding detection');
-xlabel(ax, 'Time (day) since Jul. 12, 2004');
+xlabel(ax, 'Time (day) since 12 Jul. 2004');
 ylim(ax,[0, ymax]);
 longticks(ax,4);
 hold(ax,'off');
@@ -74,11 +78,13 @@ for j = 1: size(newt05,1)
   patch(ax,patarea(:,1),patarea(:,2),'k','Facealpha',0.8,'edgecolor','none');
 end
 scatter(ax, hfinter05(:,1), hfinter05(:,2), msizehf, 'filled','ro');  %, 'MarkerEdgeColor', 'w')
-plot(ax, ax.XLim, [ttol(3) ttol(3)], 'b--');
-text(ax,0.93,0.9,'2005','FontSize',11,'unit','normalized','horizontalalignment','left',...
-    'EdgeColor','k','Margin',2);
+plot(ax,ax.XLim, [ttol(3) ttol(3)], 'b--');
+text(ax,ax.XLim(1)+0.99*(range(ax.XLim)),1.2*ttol(3),sprintf('%d s',...
+  round(ttol(3)*86400)),'FontSize',11,'horizontalalignment','right');
+text(ax,0.99,0.85,'2005','FontSize',11,'unit','normalized','horizontalalignment',...
+  'right','EdgeColor','k','Margin',2);
 ylabel(ax, 'Time (day) to the preceding detection');
-xlabel(ax, 'Time (day) since Sep. 11, 2005');
+xlabel(ax, 'Time (day) since 11 Sep. 2005');
 ylim(ax,[0, ymax]);
 longticks(ax,4);
 hold(ax,'off');

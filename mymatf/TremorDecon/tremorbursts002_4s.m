@@ -228,7 +228,7 @@ text(f.ax(2),0.06,0.5,strcat(num2str(round(perchf04)),'%'),'FontSize',12,'unit',
 text(f.ax(3),0.06,0.5,strcat(num2str(round(perchf05)),'%'),'FontSize',12,'unit','normalized',...
     'horizontalalignment','left');
 
-%% summarize the inter-event time and grouped bursts
+%% for PAPER, summarize the inter-event time and grouped bursts
 ymax = 1e-3;
 [f] = plt_intertimeandbursts(hfinter03,hfinter04,hfinter05,thf03,thf04,thf05,ymax,ttol);
 

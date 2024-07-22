@@ -5,7 +5,9 @@ function med_wt = wt_median(x, wt)
 % x axis, median is the value on X axis where the sum of weights of all points
 % on its left equals to the sum of weights of all points on its right.
 %
-% HAVE been tested to be correct, compared with median(dist) with equal weights
+% --HAVE been tested to be correct, compared with median(dist) with equal weights
+% --See also 'median_of_wt_data_pdf.m'. slightly different method, similar result
+
 %
 %
 % By Chao Song, chaosong@princeton.edu

@@ -32,6 +32,12 @@ close all
 % set(0,'DefaultFigureVisible','on');
 set(0,'DefaultFigureVisible','off');   % switch to show the plots or not
 
+%%%Flag to indicate if it is necessary to recalculate everything
+flagrecalc = 0;
+% flagrecalc = 1;
+
+if flagrecalc
+
 [scrsz, res] = pixelperinch(1);
 
 % WHEN CHANGING FAMILIES CHANGE: (1)dates (2)Bostnames (3)hilo,frequency band
@@ -238,6 +244,8 @@ clear armcat
 %filtering passband for reading data
 hisig=6.3; % this will give a similar spectral shape between template and signal
 losig=1.8;
+
+sps = 160;
 
 %moving window length in samples for running CC, envelope, etc.
 mwlen=0.5*sps;
@@ -822,12 +830,12 @@ end
 %save all workspace variables
 save('seisbursts_allvari.mat');
 
-%% A few more plots
-clear
-clc
-load('seisbursts_allvari.mat');
-close all
+else
+  load('seisbursts_allvari.mat');
+end
+keyboard
 
+%% A few more plots
 % %%%Spearman vs. data win length
 % figure; 
 % scatter(wlensec,spear,20,1:length(wlensec),'filled');
@@ -980,19 +988,14 @@ ylabel(ax,'Overall CC selected window');
 hold(ax,'off');
 
 
-%% 
-close all
-
-%load the saved workspace
-data = load('seisbursts_allvari.mat');
-runall = data.runall;
+%% summary plot of rc VS renv for all bursts
 pctl = [2.28 50];
-dnpts=round(data.mwlen/4);
+dnpts=round(mwlen/4);
 for iets = 1: nets
   runtmp = runall{iets};
   runplt = runtmp(1:dnpts:end,:);
   nbin=10;
-  [xbin,indbin] = binxeqnum(runplt(:,1),nbin);  %bin by amp with same number
+  [xbin,indbin] = binxeqnum(runplt(:,1),nbin);  %bin by env with same number
   for i = 1: nbin
     indi = indbin{i};
     xcnt(i,iets) = median(xbin{i});
@@ -1005,16 +1008,13 @@ for iets = 1: nets
 %   pctlv(1:2,iets) = prctile(runplt(:,1),pctl);
 end
 
-%% summary plot of rc VS renv for all bursts
-data = load('seisbursts_allvari.mat');
-runall = data.runall;
-
+%%
 nrow = 1; % rows and cols of subplots in each figure
 ncol = 3; 
-widin = 10; % size of each figure
+widin = 8.3; % size of each figure
 htin = 4;
-pltxran = [0.06 0.98]; pltyran = [0.16 0.9];
-pltxsep = 0.04; pltysep = 0.03;
+pltxran = [0.07 0.98]; pltyran = [0.18 0.88];
+pltxsep = 0.02; pltysep = 0.03;
 f = initfig(widin,htin,nrow,ncol);
 axpos = optaxpos(f,nrow,ncol,pltxran,pltyran,pltxsep,pltysep);
 axtit = [f.ax(1) f.ax(2) f.ax(3)];
@@ -1024,7 +1024,7 @@ xlabel(f.ax(1),'Normalized running envelope','FontSize',10);
 ylabel(f.ax(1),'Running CC','FontSize',10);
 
 for iets = 1: nets
-  ax = f.ax(iets); hold(ax,'on');
+  ax = f.ax(iets); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
   runtmp = runall{iets};
   runplt = runtmp(1:dnpts:end,:);
   
@@ -1050,14 +1050,15 @@ for iets = 1: nets
   end  
   scatter(ax,dum(:,1),dum(:,2),3,dum(:,3),'o','filled','MarkerEdgeColor','none');
 %   colormap(ax,flipud(colormap(ax,'kelicol')));
-  colormap(ax,jet);
+  % colormap(ax,jet);
+  colormap(ax,'plasma');
   c=colorbar(ax,'SouthOutside');
   pos = ax.Position;
-  c.Position = [pos(1), pos(2)-0.06, pos(3), 0.03];
+  c.Position = [pos(1), pos(2)-0.05, pos(3), 0.03];
   if strcmp(scale,'log10')
     cstr = strcat({'log_{10}(# points / '},binmethod,')');
   elseif strcmp(scale,'linear')
-    cstr = strcat({'# detections / '},binmethod);  
+    cstr = strcat({'# points / '},binmethod);  
   end
   c.Label.String = cstr;
   
@@ -1067,8 +1068,6 @@ for iets = 1: nets
 %   text(ax,median(runplt(:,1))*1.05,median(runplt(:,3))*1.05,sprintf('(%.3f, %.3f)',...
 %     median(runplt(:,1)),median(runplt(:,3))),'HorizontalAlignment',...
 %     'left','fontsize',10);
-%   text(ax,0.2,0.1,sprintf('%d',years(iets)),'unit','normalized',...
-%     'HorizontalAlignment','left','fontsize',12);
   text(ax,0.98,0.05,sprintf('%d',years(iets)),'unit','normalized',...
     'HorizontalAlignment','right','fontsize',10);
 %   text(ax,0.2,0.1,sprintf('2.5 prctile: %.3f',prctile(runtmp(:,1),2.5)),'unit','normalized',...
@@ -1087,11 +1086,17 @@ for iets = 1: nets
   xlim(ax,xran);
   ylim(ax,yran);
   longticks(ax,2);
+  xticks(ax,xran(1):0.2:xran(2));
+  yticks(ax,yran(1):0.2:yran(2));
+  
+  if iets ~= 1
+    nolabels(ax,2);
+  end
   hold(ax,'off');
 
 end
 
-orient(f.fig,'landscape');
+% orient(f.fig,'landscape');
 fname = 'rccvsrenv.pdf';
 print(f.fig,'-dpdf',...
   strcat('/home/data2/chaosong/CurrentResearch/Song_Rubin_2024/figures/',fname));

@@ -8,7 +8,10 @@ function [impindep,imptripf,indtrip,sharp] = groupimptripdecon_ref(sigdecon,ampi
 % independently from 3 different stations into triplets, in the descending
 % order of 'significance' of the impulses at a reference station, where the
 % significance is quantified by the product of the amplitude of the impulse
-% and the rcc (concatenated of multiple subwins) value at the impulse.
+% and the rcc (concatenated of multiple subwins) value at the impulse. 
+% But differently, this function would
+% at each station, try to group the impulse that was deconvolved earliest
+% among all impulses that are close enough to the target.
 %
 % It is the version for refinement using subwins wrt to 'groupimptripdecon.m', 
 % in order to group the nearest impulses that are deconvolved independently 
