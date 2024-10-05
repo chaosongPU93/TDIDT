@@ -59,8 +59,8 @@ for ista = 1: nsta
     nolabels(ax,3);
   else
     xlabel(ax,'Time (s)','FontSize',10);
-    ylabel(ax,'Norm. amplitude','FontSize',10);
   end
+  ylabel(ax,'Norm. amplitude','FontSize',10);
   hold(ax,'off');
 end
 

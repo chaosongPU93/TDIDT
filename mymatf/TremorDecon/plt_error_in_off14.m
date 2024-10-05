@@ -1,9 +1,10 @@
 % plt_error_in_off14
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% This is the script in particular to plot the comparison of the fraction of 
-% the catalog in terms of unique events in different type of clusters between
-% 3-sta data, 3-sta noise, 4-sta data and 4-sta noise.
-% --2024/05/07, add the result from synthetics to this code as well.
+% This is the script in particular to plot the difference (error) in the 
+% off14 that is obtained by deconvolution, and that is predicted by the 
+% plane-fit model, for the data deconvolution catalog
+% --2024/05/07, add the result from synthetics to this code as well so that
+% you can plot a demo comparison between data and specific synthetic catalogs
 % 
 % 
 %
@@ -226,7 +227,8 @@ yfit=normpdf(x,mus,sigmas)*binw/sps;
 %   'normalized','FontSize',10); 
 legend(ax,p,label,'Location','south');
 xlabel(ax,sprintf('\\Delta{t}_{12} (s)'));
-xlabel(ax,sprintf('Diff. in \\Delta{t}_{14}^{abs} between deconvolution and plane-fit'));
+% xlabel(ax,sprintf('Diff. in \\Delta{t}_{14}^{abs} between deconvolution and plane-fit'));
+xlabel(ax,sprintf('Diff. in \\Delta{t}_{14} between deconvolution and plane fit'));
 ylabel(ax,'Probability');
 
   
@@ -280,83 +282,5 @@ print(f.fig,'-dpdf',...
 % plot(ax,[offmax offmax]/sps,ax.YLim,'k--');
 % xlabel(ax,'diff. in 4th arrival between pred and decon');
 
-
-%%
-%%%plot the difference (error) in the off14 from arrival peaks from decon 
-%%%andpredicted off14 from plane fit (note that off14 is the direct product of 
-%%%planefit), MORE IMPORTANT!
-nrow = 2; ncol = 4;
-widin = 8.4;  % maximum width allowed is 8.5 inches
-htin = 5;   % maximum height allowed is 11 inches
-f = initfig(widin,htin,nrow,ncol);
-pltxran = [0.08 0.98]; pltyran = [0.08 0.98]; % optimal axis location
-pltxsep = 0.01; pltysep = 0.02;
-optaxpos(f,nrow,ncol,pltxran,pltyran,pltxsep,pltysep);
-
-color = gradientblue(nround);
-for insat = 1 : nnsat
-  ax=f.ax(insat); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
-  xlim(ax,[-0.1 0.1]);  
-  ylim(ax,[0 0.17]);
-  
-  binw=1;
-  binedge=(-offmax-0.5: binw: offmax+0.5)/sps;
-  
-%   histogram(ax,diffoff14syn/sps,'Normalization','probability','BinEdges',binedge,...
-%       'Facec','k','edgec','none');
-  for iround = 1: nround
-    aa = diffoff14syn{insat,iround}/sps;
-    [N]=histcounts(aa,'BinEdges',binedge,'normalization','probability');
-    N=[N N(end)];
-    p(iround)=stairs(ax,binedge,N,'-','linew',1,'color',color(iround,:));
-    if ~singleflag
-      label{iround} = sprintf('%.1fx%.1f',2*semia(iround),2*semib(iround));
-    else
-      label{iround} = sprintf('%.1f',perctrial(iround));
-    end
-  end
-  aa = diffoff14/sps;
-  [N]=histcounts(aa,'BinEdges',binedge,'normalization','probability');
-  N=[N N(end)];
-  p(nround+1)=stairs(ax,binedge,N,'-','linew',1.5,'color','k');
-  label{nround+1} = 'Data';  
-  if singleflag
-    aa = diffoff14n/sps;
-    [N]=histcounts(aa,'BinEdges',binedge,'normalization','probability');
-    N=[N N(end)];
-    p(nround+2)=stairs(ax,binedge,N,'-','linew',1.5,'color','r');
-    label{nround+2} = 'Noise';  
-  end
-%   plot(ax,[median(aa) median(aa)],ax.YLim,'r--','LineWidth',1.5);
-%   plot(ax,[-offmax -offmax]/sps,ax.YLim,'k--');
-%   plot(ax,[offmax offmax]/sps,ax.YLim,'k--');
-  [mu,sigma]=normfit(aa);
-  differror = round(mu*sps);
-%   x=(-offmax:0.2:offmax)/sps; yfit=normpdf(x,mu,sigma)*binw/sps;
-%   plot(ax,x,yfit,'k-','LineWidth',2);
-%   text(ax,0.99,0.95,'Noise-free synthetics','HorizontalAlignment','right','Units',...
-%     'normalized','FontSize',10);  
-  text(ax,0.99,0.95,sprintf('Satur=%.1f',nsat(insat)),'Units','normalized',...
-    'HorizontalAlignment','right');
-
-  if insat == (nrow-1)*ncol+1 
-    lgd=legend(ax,p,label,'NumColumns',2,'Location','best','fontsize',6);  %'Orientation','vertical'
-    set(lgd.BoxFace, 'ColorType','truecoloralpha', 'ColorData',uint8(255*[1;1;1;.8]));  %make background transparent
-    if ~singleflag
-      lgdtit = 'Region size (km)';
-    else
-      lgdtit = 'Noise level';
-    end
-    title(lgd,lgdtit,'fontsize',7);
-    xlabel(ax,'Diff. in off14 between plane-fit and decon');
-    ylabel(ax,'Probability');
-  else
-    nolabels(ax,3);
-  end
-
-end
-
-fname = strcat('diffoff14_syn',fnsuffix1,'.pdf');
-print(f.fig,'-dpdf',strcat('/home/chaosong/Pictures/',fname));
 
 

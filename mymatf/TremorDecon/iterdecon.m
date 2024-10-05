@@ -448,72 +448,74 @@ while mwtcoef>medwtcoef   %if discard hard limit on max num of iters, USED FOR R
   if fpltit
     f1.fig = figure(100); clf(f1.fig)
     widin = 8;  % maximum width allowed is 8.5 inches
-    htin = 9;   % maximum height allowed is 11 inches
+    htin = 5;   % maximum height allowed is 11 inches
     [scrsz, resol] = pixelperinch(1);
     set(f1.fig,'Position',[1*scrsz(3)/20 scrsz(4)/10 widin*resol htin*resol]);
     
-    subplot(811);
-    p1=plot(wlet,'r-'); box on; grid on;
-    legend(p1,'Template'); xlim([0,lwlet]); %xlim([0,nfft])
-    title(sprintf('Iteration: %d',nit));
-    longticks(gca,2);
-    if lwlet < lsig
-      ax = gca;
-      loc = getpos(ax);
-      shrink(ax,lsig/lwlet,1);
-      ax.Position(1)=loc(1);
-%       nolabels(ax,1);
-    end
-
-    subplot(812); 
-    yyaxis left; p1=plot(sig, 'k-'); box on; grid on; ax=gca; yran = ax.YLim; xlim([0,nfft]);
+%     subplot(811);
+%     p1=plot(wlet,'r-'); box on; grid on;
+%     legend(p1,'Template','Location','eastoutside','Orientation','horizontal'); 
+%     xlim([0,lwlet]); %xlim([0,nfft])
+%     title(sprintf('Iteration: %d',nit));
+%     longticks(gca,2);
+%     if lwlet < lsig
+%       ax = gca;
+%       loc = getpos(ax);
+%       shrink(ax,lsig/lwlet,1);
+%       ax.Position(1)=loc(1);
+% %       nolabels(ax,1);
+%     end
+% 
+%     subplot(812); 
+%     yyaxis left; p1=plot(sig, 'k-'); box on; grid on; ax=gca; yran = ax.YLim; xlim([0,nfft]);
+%     yyaxis right;
+%     p2=plot((1+round(ldiff/2)): (nfft-round(ldiff/2)),rcc,'o','color',[.8 .8 .8],'markersize',2);
+%     ylim([-1 1]);
+%     legend([p1,p2],'Signal','3-sta RCC','Location','northeast','Orientation','horizontal'); 
+% %     nolabels(gca,1);
+%     longticks(gca,2);
+%     
+%     subplot(813);
+%     p1=plot(res, 'c-'); box on; grid on; xlim([0,nfft]); ylim(yran);
+%     legend(p1,'Residual bf. current iter.','Location','northeast','Orientation','horizontal');
+% %     nolabels(gca,1);
+%     longticks(gca,2);
+    
+    subplot(411);
     yyaxis right;
-    p2=plot((1+round(ldiff/2)): (nfft-round(ldiff/2)),rcc,'o','color',[.8 .8 .8],'markersize',2);
+    p2=plot((1+round(ldiff/2)): (nfft-round(ldiff/2)),rcc,'o','color',[.8 .8 .8],'markersize',1);
     ylim([-1 1]);
-    legend([p1,p2],'Signal','3-sta RCC');
-%     nolabels(gca,1);
-    longticks(gca,2);
-    
-    subplot(813);
-    p1=plot(res, 'c-'); box on; grid on; xlim([0,nfft]); ylim(yran);
-    legend(p1,'Residual bf. current iter.'); 
-%     nolabels(gca,1);
-    longticks(gca,2);
-    
-    subplot(814);
     yyaxis left;
     p1=plot((1+round(ldiff/2)): (nfft-round(ldiff/2)),coefeff,'-','color',[.2 .2 .2]);
     box on; grid on; xlim([0,nfft]); hold on;
     ax = gca;
-    plot(ax.XLim,[ampnoi ampnoi],'--','color',[.5 .5 .5]);
-    scatter(pkind+round(ldiff/2),pkhgt,20,'r');
+%     plot(ax.XLim,[ampnoi ampnoi],'--','color',[.5 .5 .5]);
+    scatter(pkind+round(ldiff/2),pkhgt,20,'b');
     plot([idximp idximp],ax.YLim,'k--');
-    yyaxis right;
-    p2=plot((1+round(ldiff/2)): (nfft-round(ldiff/2)),rcc,'o','color',[.8 .8 .8],'markersize',2);
-    ylim([-1 1]);
-    legend([p1,p2],'Res-temp CC','3-sta RCC');
+    legend([p1,p2],'Res-temp CC','3-sta RCC','Location','southeast','Orientation','horizontal');
 %     nolabels(gca,1);
     longticks(gca,2); hold off
     
-    subplot(815);
+    subplot(412);
 %     p1=stem(sigdecon, 'b','MarkerSize',4);
-    imptemp = find(sigdecon>0); p1=stem(imptemp,sigdecon(imptemp),'b','MarkerSize',4);
+    imptemp = find(sigdecon>0); p1=stem(imptemp,sigdecon(imptemp),'r','MarkerSize',4);
     box on; grid on; hold on; xlim([0,nfft]);
-    plot([0 nfft],[ampnoin ampnoin],'--','color',[.5 .5 .5]);
+%     plot([0 nfft],[ampnoin ampnoin],'--','color',[.5 .5 .5]);
     text(0.05,0.85,num2str(nimp),'FontSize',10,'Units','normalized');
     text(0.05,0.65,num2str(idximp),'FontSize',10,'Units','normalized');
-    legend(p1,'Impulses'); 
+    legend(p1,'Impulses','Location','southeast','Orientation','horizontal');
 %     nolabels(gca,1);
     longticks(gca,2);
     
-    subplot(816);    
-    p1=plot(pred, 'b-');  box on; grid on; xlim([0,nfft]); ylim(yran);
-    legend(p1,'Prediction');
+    subplot(413);  
+    yran=[-max(abs(sig)) max(abs(sig))];
+    p1=plot(pred, 'r-');  box on; grid on; xlim([0,nfft]); ylim(yran);
+    legend(p1,'Prediction','Location','southeast','Orientation','horizontal');
 %     nolabels(gca,1);
     longticks(gca,2);
     
-    subplot(817);   
-    p1=plot(res_new, 'm-'); box on; grid on; hold on; xlim([0,nfft]); ylim(yran);
+    subplot(414);   
+    p1=plot(res_new, '-','color',[.5 .5 .5]); box on; grid on; hold on; xlim([0,nfft]); ylim(yran);
     patarea = [max(idximp-itwlet+1, 1) yran(1);
                min(idximp-itwlet+lwlet, nfft) yran(1);
                min(idximp-itwlet+lwlet, nfft) yran(2);
@@ -522,22 +524,26 @@ while mwtcoef>medwtcoef   %if discard hard limit on max num of iters, USED FOR R
                ];
     patch(patarea(:,1),patarea(:,2),'k','Facealpha',0.1,'edgecolor','none');
     plot([idximp idximp],yran,'k--');
-    p2=plot(noi,'-','color',[.5 .5 .5]);
-    legend([p1,p2],'Residual af. current iter.','Noise');
+%     p2=plot(noi,'-','color',[.5 .5 .5]);
+%     legend([p1,p2],'Residual af. current iter.','Noise','Location','northoutside','Orientation','horizontal');
+    legend(p1,'Updated residual','Location','southeast',...
+      'Orientation','horizontal');
 %     nolabels(gca,1);
-    longticks(gca,2); hold off
-    
-    subplot(818);
-    p1=plot(res_new, 'm-'); box on; grid on; hold on; ylim(yran); 
-    patch(patarea(:,1),patarea(:,2),'k','Facealpha',0.1,'edgecolor','none');
-    plot([idximp idximp],yran,'k--'); 
-    legend(p1,'Updated residual-zoom'); 
-    xlim([max(idximp-itwlet+1, 1), min(idximp-itwlet+lwlet, nfft)]);  % only zoom at portion changed
     xlabel(sprintf('Samples at %d Hz',sps),'FontSize',10);
     ylabel('Amplitude','FontSize',10);
     longticks(gca,2); hold off
     
-%     print(f1.fig,'-djpeg','-r300',strcat('/home/chaosong/Pictures/IndepIter',num2str(nit),'.jpg'));
+%     subplot(515);
+%     p1=plot(res_new, 'm-'); box on; grid on; hold on; ylim(yran); 
+%     patch(patarea(:,1),patarea(:,2),'k','Facealpha',0.1,'edgecolor','none');
+%     plot([idximp idximp],yran,'k--'); 
+%     legend(p1,'Updated residual--zoom','Location','northeast','Orientation','horizontal');
+%     xlim([max(idximp-itwlet+1, 1), min(idximp-itwlet+lwlet, nfft)]);  % only zoom at portion changed
+%     xlabel(sprintf('Samples at %d Hz',sps),'FontSize',10);
+%     ylabel('Amplitude','FontSize',10);
+%     longticks(gca,2); hold off
+    
+    print(f1.fig,'-djpeg','-r300',strcat('/home/chaosong/Pictures/IndepIter',num2str(nit),'.jpg'));
 
     fighdl{1} = f1;
   end

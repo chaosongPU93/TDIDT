@@ -271,8 +271,12 @@ for iii = 1: length(idxbst)
       dlocspl(klfe,:) = tmrii(jj, 7:8) - implocii(ind(jjj), 7:8);
     end
   end
-end  
-% keyboard  
+end
+
+lfeintmrlump = cat(1, lfeintmr{:}); %unique LFEs
+lfeintmruni = unique(lfeintmrlump,'rows','stable');
+
+keyboard  
 
 %%
 nrow = 2;

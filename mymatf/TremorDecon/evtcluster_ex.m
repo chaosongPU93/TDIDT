@@ -119,10 +119,18 @@ for m = mmax:-1:1
         
         %removing all events in the middle except the first and last, eg. 3 from
         %1,2,3
-        indrem = [indrem; reshape(ind(2:end-1),[],1)];
+        % temp = setdiff(reshape(ind,[],1), [ind(1); ind(end)]);
+        % indrem = [indrem; temp];
+        % indrem = [indrem; reshape(ind(2:end-1),[],1)];
+
+        %%%%%%%used as of 08/14/2024, previous way have duplicates across m!
+        indrem = [indrem; reshape(ind,[],1)]; 
+
       end
       impclusteribst{i} = impclusterj;
       
+      indrem=unique(indrem);
+
       impidum(indrem, :) = [];
     end
     

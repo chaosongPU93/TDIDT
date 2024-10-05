@@ -33,8 +33,8 @@ clc;
 clear;
 close all;
 
-% set(0,'DefaultFigureVisible','on');
-set(0,'DefaultFigureVisible','off');   % switch to show the plots or not
+set(0,'DefaultFigureVisible','on');
+% set(0,'DefaultFigureVisible','off');   % switch to show the plots or not
 
 sps = 160;
 ftrans = 'interpchao';
@@ -655,9 +655,9 @@ a.Position = [xarrow(1), yarrow(1), xarrow(2)-xarrow(1), yarrow(2)-yarrow(1)];
 text(ax,0.5,2.5,'0.0625 s/km','fontsize',9,'HorizontalAlignment','left');
 text(ax,0.02,0.92,'b','FontSize',10,'unit','normalized','EdgeColor','k','Margin',1);
 % legend(ax,label,'Location','best');
-% xlabel(ax,'E (km)');
+xlabel(ax,'E (km)');
 % ylabel(ax,'N (km)');
-nolabels(ax,3);
+nolabels(ax,2);
 
 fname = strcat('maxdoffdloc.pdf');
 print(f.fig,'-dpdf',...
@@ -756,9 +756,9 @@ a.Position = [xarrow(1), yarrow(1), xarrow(2)-xarrow(1), yarrow(2)-yarrow(1)];
 text(ax,0.1,1.7,'1 km/0.0625 s','fontsize',9,'HorizontalAlignment','left');
 text(ax,0.02,0.92,'b','FontSize',10,'unit','normalized','EdgeColor','k','Margin',1);
 % legend(ax,p,label,'Location','best');
-% xlabel(ax,'E (km)');
+xlabel(ax,'E (km)');
 % ylabel(ax,'N (km)');
-nolabels(ax,3);
+nolabels(ax,2);
 
 fname = strcat('mindlocdoff.pdf');
 print(f.fig,'-dpdf',...

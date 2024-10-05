@@ -33,18 +33,18 @@ else
   f.fig = figure(ifig);
 end
 f.fig.Renderer = 'painters';
-set(f.fig,'Position',[10*scrsz(3)/20 scrsz(4)/10 widin*resol htin*resol]);
+set(f.fig,'Position',[8*scrsz(3)/20 scrsz(4)/10 widin*resol htin*resol]);
 
 for isub = 1:nrow*ncol
     f.ax(isub) = subplot(nrow,ncol,isub);
     f.ax(isub).Box = 'on';
 %     grid(f.ax(isub),'on');
 %     f.ax(isub).YAxis.Exponent = 3;
-    longticks(f.ax(isub),2);
+%     longticks(f.ax(isub),2);
 end
 
-xran = [0.15 0.95]; yran = [0.15 0.95];
-xsep = 0.1; ysep = 0.1;
+xran = [0.1 0.96]; yran = [0.1 0.96];
+xsep = 0.08; ysep = 0.08;
 optaxpos(f,nrow,ncol,xran,yran,xsep,ysep);
 
 

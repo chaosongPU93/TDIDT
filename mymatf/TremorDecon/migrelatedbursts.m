@@ -168,10 +168,16 @@ tranmigrubin = [
 %% load other catalogs
 %%% load the LFE catalog of Michael Bostock, inside and outside the rectangle in 'locinterp002_4s.m'
 %obtain the location of fam 002, lon0 and lat0
-loc0 = off2space002([0 0],sps*iup,'interpchao',0); % 8 cols, format: dx,dy,lon,lat,dep,ttrvl,off12,off13
+% loc0 = off2space002([0 0],sps*iup,'interpchao',0); % 8 cols, format: dx,dy,lon,lat,dep,ttrvl,off12,off13
 %format: [fam yyyy mm dd sec dx dy lon lat dep magnitude number-of-stations], 12 cols
 %time should point to the peak, zero-crossing?
-bostcat = ReformBostock(loc0(3),loc0(4),0);
+% bostcat = ReformBostock(loc0(3),loc0(4),0);
+
+bosdir = ('/home/data2/chaosong/matlab/allan/BOSTOCK');
+lfefnm = ('newlfeloc');
+lfeloc = load(fullfile(bosdir, lfefnm));
+loc0 = lfeloc(lfeloc(:,1)==2,:);
+bostcat = ReformBostock(loc0(3),loc0(2),1);
 
 %the cut-out boundary of 4-s detections
 cutout = 'ellipse';
@@ -192,8 +198,8 @@ y0 = mean(NS);
 [x, y] = rectangle_chao(x0,y0,wid,hgt,0.01);
 
 %%%2022/06/29, use the same ellipse to exclude fam 047
-% bnd = [x y];
-bnd = [xcut ycut];
+bnd = [x y];
+% bnd = [xcut ycut];
 [iin,ion] = inpolygon(bostcat(:,6),bostcat(:,7),bnd(:,1),bnd(:,2));
 isinbnd = iin | ion;
 bostcati = bostcat(isinbnd == 1, :);
@@ -397,7 +403,7 @@ for i = 1: length(dates)  % dates in each ets
     scatter(ax,tbosto(ind)/3600, yloc*ones(size(tbosto(ind))),1,'m'); % bostock
     %%%plot the bostock's LFE catalog inside rectangle
     ind = find(tbosti/3600>=xran(1) & tbosti/3600<=xran(2));
-    scatter(ax,tbosti(ind)/3600, yloc*ones(size(tbosti(ind))),1,'m','filled');
+    scatter(ax,tbosti(ind)/3600, yloc*ones(size(tbosti(ind))),5,'m','filled');
 
     if isub == 1
       text(ax,0.02,0.9,sprintf('%d',size(hfdayi,1)),'Units','normalized',...

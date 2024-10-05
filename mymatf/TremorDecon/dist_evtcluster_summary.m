@@ -141,17 +141,19 @@ pltxran = [0.06 0.98]; pltyran = [0.12 0.98]; % optimal axis location
 pltxsep = 0.015; pltysep = 0.05;
 optaxpos(f,nrow,ncol,pltxran,pltyran,pltxsep,pltysep);
 
-xran = [0 4];
-yran = [0 4];
+xran = [0.05 4];
+yran = [0.05 4];
+xtks = [0.1 0.5 1 2 4];
+ytks = [0.05 0.1 0.5 1 2 4];
 
-ax=f.ax(1); hold(ax,'on'); ax.Box = 'on'; grid(ax, 'on');
+ax=f.ax(1); hold(ax,'on'); ax.Box = 'on'; grid(ax, 'on'); ax.XScale='log'; ax.YScale='log';
 plot(ax,xran,yran,'--','color',[.4 .4 .4],'linew',1);
 scatter(ax,mdistnn1l,mdist2alll,20,'k','filled','markeredgec','w');
 axis(ax,'equal');
 xlim(ax,xran);
 ylim(ax,yran);
-xticks(ax,0:1:4);
-yticks(ax,0:1:4);
+xticks(ax,xtks);
+yticks(ax,ytks);
 xlabel(ax,'Med. dist. (km) of consecutive pairs');
 ylabel(ax,'Med. dist. (km) of all pairs');
 text(ax,0.99,0.05,'Absolute','Units','normalized','HorizontalAlignment',...
@@ -159,35 +161,37 @@ text(ax,0.99,0.05,'Absolute','Units','normalized','HorizontalAlignment',...
 text(ax,0.02,0.94,'a','FontSize',10,'unit','normalized','HorizontalAlignment',...
   'left','EdgeColor','k','Margin',1,'backgroundcolor','w');
 
-ax=f.ax(2); hold(ax,'on'); ax.Box = 'on'; grid(ax, 'on');
+ax=f.ax(2); hold(ax,'on'); ax.Box = 'on'; grid(ax, 'on'); ax.XScale='log'; ax.YScale='log';
 plot(ax,xran,yran,'--','color',[.4 .4 .4],'linew',1);
 scatter(ax,mdprojx1nn1l,mdprojx12alll,20,'k','filled','markeredgec','w');
 axis(ax,'equal');
 xlim(ax,xran);
 ylim(ax,yran);
-xticks(ax,0:1:4);
-yticks(ax,0:1:4);
-nolabels(ax,3);
+xticks(ax,xtks);
+yticks(ax,ytks);
+nolabels(ax,2);
+xlabel(ax,'Med. dist. (km) of consecutive pairs');
 text(ax,0.99,0.05,'Along short PCA axis','Units','normalized','HorizontalAlignment',...
   'right','FontSize',9);
 text(ax,0.02,0.94,'b','FontSize',10,'unit','normalized','HorizontalAlignment',...
   'left','EdgeColor','k','Margin',1,'backgroundcolor','w');
 
-ax=f.ax(3); hold(ax,'on'); ax.Box = 'on'; grid(ax, 'on');
+ax=f.ax(3); hold(ax,'on'); ax.Box = 'on'; grid(ax, 'on'); ax.XScale='log'; ax.YScale='log';
 plot(ax,xran,yran,'--','color',[.4 .4 .4],'linew',1);
 scatter(ax,mdprojx2nn1l,mdprojx22alll,20,'k','filled','markeredgec','w');
 axis(ax,'equal');
 xlim(ax,xran);
 ylim(ax,yran);
-xticks(ax,0:1:4);
-yticks(ax,0:1:4);
-nolabels(ax,3);
+xticks(ax,xtks);
+yticks(ax,ytks);
+nolabels(ax,2);
+xlabel(ax,'Med. dist. (km) of consecutive pairs');
 text(ax,0.99,0.05,'Along SW-NE','Units','normalized','HorizontalAlignment',...
   'right','FontSize',9);
 text(ax,0.02,0.94,'c','FontSize',10,'unit','normalized','HorizontalAlignment',...
   'left','EdgeColor','k','Margin',1,'backgroundcolor','w');
 
-fname = strcat('dist_evtclus_sum_mgeq',num2str(minm),'.pdf');
+fname = strcat('dist_evtclus_sum_mgeq',num2str(minm+1),'.pdf');
 print(f.fig,'-dpdf',...
   strcat('/home/data2/chaosong/CurrentResearch/Song_Rubin_2024/figures/',fname));
 

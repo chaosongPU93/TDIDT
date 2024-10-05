@@ -574,8 +574,8 @@ for i = 1:nrow*ncol
 %     xlabel(ax,'');
 %     nolabels(ax,1);
   elseif i < 5
-    nolabels(ax,3);
-    xlabel(ax,'');
+    nolabels(ax,2);
+%     xlabel(ax,'');
     ylabel(ax,'');
   elseif i > 5
     nolabels(ax,2);

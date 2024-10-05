@@ -380,7 +380,7 @@ ylim(ax,yran);
 xticks(ax,[0.1 1 10]);
 
 
-%% broader-band spectra of data windows
+%% broader-band spectra of data windows (spectral density)
 % dates and ets
 %%% NOTE: 'dates' is the dates that the tremor is active at the region of interest, so that the
 %%% waveform at the stations on these dates you are looking at mainly comes from the sources at the
@@ -390,8 +390,8 @@ dates = unique(trange(:,1));
 years = unique(floor(dates/1000));
 nets = length(years);
 
-pcallbb = cell(nets, 1);
-pcall = cell(nets, 1);
+pcallbb = cell(nets, 1);  %spectral density
+pcall = cell(nets, 1);  %spectral density
 
 % keyboard
 for iets = 1: nets
@@ -505,7 +505,7 @@ clear optdatbb optdat
 clear pcoptbb pcopt 
 clear pcetsoptbb pcetsopt  
   
-%% plot the spectra of optimal components
+%% plot the spectra of optimal components, spectral density
 xran = [0.1 20];
 yran = [1e-3 1e1];
 [f] = plt_spectra_of_bursts(years,stas,pcft,pcallbb,xran,yran);
@@ -522,7 +522,7 @@ fname = 'bp_spectra_of_bursts.pdf';
 print(f.fig,'-dpdf',...
   strcat('/home/data2/chaosong/CurrentResearch/Song_Rubin_2024/figures/',fname));
 
-%% plot the spectra of normalized optimal components
+%% plot the spectra of normalized optimal components, spectral density
 xran = [0.1 20];
 yran = [5e-2 5e2];
 minfnorm = 1.8; maxfnorm = 6.3;
@@ -613,12 +613,13 @@ for i = 1: nsta
 %   npcmed = pcmed(:,i)/amprat;
 %   loglog(ax,pcft,npcmed,'color',[.4 .4 .4],'linew',1.5);
   
-  yran = [1e-6 1e0];
+  yran = [1e-4 1e0];
   xran = [0.1 20];
-  plot(ax,[1 1],yran,':','color',[0.7 0.7 0.7]);
-  plot(ax,[2 2],yran,':','color',[0.7 0.7 0.7]);
-  plot(ax,[4 4],yran,':','color',[0.7 0.7 0.7]);
-  plot(ax,[8 8],yran,':','color',[0.7 0.7 0.7]);
+  % plot(ax,[1 1],yran,':','color',[0.7 0.7 0.7]);
+  % plot(ax,[2 2],yran,':','color',[0.7 0.7 0.7]);
+  plot(ax,[4 4],yran,':','color',[0.5 0.5 0.5]);
+  % plot(ax,[8 8],yran,':','color',[0.7 0.7 0.7]);
+  plot(ax,[4 8],[1e-1 2.5e-2],'-','linew',1.5,'color',[0.4 0.4 0.4]); %a line of slope -2
   plot(ax,[losig losig],yran,'-.','color',[0.5 0.5 0.5]);
   plot(ax,[hisig hisig],yran,'-.','color',[0.5 0.5 0.5]);
   plot(ax,[lowlet lowlet],yran,'-.','color',[1 0.65 0]);
@@ -631,8 +632,10 @@ for i = 1: nsta
   xlabel(ax,'Frequency (Hz)','FontSize',10);
   longticks(ax,2);
 end  
-ylabel(f.ax(1),'Spectral density (energy/Hz)','FontSize',10);
-lgd = legend(f.ax(1),'BB template',sprintf('BP temp., %.1f-%.1f Hz',lowlet,hiwlet),...
+% ylabel(f.ax(1),'Spectral density (energy/Hz)','FontSize',10);
+% ylabel(f.ax(1),sprintf('Spectral density (amp.^{2}/Hz)'),'FontSize',10);
+ylabel(f.ax(1),sprintf('Spectral density (squared amplitude/Hz)'),'FontSize',10);
+lgd = legend(f.ax(4),'BB template',sprintf('BP temp., %.1f-%.1f Hz',lowlet,hiwlet),...
   sprintf('Median of BB data'),sprintf('Med. of BP data, %.1f-%.1f Hz',losig,hisig),...
   'location','south','fontsize',7);
 %make background transparent

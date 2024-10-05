@@ -139,18 +139,18 @@ if ~isempty(stats)
   %   'unit','normalized','interpreter','latex','HorizontalAlignment','left');
   text(ax,0.6,0.2,sprintf('%d%c',angrmse,char(176)),...
     'Units','normalized','HorizontalAlignment','left','FontSize',10);
-  angslope = stats.angslope;
-  [rotx, roty] = complex_rot(0,1,-angslope);
-  xarrow = [0.5-rotx 0.5+rotx];
-  yarrow = [-2.5-roty -2.5+roty];
-  p1=annotation('arrow','color','k','linestyle','--','linewidth',1.5,'color',[.6 .6 .6]);
-  p1.Parent = ax;
-  p1.Position = [xarrow(1), yarrow(1), xarrow(2)-xarrow(1), yarrow(2)-yarrow(1)] ;
-  % text(ax,0.6,0.25,strcat(num2str(angslope),'$^{\,\circ}$'),'FontSize',11,...
-  %   'unit','normalized','interpreter','latex','HorizontalAlignment','left',...
-  %   'color',[.6 .6 .6]);
-  text(ax,0.6,0.25,sprintf('%d%c',angslope,char(176)),'color',[.6 .6 .6],...
-    'Units','normalized','HorizontalAlignment','left','FontSize',10);    
+%   angslope = stats.angslope;
+%   [rotx, roty] = complex_rot(0,1,-angslope);
+%   xarrow = [0.5-rotx 0.5+rotx];
+%   yarrow = [-2.5-roty -2.5+roty];
+%   p1=annotation('arrow','color','k','linestyle','--','linewidth',1.5,'color',[.6 .6 .6]);
+%   p1.Parent = ax;
+%   p1.Position = [xarrow(1), yarrow(1), xarrow(2)-xarrow(1), yarrow(2)-yarrow(1)] ;
+%   % text(ax,0.6,0.25,strcat(num2str(angslope),'$^{\,\circ}$'),'FontSize',11,...
+%   %   'unit','normalized','interpreter','latex','HorizontalAlignment','left',...
+%   %   'color',[.6 .6 .6]);
+%   text(ax,0.6,0.25,sprintf('%d%c',angslope,char(176)),'color',[.6 .6 .6],...
+%     'Units','normalized','HorizontalAlignment','left','FontSize',10);    
 end
 % text(ax,0.99,0.95,'Secondary removed','HorizontalAlignment','right','Units',...
 %   'normalized','FontSize',8);  
@@ -262,18 +262,18 @@ if ~isempty(stats4th)
 %     'unit','normalized','interpreter','latex','HorizontalAlignment','left');
   text(ax,0.6,0.2,sprintf('%d%c',angrmse4th,char(176)),...
     'Units','normalized','HorizontalAlignment','left','FontSize',10);
-  angslope4th = stats4th.angslope;
-  [rotx, roty] = complex_rot(0,1,-angslope4th);
-  xarrow = [0.5-rotx 0.5+rotx];
-  yarrow = [-2.5-roty -2.5+roty];
-  p1=annotation('arrow','color','k','linestyle','--','linewidth',1.5,'color',[.6 .6 .6]);
-  p1.Parent = ax;
-  p1.Position = [xarrow(1), yarrow(1), xarrow(2)-xarrow(1), yarrow(2)-yarrow(1)] ;
-  % text(ax,0.6,0.25,strcat(num2str(angslope4th),'$^{\,\circ}$'),'FontSize',11,...
-  %   'unit','normalized','interpreter','latex','HorizontalAlignment','left',...
-  %   'color',[.6 .6 .6]);
-  text(ax,0.6,0.25,sprintf('%d%c',angslope4th,char(176)),'color',[.6 .6 .6],...
-    'Units','normalized','HorizontalAlignment','left','FontSize',10);    
+%   angslope4th = stats4th.angslope;
+%   [rotx, roty] = complex_rot(0,1,-angslope4th);
+%   xarrow = [0.5-rotx 0.5+rotx];
+%   yarrow = [-2.5-roty -2.5+roty];
+%   p1=annotation('arrow','color','k','linestyle','--','linewidth',1.5,'color',[.6 .6 .6]);
+%   p1.Parent = ax;
+%   p1.Position = [xarrow(1), yarrow(1), xarrow(2)-xarrow(1), yarrow(2)-yarrow(1)] ;
+%   % text(ax,0.6,0.25,strcat(num2str(angslope4th),'$^{\,\circ}$'),'FontSize',11,...
+%   %   'unit','normalized','interpreter','latex','HorizontalAlignment','left',...
+%   %   'color',[.6 .6 .6]);
+%   text(ax,0.6,0.25,sprintf('%d%c',angslope4th,char(176)),'color',[.6 .6 .6],...
+%     'Units','normalized','HorizontalAlignment','left','FontSize',10);    
 end
 % text(ax,0.99,0.95,'Checked at KLNB','HorizontalAlignment','right','Units',...
 %   'normalized','FontSize',8);  

@@ -1,5 +1,5 @@
-function [dstack,ccstack,dstackort,ccstackort,dstackvert,ccstackvert] = ...
-  mk_bbtemp_PGC(fam,CATA,sps,templensec,ccmethod,ccbp,plflag)
+% function [dstack,ccstack,dstackort,ccstackort,dstackvert,ccstackvert] = ...
+%   mk_bbtemp_PGC(fam,CATA,sps,templensec,ccmethod,ccbp,plflag)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
 % This is the function to generate the broadband LFE family template from Bostock's
@@ -46,11 +46,11 @@ function [dstack,ccstack,dstackort,ccstackort,dstackvert,ccstackvert] = ...
 %% default value for easy debugging
 defval('fam', '002');
 defval('CATA', 'new');
-defval('sps', 40);
+defval('sps', 160);
 defval('templensec', 60);
 defval('ccmethod', 2);
 defval('ccbp',[2 8]);
-defval('plflag', 1);
+defval('plflag', 0);
 
 %% Initialization
 format short e   % Set the format to 5-digit floating point
@@ -697,6 +697,9 @@ elseif ccmethod == 2
         windataort = dummyort';
         dummyvert(:,:) = datavertmat(ista,:, :);
         windatavert = dummyvert';
+        
+        f=initfig(5,2.5,1,1);
+        ax=f.ax(1); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
         for istack = 1: nstack
             [coef, lag] = xcorr(win(:,istack), tem, offsetmax, 'coeff');
             [maxcoef, idx] = max(coef);
@@ -709,6 +712,9 @@ elseif ccmethod == 2
             tmp = detrend(newdata');
             ccstack(ista, :) = ccstack(ista, :)+ tmp';
             
+            tmp=Bandpass(tmp,sps,ccbp(1),ccbp(2),npo,npa,'butter');
+            plot(ax,(1:length(tmp'))/sps,tmp','-','color',[0 0 0  0.15],'linew',1);
+            
             newdata(:) = windataort(1+lagsamp+extra: lagsamp+extra+templen,istack);
             tmp = detrend(newdata');
             ccstackort(ista, :) = ccstackort(ista, :)+ tmp';
@@ -717,7 +723,10 @@ elseif ccmethod == 2
             tmp = detrend(newdata');
             ccstackvert(ista, :) = ccstackvert(ista, :)+ tmp';
         end
-        
+        ccstack(ista, :)=Bandpass(ccstack(ista, :),sps,ccbp(1),ccbp(2),npo,npa,'butter');
+        plot(ax,(1:length(tmp'))/sps,detrend(ccstack(ista, :)'/nstack),'-',...
+          'color','r','linew',2);
+                
         %%% This was the test for long/short cc comparison ,now in a
         %%% separate test file
         %         wincut = detrend(windata(templen+extra-offsetmax+1: templen+extra+offsetmax));

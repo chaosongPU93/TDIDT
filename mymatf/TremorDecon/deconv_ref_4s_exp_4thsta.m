@@ -120,8 +120,8 @@ sps = 160;
 
 %% call function 'deconv_ref_4s_exp_rand_fn', all bursts, DATA VS NOISE
 %%%Flag to indicate if it is necessary to recalculate everything
-% flagrecalc = 0;
-flagrecalc = 1;
+flagrecalc = 0;
+% flagrecalc = 1;
 
 if flagrecalc
   normflag = 0; %do not normalize the templates

@@ -171,14 +171,36 @@ ylabel(ax,'Amplitude','FontSize',10);
 xlabel(ax,sprintf('Time (s) since %.1f s on %s %s %s',tstbuf,dy,mo,yr),...
   'FontSize',10);
 longticks(ax,5); 
-%plot the deconvolved sources
-yloc = (yran(1)+range(yran)*0.05);
+% %simply plot the deconvolved sources
+% yloc = (yran(1)+range(yran)*0.05);
+% ind = find(impindepst(:,1)/sps >= xzoom(1) & impindepst(:,1)/sps <= xzoom(2));
+% scatter(ax,impindepst(ind,1)/sps-xzoom(1),yloc*ones(size(impindepst(ind,1))),10,'k');
+%plot deconvolved sources separated by clusters
+[clusibst,nclusibst,tclusibst]=clusters_in_burst(181);
+ind = find(tclusibst(:,1)>=xzoom(1) & tclusibst(:,2)<=xzoom(2));
+clusibstxzoom = clusibst(ind);
+tclusibstxzoom = tclusibst(ind);
+nclus = length(ind);
+for i=1:2:nclus-1
+  yloc = (yran(1)+range(yran)*0.05);
+  impclus=clusibstxzoom{i};
+  scatter(ax,impclus(:,1)/sps-xzoom(1),yloc*ones(size(impclus(:,1))),10,'^','k');
+end
+for i=2:2:nclus-1
+  yloc = (yran(1)+range(yran)*0.05);
+  impclus=clusibstxzoom{i};
+  scatter(ax,impclus(:,1)/sps-xzoom(1),yloc*ones(size(impclus(:,1))),10,'v','k');
+end
+impuniclus = unique(cat(1,clusibstxzoom{:}),'rows');
 ind = find(impindepst(:,1)/sps >= xzoom(1) & impindepst(:,1)/sps <= xzoom(2));
-% scatter(ax,impindepst(ind,1)/sps-xzoom(1),yloc*ones(size(impindepst(ind,1))),8,'r','filled');
-scatter(ax,impindepst(ind,1)/sps-xzoom(1),yloc*ones(size(impindepst(ind,1))),10,'k');
+impiso = setdiff(impindepst(ind,:),impuniclus,'rows');
+scatter(ax,impiso(:,1)/sps-xzoom(1),yloc*ones(size(impiso(:,1))),10,'k');
+
 %%%7 events between 27.1 and 28.68 s form a cluster, highlight them
-indclus = find(impindepst(:,1)/sps >= 27.1 & impindepst(:,1)/sps <= 28.68);
-scatter(ax,impindepst(indclus,1)/sps-xzoom(1),yloc*ones(size(impindepst(indclus,1))),10,'k','filled');
+% indclus = find(impindepst(:,1)/sps >= 27.1 & impindepst(:,1)/sps <= 28.68);
+% scatter(ax,impindepst(indclus,1)/sps-xzoom(1),yloc*ones(size(impindepst(indclus,1))),10,'k','filled');
+impclus=clusibstxzoom{nclus};
+scatter(ax,impclus(:,1)/sps-xzoom(1),yloc*ones(size(impclus(:,1))),10,'k','filled');
 %plot bostock's LFE detections
 yloc = (yran(1)+range(yran)*0.11);
 tbost=tbostplt-tstbuf;

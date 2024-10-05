@@ -177,9 +177,11 @@ loc0 = lfeloc(lfeloc(:,1)==2,:);
 flag = 'NEW';
 % flag = 'AMR';
 bostname = strcat('/BOSTOCK/update20230916/total_mag_detect_0000_cull_',flag,'.txt');
-bostcatof = ReformBostock(loc0(3),loc0(2),1,bostname);
-bostcatof = bostcatof(bostcatof(:,2)==2003 | bostcatof(:,2)==2004 | bostcatof(:,2)==2005, :);
-bostcatof = bostcatof(bostcatof(:,1)~=2 & bostcatof(:,1)~=47 & bostcatof(:,1)~=246, :);
+bostcat = ReformBostock(loc0(3),loc0(2),1,bostname);
+bostcat = bostcat(bostcat(:,2)==2003 | bostcat(:,2)==2004 | bostcat(:,2)==2005, :);
+%obtain the MB's LFEs of other families, excluding 002, 246, and 047
+bostcatof = bostcat(bostcat(:,1)~=2 & bostcat(:,1)~=47 & bostcat(:,1)~=246, :);
+% bostcatof = bostcat(bostcat(:,1)~=2 & bostcat(:,1)~=246, :);
 bostcatof(:,13) = mag2moment(bostcatof(:,11));
 
 %%%if use the lumped catalog that combine unique events from 002 and 246
@@ -438,10 +440,15 @@ off1ikn = allnoi.allbstnoi.off1i;
 %%
 impuse = imp;
 nsrcuse = nsrc;
+catstr = '3-station';
 fnsuffix = [];
+
 % impuse = imp4th;
 % nsrcuse = nsrc4th;
+% catstr = '4-station';
 % fnsuffix = '4th';
+
+saveflag = 0;
 
 rccuse = rccbst;
 rcccol = 1;
@@ -485,7 +492,7 @@ bostday = [];
 impi = cell(length(idxbst),1); %all my own lfes
 impasum = zeros(length(idxbst),1);
 bostcomm = cell(length(idxbst),1);  %bostock's lfes that correspond to one of my lfes, inside burst wins (and inside region)
-impcomm = cell(length(idxbst),1);   %my corresponding lfes
+impcomm = cell(length(idxbst),1);   %my corresponding lfes, NEED to choose either max-amp or closet in time
 impuniq = cell(length(idxbst),1);   %my unique lfes
 ampcomm = cell(length(idxbst),1);   %max and std of amp of my LFEs close to MB's in time
 bostmiss = cell(length(idxbst),1);	%bostock's lfes that i missed, inside burst wins (and inside region)   
@@ -512,12 +519,16 @@ for iii = 1: length(idxbst)
   dy = num2str(a(2));
   yr = num2str(a(3));
   
-  %Bostock's LFE catalog on the same date
+  %Bostock's LFE of fam 002/246 on the same date
   bostdayi = bostcati(bostcati(:,2)==year & bostcati(:,3)==a(1) & bostcati(:,4)==a(2),:);
   bostdayi = sortrows(bostdayi, 5);
 %   bostdayo = bostcato(bostcato(:,2)==year & bostcato(:,3)==a(1) & bostcato(:,4)==a(2),:);
 %   bostdayo = sortrows(bostdayo, 5);
   
+  %Bostock's LFE of other fams excluding 002, 246 and 047 on the same date
+  bostofday = bostcatof(bostcatof(:,2)==year & bostcatof(:,3)==a(1) & bostcatof(:,4)==a(2),:);
+  bostofday = sortrows(bostofday, 5);
+
   %Armbruster's tremor catalog on the same date
   armdayi = armcati(armcati(:,1)==year & armcati(:,2)==a(1) & armcati(:,3)==a(2),:);
   armdayi = sortrows(armdayi, 4);
@@ -538,6 +549,7 @@ for iii = 1: length(idxbst)
   tcnto = hfdayo(:, 15);  % the center of detecting win is the 15th col
   tbosti = bostdayi(:,5); % (peak arrival) time of Bostock's LFE catalog inside the rectangle
 %   tbosto = bostdayo(:,5); % (peak arrival) time of Bostock's LFE catalog outside the rectangle
+  tbostof = bostofday(:,5); % (peak arrival) time of Bostock's LFE catalog inside the rectangle
   tarmi = armdayi(:,4); % (peak arrival?) time of Armbruster's tremor catalog inside the rectangle
   tarmo = armdayo(:,4); % (peak arrival?) time of Armbruster's tremor catalog outside the rectangle
   
@@ -553,14 +565,16 @@ for iii = 1: length(idxbst)
   tedbuf = max(tcnti(indtmaxi)+2);
   tlenbuf = tedbuf-tstbuf;
       
-  %plot the strongest 0.5-s arrival of a 4-s trmeor detection outside ellipse
+  %indices of the strongest 0.5-s arrival of a 4-s trmeor detection outside ellipse
   indto = find(tmaxo>=tstbuf & tmaxo<=tedbuf);
-  %plot the strongest 0.5-s arrival of a 4-s trmeor detection inside ellipse
+  %indices of the strongest 0.5-s arrival of a 4-s trmeor detection inside ellipse
   indti = find(tmaxi>=tstbuf & tmaxi<=tedbuf);
-%   %plot the bostock's LFE catalog outside ellipse
+%   %indices of the bostock's LFE catalog outside ellipse
 %   indbo = find(tbosto>=tstbuf & tbosto<=tedbuf);
-  %plot the bostock's LFE catalog inside ellipse
+  %indices of the bostock's LFE catalog inside ellipse
   indbi = find(tbosti>=tstbuf & tbosti<=tedbuf);
+  %indices of the bostock's LFE catalog of other fams
+  indbof = find(tbostof>=tstbuf & tbostof<=tedbuf);
 
   %my lfes
   ist = sum(nsrcuse(1:idxbst(iii)-1))+1;
@@ -806,11 +820,15 @@ for iii = 1: length(idxbst)
   %which bostock's LFEs are within my time burst window? Fraction? Moment?
   bost{iii} = bostdayi(indbi,:); %all bostocks's lfes inside burst wins (and inside region)
   impi{iii} = impuse(ist:ied,:); %all my own lfes 
+  bostof{iii} = bostofday(indbof,:); %all bostocks's lfes of other fams inside burst wins
 
   temp1 = [];
   temp2 = [];
   temp3 = [];
   temp4 = [];
+  temp5 = [];
+  temp6 = [];
+  temp7 = [];  
   for j = 1: length(indbi)
     % [toff,ind] = min(abs(timp/sps-(tbosti(indbi(j))-tstbuf))); %which my LFE is closest to Bostock's?
     % if toff<= 0.25/2  %if the difference is small enough, then there is a correspondance
@@ -820,18 +838,31 @@ for iii = 1: length(idxbst)
     %   temp3 = [temp3; bostdayi(indbi(j),:)];
     % end
 
-    maxtoff = 0.5;
-    ind = find(abs(timp/sps-(tbosti(indbi(j))-tstbuf)) <= maxtoff); %find all close enough
+    %maximum allowabl difference in time
+    % maxtoff = 0.5;  %seems a bit too large, given the difference in time between the common LFEs?
+    maxtoff = 0.15;  %0.2 s in also okay
+    %%%compare positive arrival peaks, given that 'timp' is already corrected to the postive
+    %%%peak just as 'tbosti'
+    toff = timp/sps-(tbosti(indbi(j))-tstbuf);
+    toff2closest = min(abs(toff));  %for each of MB's LFEs, time diff to my closest LFE
+    temp7 = [temp7; toff2closest];
+
+    ind = find(abs(toff) <= maxtoff); %find all close enough
     if ~isempty(ind)
       temp1 = [temp1; bostdayi(indbi(j),:)];
       if length(ind) == 1
         temp2 = [temp2; ind];  %if just one, use it
         temp4 = [temp4; mean(impii(ind,[2 4 6]),2) 1 0];
+        temp5 = [temp5; ind];
+        temp6 = [temp6; abs(toff(ind))]; %time offset to the closest one
       else
         amptemp = mean(impii(ind,[2 4 6]),2);
         [ampmax,ind2] = max(amptemp);
         temp2 = [temp2; ind(ind2)];  %if multiple, choose the one with max amp
         temp4 = [temp4; ampmax length(ind) std(amptemp)];
+        [toffmin,ind5] = min(abs(toff(ind)));
+        temp5 = [temp5; ind(ind5)]; %if multiple, choose the closest one
+        temp6 = [temp6; toffmin];
       end
     else
       temp3 = [temp3; bostdayi(indbi(j),:)];  %otherwise it is a 'miss'
@@ -839,14 +870,33 @@ for iii = 1: length(idxbst)
 
   end
   bostcomm{iii} = temp1;  %bostock's lfes that correspond to one of my lfes, inside burst wins (and inside region)
-  impcomm{iii} = impii(temp2,:);   %my corresponding lfes
-  if isempty(temp2)
+  
+  %%%%%%% which type of my LFEs to use as corresponding lfes
+%   commonflag = 'maxamp';  %use the one with max amp in range
+  commonflag = 'close'; %use the closet one in time
+  if length(temp2) ~= length(temp5)
+    iii
+    disp('diff length!');
+    break
+  end
+  if strcmp(commonflag, 'maxamp')
+    tempuse = temp2;  %use the one with max amp in range
+  elseif strcmp(commonflag, 'close')
+    tempuse = temp5;  %use the closet one in time
+  end
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  impcomm{iii} = impii(tempuse,:);   %my corresponding lfes to MB's LFEs
+  toffcomm{iii} = temp6;   %time offset to the closest one, for common LFEs
+  toff2clo{iii} = temp7;   %time offset to the closest one, for all MB's LFEs
+
+  if isempty(tempuse)
     impuniq{iii} = impii;
   else
-    if ~isequaln(unique(temp2),temp2)
+    if ~isequaln(unique(tempuse),tempuse)
       fprintf('%d DUPLICATES! ',k);
     end
-    tmp = setdiff(1:size(impii,1),temp2);
+    tmp = setdiff(1:size(impii,1),tempuse);
     impuniq{iii} = impii(tmp,:);
   end
   ampcomm{iii} = temp4; 
@@ -883,15 +933,18 @@ end
 
 %lump all bursts
 bosta = cat(1,bost{:}); %all bostocks's lfes inside burst wins (and inside region)
+bostofa = cat(1,bostof{:}); %all bostocks's lfes of other fams inside burst wins
 bostcomma = cat(1,bostcomm{:}); %bostock's lfes that correspond to one of my lfes, inside burst wins (and inside region)
 impcomma = cat(1,impcomm{:}); %my corresponding lfes that are shared with MB
+toffcomma = cat(1,toffcomm{:}); %time offset to the closest one
+toff2cloa = cat(1,toff2clo{:}); %time offset to the closest one, for all MB's LFEs
 impuniqa = cat(1,impuniq{:}); %my unique lfes
 ampcomma = cat(1,ampcomm{:}); %max and std of amp of my LFEs close to MB's in time
 bostmissa = cat(1,bostmiss{:}); %bostock's lfes that i missed, inside burst wins (and inside region) 
 % bostcommdta = cat(1,bostcommdt{:});
 % bostcommdtalla = cat(1,bostcommdtall{:});
 % bostcommpairmoma = cat(1,bostcommpairmom{:});
-
+% keyboard
 %%
 % f = initfig(10,5,1,2); %initialize fig
 % ax=f.ax(1); hold(ax,'on'); ax.Box = 'on'; grid(ax,'on');
@@ -904,6 +957,334 @@ bostmissa = cat(1,bostmiss{:}); %bostock's lfes that i missed, inside burst wins
 % histogram(ax,ampcomma(ind,3));
 % xlabel(ax,'std of their amp');
 % ylabel(ax,'Count');
+
+%% relation between MB's common LFEs with the clusters
+%%%determine the 'mmax' for which the resulting number of clusters is nonzero
+timetype = 'tarvl';
+mmax=getmmaxcluster(nbst,impuse,nsrcuse,sps,timetype);
+%%%for a cluster, not only the time separation between N and N-m needs to
+%%%be smaller than 'dtcut', but also the max time separation between each
+%%%consecutive events needs to smaller than 0.25+0.125 s. 
+%%%ie, doublet means a cluster of 2 events ONLY occur as doublets
+[catclus,catclusbst,catimp,catuimp,catmedamp,catdtnnm]=...
+  evtcluster_ex(nbst,impuse,nsrcuse,mmax,sps,timetype);
+%%%fraction of unique events ONLY occurring as certain clusters
+[fracuimp,nuimp,fracuimpsum]=frac_uniqevt_incluster2(catuimp,catclus,impuse,nsrcuse,mmax);
+% catuimpl = cat(1,catuimp{:});
+% isouimp = setdiff(imp,catuimpl);
+
+impcomma2clus = nan(size(impcomma,1), 5);
+for i = 1: size(impcomma,1)
+  impi = impcomma(i,:);
+  %first ask if this event belongs to any m cluster, one event can only belong to
+  %one cluster, so we just need the value of m
+  for m = 1: mmax
+    isimpm=ismember(impi,catuimp{m},'rows');
+    if isimpm
+      break 
+    end
+  end
+  %if this event can't find a match any cluster, then it is isolated
+  if ~isimpm
+    impcomma2clus(i,1) = 1; %1st col, m of cluster
+    impcomma2clus(i,2) = 1; %2nd col, which cluster of the m clusters 
+    impcomma2clus(i,3) = 1; %3rd col, sequentially which one in the cluster
+    impcomma2clus(i,4) = 1; %4th col, rank of amp in the cluster
+    impcomma2clus(i,5) = 1; %5th col, amp ratio between this event and 1st amp excluding it
+    % impcomma2clus(i,5) = 1; %amp ratio between 1st and 2nd imp
+    % impcomma2clus(i,6) = 1; %amp ratio between 1st and this event
+else
+    impcomma2clus(i,1) = m+1; %1st col, m of cluster
+    catclusm = catclus{m};
+    for j = 1: size(catclusm,1)
+      impclusmj = catclusm{j};
+      [isimp, isind] = ismember(impi,impclusmj,'rows');
+      if isimp
+        impcomma2clus(i,2) = j; %2nd col, which cluster of the m clusters 
+        impcomma2clus(i,3) = isind; %3rd col, sequentially which one in the cluster
+        ampi = mean(impi(:,[2 4 6]),2);
+        ampclusmj = mean(impclusmj(:,[2 4 6]),2);
+        ampclusmj = sort(ampclusmj, 'descend');
+        [~, rank] = ismember(ampi,ampclusmj);
+        impcomma2clus(i,4) = rank; %4th col, rank of amp in the cluster
+        if rank ==1
+          impcomma2clus(i,5) = ampi/ampclusmj(2); %5th col, amp ratio between this event and 1st amp excluding it
+        else
+          impcomma2clus(i,5) = ampi/ampclusmj(1); %5th col, amp ratio between this event and 1st amp excluding it
+        end
+        if (rank == 1 && impcomma2clus(i,5)<1) || (rank ~= 1 && impcomma2clus(i,5)>1)
+          disp('amp ratio is wrong!');
+        end
+        % impcomma2clus(i,5) = ampclusmj(1)/ampclusmj(2); %amp ratio between 1st and 2nd imp
+        % impcomma2clus(i,6) = ampclusmj(1)/ampi; %amp ratio between 1st and this event
+      end
+    end
+  end
+end
+
+% keyboard
+
+%%
+%do some cleaning
+muni = unique(impcomma2clus(:,1));
+ninclusm = zeros(mmax+1,1);
+n1stamp = zeros(mmax+1,1);
+for i=1: length(muni)
+  m = muni(i);
+  ind = find(impcomma2clus(:,1)==m);
+  impcommai = impcomma(ind,:);
+  ninclusm(m,1) = length(ind);
+  %how many are the largest in the cluster
+  if m == 1
+    n1stamp(m,1) = ninclusm(m,1);
+%     amprat12{i} = [];
+%     amprat1i{i} = [];
+  else
+    ind2 = find(impcomma2clus(ind,4)==1);
+    ind2com = setdiff(1:length(ind), ind2);
+    n1stamp(m,1) = length(ind2);
+%     %some of them are not the largest, if so, how does the larget amp compared to these events
+%     if n1stamp(i,1) < ninclusm(i,1)
+%       amprat12{i} = impcomma2clus(ind(ind2com),5);
+%       amprat1i{i} = impcomma2clus(ind(ind2com),6);
+%     end
+  end
+end
+
+% ninclusmsum = sum(ninclusm(2:end));
+% n1stampsum = sum(n1stamp(2:end));
+% amprat12all = cat(1, amprat12{:});
+% aa = find(impcomma2clus(:,5)~=1 & impcomma2clus(:,6)~=1);
+% bb = find(impcomma2clus(:,4)~=1);
+% isequal(length(aa), length(amprat12all))
+% isequal(length(aa), length(bb));
+% amprat1iall = cat(1, amprat1i{:});
+
+%%
+nrow = 1; % rows and cols of subplots in each figure
+ncol = 3;
+widin = 8; % size of each figure
+htin = 3.5;
+f = initfig(widin,htin,nrow,ncol);
+% pltxran = [0.08 0.98]; pltyran = [0.15 0.98];
+% pltxsep = 0.08; pltysep = 0.05;
+% axpos = optaxpos(f,nrow,ncol,pltxran,pltyran,pltxsep,pltysep);
+
+axpos = [0.06 0.15 0.245 0.72;
+         0.42 0.15 0.245 0.72;
+         0.74 0.15 0.245 0.72;
+         ];
+for isub = 1:nrow*ncol
+  set(f.ax(isub), 'position', axpos(isub,:));
+end
+
+ax=f.ax(1); hold(ax,'on'); ax.Box = 'on'; grid(ax, 'on');
+yyaxis(ax,'left');
+plot(ax,1:mmax+1,ninclusm,'-',...
+  'linew',1,'color','k','marker','o','markersize',3,...
+  'markerfacec','k');
+% plot(ax,muni,n1stamp,'-',...
+%   'linew',1,'color','r','marker','o','markersize',3,...
+%   'markerfacec','r');
+% legend(ax,'original #','if amp is the largest');
+xlim(ax,[0 mmax+2]);
+xticks(ax,1:2:mmax+1);
+xlabel(ax,'m (# of events in cluster)');
+ylabel(ax,'# of common events in clusters of m');
+text(ax,0.2,0.9,num2str(sum(ninclusm)),'Units','normalized','HorizontalAlignment','left',...
+  'FontSize',10);
+text(ax,0.02,0.95,'a','FontSize',10,'unit','normalized','EdgeColor','k',...
+  'Margin',1,'backgroundcolor','w');
+ylim(ax,[0 350]);
+yran = ax.YLim;
+ax.YColor=ax.XColor;
+yyaxis(ax,'right');
+plot(ax,1:mmax+1,nuimp,'-',...
+  'linew',1,'color','r','marker','o','markersize',3,...
+  'markerfacec','r');
+ylim(ax,yran*20);
+ax.YAxis(2).Exponent = 3;
+ylabel(ax,'Total # of events in clusters of m');
+hold(ax,'off');
+
+ax=f.ax(2); hold(ax,'on'); ax.Box = 'on'; grid(ax, 'on');
+% yyaxis(ax,'left');
+plot(ax,1:mmax+1,ninclusm./nuimp,'-',...
+  'linew',1,'color','k','marker','o','markersize',3,...
+  'markerfacec','k');
+% plot(ax,muni,n1stamp./nuimp,'-',...
+%   'linew',1,'color','r','marker','o','markersize',3,...
+%   'markerfacec','r');
+xlim(ax,[0 mmax+2]);
+xticks(ax,1:2:mmax+1);
+ylim(ax,[0 0.2]);
+xlabel(ax,'m (# of events in cluster)');
+ylabel(ax,'Ratio of common events to total events');
+text(ax,0.02,0.95,'b','FontSize',10,'unit','normalized','EdgeColor','k',...
+  'Margin',1,'backgroundcolor','w');
+hold(ax,'off');
+
+ax=f.ax(3); hold(ax,'on'); ax.Box = 'on'; grid(ax, 'on');% ax.XScale='log';
+xlim(ax,[-1 1]);
+ylim(ax,[0 150]);
+patge1 = [0 ax.YLim(2);
+          ax.XLim(2) ax.YLim(2);
+          ax.XLim(2) ax.YLim(1);
+          0 ax.YLim(1);
+          0 ax.YLim(2)];
+patch(ax,patge1(:,1),patge1(:,2),'k','Facealpha',0.15,'edgecolor','none');
+binw = 0.1;
+binedge=(-1-binw/2: binw: 1+binw/2);
+
+% a1 = impcomma2clus(impcomma2clus(:,1)>1,:);
+% a2 = impcomma2clus(impcomma2clus(:,1)>2,:);
+% a3 = impcomma2clus(impcomma2clus(:,1)>3,:);
+% a4 = impcomma2clus(impcomma2clus(:,1)>4,:);
+% fracge1 = sum(a1(:,end)>1) / size(a1,1);
+% fracle1 = 1-fracge1;
+% fracge2 = sum(a2(:,end)>1) / size(a2,1);
+% fracle2 = 1-fracge2;
+% fracge3 = sum(a3(:,end)>1) / size(a3,1);
+% fracle3 = 1-fracge3;
+% fracge4 = sum(a4(:,end)>1) / size(a4,1);
+% fracle4 = 1-fracge4;
+
+% [N1]=histcounts(log10(a1(:,end)),'BinEdges',binedge,'normalization','count');
+% N1=[N1 N1(end)];
+% p(1)=stairs(ax,binedge,N1,'-','linew',1,'color','k');
+% [N2]=histcounts(log10(a2(:,end)),'BinEdges',binedge,'normalization','count');
+% N2=[N2 N2(end)];
+% p(2)=stairs(ax,binedge,N2,'-','linew',1,'color','r');
+% lgd=legend(ax,p,sprintf('m \x2265 2'),sprintf('m \x2265 3'),'Location','northeast','fontsize',8);  %'Orientation','vertical'
+% set(lgd.BoxFace, 'ColorType','truecoloralpha', 'ColorData',uint8(255*[1;1;1;.8]));  %make background transparent
+% text(ax,0.98,0.7,sprintf('%.2f',fracge1),'Units','normalized','HorizontalAlignment','right',...
+%   'FontSize',10);
+% text(ax,0.98,0.6,sprintf('%.2f',fracge2),'Units','normalized','HorizontalAlignment','right',...
+%   'FontSize',10,'color','r');
+
+mmaxplt = 3;
+impcommaplt = cell(mmaxplt,1);
+fracgeplt = zeros(mmaxplt,1);
+fracleplt = zeros(mmaxplt,1);
+for m = 1:mmaxplt
+  dum = impcomma2clus(impcomma2clus(:,1)>m,:);
+  impcommaplt{m} = dum;
+  fracgeplt(m) = sum(dum(:,end)>1) / size(dum,1);
+  fracleplt(m) = 1-fracgeplt(m);
+end
+
+color = gradientblue(mmaxplt);
+p=[]; label=[];
+for m = 1:mmaxplt
+  dum = impcommaplt{m};
+  [Nd]=histcounts(log10(dum(:,end)),'BinEdges',binedge,'normalization','count');
+  Nd=[Nd Nd(end)];
+  p(m)=stairs(ax,binedge,Nd,'-','linew',1,'color',color(m,:));  
+  label{m} = sprintf('m \x2265 %d',m+1);
+  text(ax,0.98,0.6-(m-1)*0.1,sprintf('%.2f',fracgeplt(m)),'Units','normalized','HorizontalAlignment','right',...
+    'FontSize',10,'color',color(m,:));
+end  
+lgd=legend(ax,p,label,'Location','northeast','fontsize',8);  %'Orientation','vertical'
+
+text(ax,0.02,0.95,'c','FontSize',10,'unit','normalized','EdgeColor','k',...
+  'Margin',1,'backgroundcolor','w');
+xlabel(ax,'log_{10}{amp ratio}');
+ylabel(ax,'Count');  
+hold(ax,'off');
+
+if saveflag
+  fname = strcat('MBcommlfesinclus',fnsuffix,'.pdf');
+  print(f.fig,'-dpdf',...
+    strcat('/home/data2/chaosong/CurrentResearch/Song_Rubin_2024/figures/',fname));
+end
+
+% keyboard
+
+%% map locations of common detections 
+loccomma = off2space002(impcomma(:,7:8),sps,ftrans,0);
+widin = 7;  % maximum width allowed is 8.5 inches
+htin = 4.5;   % maximum height allowed is 11 inches
+nrow = 1;
+ncol = 2;
+f = initfig(widin,htin,nrow,ncol); %initialize fig
+
+pltxran = [0.07 0.98]; pltyran = [0.08 0.95];
+pltxsep = 0.07; pltysep = 0.05;
+optaxpos(f,nrow,ncol,pltxran,pltyran,pltxsep,pltysep);
+
+ax=f.ax(1); hold(ax,'on'); ax.Box = 'on'; grid(ax,'on'); axis(ax,'equal');
+ax.GridLineStyle = '--';
+ax.XAxisLocation = 'top';
+plot(ax,[-100 100],[0 0],'k--');
+plot(ax,[0 0],[-100 100],'k--');
+plot(ax,xcut,ycut,'k-','linew',2);
+xran = [-4 4];
+yran = [-4 4];
+msize = 30;
+if ~isempty(impcomma)
+  wt = median(impcomma(:,[2 4 6]),2);
+  wtmax = prctile(wt,95); %use percentile in case
+  refscl = wt./wtmax;
+  refscl(refscl>=1) = 1;  %force the larger amp to be plotted as the same size in case of saturation
+  scatter(ax,loccomma(:,1),loccomma(:,2),msize*refscl,'w','filled','o',...
+    'MarkerEdgeColor','k');
+end
+text(ax,0.99,0.05,sprintf('%d events',size(loccomma,1)),'Units','normalized',...
+  'HorizontalAlignment','right','FontSize',9);
+scatter(ax,xran(1)+0.1*range(xran),yran(2)-0.05*range(yran),msize,'w','filled',...
+  'MarkerEdgeColor',[.5 .5 .5],'linew',1);
+text(ax,0.02,0.9,strcat({'Amplitude '},'$\geq$',{' 95th prctile'}) ,'Units','normalized',...
+  'HorizontalAlignment','left','FontSize',8,'interpreter','latex');
+xticks(ax,xran(1):1:xran(2));
+yticks(ax,yran(1):1:yran(2));
+axis(ax,[xran yran]);
+text(ax,0.99,0.95,'Shared LFEs','HorizontalAlignment','right','Units',...
+  'normalized','FontSize',10);  
+text(ax,0.02,0.05,'a','FontSize',10,'unit','normalized','EdgeColor','k',...
+  'Margin',1,'backgroundcolor','w');
+xlabel(ax,'E (km)','FontSize',10);
+ylabel(ax,'N (km)','FontSize',10);
+longticks(ax,2);
+hold(ax,'off');
+
+
+ax=f.ax(2); hold(ax,'on'); ax.Box = 'on'; grid(ax, 'on'); axis(ax, 'equal');
+plot(ax,xcut,ycut,'k-','linew',2);
+binmethod = 'pixel';
+marker = 'o';
+msize = 5;
+disttype = 'km';
+contourflag = 0;
+smoothsigma = [];
+ncont = [];
+% scale = 'log10';
+scale = 'linear';
+
+den1d = density_pixel(impcomma(:,7),impcomma(:,8));
+den1d = sortrows(den1d,3);
+tmploc = off2space002(den1d(:,1:2),sps,ftrans,0); % 8 cols, format: dx,dy,lon,lat,dep,ttrvl,off12,off13
+den1d(:,1:2) = tmploc(:,1:2);
+[ax,~,c]= plt_den1d_axis(ax,den1d,[],...
+  xran,yran,[],[],binmethod,marker,msize,disttype,smoothsigma,contourflag,ncont,scale);
+c.Position(2) = c.Position(2)-0.03;
+% caxis(ax,[0 1.7]);
+plot(ax,xcut,ycut,'k-','linew',2);
+text(ax,0.99,0.95,'Shared LFEs','HorizontalAlignment','right','Units',...
+  'normalized','FontSize',10);  
+text(ax,0.02,0.05,'b','FontSize',10,'unit','normalized','EdgeColor','k',...
+  'Margin',1,'backgroundcolor','w');
+xticks(ax,xran(1):1:xran(2));
+yticks(ax,yran(1):1:yran(2));
+hold(ax,'off');
+
+if saveflag
+  fname = strcat('loccommlfe',fnsuffix,'.pdf');
+  print(f.fig,'-dpdf',...
+    strcat('/home/data2/chaosong/CurrentResearch/Song_Rubin_2024_2/figures/',fname));
+end
+
+
+% keyboard
 
 
 %% distribution in diff time between common MB's sources
@@ -938,24 +1319,62 @@ f = initfig(widin,htin,nrow,ncol); %initialize fig
   
 fttpfree = fittype( @(a,b,x) a*x+b);
 
-ax=f.ax(1);
-hold(ax,'on'); ax.Box = 'on'; grid(ax,'on');
 lfeamp = mean(impcomma(:,[2 4 6]),2);
 % lfeamp = median(impcomma(:,[2 4 6]),2);
-y = log10(bostcomma(:,end));
-x = log10(lfeamp);
+
+ynorm = median(bostcomma(:,end));
+xnorm = median(lfeamp);
+% ynorm = 1;
+% xnorm = 1;
+
+% y = log10(bostcomma(:,end));
+% x = log10(lfeamp);
+y = log10(bostcomma(:,end)./ynorm);
+x = log10(lfeamp./xnorm);
+
+ax=f.ax(1);
+hold(ax,'on'); ax.Box = 'on'; grid(ax,'on'); axis(ax,'equal');
 scatter(ax,x,y,15,'filled');
 %linear robust least square
 [fitobj,gof,output] = fit(x,y,fttpfree,'Robust','Bisquare','StartPoint',[1 1]);
 % [fitobj,gof,output] = fit(x,y,'poly1');
 stats = statsofrobustlnfit(fitobj,gof,output,x,y);
-fitx = linspace(-1.2,1.2,100);
+% fitx = linspace(-1.2,1.2,100);
+fitx = x;
 fity = feval(fitobj,fitx);
 plot(ax,fitx,fity,'--','linewidth',2,'color','r');
-text(ax,0.95,0.95,sprintf('y = %.2f x + %.2f',stats.slope,stats.intcpt),'HorizontalAlignment',...
-  'right','Units','normalized');
-text(ax,0.95,0.90,sprintf('weighted pearson = %.2f',stats.pearwt),'HorizontalAlignment',...
-  'right','Units','normalized');
+text(ax,0.05,0.95,sprintf('y = %.2f x + %.2f',stats.slope,stats.intcpt),'HorizontalAlignment',...
+  'left','Units','normalized');
+text(ax,0.05,0.90,sprintf('weighted pearson = %.2f',stats.pearwt),'HorizontalAlignment',...
+  'left','Units','normalized');
+
+%linear robust least square
+[fitobj,gof,output] = fit(y,x,fttpfree,'Robust','Bisquare','StartPoint',[1 1]);
+% [fitobj,gof,output] = fit(x,y,'poly1');
+stats = statsofrobustlnfit(fitobj,gof,output,y,x);
+% fity = linspace(10.5,12.5,100);
+fity = y;
+fitx = feval(fitobj,fity);
+plot(ax,fitx,fity,'--','linewidth',2,'color','b');
+text(ax,0.05,0.85,sprintf('y = %.2f x + %.2f',1./stats.slope,...
+  -stats.intcpt./stats.slope),'HorizontalAlignment',...
+  'left','Units','normalized');
+text(ax,0.05,0.80,sprintf('weighted pearson = %.2f',stats.pearwt),'HorizontalAlignment',...
+  'left','Units','normalized');
+
+[b, sigma2_x, x_est, y_est, stats] = deming(x,y);
+plot(ax,x_est, y_est,'--','linewidth',2,'color','k');
+
+[coeff,score] = pca([x y]);
+%each column in coeff represent the unit vector of each principal component
+x0=mean(x);
+y0=mean(y);
+angle1=atan2d(coeff(2,1),coeff(1,1)); %angle of principal axis 1
+scale=1;
+plot(ax,[x0 x0+scale*coeff(1,1)], [y0 y0+scale*coeff(1,2)],'-','linewidth',2,'color','c');
+plot(ax,[x0 x0+scale*coeff(2,1)], [y0 y0+scale*coeff(2,2)],'-','linewidth',2,'color','c');
+
+
 % text(ax,0.95,0.25,sprintf('In burst: %d; %.2f; %.2e',nbostia,rbostia,bostiams),'HorizontalAlignment',...
 %   'right','Units','normalized');
 % text(ax,0.95,0.2,sprintf('Outside: %d; %.2f; %.2e',nbostimis,rbostimis,bostimisms),'HorizontalAlignment',...
@@ -964,6 +1383,7 @@ text(ax,0.95,0.05,sprintf('%d/%d in common',length(x),size(bosta,1)),'Horizontal
   'right','Units','normalized');
 ylabel(ax,"Y-->log_{10}{Michael's moments (NM)}");
 xlabel(ax,"X-->log_{10}{My amps of common LFEs}");
+
 
 %fraction of MB LFEs in common for each burst burst
 ax=f.ax(2);
@@ -994,24 +1414,42 @@ ylabel(ax,'Count');
 % keyboard
 
 %% infer my total moment according to relation above
+%
 %%%Estimated my moment for my whole catalog of LFEs
 lfeamp = mean(impuse(:,[2 4 6]),2); %amp for all LFE catalog
 % lfeamp = median(impuse(:,[2 4 6]),2);
-fitx = log10(lfeamp); 
-fity = feval(fitobj,fitx);  %use correlation above to infer the log10 of moment
-lfemoallbc = 10.^(fity);
+
+%%%if just use regular regression
+% fitx = log10(lfeamp); 
+% fity = feval(fitobj,fitx);  %use correlation above to infer the log10 of moment
+% lfemoallbc = 10.^(fity);
+%%%if use Deming regression
+fitx = log10(lfeamp./xnorm); 
+fity = b(1)+b(2)*fitx;
+lfemoallbc = 10.^(fity)*ynorm;
+
 mosumallbc = sum(lfemoallbc)  %total moment for my catalog Before Correction
 
+%
+%%%Estimated my moment for the common LFEs
 lfeamp = mean(impcomma(:,[2 4 6]),2); %amp for common LFE catalog
-fitx = log10(lfeamp); 
-fity = feval(fitobj,fitx);  %use correlation above to infer the log10 of moment
-lfemocomm = 10.^(fity);
+
+%%%if just use regular regression
+% fitx = log10(lfeamp); 
+% fity = feval(fitobj,fitx);  %use correlation above to infer the log10 of moment
+% lfemocomm = 10.^(fity);
+fitx = log10(lfeamp./xnorm); 
+fity = b(1)+b(2)*fitx;  %use correlation above to infer the log10 of moment
+lfemocomm = 10.^(fity)*ynorm;
+
 mosumcomm = sum(lfemocomm)  %total moment for common lfes
+
 
 %%%Bostock's moment sum 
 bmosummiss = sum(bostmissa(:,end)) %moment sum of missed
 bmosumcomm = sum(bostcomma(:,end)) %moment sum of commons
 bmosum = sum(bosta(:,end)) %moment sum of all, == missed + common
+bmosumdayia = sum(bostdayia(:,end)) %moment sum of all MB LFEs on same dates!
 % isequal(bmosum, bmosummiss+bmosumcomm)
 
 %fraction of MB's LFEs inside my bursts
@@ -1027,7 +1465,7 @@ fraccomm = length(bostcomma)/length(bosta)
 %% Before moment correction, any systematic bias in amp/mag of different set of LFEs?
 %%%distribution of mag of common and missed LFEs
 widin = 8.3;  % maximum width allowed is 8.5 inches
-htin = 4;   % maximum height allowed is 11 inches
+htin = 3.5;   % maximum height allowed is 11 inches
 nrow = 1;
 ncol = 3;
 f = initfig(widin,htin,nrow,ncol); %initialize fig
@@ -1035,6 +1473,12 @@ f = initfig(widin,htin,nrow,ncol); %initialize fig
 pltxran = [0.07 0.99]; pltyran = [0.15 0.9];
 pltxsep = 0.06; pltysep = 0.05;
 optaxpos(f,nrow,ncol,pltxran,pltyran,pltxsep,pltysep);
+
+if strcmp(fnsuffix,'4th')
+  yran = [0 0.12];
+else
+  yran = [0 0.14];
+end
 
 binwm=0.05;
 ax=f.ax(1);
@@ -1048,10 +1492,12 @@ xlabel(ax,"log_{10}{Bostock's Moment (Nm)}");
 ylabel(ax,'Probability');
 % ylabel(ax,'Count');
 legend(ax,[p2,p3],sprintf('%d inside bursts',length(bosta)),...
-  sprintf('%d outside bursts',length(bostoutbst)),'Location','north');
+  sprintf('%d outside bursts',length(bostoutbst)),'Location','northeast');
 xlim(ax,[10.25 12.75]);
-ylim(ax,[0 0.1]);
+ylim(ax,yran);
 title(ax,'LFEs in Bostock et al. (2012)','FontSize',10,'FontWeight','normal');
+text(ax,0.02,0.95,'a','FontSize',10,'unit','normalized','EdgeColor','k',...
+  'Margin',1,'backgroundcolor','w','HorizontalAlignment','left');
 longticks(ax,3);
 
 ax=f.ax(2);
@@ -1064,11 +1510,15 @@ p3=histogram(ax,log10(bostmissa(:,end)),'Facec','r','Normalization','Probability
 xlabel(ax,"log_{10}{Bostock's Moment (Nm)}");
 % ylabel(ax,'Probability');
 % ylabel(ax,'Count');
-legend(ax,[p2,p3],sprintf('%d shared',length(bostcomma)),...
-  sprintf('%d missed',length(bostmissa)),'Location','north');
+lgd=legend(ax,[p2,p3],sprintf('%d shared',length(bostcomma)),...
+  sprintf('%d missed',length(bostmissa)),'Location','northeast');
+set(lgd.BoxFace, 'ColorType','truecoloralpha', 'ColorData',uint8(255*[1;1;1;.8]));  %make background transparent
 xlim(ax,[10.25 12.75]);
-ylim(ax,[0 0.2]);
+ylim(ax,yran);
 title(ax,'LFEs in Bostock et al. (2012)','FontSize',10,'FontWeight','normal');
+text(ax,0.02,0.95,'b','FontSize',10,'unit','normalized','EdgeColor','k',...
+  'Margin',1,'backgroundcolor','w','HorizontalAlignment','left');
+text(ax,0.10,0.95,catstr,'HorizontalAlignment','left','Units','normalized','FontSize',9);
 longticks(ax,3);
 
 ax=f.ax(3);
@@ -1082,18 +1532,24 @@ p3=histogram(ax,log10(mean(impuniqa(:,[2 4 6]),2)),'Facec','r','Normalization',.
 xlabel(ax,'log_{10}{Amplitude in this study}');
 % ylabel(ax,'Probability');
 % ylabel(ax,'Count');
-legend(ax,[p2,p3],sprintf('%d shared',length(impcomma)),...
-  sprintf('%d unique',length(impuniqa)),'Location','north');
+lgd=legend(ax,[p2,p3],sprintf('%d shared',length(impcomma)),...
+  sprintf('%d unique',length(impuniqa)),'Location','northeast');
+set(lgd.BoxFace, 'ColorType','truecoloralpha', 'ColorData',uint8(255*[1;1;1;.8]));  %make background transparent
 title(ax,'LFEs in this study','FontSize',10,'FontWeight','normal');
 xlim(ax,[-1.75 1.25]);
 xticks(ax,-1.5: 0.5: 1);
-ylim(ax,[0 0.08]);
+ylim(ax,yran);
+text(ax,0.02,0.95,'c','FontSize',10,'unit','normalized','EdgeColor','k',...
+  'Margin',1,'backgroundcolor','w','HorizontalAlignment','left');
+text(ax,0.10,0.95,catstr,'HorizontalAlignment','left','Units','normalized','FontSize',9);
 longticks(ax,3);
 
-fname = strcat('lfemagcomparison',fnsuffix,'.pdf');
-print(f.fig,'-dpdf',...
-  strcat('/home/data2/chaosong/CurrentResearch/Song_Rubin_2024/figures/',fname));
-keyboard
+if saveflag
+  fname = strcat('lfemagcomparison',fnsuffix,'.pdf');
+  print(f.fig,'-dpdf',...
+    strcat('/home/data2/chaosong/CurrentResearch/Song_Rubin_2024_2/figures/',fname));
+end
+% keyboard
 
 %% moment correction
 %the above moment could be deviated from truth in several ways, see NOTE for details:
@@ -1110,7 +1566,7 @@ lfemoch=prctile(lfemoallbc,5); %'characteristic moment', defined here as 5th per
 ratio = lfemoallbc./lfemoch;
 ratio(ratio<1) = 1;
 lfemoallac1 = lfemoallbc.*ratio;
-mosumallac1 = sum(lfemoallac1);
+mosumallac1 = sum(lfemoallac1)
 
 %%%correction #2, project to those missing times, given the bias is negligible
 lfemoallac12 = lfemoallac1./fracinbst; %direct projection as the bias is low
@@ -1121,37 +1577,78 @@ lfemoallac2 = lfemoallbc./fracinbst; %direct projection as the bias is low
 mosumallac2 = sum(lfemoallac2)  %total moment for my catalog
 mocor = mosumallac2/mosumallbc
 
-keyboard
+% keyboard
 
 %% plot of moment correction step 1, missing moment due to saturation
-nrow = 1; % rows and cols of subplots in each figure
-ncol = 2;
-widin = 6.5; % size of each figure
-htin = 3.3;
-pltxran = [0.12 0.98]; pltyran = [0.15 0.96];
-pltxsep = 0.06; pltysep = 0.03;
-f = initfig(widin,htin,nrow,ncol);
-% optaxpos(f,nrow,ncol,pltxran,pltyran,pltxsep,pltysep);
-axpos = [0.12 0.15 0.4 0.8;
-         0.56 0.15 0.3 0.8];
+% ncol = 2;
+ncol = 3;
+if ncol == 2
+  nrow = 1; % rows and cols of subplots in each figure
+  widin = 6.5; % size of each figure
+  htin = 3.2;
+  f = initfig(widin,htin,nrow,ncol);
+  % pltxran = [0.12 0.98]; pltyran = [0.15 0.96];
+  % pltxsep = 0.06; pltysep = 0.03;
+  % optaxpos(f,nrow,ncol,pltxran,pltyran,pltxsep,pltysep);
+  axpos = [0.12 0.15 0.4 0.8;
+           0.56 0.15 0.3 0.8];
+elseif ncol == 3      
+  nrow = 1; % rows and cols of subplots in each figure
+  widin = 8.4; % size of each figure
+  htin = 3.2;
+  f = initfig(widin,htin,nrow,ncol);
+  % pltxran = [0.12 0.98]; pltyran = [0.15 0.96];
+  % pltxsep = 0.06; pltysep = 0.03;
+  % optaxpos(f,nrow,ncol,pltxran,pltyran,pltxsep,pltysep);
+  axpos = [0.06 0.15 0.24 0.8;
+           0.38 0.15 0.3 0.8;
+           0.73 0.15 0.24 0.8];
+end
+       
 for isub = 1:nrow*ncol
   set(f.ax(isub), 'position', axpos(isub,:));
 end
  
 fttpfree = fittype( @(a,b,x) a*x+b);
 
-ax = f.ax(1); hold(ax,'on'); ax.Box='on'; grid(ax,'on'); axis(ax,'equal');
+if ncol==3
+  %%%what is the difference in time between the common LFEs?
+  ax = f.ax(1); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
+  histogram(ax,toff2cloa,'binw',0.02,'facec',[.2 .2 .2]);
+  xlim(ax,[0 0.5]);
+  xticks(ax,0:0.1:0.5);
+  ylim(ax,[0 450]);
+  plot(ax,[maxtoff maxtoff],ax.YLim,'k--','LineWidth',1);
+  text(ax,0.99,0.95,catstr,'HorizontalAlignment',...
+    'right','Units','normalized','fontsize',10);
+  text(ax,0.99,0.90,sprintf('%d LFEs shared',length(impcomma)),...
+    'HorizontalAlignment','right','Units','normalized','FontSize',8);
+  xlabel(ax,"Closest time (s) to Bostock's LFEs");
+  ylabel(ax,'Count');
+  text(ax,0.02,0.95,'a','FontSize',10,'unit','normalized','EdgeColor','k',...
+    'Margin',1,'backgroundcolor','w','HorizontalAlignment','left');
+end
+
+ax = f.ax(ncol-1); hold(ax,'on'); ax.Box='on'; grid(ax,'on'); axis(ax,'equal');
 lfeamp = mean(impcomma(:,[2 4 6]),2);
-% lfeamp = median(impcomma(:,[2 4 6]),2);
-y = log10(bostcomma(:,end));
-x = log10(lfeamp);
+ynorm = median(bostcomma(:,end));
+xnorm = median(lfeamp);
+% y = log10(bostcomma(:,end));
+% x = log10(lfeamp);
+y = log10(bostcomma(:,end)./ynorm);
+x = log10(lfeamp./xnorm);
 scatter(ax,x,y,15,[.3 .3 .3],'filled','MarkerEdgeColor','w');
-%linear robust least square
-[fitobj,gof,output] = fit(x,y,fttpfree,'Robust','Bisquare','StartPoint',[1 1]);
-% [fitobj,gof,output] = fit(x,y,'poly1');
-stats = statsofrobustlnfit(fitobj,gof,output,x,y);
-fitx = linspace(-1.2,1.2,100);
-fity = feval(fitobj,fitx);
+% %%%linear robust least square
+% [fitobj,gof,output] = fit(x,y,fttpfree,'Robust','Bisquare','StartPoint',[1 1]);
+% % [fitobj,gof,output] = fit(x,y,'poly1');
+% stats = statsofrobustlnfit(fitobj,gof,output,x,y);
+% fitx = linspace(-1.2,1.2,100);
+% fity = feval(fitobj,fitx);
+%%%Deming's regression
+[b, sigma2_x, x_est, y_est, stats] = deming(x,y);
+fitx = linspace(min(x),max(x),100);
+fity = b(1)+b(2)*fitx;
+
 plot(ax,fitx,fity,'--','linewidth',2,'color','r');
 text(ax,0.99,0.10,sprintf('y = %.2fx + %.2f',stats.slope,stats.intcpt),'HorizontalAlignment',...
   'right','Units','normalized','FontSize',8);
@@ -1161,50 +1658,68 @@ text(ax,0.99,0.05,sprintf('Pearson: %.2f',stats.pearwt),'HorizontalAlignment',..
 %   'right','Units','normalized');
 % text(ax,0.95,0.2,sprintf('Outside: %d; %.2f; %.2e',nbostimis,rbostimis,bostimisms),'HorizontalAlignment',...
 %   'right','Units','normalized');
-text(ax,0.99,0.95,'3-station','HorizontalAlignment',...
+text(ax,0.99,0.95,catstr,'HorizontalAlignment',...
   'right','Units','normalized','fontsize',10);
 text(ax,0.99,0.90,sprintf('%d LFEs shared',length(x)),'HorizontalAlignment',...
   'right','Units','normalized','FontSize',8);
-text(ax,0.02,0.05,'a','FontSize',11,'unit','normalized','EdgeColor','k',...
-  'Margin',1);
+text(ax,0.02,0.95,'b','FontSize',10,'unit','normalized','EdgeColor','k',...
+  'Margin',1,'backgroundcolor','w','HorizontalAlignment','left');
 ylabel(ax,"log_{10}{Bostock's Moment (Nm)}",'FontSize',10);
 xlabel(ax,"log_{10}{Amplitude in this study}",'FontSize',10);
 axis(ax,[-1.25 1.25 10.25 12.75]);
 
-ax1pos=f.ax(1).Position;
-set(f.ax(2), 'position', [ax1pos(1)+ax1pos(3)+0.1 ax1pos(2) 0.35 ax1pos(4)]);
-ax=f.ax(2);
+ax1pos=f.ax(ncol-1).Position;
+if ncol==3
+  set(f.ax(ncol), 'position', [ax1pos(1)+ax1pos(3)+0.065 ax1pos(2) 0.24 ax1pos(4)]);
+elseif ncol==2
+  set(f.ax(ncol), 'position', [ax1pos(1)+ax1pos(3)+0.10 ax1pos(2) 0.35 ax1pos(4)]);  
+end
+ax=f.ax(ncol);
 hold(ax,'on'); ax.Box = 'on'; grid(ax,'on');
 p1=histogram(ax,log10(lfemoallbc),'Facec','b','Normalization','Probability',...
   'binw',binwm);  %,'edgec','none'
-text(ax,0.99,0.8,sprintf('Original: %.1e Nm',mosumallbc),'HorizontalAlignment',...
+text(ax,0.99,0.75,sprintf('Original: %.1e Nm',mosumallbc),'HorizontalAlignment',...
   'right','Units','normalized','FontSize',8);
 plot(ax,[log10(lfemoch) log10(lfemoch)],ax.YLim,'k--','linew',1);
-text(ax,0.99,0.7,sprintf('Char.: %.1e Nm',lfemoch),'HorizontalAlignment',...
+text(ax,0.99,0.65,sprintf('Char.: %.1e Nm',lfemoch),'HorizontalAlignment',...
   'right','Units','normalized','FontSize',8);
 p2=histogram(ax,log10(lfemoallac1),'Facec','r','Normalization','Probability',...
   'binw',binwm);
-text(ax,0.99,0.75,sprintf('Corrected: %.1e Nm',mosumallac1),'HorizontalAlignment',...
+text(ax,0.99,0.7,sprintf('Corrected: %.1e Nm',mosumallac1),'HorizontalAlignment',...
   'right','Units','normalized','FontSize',8);
-text(ax,0.02,0.05,'b','FontSize',11,'unit','normalized','EdgeColor','k',...
-  'Margin',1);
+text(ax,0.02,0.95,'c','FontSize',10,'unit','normalized','EdgeColor','k',...
+  'Margin',1,'backgroundcolor','w','HorizontalAlignment','left');
 xlabel(ax,'log_{10}{Moment (Nm)}','FontSize',10);
 % ylabel(ax,'Count','FontSize',10);
 ylabel(ax,'Probability','FontSize',10);
-legend(ax,[p1,p2],'Original','Corrected','Orientation','horizontal',...
-  'Location','north','FontSize',8);
+lgd=legend(ax,[p1,p2],'Original','Corrected',...
+  'Location','northeast','FontSize',8); %,'Orientation','horizontal'
+set(lgd.BoxFace, 'ColorType','truecoloralpha', 'ColorData',uint8(255*[1;1;1;.8]));  %make background transparent
 
-fname = strcat('lfeamp2moment',fnsuffix,'.pdf');
-print(f.fig,'-dpdf',...
-  strcat('/home/data2/chaosong/CurrentResearch/Song_Rubin_2024/figures/',fname));
-% export_fig(f.fig,'-pdf',...
-%   strcat('/home/data2/chaosong/CurrentResearch/Song_Rubin_2024/figures/',fname));
-% keyboard
+if saveflag
+%   fname = strcat('lfeamp2moment',fnsuffix,'.pdf');
+  fname = strcat('lfeamp2moment',fnsuffix,'v2.pdf');
+  print(f.fig,'-dpdf',...
+    strcat('/home/data2/chaosong/CurrentResearch/Song_Rubin_2024_2/figures/',fname));
+  % export_fig(f.fig,'-pdf',...
+  %   strcat('/home/data2/chaosong/CurrentResearch/Song_Rubin_2024/figures/',fname));
+  % keyboard
+end
 
 %% choose which moment to use
 % lfemouse = lfemoallbc; %before corrections
 % lfemouse = lfemoallac2; %after corrections 2
 lfemouse = lfemoallac12;  %after corrections 1 & 2
+
+if saveflag
+  if isequaln(lfemouse,lfemoallac12) 
+    corstr = 'Corrections 1&2';
+  elseif isequaln(lfemouse,lfemoallac2) 
+    corstr = 'Correction 1';
+  elseif isequaln(lfemouse,lfemoallbc) 
+    corstr = 'Original';
+  end
+end
 
 %% plot implied cumulative moment and slip
 %%%moment per pixel in sample space
@@ -1376,7 +1891,16 @@ for ireg = 1: nreg
   bnd = [xcut1 ycut1];
   [iin,ion] = inpolygon(locuse(:,1),locuse(:,2),bnd(:,1),bnd(:,2));
   isinbnd = iin | ion;
-  mosumell = sum(lfemouse(isinbnd == 1));  %total moment for my catalog
+  %ONLY sum the moment ONLY the ellipse
+  %using 'lfemouse' is similar to 'mosumgrid1d' 
+  mosumell = sum(lfemouse(isinbnd == 1))  %total moment for my catalog
+  
+  % [iin,ion] = inpolygon(mosumgrid1d(:,1),mosumgrid1d(:,2),bnd(:,1),bnd(:,2));
+  % isinbnd = iin | ion;
+  % %ONLY sum the moment ONLY the ellipse
+  % aa = sum(mosumgrid1d(isinbnd == 1, 3))  %total moment for my catalog
+  % keyboard
+
   area = pi*xaxis*yaxis*1e6; %has the unit of m^2
   slipaveell(ireg,1) = mosumell ./ mu ./ (fracseis*area) * 1e3; %has the unit of mm 
 end
@@ -1403,7 +1927,8 @@ symbol = 's';
 %%% total moment, binned by grid
 ax=f.ax(1);
 hold(ax,'on'); ax.Box = 'on'; grid(ax, 'on');
-cstr = 'Total moment (Nm) / grid';
+% cstr = 'Total moment (Nm) / grid';
+cstr = 'Total moment (Nm)';
 sumz1d = mosumgrid1d;
 sumz1d = sortrows(sumz1d,3);
 if strcmp(scale,'log10')
@@ -1425,6 +1950,8 @@ pos = ax.Position;
 c.Position = [pos(1), pos(2)-0.09, pos(3), 0.02];
 text(ax,0.02,0.93,'a','FontSize',11,'unit','normalized','EdgeColor','k',...
   'Margin',1);
+text(ax,0.10,0.93,catstr,'HorizontalAlignment','left','Units','normalized','FontSize',9);
+text(ax,0.99,0.04,corstr,'HorizontalAlignment','right','Units','normalized','FontSize',9);
 axis(ax, 'equal');
 ax.GridLineStyle = '--';
 ax.XAxisLocation = 'top';
@@ -1440,7 +1967,8 @@ hold(ax,'off');
 %%% average moment, binned by grid
 ax=f.ax(2);
 hold(ax,'on'); ax.Box = 'on'; grid(ax, 'on');
-cstr = 'Average moment (Nm) / grid';
+% cstr = 'Average moment (Nm) / grid';
+cstr = 'Average moment (Nm) per event';
 sumz1d = moavegrid1d;
 sumz1d = sortrows(sumz1d,3);
 if strcmp(scale,'log10')
@@ -1478,7 +2006,8 @@ hold(ax,'off');
 %%%average slip, binned by grid
 ax=f.ax(3);
 hold(ax,'on'); ax.Box = 'on'; grid(ax, 'on');
-cstr = 'Average slip (mm) / grid';
+% cstr = 'Average slip (mm) / grid';
+cstr = 'Total slip (mm)';
 sumz1d = slipavegrid1d;
 sumz1d = sortrows(sumz1d,3);
 % if strcmp(scale,'log10')
@@ -1499,7 +2028,7 @@ pos = ax.Position;
 c.Position = [pos(1), pos(2)-0.09, pos(3), 0.02];
 %the cut-out boundary of 4-s detections
 plot(ax,xcut,ycut,'k-','linew',2);
-text(ax,0.99,0.06,sprintf('%d over the\n entire area',round(slipave)),'fontsize',8,...
+text(ax,0.99,0.06,sprintf('%d mm over\n entire area',round(slipave)),'fontsize',8,...
   'unit','normalized','HorizontalAlignment','right');
 text(ax,0.02,0.93,'c','FontSize',11,'unit','normalized','EdgeColor','k',...
   'Margin',1);
@@ -1577,7 +2106,7 @@ for ireg = 1: 2: nreg
       'color','k');
   end
 end
-text(ax,0.99,0.06,sprintf('%d; %d; %d; %d',round(slipaveell(1)),round(slipaveell(3)),...
+text(ax,0.99,0.06,sprintf('%d; %d; %d; %d mm',round(slipaveell(1)),round(slipaveell(3)),...
   round(slipaveell(5)),round(slipaveell(7))),'fontsize',8,...
   'unit','normalized','HorizontalAlignment','right');
 text(ax,0.02,0.93,'d','FontSize',11,'unit','normalized','EdgeColor','k',...
@@ -1594,17 +2123,18 @@ yticks(ax,yran(1):1:yran(2));
 nolabels(ax,3);
 longticks(ax,2);
 
-if isequaln(lfemouse,lfemoallac12) 
-  fname = strcat('lfemomentslipac12',fnsuffix,'.pdf');
-elseif isequaln(lfemouse,lfemoallac2) 
-  fname = strcat('lfemomentslipac2',fnsuffix,'.pdf');
+if saveflag
+  if isequaln(lfemouse,lfemoallac12) 
+    fname = strcat('lfemomentslipac12',fnsuffix,'.pdf');
+  elseif isequaln(lfemouse,lfemoallac2) 
+    fname = strcat('lfemomentslipac2',fnsuffix,'.pdf');
+  elseif isequaln(lfemouse,lfemoallbc) 
+    fname = strcat('lfemomentslipbc',fnsuffix,'.pdf');
+  end
+  print(f.fig,'-dpdf',...
+    strcat('/home/data2/chaosong/CurrentResearch/Song_Rubin_2024_2/figures/',fname));
 end
-print(f.fig,'-dpdf',...
-  strcat('/home/data2/chaosong/CurrentResearch/Song_Rubin_2024/figures/',fname));
-
 % keyboard
-
-
 
 
 %%

@@ -320,10 +320,57 @@ if nsta>3
   end
 end
 
-amprat(1,:) = minmax(greenf(:,1)')./minmax(greenf(:,2)');	% amp ratio between max at sta 3 and 2 or min
-amprat(2,:) = minmax(greenf(:,1)')./minmax(greenf(:,3)');	% amp ratio between max at sta 3 and 1 or min  
-amprat(3,:) = minmax(greenf(:,2)')./minmax(greenf(:,3)');	% amp ratio between max at sta 3 and 1 or min  
-spread = range(greenf);   % range of the amp of template
+%%% create a nice figure of the BB and BP templates
+saveflag=1;
+pltsta = [1 2 3 4];
+f=plt_002lfe(green(:,pltsta),greenf(:,pltsta),sps,saveflag);
+keyboard
+
+for ista = 1:4
+  wlet = greenf(:,ista);  %template here is best aligned, tapered, linear trend removed, filtered
+  lwlet = length(wlet);
+  sig = green(:,ista); %best aligned, filtered, tapered
+  lsig = length(sig);
+  noi=[]; 
+  rcc=ones(lsig,1);
+  
+  dt = 1/sps;  % sampling interval
+  twlet = zcrossesf(ista)*dt;
+  width = 2.5;  % width for Gaussian filter
+  dres_min = 0.5;  % tolerance, percentage change in residual per iteration
+  mfit_min = 5e-1;  % tolerance, norm of the residual/misfit
+  tdura = 0.25;  % estimate from the broadband template from fam 002
+  nit_max = 2;  % max numer of iterations
+  nimp_max = 2; %a single peak is ~20 samples wide; maybe a little less (at 100 sps). ~0.4s, 1/0.4=2.5
+  fpltit = 0;  % plot flag for each iteration
+  fpltend = 0;  % plot flag for the final iteration
+  fpltchk = 0; % plot flag for intermediate computations
+  
+  [sigdecon(:,ista),pred(:,ista),res,dresit,mfitit{ista},ccchgit,ampit{ista},nit,fighdl] = ...
+    iterdecon(sig,wlet,rcc,noi,[],dt,twlet,width,dres_min,mfit_min,nit_max,nimp_max,...
+    fpltit,fpltend,fpltchk);
+  imp = ampit{ista};
+  impmax(ista,:) = imp(1,:);
+end
+impmax(1,2)/impmax(2,2)
+impmax(1,2)/impmax(3,2)
+impmax(2,2)/impmax(3,2)
+impmax(1,2)/impmax(4,2)
+
+% amprat(1,:) = minmax(greenf(:,1)')./minmax(greenf(:,2)');	% amp ratio between max at sta 3 and 2 or min
+% amprat(2,:) = minmax(greenf(:,1)')./minmax(greenf(:,3)');	% amp ratio between max at sta 3 and 1 or min  
+% amprat(3,:) = minmax(greenf(:,2)')./minmax(greenf(:,3)');	% amp ratio between max at sta 3 and 1 or min  
+spreadf = range(greenf);   % range of the amp of template
+ampratf(1,1) = spreadf(1)./spreadf(2);	% ratio of range 
+ampratf(1,2) = spreadf(1)./spreadf(3); 
+ampratf(1,3) = spreadf(2)./spreadf(3); 
+ampratf(1,4) = spreadf(1)./spreadf(4); 
+spread = range(green);   % range of the amp of template
+amprat(1,1) = spread(1)./spread(2);	% ratio of range 
+amprat(1,2) = spread(1)./spread(3); 
+amprat(1,3) = spread(2)./spread(3); 
+amprat(1,4) = spread(1)./spread(4); 
+spread./spreadf
 
 %%%plot the unfiltered and filtered templates
 % plt_templates(green,greenf,stas,[],[],lowlet,hiwlet,sps);

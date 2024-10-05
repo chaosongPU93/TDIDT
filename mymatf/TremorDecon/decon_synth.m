@@ -251,6 +251,10 @@ end %if need to recalculate
 % keyboard
 
 %% load decon results
+%%%Flag to indicate if to discard the detections from misaligned wins 
+% flagdiscard = 0;
+flagdiscard = 1;
+
 for ireg = 1: nreg
   xaxis = semia(ireg);
   yaxis = semib(ireg);
@@ -261,29 +265,64 @@ for ireg = 1: nreg
       '-',num2str(yaxis),'_nsat',num2str(sat),'_td',num2str(tdura),'.mat'); %,srcregion(1:3),'_'
     load(strcat(workpath,'/synthetics/',savefile));
     
+    impgt{insat,ireg} = allsyn.impgt; %ground-truth sources
     nsrcgt(insat,ireg) = size(allsyn.impgt,1);
+    impgrp{insat,ireg} = allsyn.impgrp; %grouped sources
     nsrcgrp(insat,ireg) = size(allsyn.impgrp,1);
-    impk{insat,ireg} = allsyn.imp;
-    nsrck{insat,ireg} = allsyn.nsrc;
+    imp{insat,ireg} = allsyn.imp;
+    % nsrck{insat,ireg} = allsyn.nsrc;
     nsrc(insat,ireg) = allsyn.nsrcsum;
-    nitk{insat,ireg} = allsyn.nit;
+    % nitk{insat,ireg} = allsyn.nit;
     nit{insat,ireg} = allsyn.nitsum;
     nitmin(insat,ireg) = min(nit{insat,ireg});
     nitmean(insat,ireg) = mean(nit{insat,ireg});
-    srcamprk{insat,ireg} = allsyn.srcampr;
+    srcampr{insat,ireg} = allsyn.srcampr;
     mprojxnn1(insat,ireg) = allsyn.mprojxnn1;
     mprojx2all(insat,ireg) = allsyn.mprojx2all;
+    irccran{insat,ireg} = allsyn.irccran;  %stores start and end indices of RCC
     
-    imp4thk{insat,ireg} = allsyn.imp4th;
-    nsrc4thk{insat,ireg} = allsyn.nsrc4th;
+    imp4th{insat,ireg} = allsyn.imp4th;
+    % nsrc4thk{insat,ireg} = allsyn.nsrc4th;
     nsrc4th(insat,ireg) = allsyn.nsrc4thsum;
-    srcampr4thk{insat,ireg} = allsyn.srcampr4th;
+    srcampr4th{insat,ireg} = allsyn.srcampr4th;
     mprojxnn14th(insat,ireg) = allsyn.mprojxnn14th;
     mprojx2all4th(insat,ireg) = allsyn.mprojx2all4th;
+
+    %load misaligned windows
+    savefile2 = strcat('badwins_decon_synth_reg',num2str(xaxis),...
+      '-',num2str(yaxis),'_nsat',num2str(sat),'_td',num2str(tdura),'.mat');
+    load(strcat(workpath,'/synthetics/',savefile2));
+    badwins{insat,ireg} = allsyn.badwins;   
     
+    if flagdiscard
+      %grouped sources
+      [impnew,nsrcnew,lsignew] = discard_badwins_decon_synth(impgrp{insat,ireg},...
+        badwins{insat,ireg},irccran{insat,ireg},sps);
+      impgrp{insat,ireg} = impnew;
+      nsrcgrp(insat,ireg) = nsrcnew;
+      lsiggrp(insat,ireg) = lsignew;
+
+      %3-station sources
+      [impnew,nsrcnew,lsignew] = discard_badwins_decon_synth(imp{insat,ireg},...
+        badwins{insat,ireg},irccran{insat,ireg},sps);
+      imp{insat,ireg} = impnew;
+      nsrc(insat,ireg) = nsrcnew;
+      lsig(insat,ireg) = lsignew;
+
+      %4-station sources   
+      [impnew,nsrcnew,lsignew] = discard_badwins_decon_synth(imp4th{insat,ireg},...
+        badwins{insat,ireg},irccran{insat,ireg},sps);
+      imp4th{insat,ireg} = impnew;
+      nsrc4th(insat,ireg) = nsrcnew;
+      lsig4th(insat,ireg) = lsignew;
+    else
+      lsiggrp(insat,ireg) = Twin-(greenlen+msftaddm*2+overshoot*2-2)/sps;
+      lsig(insat,ireg) = Twin-(greenlen+msftaddm*2+overshoot*2-2)/sps;  %length of the signal of synthetics
+      lsig4th(insat,ireg) = Twin-(greenlen+msftaddm*2+overshoot*2-2)/sps;  %length of the signal of synthetics    
+    end
+       
   end
 end
-lsig = Twin-(greenlen+msftaddm*2+overshoot*2-2)/sps;  %length of the signal of synthetics
 
 %%%load results from data
 % savefile = 'deconv_stats4th_allbstsig.mat';
@@ -294,6 +333,7 @@ allsig = load(strcat(rstpath, '/MAPS/',savefile));
 % savefile = 'deconv_stats4th_allbstnoi.mat';
 savefile = 'deconv_stats4th_no23_allbstnoi.mat';
 allnoi = load(strcat(rstpath, '/MAPS/',savefile));
+
 
 %% summarize cumulative density plot for each region size and sat level
 % %%%loop for region size
@@ -461,12 +501,18 @@ allnoi = load(strcat(rstpath, '/MAPS/',savefile));
 %% num of detections VS saturation rate & region size
 nsrcd = allsig.allbstsig.nsrc;
 nsrc4thd = allsig.allbstsig.nsrc4th;
+ngrpd = allsig.allbstsig.ngrp;
+nitd = allsig.allbstsig.nitk;
+nitd = cat(1, nitd{:});
 % nsrcn = allnoi.allbstnoi.nsrc;
 % nsrc4thn = allnoi.allbstnoi.nsrc4th;
+% ngrpn = allnoi.allbstnoi.ngrp;
+% nitn = allnoi.allbstnoi.nitk;
+% nitn = cat(1, nitn{:});
 
-nrow = 2; ncol = 3;
+nrow = 3; ncol = 3;
 widin = 8.4;  % maximum width allowed is 8.5 inches
-htin = 6;   % maximum height allowed is 11 inches
+htin = 9;   % maximum height allowed is 11 inches
 f = initfig(widin,htin,nrow,ncol);
 pltxran = [0.08 0.96]; pltyran = [0.08 0.96]; % optimal axis location
 pltxsep = 0.06; pltysep = 0.08;
@@ -474,11 +520,12 @@ optaxpos(f,nrow,ncol,pltxran,pltyran,pltxsep,pltysep);
 
 color = gradientblue(nreg);
 
+%%%ground-truth num of srcs
 ax=f.ax(1); hold(ax,'on'); ax.Box='on'; grid(ax,'on'); ax.XScale='log'; ax.YScale='log';
 for ireg = 1: nreg
-  plot(ax,nsat,nsrcgt(:,ireg),'-o','Color',color(ireg,:),...
-    'markersize',4,'MarkerFaceColor',color(ireg,:),...
-    'MarkerEdgeColor',color(ireg,:),'LineWidth',1);
+  plot(ax,nsat,nsrcgt(:,ireg),'-',...
+    'linew',1,'color',color(ireg,:),'marker','o','markersize',3,...
+    'markerfacec',color(ireg,:));
 end
 xlabel(ax,'Saturation');
 ylabel(ax,'# of ground-truth sources');
@@ -486,96 +533,114 @@ ylabel(ax,'# of ground-truth sources');
 % ylim(ax,yran);
 xticks(ax,nsat);
 longticks(ax,2);
+% ax.YAxis.Exponent = 4;
+% axranexp(ax,6,20);
+hold(ax,'off');
+
+%%%mean num of iterations
+ax=f.ax(2); hold(ax,'on'); ax.Box='on'; grid(ax,'on'); ax.XScale='log'; ax.YScale='log';
+for ireg = 1: nreg
+  plot(ax,nsat,nitmin(:,ireg),'-',...
+    'linew',1,'color',color(ireg,:),'marker','o','markersize',3,...
+    'markerfacec',color(ireg,:));
+end
+xlabel(ax,'Saturation');
+ylabel(ax,'Min # of iterations');
+yran = [2e3 4e4];
+ylim(ax,yran);
+yticks(ax,[0.2 0.4 1 2 4]*1e4);
+xticks(ax,nsat);
+longticks(ax,2);
+ax.YAxis.Exponent = 4;
+% axranexp(ax,6,20);
+% yran = ax.YLim;
+hold(ax,'off');
+
+%%%num of grouped sources
+ax=f.ax(3); hold(ax,'on'); ax.Box='on'; grid(ax,'on'); ax.XScale='log'; ax.YScale='log';
+for ireg = 1: nreg
+  plot(ax,nsat,nsrcgrp(:,ireg),'-',...
+    'linew',1,'color',color(ireg,:),'marker','o','markersize',3,...
+    'markerfacec',color(ireg,:));
+end
+text(ax,0.98,0.95,'Grouped','HorizontalAlignment','right','Units','normalized',...
+  'fontsize',10);
+xlabel(ax,'Saturation');
+ylabel(ax,'# of detections');
+% yran = [0 1];
+ylim(ax,yran);
+yticks(ax,[0.2 0.4 1 2 4]*1e4);
+xticks(ax,nsat);
+longticks(ax,2);
 ax.YAxis.Exponent = 4;
 % axranexp(ax,6,20);
 hold(ax,'off');
 
-ax=f.ax(2); hold(ax,'on'); ax.Box='on'; grid(ax,'on'); ax.XScale='log'; ax.YScale='log';
+%%%3-station sources
+ax=f.ax(4); hold(ax,'on'); ax.Box='on'; grid(ax,'on'); ax.XScale='log'; ax.YScale='log';
 for ireg = 1: nreg
-  plot(ax,nsat,nitmean(:,ireg),'-o','Color',color(ireg,:),...
-    'markersize',4,'MarkerFaceColor',color(ireg,:),...
-    'MarkerEdgeColor',color(ireg,:),'LineWidth',1);
+  plot(ax,nsat,nsrc(:,ireg),'-',...
+    'linew',1,'color',color(ireg,:),'marker','o','markersize',3,...
+    'markerfacec',color(ireg,:));
 end
-xlabel(ax,'Saturation');
-ylabel(ax,'Average # of iterations');
-% yran = [0 1];
-% ylim(ax,yran);
-xticks(ax,nsat);
-longticks(ax,2);
-ax.YAxis.Exponent = 4;
-axranexp(ax,6,20);
-hold(ax,'off');
-
-ax=f.ax(3); hold(ax,'on'); ax.Box='on'; grid(ax,'on'); ax.XScale='log'; ax.YScale='log';
-for ireg = 1: nreg
-  plot(ax,nsat,nsrcgrp(:,ireg),'-o','Color',color(ireg,:),...
-    'markersize',4,'MarkerFaceColor',color(ireg,:),...
-    'MarkerEdgeColor',color(ireg,:),'LineWidth',1);
-end
-xlabel(ax,'Saturation');
-ylabel(ax,'# of grouped sources');
-% yran = [0 1];
-% ylim(ax,yran);
-xticks(ax,nsat);
-longticks(ax,2);
-ax.YAxis.Exponent = 4;
-axranexp(ax,6,20);
-hold(ax,'off');
-
-ax=f.ax(4); hold(ax,'on'); ax.Box='on'; grid(ax,'on'); ax.XScale='log';
-for ireg = 1: nreg
-  plot(ax,nsat,nsrc(:,ireg)/lsig,'-o','Color',color(ireg,:),...
-    'markersize',4,'MarkerFaceColor',color(ireg,:),...
-    'MarkerEdgeColor',color(ireg,:),'LineWidth',1);
-end
-plot(ax,ax.XLim,[sum(nsrcd)/tlensum sum(nsrcd)/tlensum],'k--','linew',1.5);
-% plot(ax,ax.XLim,[sum(nsrcn)/tlensum sum(nsrcn)/tlensum],'r--','linew',1.5);
 text(ax,0.98,0.95,'3-station','HorizontalAlignment','right','Units','normalized',...
   'fontsize',10);
-% title(ax,'Secondary sources removed');
 xlabel(ax,'Saturation');
-ylabel(ax,'# of detections per sec');
-% yran = [4e3 1.3e4];
-yran = [0.1 1.3];
+ylabel(ax,'# of detections');
+% yran = [4e3 1.5e4];
+% yran = [0.1 1.3];
 ylim(ax,yran);
-% yran = ax.YLim;
+yticks(ax,[0.2 0.4 1 2 4]*1e4);
 xticks(ax,nsat);
 longticks(ax,2);
-% ax.YAxis.Exponent = 4;
+ax.YAxis.Exponent = 4;
+% yran = ax.YLim;
+% yyaxis(ax,'right');
+% ylabel(ax,'# of detections per sec');
+% ylim(ax,yran/lsig);
 hold(ax,'off');
 
-ax=f.ax(5); hold(ax,'on'); ax.Box='on'; grid(ax,'on'); ax.XScale='log';
+%%%4-station sources
+ax=f.ax(5); hold(ax,'on'); ax.Box='on'; grid(ax,'on'); ax.XScale='log'; ax.YScale='log';
+% yyaxis(ax,'left');
 for ireg = 1: nreg
-  plot(ax,nsat,nsrc4th(:,ireg)/lsig,'-o','Color',color(ireg,:),...
-    'markersize',4,'MarkerFaceColor',color(ireg,:),...
-    'MarkerEdgeColor',color(ireg,:),'LineWidth',1);
+  plot(ax,nsat,nsrc4th(:,ireg),'-',...
+    'linew',1,'color',color(ireg,:),'marker','o','markersize',3,...
+    'markerfacec',color(ireg,:));
 end
-plot(ax,ax.XLim,[sum(nsrc4thd)/tlensum sum(nsrc4thd)/tlensum],'k--','linew',1.5);
-% plot(ax,ax.XLim,[sum(nsrc4thn)/tlensum sum(nsrc4thn)/tlensum],'r--','linew',1.5);
 text(ax,0.98,0.95,'4-station','HorizontalAlignment','right','Units','normalized',...
   'fontsize',10);
-% title(ax,'Secondary sources removed');
 xlabel(ax,'Saturation');
-ylabel(ax,'# of detections per sec');
+ylabel(ax,'# of detections');
 % yran = [0 1];
 ylim(ax,yran);
+yticks(ax,[0.2 0.4 1 2 4]*1e4);
 xticks(ax,nsat);
 longticks(ax,2);
-% ax.YAxis.Exponent = 4;
+ax.YAxis(1).Exponent = 4;
+% yran = ax.YLim;
+% yyaxis(ax,'right');
+% ylabel(ax,'# of detections per sec');
+% ylim(ax,yran/lsig);
 hold(ax,'off');
 
+%%%4- / 3-station ratio
 ax=f.ax(6); hold(ax,'on'); ax.Box='on'; grid(ax,'on'); ax.XScale='log';
 for ireg = 1: nreg
-  p(ireg) = plot(ax,nsat,nsrc4th(:,ireg)./nsrc(:,ireg),'-o','Color',color(ireg,:),...
-    'markersize',4,'MarkerFaceColor',color(ireg,:),...
-    'MarkerEdgeColor',color(ireg,:),'LineWidth',1);
+  p(ireg) = plot(ax,nsat,nsrc4th(:,ireg)./nsrc(:,ireg),'-',...
+    'linew',1,'color',color(ireg,:),'marker','o','markersize',3,...
+    'markerfacec',color(ireg,:));
+  % p(ireg) = plot(ax,nsat,nsrc4th(:,ireg)./nsrc(:,ireg),'-','Color',...
+  %   color(ireg,:),'linew',1);
+  % scatter(ax,nsat,nsrc4th(:,ireg)./nsrc(:,ireg),20,color(ireg,:),'filled',...
+  %   'MarkerEdgeColor','k');
   label{ireg} = sprintf('%.1fx%.1f',2*semia(ireg),2*semib(ireg));
 end
 p(nreg+1) = plot(ax,ax.XLim,[sum(nsrc4thd)/sum(nsrcd) sum(nsrc4thd)/sum(nsrcd)],'k--','linew',1.5);
 label{nreg+1} = 'Data';
 % p(nreg+2) = plot(ax,ax.XLim,[sum(nsrc4thn)/sum(nsrcn) sum(nsrc4thn)/sum(nsrcn)],'r--','linew',1.5);
 % label{nreg+2} = 'Noise';
-lgd=legend(f.ax(4),p,label,'NumColumns',2,'Location','best','fontsize',6);
+lgd=legend(f.ax(4),p,label,'NumColumns',2,'Location','south','fontsize',6);
 set(lgd.BoxFace, 'ColorType','truecoloralpha', 'ColorData',uint8(255*[1;1;1;.8]));  %make background transparent
 lgdtit = 'Region size (km)';
 title(lgd,lgdtit,'fontsize',7);
@@ -587,6 +652,69 @@ ylim(ax,yran);
 xticks(ax,nsat);
 longticks(ax,2);
 hold(ax,'off');
+
+%%%3-station sources, detection rate 
+ax=f.ax(7); hold(ax,'on'); ax.Box='on'; grid(ax,'on'); ax.XScale='log';
+for ireg = 1: nreg
+  plot(ax,nsat/0.25,nsrc(:,ireg)./lsig(:,ireg),'-',...
+    'linew',1,'color',color(ireg,:),'marker','o','markersize',3,...
+    'markerfacec',color(ireg,:));
+end
+plot(ax,ax.XLim,[sum(nsrcd)/tlensum sum(nsrcd)/tlensum],'k--','linew',1.5);
+% plot(ax,ax.XLim,[sum(nsrcn)/tlensum sum(nsrcn)/tlensum],'r--','linew',1.5);
+text(ax,0.98,0.95,'3-station','HorizontalAlignment','right','Units','normalized',...
+  'fontsize',10);
+xlabel(ax,'# of ground-truth sources per sec');
+ylabel(ax,'# of detections per sec');
+yran = [0.1 1.3];
+ylim(ax,yran);
+xticks(ax,nsat/0.25);
+xlim(ax,[nsat(1) nsat(end)]/0.25);
+longticks(ax,2);
+hold(ax,'off');
+
+%%%4-station sources, detection rate
+ax=f.ax(8); hold(ax,'on'); ax.Box='on'; grid(ax,'on'); ax.XScale='log';
+for ireg = 1: nreg
+  plot(ax,nsat/0.25,nsrc4th(:,ireg)./lsig4th(:,ireg),'-',...
+    'linew',1,'color',color(ireg,:),'marker','o','markersize',3,...
+    'markerfacec',color(ireg,:));
+end
+plot(ax,ax.XLim,[sum(nsrc4thd)/tlensum sum(nsrc4thd)/tlensum],'k--','linew',1.5);
+% plot(ax,ax.XLim,[sum(nsrc4thn)/tlensum sum(nsrc4thn)/tlensum],'r--','linew',1.5);
+text(ax,0.98,0.95,'4-station','HorizontalAlignment','right','Units','normalized',...
+  'fontsize',10);
+xlabel(ax,'# of ground-truth sources per sec');
+ylabel(ax,'# of detections per sec');
+% yran = [0 1];
+ylim(ax,yran);
+xticks(ax,nsat/0.25);
+xlim(ax,[nsat(1) nsat(end)]/0.25);
+longticks(ax,2);
+hold(ax,'off');
+
+%%%min num of iteration, rate, rough, as containing iterations within misaligned
+%%%windows
+ax=f.ax(9); hold(ax,'on'); ax.Box='on'; grid(ax,'on'); ax.XScale='log';
+for ireg = 1: nreg
+  plot(ax,nsat/0.25,nitmin(:,ireg)/(3*3600),'-',...
+    'linew',1,'color',color(ireg,:),'marker','o','markersize',3,...
+    'markerfacec',color(ireg,:));
+end
+plot(ax,ax.XLim,[min(sum(nitd,1))/tlensum min(sum(nitd,1))/tlensum],'k--','linew',1.5);
+% plot(ax,ax.XLim,[min(sum(nitn,1))/tlensum min(sum(nitn,1))/tlensum],'r--','linew',1.5);
+xlabel(ax,'# of ground-truth sources per sec');
+ylabel(ax,'Min # of iterations per sec');
+% yran = [0.2 4]*1e4;
+% ylim(ax,yran);
+% yticks(ax,(0.5:1:4)*1e4);
+xticks(ax,nsat);
+longticks(ax,2);
+% ax.YAxis.Exponent = 4;
+% axranexp(ax,6,20);
+% yran = ax.YLim;
+hold(ax,'off');
+
 
 fname = strcat('num_det_syn',fnsuffix1,'.pdf');
 print(f.fig,'-dpdf',strcat('/home/chaosong/Pictures/',fname));
@@ -681,18 +809,20 @@ ref{1} = mamprd;
 ref{2} = stdamprd;
 for ireg = 1: nreg
   for insat = 1: nnsat
-    mampr{insat,ireg} = median(log10(srcamprk{insat,ireg}), 1);
-    madampr{insat,ireg} = mad(log10(srcamprk{insat,ireg}), 1, 1);
-    stdampr{insat,ireg} = std(log10(srcamprk{insat,ireg}), 1);
+    mampr{insat,ireg} = median(log10(srcampr{insat,ireg}), 1);
+    madampr{insat,ireg} = mad(log10(srcampr{insat,ireg}), 1, 1);
+    stdampr{insat,ireg} = std(log10(srcampr{insat,ireg}), 1);
   end
 end
 f = initfig(8.4,6,2,3); %initialize fig
 % orient(f.fig,'landscape');
 pltxran = [0.08 0.98]; pltyran = [0.08 0.98]; % optimal axis location
-optaxpos(f,2,3,pltxran,pltyran,0.01,0.08);
-[f,lgd]=plt_deconpk_rat_stat(f,nsat,label,mampr,stdampr,ref,5*log10(nsrc));
+optaxpos(f,2,3,pltxran,pltyran,0.03,0.08);
+% [f,lgd]=plt_deconpk_rat_stat(f,nsat,label,mampr,stdampr,ref,5*log10(nsrc));
+[f,lgd]=plt_deconpk_rat_stat(f,nsat,label,mampr,stdampr,ref);
+lgdtit = 'Region size (km)';
 title(lgd(1),lgdtit,'fontsize',7);
-title(lgd(2),lgdtit,'fontsize',7);
+% title(lgd(2),lgdtit,'fontsize',7);
 % stit = supertit(f.ax,'Secondary sources removed');
 % movev(stit,0.3);
 ylim(f.ax(4:end),log10([1.2 2.4]));
@@ -712,18 +842,19 @@ ref4th{1} = mampr4thd;
 ref4th{2} = stdampr4thd;
 for ireg = 1: nreg
   for insat = 1: nnsat
-    mampr4th{insat,ireg} = median(log10(srcampr4thk{insat,ireg}), 1);
-    madampr4th{insat,ireg} = mad(log10(srcampr4thk{insat,ireg}), 1, 1);
-    stdampr4th{insat,ireg} = std(log10(srcampr4thk{insat,ireg}), 1);
+    mampr4th{insat,ireg} = median(log10(srcampr4th{insat,ireg}), 1);
+    madampr4th{insat,ireg} = mad(log10(srcampr4th{insat,ireg}), 1, 1);
+    stdampr4th{insat,ireg} = std(log10(srcampr4th{insat,ireg}), 1);
   end
 end
 f = initfig(8.4,6,2,4); %initialize fig
 % orient(f.fig,'landscape');
-pltxran = [0.08 0.98]; pltyran = [0.08 0.98]; % optimal axis location
-optaxpos(f,2,4,pltxran,pltyran,0.01,0.08);
-[f,lgd]=plt_deconpk_rat_stat(f,nsat,label,mampr4th,stdampr4th,ref4th,5*log10(nsrc4th));
+pltxran = [0.05 0.98]; pltyran = [0.08 0.98]; % optimal axis location
+optaxpos(f,2,4,pltxran,pltyran,0.02,0.08);
+% [f,lgd]=plt_deconpk_rat_stat(f,nsat,label,mampr4th,stdampr4th,ref4th,5*log10(nsrc4th));
+[f,lgd]=plt_deconpk_rat_stat(f,nsat,label,mampr4th,stdampr4th,ref4th);
 title(lgd(1),lgdtit,'fontsize',7);
-title(lgd(2),lgdtit,'fontsize',7);
+% title(lgd(2),lgdtit,'fontsize',7);
 % stit = supertit(f.ax,'Checkd at 4th stas');
 % movev(stit,0.3);
 ylim(f.ax(5:end),log10([1.2 2.4]));
@@ -731,7 +862,7 @@ ylim(f.ax(5:end),log10([1.2 2.4]));
 
 fname = strcat('amprat_syn4th',fnsuffix1,'.pdf');
 print(f.fig,'-dpdf',strcat('/home/chaosong/Pictures/',fname));
-
+% keyboard
 %%%%%%%%% or only plot the median & mad for each sat and noise
 
 %% Best alignment for the testing window

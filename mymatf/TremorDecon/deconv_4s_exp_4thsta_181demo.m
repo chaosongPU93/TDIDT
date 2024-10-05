@@ -44,7 +44,7 @@ defval('noiseflag',0);  %whether to use synthetic noises
 defval('pltflag',0);  %whether to plot figs for each burst
 defval('rccmwsec',0.5); %moving win len in sec for computing RCC
 
-saveflag = 1; %0 means don't save figures; 1 means yes
+saveflag = 0; %0 means don't save figures; 1 means yes
 detecttype = '1win';
 
 rccflag = 1; %1 means RCC weighting is used
@@ -1989,8 +1989,8 @@ for iii = 1: length(idxbst)
         pltsta = [1 2 3 7];
 %         f1 = plt_selsigpredres(sigsta,predgrp,resgrp,varred1,stas,pltsta,sps,...
 %           xzoom,detecttype,saveflag);
-%         f1 = plt_selsigpred(sigsta,predgrp,varred4th,stas,pltsta,sps,...
-%           xzoom,detecttype,saveflag);
+        f1 = plt_selsigpred(sigsta,predgrp,varred4th,stas,pltsta,sps,...
+          xzoom,detecttype,saveflag);
 %%
         %%%final prediction at ort. comp.
         [~,predgrport,resgrport,~,~,l2normred1ort,varredort4th]= ...
@@ -2020,7 +2020,7 @@ for iii = 1: length(idxbst)
       f=plt_vrvssnr(greentype,mfit,varsig,mfitort,varsigort,...
           mfitvert,varsigvert,stas,1,snrf,snrfort,snrfvert,...
           varred,varredort,varredvert,varred4th,varredort4th,varredvert4th,...
-          detecttype,saveflag);
+          detecttype,1);
 
 %       keyboard
 

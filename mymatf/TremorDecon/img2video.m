@@ -34,13 +34,15 @@ end
 
 %Image directory
 imgdir = '/home/chaosong/Pictures/';
-% imgfiles = dir(fullfile(imgdir,'IndepIter*.jpg'));
-imgfiles = dir(fullfile(imgdir,'JointIter*.jpg'));
+imgfiles = dir(fullfile(imgdir,'IndepIter*.jpg'));
+% imgfiles = dir(fullfile(imgdir,'JointIter*.jpg'));
 
 %Change video file name and file type according to the operating system
-vidfile = 'joint.avi';
-vidprofile = 'Motion JPEG AVI';
+vidfile = 'indep.avi';
+% vidfile = 'joint.avi';
 % vidfile = 'itersteps.mp4';
+
+vidprofile = 'Motion JPEG AVI';
 % vidprofile = 'MPEG-4';
 
 vid = VideoWriter(fullfile(imgdir,vidfile),vidprofile);
@@ -49,11 +51,19 @@ vid.Quality = 100;
 
 open(vid);
 for i = 1: size(imgfiles,1)
-%   fname = fullfile(imgdir,strcat('IndepIter',num2str(i),'.jpg'));
-  fname = fullfile(imgdir,strcat('JointIter',num2str(i),'.jpg'));
+  fname = fullfile(imgdir,strcat('IndepIter',num2str(i),'.jpg'));
+%   fname = fullfile(imgdir,strcat('JointIter',num2str(i),'.jpg'));
   img = imread(fname);  % read image
   frame = im2frame(img);  % image to frame
   writeVideo(vid, frame); % write frame into the video
 %   writeVideo(vid, img); % write frame into the video
 end        
 close(vid);
+
+
+
+
+
+
+
+

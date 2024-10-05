@@ -74,31 +74,33 @@ load(strcat(rstpath, '/MAPS/',savefile));
 % keyboard
 
 %%
-%%%param for secondary sources removed
-locxyprojall = allbstsig.locxyprojall;
-tarvlsplstall = allbstsig.impindepall(:,1);
-nsrc = allbstsig.nsrc;
-imp = allbstsig.impindepall;
-off1i = allbstsig.off1i;
-locxyprojalln = allbstnoi.locxyprojall;
-tarvlsplstalln = allbstnoi.impindepall(:,1);
-nsrcn = allbstnoi.nsrc;
-impn = allbstnoi.impindepall;
-off1in = allbstnoi.off1i;
-supertstr = 'Secondary sources removed';
-fnsuffix = [];
+% %%%param for secondary sources removed
+% locxyprojall = allbstsig.locxyprojall;
+% tarvlsplstall = allbstsig.impindepall(:,1);
+% nsrc = allbstsig.nsrc;
+% imp = allbstsig.impindepall;
+% off1i = allbstsig.off1i;
+% locxyprojalln = allbstnoi.locxyprojall;
+% tarvlsplstalln = allbstnoi.impindepall(:,1);
+% nsrcn = allbstnoi.nsrc;
+% impn = allbstnoi.impindepall;
+% off1in = allbstnoi.off1i;
+% supertstr = 'Secondary sources removed';
+% fnsuffix = [];
 
-% %%%param for further checked at KLNB
-% locxyprojall = allbstsig.locxyproj4thall;
-% tarvlsplstall = allbstsig.impindep4thall(:,1);
-% nsrc = allbstsig.nsrc4th;
-% imp = allbstsig.impindep4thall;
-% locxyprojalln = allbstnoi.locxyproj4thall;
-% tarvlsplstalln = allbstnoi.impindep4thall(:,1);
-% nsrcn = allbstnoi.nsrc4th;
-% impn = allbstnoi.impindep4thall;
-% supertstr = 'Further checked at KLNB';
-% fnsuffix = '4th';
+%%%param for further checked at KLNB
+locxyprojall = allbstsig.locxyproj4thall;
+tarvlsplstall = allbstsig.impindep4thall(:,1);
+nsrc = allbstsig.nsrc4th;
+imp = allbstsig.impindep4thall;
+off1i = allbstsig.off1i;
+locxyprojalln = allbstnoi.locxyproj4thall;
+tarvlsplstalln = allbstnoi.impindep4thall(:,1);
+nsrcn = allbstnoi.nsrc4th;
+impn = allbstnoi.impindep4thall;
+off1in = allbstnoi.off1i;
+supertstr = 'Further checked at KLNB';
+fnsuffix = '4th';
 
 % keyboard
 
@@ -586,7 +588,6 @@ ncol = 2;
 f = initfig(widin,htin,nrow,ncol); %initialize fig
 pltxran = [0.08 0.98]; pltyran = [0.08 0.98]; % optimal axis location
 pltxsep = 0.02; pltysep = 0.09;
-f = initfig(widin,htin,nrow,ncol);
 optaxpos(f,nrow,ncol,pltxran,pltyran,pltxsep,pltysep);
 
 ax=f.ax(1); hold(ax,'on'); ax.Box='on'; grid(ax,'on'); set(ax,'YScale','log');
@@ -721,7 +722,6 @@ ncol = 2;
 f = initfig(widin,htin,nrow,ncol); %initialize fig
 pltxran = [0.08 0.98]; pltyran = [0.12 0.98]; % optimal axis location
 pltxsep = 0.02; pltysep = 0.09;
-f = initfig(widin,htin,nrow,ncol);
 optaxpos(f,nrow,ncol,pltxran,pltyran,pltxsep,pltysep);
 
 xran = [0 7];

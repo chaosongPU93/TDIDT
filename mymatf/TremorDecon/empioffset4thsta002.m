@@ -523,9 +523,9 @@ for i = 4: nstasnew
   %     c=colorbar;
   %     c.Label.String = sprintf('off14 at %d sps',sps);
   legend([p1 p2], sprintf('\\Delta{t}'), 'Plane fit', 'Location', 'northwest');
-  xlabel(sprintf('\\Delta{t}_{12} (s)'));
-  ylabel(sprintf('\\Delta{t}_{13} (s)'));
-  zlabel(sprintf('\\Delta{t}_{14} (s)'));
+  xlabel(sprintf('\\Delta{t}_{12}^{win} (s)'));
+  ylabel(sprintf('\\Delta{t}_{13}^{win} (s)'));
+  zlabel(sprintf('\\Delta{t}_{14}^{win} (s)'));
   axis('equal');
   zlim([-1.5 1.5]);
   xlim([-1 1]);
@@ -548,7 +548,7 @@ for i = 4: nstasnew
   %     [muHat,sigmaHat] = normfit(error);
   %     pdfhat = normpdf(xran(1):binw:xran(2),muHat,sigmaHat)*binw;
   %     p3=plot(ax,xran(1):binw:xran(2),pdfhat,'r','linew',2);
-  xlabel(ax,sprintf('Deviation from plane fitting (s)'));
+  xlabel(ax,sprintf('Deviation from plane fit (s)'));
   ylabel(ax,'Count');
   xlim(ax,xran);
   xticks(ax,xran(1):0.25:xran(2));
@@ -559,7 +559,7 @@ for i = 4: nstasnew
   print(f.fig,'-dpdf',...
     strcat('/home/data2/chaosong/CurrentResearch/Song_Rubin_2024/figures/',fname));
 
-%   keyboard
+  keyboard
   
 %   %%%%%%%%%%%%%%%%%%%%%%%%%55
 %   %%%What if you force 'off14' is 0 at (0,0)  

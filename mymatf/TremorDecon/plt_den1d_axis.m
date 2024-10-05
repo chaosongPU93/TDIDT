@@ -1,4 +1,4 @@
-function [ax,den1d,conmat,conobj] = plt_den1d_axis(ax,den1d,conmat,xran,yran,...
+function [ax,den1d,c,conmat,conobj] = plt_den1d_axis(ax,den1d,conmat,xran,yran,...
   dx,dy,binmethod,marker,msize,disttype,smoothsigma,contourflag,ncont,scale)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % [ax,den1d,conmat,conobj] = plt_den1d_axis(ax,den1d,conmat,...
@@ -32,7 +32,7 @@ defval('scale','log10');
 hold(ax,'on'); ax.Box = 'on'; grid(ax, 'on'); axis(ax, 'equal');
 ax.GridLineStyle = '--';
 ax.XAxisLocation = 'top';
-ax.FontSize = 9;
+% ax.FontSize = 9;
 xlim(ax,xran);
 ylim(ax,yran);
 % xticks(ax,xran(1):5:xran(2));
@@ -138,11 +138,11 @@ end
 
 
 if strcmp(disttype,'spl')
-  xlabel(ax,sprintf('\\Delta{t}_{12} (s)'));
-  ylabel(ax,sprintf('\\Delta{t}_{13} (s)'));
+  xlabel(ax,sprintf('\\Delta{t}_{12} (s)'),'FontSize',10);
+  ylabel(ax,sprintf('\\Delta{t}_{13} (s)'),'FontSize',10);
 elseif strcmp(disttype,'km')
-  xlabel(ax,'E (km)');
-  ylabel(ax,'N (km)');
+  xlabel(ax,'E (km)','FontSize',10);
+  ylabel(ax,'N (km)','FontSize',10);
 end
 longticks(ax,2);
 pos = ax.Position;

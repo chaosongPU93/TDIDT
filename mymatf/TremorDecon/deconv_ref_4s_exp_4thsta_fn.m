@@ -513,6 +513,8 @@ renvcatk = cell(size(trange,1),1); %median of running envelope of same win as RC
 renvcatnormk = cell(size(trange,1),1); %running envelope normalized by median of the burst
 rampcatk = cell(size(trange,1),1); %median of running amplitude, similar to 'renvcatk'
 rampcatnormk = cell(size(trange,1),1); %running amplitude normalized by median of the burst
+nitk = cell(size(trange,1),1);  %num of iterations at each station of all bursts
+ngrp = zeros(size(trange,1),1); %num of srcs AFTER 2ndary removed
 
 % %empirically determined indices of bursts fall into local day times (noisier)
 % %or night times (quieter)
@@ -1449,11 +1451,11 @@ for iii = 1: length(idxbst)
         if noiseflag
           %%%As of 2022/09/27, 'threshold' would be auto-computed based on data then feed to the
           %%%decon if the 'noiseflag' is on
-          [sigdecon(:,ista),pred(:,ista),res,dresit,mfitit,ccchgit,ampit{ista},nit,fighdl] = ...
+          [sigdecon(:,ista),pred(:,ista),res,dresit,mfitit,ccchgit,ampit{ista},nit(1,ista),fighdl] = ...
             iterdecon(sig,wlet,rcccat,noi,fixthresh(ista),dt,twlet,width,dres_min,...
             mfit_min,nit_max,nimp_max,fpltit,fpltend,fpltchk);
         else
-          [sigdecon(:,ista),pred(:,ista),res,dresit,mfitit,ccchgit,ampit{ista},nit,fighdl] = ...
+          [sigdecon(:,ista),pred(:,ista),res,dresit,mfitit,ccchgit,ampit{ista},nit(1,ista),fighdl] = ...
             iterdecon(sig,wlet,rcccat,noi,[],dt,twlet,width,dres_min,mfit_min,nit_max,nimp_max,...
             fpltit,fpltend,fpltchk);
 %           [sigdecon(:,ista),pred(:,ista),res,dresit,mfitit,ampit{ista},nit,fighdl] = ...
@@ -1485,9 +1487,11 @@ for iii = 1: length(idxbst)
           hold(ax,'off');
         end
         
-        nit
+        nit(1,ista)
         
       end
+
+      nitk{k} = nit;  %record the num of iterations for all bursts too
 
       
       %% Group nearest impulses from different stations into pairs, using moving searching range
@@ -1509,6 +1513,7 @@ for iii = 1: length(idxbst)
       %alignment upon each subwin that is also used in grouping!
       impindep(:,7:8) = impindep(:,7:8)+repmat([off1i(k,2) off1i(k,3)],size(impindep,1),1); %account for prealignment
       impindepst = sortrows(impindep,1);
+      ngrp(k,1) = size(impindepst, 1);  %num of grouped sources
 
       %% src scatter in sample space AFTER grouping
 %       %%%plot the scatter of offsets, accounting for prealignment offset, == true offset
@@ -2888,7 +2893,10 @@ rststruct.dto2all4thbst = dto2all4thbst;
 rststruct.dloco2all4thbst = dloco2all4thbst;
 rststruct.disto2all4thbst = disto2all4thbst;
 
-if ~isempty(impindepst)
+rststruct.nitk = nitk;
+rststruct.ngrp = ngrp;
+
+% if ~isempty(impindepst)
   rststruct.nsrc = nsrc;
   rststruct.msrcampr = msrcampr;
   rststruct.madsrcampr = madsrcampr;
@@ -2917,7 +2925,7 @@ if ~isempty(impindepst)
   rststruct.projspangrm4th = projspangrm4th;
   rststruct.projspangsl4th = projspangsl4th;
   rststruct.projsppear4th = projsppear4th;
-end
+% end
 
 
 %% merge all figures into a single pdf file

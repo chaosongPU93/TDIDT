@@ -228,7 +228,7 @@ flagrecalc = 1;
 
 if flagrecalc
   %%%loop for noise level
-  for ireg = 1: nreg
+  for ireg = 3: nreg
     if strcmp(srcregion,'circle')
       reg = radi;
       fprintf('reg: %f*%f; %d/%d \n',radi,radi,ireg,nreg);
@@ -240,7 +240,7 @@ if flagrecalc
     end
     
     %%%loop for noise level
-    for iperc = 1: ntrial
+    for iperc = 3: ntrial
       perc = perctrial(iperc);
       fprintf('noi: %f; %d/%d \n',perc,iperc,ntrial);
       
@@ -254,11 +254,12 @@ if flagrecalc
           distrloc,physicalsize,testsrcflag,testfreqflag,pltdataflag,pltgtflag,...
           pltsrcflag,pltsrc4thflag,normflag,tempflag,ftrans,nrun);
         
+%         keyboard
       end %loop end for saturation level
+      keyboard
       
     end %loop end for percent of noise
     
-    keyboard
   end %loop end for region size
   
 end %if need to recalculate

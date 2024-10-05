@@ -272,7 +272,7 @@ end
 nrow = 1; % rows and cols of subplots in each figure
 ncol = 2; 
 widin = 5.6; % size of each figure
-htin = 3.8;
+htin = 3.9;
 pltxran = [0.07 0.98]; pltyran = [0.18 0.88];
 pltxsep = 0.02; pltysep = 0.03;
 f = initfig(widin,htin,nrow,ncol);
@@ -351,7 +351,7 @@ yticks(ax,yran(1):0.2:yran(2));
 xran=[-1 1];
 xlim(ax,xran);
 % xticks(ax,xran(1):0.2:xran(2));
-xtks=[0.1 0.2 0.4 1 2 4 10];
+xtks=[0.2 0.4 1 2 4 10];
 xticks(ax,log10(xtks));
 for i=1:length(xtks)
   xtklbls{i}=num2str(xtks(i)); 
@@ -360,6 +360,8 @@ xticklabels(ax,xtklbls);
 longticks(ax,2);
 xlabel(ax,'Normalized running envelope','FontSize',10);
 ylabel(ax,'Running CC','FontSize',10);
+text(ax,0.02,0.95,'a','FontSize',10,'unit','normalized',...
+  'EdgeColor','k','Margin',1,'backgroundcolor','w');
 hold(ax,'off');
 %%
 %%%only rcc and renv measurements at src arrivals
@@ -415,7 +417,10 @@ xlim(ax,xran);
 xticks(ax,log10(xtks));
 xticklabels(ax,xtklbls);
 longticks(ax,2);
-nolabels(ax,3);
+nolabels(ax,2);
+text(ax,0.02,0.95,'b','FontSize',10,'unit','normalized',...
+  'EdgeColor','k','Margin',1,'backgroundcolor','w');
+xlabel(ax,'Normalized running envelope','FontSize',10);
 hold(ax,'off');
 
 fname = 'rccvsrenv.pdf';
@@ -570,6 +575,8 @@ xlim(ax,xran);
 longticks(ax,2);
 xlabel(ax,'log_{10}{HF running envelope}','FontSize',10);
 ylabel(ax,'HF running CC','FontSize',10);
+text(ax,0.02,0.95,'a','FontSize',10,'unit','normalized',...
+  'EdgeColor','k','Margin',1,'backgroundcolor','w');
 hold(ax,'off');
 
 % fname = 'rccvsrenv_rcclf.pdf';
@@ -675,10 +682,12 @@ xlim(ax,xran);
 %   xtklbls{i}=num2str(xtks(i)); 
 % end
 % xticklabels(ax,xtklbls);
-nolabels(ax,3);
+nolabels(ax,2);
 longticks(ax,2);
-% xlabel(ax,'log_{10}{HF running envelope}','FontSize',10);
+xlabel(ax,'log_{10}{HF running envelope}','FontSize',10);
 % ylabel(ax,'HF running CC','FontSize',10);
+text(ax,0.02,0.95,'b','FontSize',10,'unit','normalized',...
+  'EdgeColor','k','Margin',1,'backgroundcolor','w');
 hold(ax,'off');
 
 % fname = 'rccvsrenv_envrat.pdf';

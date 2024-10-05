@@ -86,6 +86,168 @@ nsrc4th = allsig.allbstsig.nsrc4th;
 for i=1:nbst
   stats=fitstats{i};
   if ~isempty(stats)
+    slopese(i,1)=stats.slopese;
+    pear(i,1)=stats.pearwt;
+    rsquare(i,1)=stats.gof.rsquare;
+    adjrsquare(i,1)=stats.gof.adjrsquare;
+    slope(i,1)=stats.slope;
+  else
+    slopese(i,1)=nan;
+    pear(i,1)=nan;
+    rsquare(i,1)=nan;
+    adjrsquare(i,1)=nan;
+    slope(i,1)=nan;
+  end
+end
+  
+% %%
+f=initfig(8,8,2,2);
+ax=f.ax(1); hold(ax,'on'); ax.Box = 'on'; grid(ax, 'on');
+histogram(ax,slope*1e3,'binw',1);
+xlabel(ax,'Slope (m/s)');
+ylabel(ax,'Count');
+xlim(ax,[0 50]);
+text(ax,0.98,0.95,'ALL','HorizontalAlignment','right','Units','normalized');
+
+ax=f.ax(2); hold(ax,'on'); ax.Box = 'on'; grid(ax, 'on');
+histogram(ax,slopese*1e3,'binw',1);
+xlabel(ax,'SE of slope (m/s)');
+ylabel(ax,'Count');
+xlim(ax,[0 50]);
+text(ax,0.98,0.95,'ALL','HorizontalAlignment','right','Units','normalized');
+
+ax=f.ax(3); hold(ax,'on'); ax.Box = 'on'; grid(ax, 'on');
+histogram(ax,pear,'binw',0.05);
+xlabel(ax,'Pearson coeff');
+ylabel(ax,'Count');
+text(ax,0.98,0.95,'ALL','HorizontalAlignment','right','Units','normalized');
+
+ax=f.ax(4); hold(ax,'on'); ax.Box = 'on'; grid(ax, 'on');
+histogram(ax,rsquare,'binw',0.05,'facecolor','b');
+histogram(ax,adjrsquare,'binw',0.05,'facecolor','r');
+xlabel(ax,'R^2');
+ylabel(ax,'Count');
+text(ax,0.98,0.95,'ALL','HorizontalAlignment','right','Units','normalized');
+legend(ax,'Original','DOF-adjusted');
+
+%%
+indmig = [14; 23; 25; 31; 33; 35; 42; 43; 44; 48; 49; 50; 53; 57; 60; 62; 66;
+          67; 80; 82; 85; 91; 96; 99; 100; 104; 106; 110; 112; 115; 117; 122;
+          138; 146; 151; 153; 164; 170; 172; 174; 181; 184; 194; 195];
+
+indhi = [23; 35; 53; 60; 99; 100; 115; 164; 170; 174; 181; 184];
+
+f=initfig(8,8,2,2);
+ax=f.ax(1); hold(ax,'on'); ax.Box = 'on'; grid(ax, 'on');
+scatter(ax,slopese*1e3,adjrsquare,15,'k','filled');
+scatter(ax,slopese(indmig)*1e3,adjrsquare(indmig),15,'b','filled');
+
+xlabel(ax,'SE of slope (m/s)');
+ylabel(ax,'Adjusted R^2');
+xlim(ax,[0 50]);
+
+ax=f.ax(2); hold(ax,'on'); ax.Box = 'on'; grid(ax, 'on');
+scatter(ax,slopese*1e3,rsquare,15,'k','filled');
+scatter(ax,slopese(indmig)*1e3,rsquare(indmig),15,'b','filled');
+xlabel(ax,'SE of slope (m/s)');
+ylabel(ax,'R^2');
+xlim(ax,[0 50]);
+
+ax=f.ax(3); hold(ax,'on'); ax.Box = 'on'; grid(ax, 'on');
+scatter(ax,slopese*1e3,pear,15,'k','filled');
+scatter(ax,slopese(indmig)*1e3,pear(indmig),15,'b','filled');
+xlabel(ax,'SE of slope (m/s)');
+ylabel(ax,'Pearson coeff');
+xlim(ax,[0 50]);
+
+%%
+f=initfig(8.4,3.5,1,3);
+pltxran = [0.08 0.98]; pltyran = [0.12 0.98];
+pltxsep = 0.08; pltysep = 0.03;
+optaxpos(f,1,3,pltxran,pltyran,pltxsep,pltysep);
+
+ax=f.ax(1); hold(ax,'on'); ax.Box = 'on'; grid(ax, 'on');
+scatter(ax,slope*1e3,adjrsquare,15,slopese*1e3,'o','filled','MarkerEdgeColor','none');
+colormap(ax,'plasma');
+c=colorbar(ax,'northoutside');
+c.Label.String = 'SE of slope (m/s)';
+caxis(ax,[0 5]);
+xlim(ax,[0 50]);
+scatter(ax,slope(indmig)*1e3,adjrsquare(indmig),30,slopese(indmig)*1e3,'^',...
+  'filled','MarkerEdgeColor','k');
+xlabel(ax,'Slope (m/s)');
+ylabel(ax,'Adjusted R^2');
+
+ax=f.ax(2); hold(ax,'on'); ax.Box = 'on'; grid(ax, 'on');
+scatter(ax,slope*1e3,rsquare,15,slopese*1e3,'o','filled','MarkerEdgeColor','none');
+colormap(ax,'plasma');
+c=colorbar(ax,'northoutside');
+c.Label.String = 'SE of slope (m/s)';
+caxis(ax,[0 5]);
+xlim(ax,[0 50]);
+scatter(ax,slope(indmig)*1e3,rsquare(indmig),30,slopese(indmig)*1e3,'^',...
+  'filled','MarkerEdgeColor','k');
+xlabel(ax,'Slope (m/s)');
+ylabel(ax,'R^2');
+
+ax=f.ax(3); hold(ax,'on'); ax.Box = 'on'; grid(ax, 'on');
+scatter(ax,slope*1e3,pear,15,slopese*1e3,'o','filled','MarkerEdgeColor','none');
+colormap(ax,'plasma');
+c=colorbar(ax,'northoutside');
+c.Label.String = 'SE of slope (m/s)';
+caxis(ax,[0 5]);
+xlim(ax,[0 50]);
+scatter(ax,slope(indmig)*1e3,pear(indmig),30,slopese(indmig)*1e3,'^',...
+  'filled','MarkerEdgeColor','k');
+xlabel(ax,'Slope (m/s)');
+ylabel(ax,'Pearson coeff');
+
+%%
+f=initfig(8.4,3.5,1,3);
+pltxran = [0.08 0.98]; pltyran = [0.12 0.98];
+pltxsep = 0.08; pltysep = 0.03;
+optaxpos(f,1,3,pltxran,pltyran,pltxsep,pltysep);
+
+ax=f.ax(1); hold(ax,'on'); ax.Box = 'on'; grid(ax, 'on');
+scatter(ax,slope*1e3,adjrsquare,15,slopese*1e3,'o','filled','MarkerEdgeColor','none');
+colormap(ax,'plasma');
+c=colorbar(ax,'northoutside');
+c.Label.String = 'SE of slope (m/s)';
+caxis(ax,[0 5]);
+xlim(ax,[0 50]);
+scatter(ax,slope(indhi)*1e3,adjrsquare(indhi),30,slopese(indhi)*1e3,'^',...
+  'filled','MarkerEdgeColor','k');
+xlabel(ax,'Slope (m/s)');
+ylabel(ax,'Adjusted R^2');
+
+ax=f.ax(2); hold(ax,'on'); ax.Box = 'on'; grid(ax, 'on');
+scatter(ax,slope*1e3,rsquare,15,slopese*1e3,'o','filled','MarkerEdgeColor','none');
+colormap(ax,'plasma');
+c=colorbar(ax,'northoutside');
+c.Label.String = 'SE of slope (m/s)';
+caxis(ax,[0 5]);
+xlim(ax,[0 50]);
+scatter(ax,slope(indhi)*1e3,rsquare(indhi),30,slopese(indhi)*1e3,'^',...
+  'filled','MarkerEdgeColor','k');
+xlabel(ax,'Slope (m/s)');
+ylabel(ax,'R^2');
+
+ax=f.ax(3); hold(ax,'on'); ax.Box = 'on'; grid(ax, 'on');
+scatter(ax,slope*1e3,pear,15,slopese*1e3,'o','filled','MarkerEdgeColor','none');
+colormap(ax,'plasma');
+c=colorbar(ax,'northoutside');
+c.Label.String = 'SE of slope (m/s)';
+caxis(ax,[0 5]);
+xlim(ax,[0 50]);
+scatter(ax,slope(indhi)*1e3,pear(indhi),30,slopese(indhi)*1e3,'^',...
+  'filled','MarkerEdgeColor','k');
+xlabel(ax,'Slope (m/s)');
+ylabel(ax,'Pearson coeff');
+
+%%
+for i=1:nbst
+  stats=fitstats{i};
+  if ~isempty(stats)
     angrmse(i,1)=stats.angrmse;
     pear(i,1)=stats.pearwt;
     slope(i,1)=stats.slope;

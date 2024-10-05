@@ -36,6 +36,7 @@ for i = 1: nuniq
   induniq{i} = ind;
 end
 
-
-
+ind = find(density(:,3)>0);
+density = density(ind, :);
+induniq = induniq{ind};
 

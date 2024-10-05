@@ -189,7 +189,7 @@ for j = 1: size(migtmr,1)
   migtmrdum(j,1) = newx;
   migtmrdum(j,2) = newy;
 end
-p2=scatter(ax,timevecbst,migtmrdum(:,1),msize*3/4,'rs','linewidth',0.75);
+% p2=scatter(ax,timevecbst,migtmrdum(:,1),msize*3/4,'rs','linewidth',0.75);
 % create fit object
 [fitobjtmr,goftmr,outtmr] = fit(timevecbst,migtmrdum(:,1),fttpfree,'Robust',...
   'Bisquare','StartPoint',[1 1]);
@@ -197,32 +197,33 @@ p2=scatter(ax,timevecbst,migtmrdum(:,1),msize*3/4,'rs','linewidth',0.75);
 statstmr = statsofrobustlnfit(fitobjtmr,goftmr,outtmr,timevecbst,migtmrdum(:,1));
 restmr=statstmr.output.residuals;
 fittmr = feval(fitobjtmr,timevecbst);
-plot(ax,timevecbst,fittmr,'--','linewidth',1.5,'color','r');
-text(ax,0.99,0.22,sprintf('Speed: %.1f m/s',statstmr.slope*1e3),...
-  'HorizontalAlignment','right','Units','normalized','FontSize',8,'color','r');
-text(ax,0.99,0.17,sprintf('Pearson: %.2f',statstmr.pearwt),...
-  'HorizontalAlignment','right','Units','normalized','FontSize',8,'color','r');
+% plot(ax,timevecbst,fittmr,'--','linewidth',1.5,'color','r');
+% text(ax,0.99,0.22,sprintf('Speed: %.1f m/s',statstmr.slope*1e3),...
+%   'HorizontalAlignment','right','Units','normalized','FontSize',8,'color','r');
+% text(ax,0.99,0.17,sprintf('Pearson: %.2f',statstmr.pearwt),...
+%   'HorizontalAlignment','right','Units','normalized','FontSize',8,'color','r');
 %%%%%%%%%%%%%%% above, projections of loc of tremors within the same win
 
-figure; hold on; 
-binw=0.1;
-histogram(reslfe,'binw',binw,'normalization','probability');
-histogram(restmr,'binw',binw,'normalization','probability');
-[mu1,sigma1]=normfit(reslfe);
-x=-2.5:binw:2.5; 
-yfit1=normpdf(x,mu1,sigma1)*binw;
-plot(x,yfit1,'b-','LineWidth',2);
-std1=std(reslfe);
-text(0.5,0.5,sprintf('%.1f',std1),'Units','normalized','Color','b');
+%%%distribution of fitting misfit
+% figure; hold on; 
+% binw=0.1;
+% histogram(reslfe,'binw',binw,'normalization','probability');
+% histogram(restmr,'binw',binw,'normalization','probability');
+% [mu1,sigma1]=normfit(reslfe);
+% x=-2.5:binw:2.5; 
+% yfit1=normpdf(x,mu1,sigma1)*binw;
+% plot(x,yfit1,'b-','LineWidth',2);
+% std1=std(reslfe);
+% text(0.5,0.5,sprintf('%.1f',std1),'Units','normalized','Color','b');
+% 
+% [mu2,sigma2]=normfit(restmr(abs(restmr)<3));
+% yfit2=normpdf(x,mu2,sigma2)*binw;
+% plot(x,yfit2,'r-','LineWidth',2);
+% std2=std(restmr(abs(restmr)<3));
+% text(0.5,0.4,sprintf('%.1f',std2),'Units','normalized','Color','r');
 
-[mu2,sigma2]=normfit(restmr(abs(restmr)<3));
-yfit2=normpdf(x,mu2,sigma2)*binw;
-plot(x,yfit2,'r-','LineWidth',2);
-std2=std(restmr(abs(restmr)<3));
-text(0.5,0.4,sprintf('%.1f',std2),'Units','normalized','Color','r');
-
-
-lgd=legend(ax,[p1,p2],'LFE', '4-s tremor','Location','northwest');
+lgd=legend(ax,[p1],'LFE','Location','northwest');
+% lgd=legend(ax,[p1,p2],'LFE', '4-s tremor','Location','northwest');
 set(lgd.BoxFace, 'ColorType','truecoloralpha', 'ColorData',uint8(255*[1;1;1;.8]));
 if isequal(ttype,'tori')
   xlabel(ax,'Relative origin time (s)');

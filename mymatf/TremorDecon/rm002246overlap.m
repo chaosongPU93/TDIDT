@@ -96,6 +96,7 @@ sps=160;     % samples per second
 %% identify and locate each MB's LFEs 
 nlfe1 = 0;
 nlfe2 = 0;
+ndup = 0;
 
 % bostuni1 = [];
 % bostuni2 = [];
@@ -162,6 +163,7 @@ for id = 1: nd
   tmp = [bostuni1; bostuni2; bostdup];
   tmp = sortrows(tmp,5);
   bostuni = [bostuni; tmp];
+  ndup = ndup+length(idup1);
   
   if pltflag
     f = initfig(15,9,6,1); %initialize fig

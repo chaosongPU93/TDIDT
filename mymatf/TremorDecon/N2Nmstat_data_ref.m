@@ -69,17 +69,17 @@ load(strcat(rstpath, '/MAPS/',savefile));
 % keyboard
 
 %%
-% %%%param for secondary sources removed
-% locxyprojall = allbstsig.locxyprojall;
-% tarvlsplstall = allbstsig.impindepall(:,1);
-% nsrc = allbstsig.nsrc;
-% imp = allbstsig.impindepall;
-% locxyprojalln = allbstnoi.locxyprojall;
-% tarvlsplstalln = allbstnoi.impindepall(:,1);
-% nsrcn = allbstnoi.nsrc;
-% impn = allbstnoi.impindepall;
-% supertstr = 'Secondary sources removed';
-% fnsuffix = [];
+%%%param for secondary sources removed
+locxyprojall = allbstsig.locxyprojall;
+tarvlsplstall = allbstsig.impindepall(:,1);
+nsrc = allbstsig.nsrc;
+imp = allbstsig.impindepall;
+locxyprojalln = allbstnoi.locxyprojall;
+tarvlsplstalln = allbstnoi.impindepall(:,1);
+nsrcn = allbstnoi.nsrc;
+impn = allbstnoi.impindepall;
+supertstr = 'Secondary sources removed';
+fnsuffix = [];
 
 % dtarvlnn1 = allbstsig.dtarvlnn1all;
 % dtarvlnn2 = allbstsig.dtarvlnn2all;
@@ -101,17 +101,17 @@ load(strcat(rstpath, '/MAPS/',savefile));
 % dtarvlpltn = dtarvlnn1n;
 % m = 5;
 
-%%%param for further checked at KLNB
-locxyprojall = allbstsig.locxyproj4thall;
-tarvlsplstall = allbstsig.impindep4thall(:,1);
-nsrc = allbstsig.nsrc4th;
-imp = allbstsig.impindep4thall;
-locxyprojalln = allbstnoi.locxyproj4thall;
-tarvlsplstalln = allbstnoi.impindep4thall(:,1);
-nsrcn = allbstnoi.nsrc4th;
-impn = allbstnoi.impindep4thall;
-supertstr = 'Further checked at KLNB';
-fnsuffix = '4th';
+% %%%param for further checked at KLNB
+% locxyprojall = allbstsig.locxyproj4thall;
+% tarvlsplstall = allbstsig.impindep4thall(:,1);
+% nsrc = allbstsig.nsrc4th;
+% imp = allbstsig.impindep4thall;
+% locxyprojalln = allbstnoi.locxyproj4thall;
+% tarvlsplstalln = allbstnoi.impindep4thall(:,1);
+% nsrcn = allbstnoi.nsrc4th;
+% impn = allbstnoi.impindep4thall;
+% supertstr = 'Further checked at KLNB';
+% fnsuffix = '4th';
 
 impuse = imp;
 nsrcuse = nsrc;
@@ -128,19 +128,19 @@ typepltnoi = 1; %plot noise
 m = 1;
 nbst = size(trange,1);
 dtcut = 0.25*m+0.125;
-[ampplt,dtarvlplt]=med_amp_incluster(nbst,imp,nsrc,m);
+[ampplt,dtarvlplt]=med_amp_incluster(nbst,imp,nsrc,m);  %median amp and dt between N and N-m
 [amppltn,dtarvlpltn]=med_amp_incluster(nbst,impn,nsrcn,m);
-
 % keyboard
+%%
 widin = 8.4;  % maximum width allowed is 8.5 inches
 htin = 3.5;   % maximum height allowed is 11 inches
 nrow = 1;
 ncol = 3;
 f = initfig(widin,htin,nrow,ncol); %initialize fig
 
-axpos = [0.07 0.1 0.28 0.8;
-         0.36 0.1 0.28 0.8;  
-         0.71 0.1 0.28 0.8];
+axpos = [0.07 0.1 0.275 0.8;
+         0.36 0.1 0.275 0.8;  
+         0.715 0.1 0.275 0.8];
 for isub = 1:nrow*ncol
   set(f.ax(isub), 'position', axpos(isub,:));
 end
@@ -224,16 +224,17 @@ nolabels(ax,3);
 hold(ax,'off');
 
 mmax = 5;
-scale = 'linear';
-% scale = 'log10';
+% scale = 'linear';
+scale = 'log10';
 ax=f.ax(3); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
 [ax,ampbincnt,Nbnall,fracdtb,Nbnnall,fracdtbn]=...
   plt_fracdt_NNm_mmax(ax,nbst,imp,nsrc,impn,nsrcn,mmax,sps,typepltnoi,scale);
-  
+
+keyboard
+
 fname = strcat('dtnn1binbyamp.pdf');
 print(f.fig,'-dpdf',...
   strcat('/home/data2/chaosong/CurrentResearch/Song_Rubin_2024/figures/',fname));
-keyboard
 %%
 %%%summarize the whole catalog, diff arrival time and fractions, data and noise together
 f1 = initfig(5.5,4,1,1); %initialize fig

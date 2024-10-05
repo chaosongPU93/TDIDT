@@ -76,13 +76,13 @@ if remake
   ind = setdiff(1:size(temp,1), indnan);
   newcat = newcatfull(ind,:);
 
-%   %save to file
-%   fid = fopen(strcat(workpath,'/BOSTOCK/total_mag_detect_0000_cull_NEW_compiled.txt'),'w+');
-%   fprintf(fid,'%d %d %d %d %e %f %f %f %f %f %f %d \n', newcat'); 
-%   fclose(fid);
-%   fid = fopen(strcat(workpath,'/BOSTOCK/total_mag_detect_0000_cull_NEW_compiledfull.txt'),'w+');
-%   fprintf(fid,'%d %d %d %d %e %f %f %f %f %f %f %d \n', newcatfull'); 
-%   fclose(fid);
+  %save to file
+  fid = fopen(strcat(workpath,'/BOSTOCK/total_mag_detect_0000_cull_NEW_compiled.txt'),'w+');
+  fprintf(fid,'%d %d %d %d %e %f %f %f %f %f %f %d \n', newcat'); 
+  fclose(fid);
+  fid = fopen(strcat(workpath,'/BOSTOCK/total_mag_detect_0000_cull_NEW_compiledfull.txt'),'w+');
+  fprintf(fid,'%d %d %d %d %e %f %f %f %f %f %f %d \n', newcatfull'); 
+  fclose(fid);
   
 else
   newcat = load(strcat(workpath,'/BOSTOCK/total_mag_detect_0000_cull_NEW_compiled.txt'));

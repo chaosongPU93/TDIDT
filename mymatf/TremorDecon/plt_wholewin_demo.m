@@ -289,10 +289,10 @@ if ~isempty(locxyproj4th) && ~isempty(stats4th) && ~isempty(locxy) && ~isempty(l
   %   'MarkerEdgeColor','k');
   p1=scatter(ax,timevec4th/sps,locxyproj4th(:,1),msize*refscl4th,[.4 .4 .4],...
     'filled','o','MarkerEdgeColor','w');
-  %%%project the removed sources along the same direction as the preserved ones
-  [~,~,locxyprojrem] = customprojection(locxy(indremove,1:2),angrmse4th);
-  p2=scatter(ax,timevec(indremove)/sps,locxyprojrem(:,1),...
-    msize*refscl(indremove),'r','linewidth',0.75);
+%   %%%project the removed sources along the same direction as the preserved ones
+%   [~,~,locxyprojrem] = customprojection(locxy(indremove,1:2),angrmse4th);
+%   p2=scatter(ax,timevec(indremove)/sps,locxyprojrem(:,1),...
+%     msize*refscl(indremove),'r','linewidth',0.75);
   % linear robust least square
   fttpfree = fittype( @(a,b,x) a*x+b);
   fitobjproj = fit(timevec4th/sps, locxyproj4th(:,1),fttpfree,'Robust','Bisquare',...
@@ -307,22 +307,23 @@ if ~isempty(locxyproj4th) && ~isempty(stats4th) && ~isempty(locxy) && ~isempty(l
     'HorizontalAlignment','right','Units','normalized','FontSize',8);
   text(ax,0.99,0.05,sprintf('Pearson: %.2f',stats4th.pearwt),...
     'HorizontalAlignment','right','Units','normalized','FontSize',8);
-  if length(indremove) >=2
-    %%%linear fit to removed srcs along the same prop direc as 4th srcs
-    [fitobj2,gof2,out2] = fit(timevec(indremove)/sps,locxyprojrem(:,1),fttpfree,...
-      'Robust','Bisquare','StartPoint',[1 1]);
-    %%%Some statistics
-    statsrem = statsofrobustlnfit(fitobj2,gof2,out2,timevec(indremove)/sps,...
-      locxyprojrem(:,1));
-    % output fit parameters
-    fitproj2 = feval(fitobj2,timevec(indremove)/sps);
-    plot(ax,timevec(indremove)/sps,fitproj2,'--','linewidth',1.5,'color','r');
-    text(ax,0.99,0.22,sprintf('Speed: %.1f m/s',statsrem.slope*1e3),...
-      'HorizontalAlignment','right','Units','normalized','FontSize',8,'color','r');
-    text(ax,0.99,0.17,sprintf('Pearson: %.2f',statsrem.pearwt),...
-      'HorizontalAlignment','right','Units','normalized','FontSize',8,'color','r');
-  end
-  lgd=legend(ax,[p1 p2],'Preserved','Discarded','Location','northwest'); %,'Orientation','horizontal'
+%   if length(indremove) >=2
+%     %%%linear fit to removed srcs along the same prop direc as 4th srcs
+%     [fitobj2,gof2,out2] = fit(timevec(indremove)/sps,locxyprojrem(:,1),fttpfree,...
+%       'Robust','Bisquare','StartPoint',[1 1]);
+%     %%%Some statistics
+%     statsrem = statsofrobustlnfit(fitobj2,gof2,out2,timevec(indremove)/sps,...
+%       locxyprojrem(:,1));
+%     % output fit parameters
+%     fitproj2 = feval(fitobj2,timevec(indremove)/sps);
+%     plot(ax,timevec(indremove)/sps,fitproj2,'--','linewidth',1.5,'color','r');
+%     text(ax,0.99,0.22,sprintf('Speed: %.1f m/s',statsrem.slope*1e3),...
+%       'HorizontalAlignment','right','Units','normalized','FontSize',8,'color','r');
+%     text(ax,0.99,0.17,sprintf('Pearson: %.2f',statsrem.pearwt),...
+%       'HorizontalAlignment','right','Units','normalized','FontSize',8,'color','r');
+%   end
+  lgd=legend(ax,[p1],'Preserved','Location','northwest'); %,'Orientation','horizontal'
+%   lgd=legend(ax,[p1 p2],'Preserved','Discarded','Location','northwest'); %,'Orientation','horizontal'
   set(lgd.BoxFace, 'ColorType','truecoloralpha', 'ColorData',uint8(255*[1;1;1;.8]));
 else
   text(ax,0.99,0.10,'No projection can be made',...

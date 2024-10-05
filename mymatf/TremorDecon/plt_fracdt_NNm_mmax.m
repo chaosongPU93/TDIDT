@@ -47,18 +47,18 @@ for m=1:mmax
   dtcut = 0.25*m+0.125;
 
   %for larger m, use fewer bins for useful statistics
-  if m<=2
+%   if m<=2
     nbin = 8;
-  elseif m>2 && m<=6
-    nbin = 5;
-  elseif m>6 && m<=10
-    nbin = 3;
-  elseif m>10 && m<=12  
-    nbin = 2;
-  elseif m>12
-%     nbin = 1;
-    break   %skip the rest, as we want to see the variation with amp, 1 bin is not enough
-  end
+%   elseif m>2 && m<=6
+%     nbin = 5;
+%   elseif m>6 && m<=10
+%     nbin = 3;
+%   elseif m>10 && m<=12  
+%     nbin = 2;
+%   elseif m>12
+% %     nbin = 1;
+%     break   %skip the rest, as we want to see the variation with amp, 1 bin is not enough
+%   end
 
   %%%DATA
   %%%%%%%%%% if bin by amp with a equal number
@@ -116,7 +116,8 @@ for m=1:mmax
 end
 
 % color = plasma(mmaxnonzero);
-color = flipud(gradientblue(mmaxnonzero));
+% color = flipud(gradientblue(mmaxnonzero));
+color = gradientblue(mmaxnonzero);
 for m = 1:mmaxnonzero
   %plot data
   hold(ax,'on'); ax.Box='on'; grid(ax,'on');
@@ -129,28 +130,29 @@ for m = 1:mmaxnonzero
   tmp4 = tmp4(tmp2>0);
   if strcmp(scale,'log10')
     ax.YAxis.Scale = 'log'; %make y axis log10 scale
-    yticks(ax,[0.1 0.2 0.5 1 2 5 10 20 50 100]);
+    yticks(ax,[0.001 0.01 0.02 0.04 0.1 0.2 0.4 1]);
     % tmp2 = log10(tmp2);
 %     ylblstr = 'log_{10}{Frac. of diff. arrival w/i 0.25*m+0.125 s}';
     % ylblstr = 'log_{10}{Fraction}';
     % tmp3 = log10(tmp3);
     % ylim(ax,[-2.5 0]);
     % ylblstr = '% of measurements';
-    ylblstr = 'Fraction';
-    ylim(ax,[0.1 100]);
+    % ylblstr = 'Fraction';
+    ylblstr = 'Frac. of arrival diff. w/i (m-1/2)*0.25 s';
+    ylim(ax,[0.001 1]);
 %     ylim(ax,[-3 0]);
   else
-%     ylblstr = 'Frac. of diff. arrival w/i 0.25*m+0.125 s';
-    ylblstr = 'Fraction';
+    ylblstr = 'Frac. of arrival diff. w/i (m-1/2)*0.25 s';
+    % ylblstr = 'Fraction';
     % ylblstr = '% of measurements';
     ylim(ax,[0 1]);
   end
-%   p(m) = plot(ax,log10(tmp1),tmp2,'-','Color',color(m,:),'linew',1,...
-%     'marker','o','markersize',4,'markerfacec',color(m,:));
-  p(m) = plot(ax,log10(tmp1),tmp2,'-','Color',color(m,:),'linew',1);
-  scatter(ax,log10(tmp1),tmp2,log10(tmp4)*10,color(m,:),'filled','MarkerEdgeColor','k');
-  label{m} = sprintf('m=%d',m);
-  xlabel(ax,'log_{10}{Median amp.}');
+  p(m) = plot(ax,log10(tmp1),tmp2,'-','Color',color(m,:),'linew',1,...
+    'marker','o','markersize',4,'markerfacec',color(m,:));
+  % p(m) = plot(ax,log10(tmp1),tmp2,'-','Color',color(m,:),'linew',1);
+  % scatter(ax,log10(tmp1),tmp2,log10(tmp4)*10,color(m,:),'filled','MarkerEdgeColor','k');
+  label{m} = sprintf('m=%d',m+1);
+  xlabel(ax,'log_{10}{Median event amp.}');
   ylabel(ax,ylblstr);
 %   xlim(ax,[-0.9 0.1]);
   xlim(ax,[-1 0.2]);
@@ -219,9 +221,9 @@ for m = 1:mmaxnonzero
 end
 
 if strcmp(scale,'log10')
-  legend(ax,p,label,'NumColumns',2,'Location','south');
+  legend(ax,p,label,'NumColumns',2,'Location','south','FontSize',8);
 else
-  legend(ax,p,label,'NumColumns',2,'Location','north');
+  legend(ax,p,label,'NumColumns',2,'Location','north','FontSize',8);
 end
 
 % ax.YAxis.Scale = 'log'; %make y axis log10 scale

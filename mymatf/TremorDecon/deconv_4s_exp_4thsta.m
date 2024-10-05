@@ -76,6 +76,7 @@ indenv123 = [1,3,8,10,31,67,78,81,82,91,102,108,114,116,121,129,146,153,167,175]
 %indices of bursts whose CC of sig-wlet cc between sta 1,2,3 are high, above 75th percentile
 indswcc123 = [1,2,3,6,8,18,21,46,56,77,78,82,83,84,102,107,114,125,127,145,169];
 
+
 sps = 160;
 
 %% call function 'deconv_4s_exp_rand_fn', high-correlation VS low-correlation bursts, DATA VS NOISE

@@ -1,12 +1,24 @@
 % plt_clusterintime.m
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % This is the script in particular to plot a summary figure for the clustering
-% of LFEs in time, including the inter-event time (N to N-1) in linear scale;
-% in log scale for data and noise, 3-sta and 4-sta cats, and finally the
-% fraction of events in clusters. In total, 6 panels.
-% A combination of 'plt_difftime_NNm', '' 
-% and 'plt_frac_uniqevt_incluster'
+% of LFEs in time, including 
+% -- 1. the inter-event time (N to N-1) in linear scale (also plotted in
+% 'N2Nmstat_data_ref.m'); 
+% -- 2. inter-event time in log scale for data and noise, 3-sta and 4-sta cats
+% (also plotted in 'lfeinterevttime.m');
+% -- 3. and finally the fraction of events in clusters. 
 % 
+% In total, 6 panels. Basically, this is a combination of 'plt_difftime_NNm.m', 
+% 'lfeinterevttime.m', and 'plt_frac_uniqevt_incluster.m'.
+%
+% --2024/07/15, seems like the 2nd panel of the distribution of inter-event 
+% time in log scale, binned by time is less meaningful now. Rather, if the 
+% underlying source process is Poisson point process, then the inter-event time
+% obeys a exponential distribution. In other words, Prob(T>t0) = e^(-\lamda t),
+% where \lamda is expected the decay rate. The product of \lamda and duration 
+% is the expected number of measurements. In semi-log plot, the distribution 
+% should be very close to a straight line.
+%  
 %
 %
 %
@@ -55,14 +67,19 @@ ftrans = 'interpchao';
 
 %%%load data
 % savefile = 'deconv_stats4th_allbstsig.mat';
-savefile = 'deconv_stats4th_no23_allbstsig.mat';
-% savefile = 'deconv_stats4th_no23_allbstsig0.25s.mat';
+% savefile = 'deconv_stats4th_no23_allbstsig.mat';
+savefile = 'deconv_stats4th_no23_allbstsig0.25s.mat';
 load(strcat(rstpath, '/MAPS/',savefile));
+
 % savefile = 'deconv_stats4th_allbstnoi.mat';
-savefile = 'deconv_stats4th_no23_allbstnoi.mat';
-% savefile = 'deconv_stats4th_no23_allbstnoi0.25s.mat';
+% savefile = 'deconv_stats4th_no23_allbstnoi.mat';
+savefile = 'deconv_stats4th_no23_allbstnoi0.25s.mat';
 load(strcat(rstpath, '/MAPS/',savefile));
- 
+
+
+%%%whether to save the figure
+% savefig = 1;
+savefig = 0;
 
 %%
 %%%param for secondary sources removed
@@ -79,8 +96,121 @@ nsrcn4th = allbstnoi.nsrc4th;
 impn4th = allbstnoi.impindep4thall;
 supertstr4th = '4-station';
 
+%% inter-event time, ie. time from each to its preceeding event, N to N-1
+m = 1;
+nbst = size(trange,1);
+dtcut = 0.25*m+0.125;
+[amp,dtinter]=med_amp_incluster(nbst,imp,nsrc,m);
+[ampn,dtintern]=med_amp_incluster(nbst,impn,nsrcn,m);
+[amp4th,dtinter4th]=med_amp_incluster(nbst,imp4th,nsrc4th,m);
+[ampn4th,dtintern4th]=med_amp_incluster(nbst,impn4th,nsrcn4th,m);
 
-%%
+%% plot the probability of inter-event time > t separately
+widin = 6.5;  % maximum width allowed is 8.5 inches
+htin = 3.5;   % maximum height allowed is 11 inches
+nrow = 1;
+ncol = 2;
+f = initfig(widin,htin,nrow,ncol); %initialize fig
+pltxran = [0.08 0.98]; pltyran = [0.12 0.98]; % optimal axis location
+pltxsep = 0.07; pltysep = 0.05;
+optaxpos(f,nrow,ncol,pltxran,pltyran,pltxsep,pltysep);
+
+xran = [0 20];
+yran = [1e-4 1];
+% xran = [0 7];
+% yran = [5e-4 1];
+
+ax=f.ax(1); hold(ax,'on'); ax.Box = 'on'; grid(ax, 'on'); set(ax,'YScale','log');
+xlim(ax,xran);
+ylim(ax,yran);
+aa=sort(dtinter(:,1)/sps);
+bb = prob_geq(aa);  %probability of inter-event time > t0
+p(1)=plot(ax,bb(:,1),bb(:,2),'k-','LineWidth',1.5);
+label{1}='Data';
+fitxran = [2 xran(2)]; 
+ind = find(bb(:,1)>=fitxran(1) & bb(:,1)<=fitxran(2));
+fitstruct=robustexpfit(bb(ind,1),bb(ind,2),'log10',[1e3 -1]);
+fitobj=fitstruct.fitobj;
+coef=coeffvalues(fitobj); slpd=coef(2); intcptd=coef(1);
+xfit = xran(1):1e-2:xran(2);
+yfitd = feval(fitobj,xfit);
+plot(ax,xfit,yfitd,'k--','LineWidth',1);
+
+aa=sort(dtintern(:,1)/sps);
+bb = prob_geq(aa);  %probability of inter-event time > t0
+p(2)=plot(ax,bb(:,1),bb(:,2),'r-','LineWidth',1.5);
+label{2}='Synthetic noise';
+ind = find(bb(:,1)>=fitxran(1) & bb(:,1)<=fitxran(2));
+fitstruct=robustexpfit(bb(ind,1),bb(ind,2),'log10',[1e3 -1]);
+fitobj=fitstruct.fitobj;
+coef=coeffvalues(fitobj); slpn=coef(2); intcptn=coef(1);
+yfitn = feval(fitobj,xfit);
+plot(ax,xfit,yfitn,'r--','LineWidth',1);
+
+text(ax,0.58,0.74,sprintf('slope: %.3f;\nintercept: %.3f',slpd,intcptd),'Units','normalized','FontSize',9,...
+  'Color','k');
+text(ax,0.58,0.62,sprintf('slope: %.3f;\nintercept: %.3f',slpn,intcptn),'Units','normalized','FontSize',9,...
+  'Color','r');
+text(ax,0.58,0.5,sprintf('fit w/i [%.1f, %.1f] s',fitxran(1),fitxran(2)),'Units',...
+  'normalized','FontSize',9);
+
+plot(ax,ax.XLim,[1 1]/length(dtinter(:,1)),'k:');
+
+text(ax,0.58,0.94,supertstr,'HorizontalAlignment','left','Units','normalized',...
+  'fontsize',10);
+text(ax,0.98,0.94,'a','FontSize',10,'unit','normalized','EdgeColor','k',...
+  'Margin',1,'backgroundcolor','w','HorizontalAlignment','right');
+xlabel(ax,'Time t (s)','FontSize',10);
+ylabel(ax,sprintf('Prob(inter-event time \x2265 t)'),'FontSize',10);
+
+ax=f.ax(2); hold(ax,'on'); ax.Box = 'on'; grid(ax, 'on'); set(ax,'YScale','log');
+xlim(ax,xran);
+ylim(ax,yran);
+aa=sort(dtinter4th(:,1)/sps);
+bb = prob_geq(aa);  %probability of inter-event time > t0
+plot(ax,bb(:,1),bb(:,2),'k-','LineWidth',1.5);
+ind = find(bb(:,1)>=fitxran(1) & bb(:,1)<=fitxran(2));
+fitstruct=robustexpfit(bb(ind,1),bb(ind,2),'log10',[1e3 -1]);
+fitobj=fitstruct.fitobj;
+coef=coeffvalues(fitobj); slpd4th=coef(2); intcptd4th=coef(1);
+yfitd = feval(fitobj,xfit);
+plot(ax,xfit,yfitd,'k--','LineWidth',1);
+
+aa=sort(dtintern4th(:,1)/sps);usgs
+bb = prob_geq(aa);  %probability of inter-event time > t0
+plot(ax,bb(:,1),bb(:,2),'r-','LineWidth',1.5);
+ind = find(bb(:,1)>=fitxran(1) & bb(:,1)<=fitxran(2));
+fitstruct=robustexpfit(bb(ind,1),bb(ind,2),'log10',[1e3 -1]);
+fitobj=fitstruct.fitobj;
+coef=coeffvalues(fitobj); slpn4th=coef(2); intcptn4th=coef(1);
+yfitn = feval(fitobj,xfit);
+plot(ax,xfit,yfitn,'r--','LineWidth',1);
+
+text(ax,0.02,0.29,sprintf('slope: %.3f;\nintercept: %.3f',slpd4th,intcptd4th),'Units','normalized','FontSize',9,...
+  'Color','k');
+text(ax,0.02,0.17,sprintf('slope: %.3f;\nintercept: %.3f',slpn4th,intcptn4th),'Units','normalized','FontSize',9,...
+  'Color','r');
+text(ax,0.02,0.05,sprintf('fit w/i [%.1f, %.1f] s',fitxran(1),fitxran(2)),'Units',...
+  'normalized','FontSize',9);
+
+plot(ax,ax.XLim,[1 1]/length(dtinter(:,1)),'k:');
+text(ax,0.58,0.94,supertstr4th,'HorizontalAlignment','left','Units','normalized',...
+  'fontsize',10);
+text(ax,0.98,0.94,'b','FontSize',10,'unit','normalized','EdgeColor','k',...
+  'Margin',1,'backgroundcolor','w','HorizontalAlignment','right');
+xlabel(ax,'Time t (s)','FontSize',10);
+% ylabel(ax,sprintf('Prob(inter-event time \x2265 t)'),'FontSize',10);
+
+if savefig
+  fname = sprintf('probintert%ds.pdf',xran(2));
+  print(f.fig,'-dpdf',...
+    strcat('/home/data2/chaosong/CurrentResearch/Song_Rubin_2024/figures/',fname));
+end
+
+% keyboard
+
+
+%% plot the summary of inter-event time, Prob, and clustering
 widin = 8.4;  % maximum width allowed is 8.5 inches
 htin = 5.5;   % maximum height allowed is 11 inches
 nrow = 2;
@@ -90,17 +220,7 @@ pltxran = [0.07 0.99]; pltyran = [0.08 0.98]; % optimal axis location
 pltxsep = 0.07; pltysep = 0.05;
 optaxpos(f,nrow,ncol,pltxran,pltyran,pltxsep,pltysep);
 
-
-%%%inter-event time, ie. time from each to its preceeding event, N to N-1
-m = 1;
-nbst = size(trange,1);
-dtcut = 0.25*m+0.125;
-[amp,dtinter]=med_amp_incluster(nbst,imp,nsrc,m);
-[ampn,dtintern]=med_amp_incluster(nbst,impn,nsrcn,m);
-[amp4th,dtinter4th]=med_amp_incluster(nbst,imp4th,nsrc4th,m);
-[ampn4th,dtintern4th]=med_amp_incluster(nbst,impn4th,nsrcn4th,m);
-
-%% histogram of inter-event time, linear scale
+%%% histogram of inter-event time, linear scale
 xran = [0 2];
 yran = [0 0.15];
 
@@ -110,12 +230,12 @@ binedge = (xran(1)-binwdt/2: binwdt: xran(2)+binwdt/2)';
 bincnt = (xran(1): binwdt: xran(2))';
 
 ax=f.ax(1); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
-patnoi = [0 yran(2);
+patdtcut = [0 yran(2);
           dtcut yran(2);
           dtcut yran(1);
           0 yran(1);
           0 yran(2)];
-patch(ax,patnoi(:,1),patnoi(:,2),'k','Facealpha',0.15,'edgecolor','none');
+patch(ax,patdtcut(:,1),patdtcut(:,2),'k','Facealpha',0.15,'edgecolor','none');
 Nd=histcounts(dtinter(:,1)/sps,binedge,'normalization','count');
 Ndn = reshape(Nd,[],1)./length(dtinter);
 frac = sum(dtinter(:,1)/sps<=dtcut)/length(dtinter);
@@ -155,12 +275,12 @@ longticks(ax,2);
 hold(ax,'off');
 
 ax=f.ax(4); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
-patnoi = [0 yran(2);
+patdtcut = [0 yran(2);
           dtcut yran(2);
           dtcut yran(1);
           0 yran(1);
           0 yran(2)];
-patch(ax,patnoi(:,1),patnoi(:,2),'k','Facealpha',0.15,'edgecolor','none');
+patch(ax,patdtcut(:,1),patdtcut(:,2),'k','Facealpha',0.15,'edgecolor','none');
 Nd4th=histcounts(dtinter4th(:,1)/sps,binedge,'normalization','count');
 Nd4thn = reshape(Nd4th,[],1)./length(dtinter4th);
 frac4th = sum(dtinter4th(:,1)/sps<=dtcut)/length(dtinter4th);
@@ -185,8 +305,8 @@ text(ax,0.5,0.94,supertstr4th,'HorizontalAlignment','left','Units','normalized',
 text(ax,0.98,0.94,'d','FontSize',10,'unit','normalized','EdgeColor','k',...
   'Margin',1,'backgroundcolor','w','HorizontalAlignment','right');
 legend(ax,p,label,'Location','east');
-ylabel(ax,'Normalized count');
-xlabel(ax,'Inter-event time dt (s)');
+ylabel(ax,'Normalized count','FontSize',10);
+xlabel(ax,'Inter-event time (s)','FontSize',10);
 % xlabel(ax,sprintf('Diff. arrival between sources N and N-%d (s)',m));
 xlim(ax,xran);
 % if nsep == 1
@@ -298,59 +418,49 @@ hold(ax,'off');
 % hold(ax,'off');
 
 %% probability of inter-event time > t0, log scale
-xran = [0 20];
-yran = [1e-4 1];
+% xran = [0 20];
+% yran = [1e-4 1];
+xran = [0 7];
+yran = [5e-4 1];
 
 ax=f.ax(2); hold(ax,'on'); ax.Box = 'on'; grid(ax, 'on'); set(ax,'YScale','log');
 xlim(ax,xran);
 ylim(ax,yran);
 aa=sort(dtinter(:,1)/sps);
-% bb=(length(aa):-1:1)/length(aa);
-[unival, ~, ind] = unique(aa);
-counts = accumarray(ind, 1);
-countsleq=zeros(length(counts),1);
-for i=1:length(counts)
-  countsleq(i,1)=sum(counts(i:end));
-end
-% Combine the unique values and their counts into a two-column matrix
-bb = [unival countsleq/length(aa)];
-
+bb = prob_geq(aa);  %probability of inter-event time > t0
 p(1)=plot(ax,bb(:,1),bb(:,2),'k-','LineWidth',1.5);
 label{1}='Data';
 fitxran = [2 xran(2)]; 
 ind = find(bb(:,1)>=fitxran(1) & bb(:,1)<=fitxran(2));
 fitstruct=robustexpfit(bb(ind,1),bb(ind,2),'log10',[1e3 -1]);
 fitobj=fitstruct.fitobj;
-coef=coeffvalues(fitobj); slpd=coef(2);
+coef=coeffvalues(fitobj); slpd=coef(2); intcptd=coef(1);
 xfit = xran(1):1e-2:xran(2);
 yfitd = feval(fitobj,xfit);
 plot(ax,xfit,yfitd,'k--','LineWidth',1);
 
 aa=sort(dtintern(:,1)/sps);
-% bb=(length(aa):-1:1)/length(aa);
-[unival, ~, ind] = unique(aa);
-counts = accumarray(ind, 1);
-countsleq=zeros(length(counts),1);
-for i=1:length(counts)
-  countsleq(i,1)=sum(counts(i:end));
-end
-% Combine the unique values and their counts into a two-column matrix
-bb = [unival countsleq/length(aa)];
-
+bb = prob_geq(aa);  %probability of inter-event time > t0
 p(2)=plot(ax,bb(:,1),bb(:,2),'r-','LineWidth',1.5);
 label{2}='Synthetic noise';
 ind = find(bb(:,1)>=fitxran(1) & bb(:,1)<=fitxran(2));
 fitstruct=robustexpfit(bb(ind,1),bb(ind,2),'log10',[1e3 -1]);
 fitobj=fitstruct.fitobj;
-coef=coeffvalues(fitobj); slpn=coef(2);
+coef=coeffvalues(fitobj); slpn=coef(2); intcptn=coef(1);
 yfitn = feval(fitobj,xfit);
 plot(ax,xfit,yfitn,'r--','LineWidth',1);
 
-text(ax,0.45,0.75,sprintf('slope: %.3f',slpd),'Units','normalized','FontSize',9,...
+% text(ax,0.45,0.75,sprintf('slope: %.3f',slpd),'Units','normalized','FontSize',9,...
+%   'Color','k');
+% text(ax,0.45,0.65,sprintf('slope: %.3f',slpn),'Units','normalized','FontSize',9,...
+%   'Color','r');
+% text(ax,0.45,0.55,sprintf('fit w/i [%.1f, %.1f] s',fitxran(1),fitxran(2)),'Units',...
+%   'normalized','FontSize',9);
+text(ax,0.02,0.32,sprintf('slope: %.3f;\nintercept: %.3f',slpd,intcptd),'Units','normalized','FontSize',9,...
   'Color','k');
-text(ax,0.45,0.65,sprintf('slope: %.3f',slpn),'Units','normalized','FontSize',9,...
+text(ax,0.02,0.17,sprintf('slope: %.3f;\nintercept: %.3f',slpn,intcptn),'Units','normalized','FontSize',9,...
   'Color','r');
-text(ax,0.45,0.55,sprintf('fit w/i [%.1f, %.1f] s',fitxran(1),fitxran(2)),'Units',...
+text(ax,0.02,0.05,sprintf('fit w/i [%.1f, %.1f] s',fitxran(1),fitxran(2)),'Units',...
   'normalized','FontSize',9);
 
 plot(ax,ax.XLim,[1 1]/length(dtinter(:,1)),'k:');
@@ -366,46 +476,30 @@ ax=f.ax(5); hold(ax,'on'); ax.Box = 'on'; grid(ax, 'on'); set(ax,'YScale','log')
 xlim(ax,xran);
 ylim(ax,yran);
 aa=sort(dtinter4th(:,1)/sps);
-% bb=(length(aa):-1:1)/length(aa);
-[unival, ~, ind] = unique(aa);
-counts = accumarray(ind, 1);
-countsleq=zeros(length(counts),1);
-for i=1:length(counts)
-  countsleq(i,1)=sum(counts(i:end));
-end
-% Combine the unique values and their counts into a two-column matrix
-bb = [unival countsleq/length(aa)];
+bb = prob_geq(aa);  %probability of inter-event time > t0
 plot(ax,bb(:,1),bb(:,2),'k-','LineWidth',1.5);
 ind = find(bb(:,1)>=fitxran(1) & bb(:,1)<=fitxran(2));
 fitstruct=robustexpfit(bb(ind,1),bb(ind,2),'log10',[1e3 -1]);
 fitobj=fitstruct.fitobj;
-coef=coeffvalues(fitobj); slpd=coef(2);
+coef=coeffvalues(fitobj); slpd4th=coef(2); intcptd4th=coef(1);
 yfitd = feval(fitobj,xfit);
 plot(ax,xfit,yfitd,'k--','LineWidth',1);
 
 aa=sort(dtintern4th(:,1)/sps);
-% bb=(length(aa):-1:1)/length(aa);
-[unival, ~, ind] = unique(aa);
-counts = accumarray(ind, 1);
-countsleq=zeros(length(counts),1);
-for i=1:length(counts)
-  countsleq(i,1)=sum(counts(i:end));
-end
-% Combine the unique values and their counts into a two-column matrix
-bb = [unival countsleq/length(aa)];
+bb = prob_geq(aa);  %probability of inter-event time > t0
 plot(ax,bb(:,1),bb(:,2),'r-','LineWidth',1.5);
 ind = find(bb(:,1)>=fitxran(1) & bb(:,1)<=fitxran(2));
 fitstruct=robustexpfit(bb(ind,1),bb(ind,2),'log10',[1e3 -1]);
 fitobj=fitstruct.fitobj;
-coef=coeffvalues(fitobj); slpn=coef(2);
+coef=coeffvalues(fitobj); slpn4th=coef(2); intcptn4th=coef(1);
 yfitn = feval(fitobj,xfit);
 plot(ax,xfit,yfitn,'r--','LineWidth',1);
 
-text(ax,0.02,0.3,sprintf('slope: %.3f',slpd),'Units','normalized','FontSize',9,...
+text(ax,0.02,0.32,sprintf('slope: %.3f;\nintercept: %.3f',slpd4th,intcptd4th),'Units','normalized','FontSize',9,...
   'Color','k');
-text(ax,0.02,0.2,sprintf('slope: %.3f',slpn),'Units','normalized','FontSize',9,...
+text(ax,0.02,0.17,sprintf('slope: %.3f;\nintercept: %.3f',slpn4th,intcptn4th),'Units','normalized','FontSize',9,...
   'Color','r');
-text(ax,0.02,0.1,sprintf('fit w/i [%.1f, %.1f] s',fitxran(1),fitxran(2)),'Units',...
+text(ax,0.02,0.05,sprintf('fit w/i [%.1f, %.1f] s',fitxran(1),fitxran(2)),'Units',...
   'normalized','FontSize',9);
 
 plot(ax,ax.XLim,[1 1]/length(dtinter(:,1)),'k:');
@@ -413,9 +507,11 @@ text(ax,0.5,0.94,supertstr4th,'HorizontalAlignment','left','Units','normalized',
   'fontsize',10);
 text(ax,0.98,0.94,'e','FontSize',10,'unit','normalized','EdgeColor','k',...
   'Margin',1,'backgroundcolor','w','HorizontalAlignment','right');
-xlabel(ax,'Inter-event time dt (s)');
+% xlabel(ax,'Inter-event time dt (s)','FontSize',10);
+xlabel(ax,'Time t (s)','FontSize',10);
 % ylabel(ax,sprintf('Prob(dt%ct)',char(242)));
-ylabel(ax,sprintf('Prob(dt \x2265 t)'));
+% ylabel(ax,sprintf('Prob(dt \x2265 t)'),'FontSize',10);
+ylabel(ax,sprintf('Prob(inter-event time \x2265 t)'),'FontSize',10);
 % ylabel(ax,'Prob(dt \x2265 t)');
 
 
@@ -488,141 +584,12 @@ text(ax,0.5,0.94,supertstr4th,'HorizontalAlignment','left','Units','normalized',
 text(ax,0.98,0.94,'f','FontSize',10,'unit','normalized','EdgeColor','k',...
   'Margin',1,'backgroundcolor','w','HorizontalAlignment','right');
 
-fname = strcat('tclusteringnn1.pdf');
-print(f.fig,'-dpdf',...
-  strcat('/home/data2/chaosong/CurrentResearch/Song_Rubin_2024/figures/',fname));
+if savefig
+  fname = strcat('tclusteringnn1.pdf');
+  print(f.fig,'-dpdf',...
+    strcat('/home/data2/chaosong/CurrentResearch/Song_Rubin_2024/figures/',fname));
+end
 
-
-%%
-% widin = 8.4;  % maximum width allowed is 8.5 inches
-% htin = 4.5;   % maximum height allowed is 11 inches
-% nrow = 1;
-% ncol = 2;
-% f = initfig(widin,htin,nrow,ncol); %initialize fig
-% pltxran = [0.08 0.99]; pltyran = [0.1 0.98]; % optimal axis location
-% pltxsep = 0.08; pltysep = 0.05;
-% optaxpos(f,nrow,ncol,pltxran,pltyran,pltxsep,pltysep);
-% 
-% xran = [0 20];
-% yran = [1e-4 1];
-% % xran = [0 7];
-% % yran = [1e-3 1];
-% 
-% ax=f.ax(1); hold(ax,'on'); ax.Box = 'on'; grid(ax, 'on'); set(ax,'YScale','log');
-% xlim(ax,xran);
-% ylim(ax,yran);
-% aa=sort(dtinter(:,1)/sps);
-% % bb=(length(aa):-1:1)/length(aa);
-% [unival, ~, ind] = unique(aa);
-% counts = accumarray(ind, 1);
-% countsleq=zeros(length(counts),1);
-% for i=1:length(counts)
-%   countsleq(i,1)=sum(counts(i:end));
-% end
-% % Combine the unique values and their counts into a two-column matrix
-% bb = [unival countsleq/length(aa)];
-% 
-% p(1)=plot(ax,bb(:,1),bb(:,2),'k-','LineWidth',1.5);
-% label{1}='Data';
-% fitxran = [2 xran(2)]; 
-% ind = find(bb(:,1)>=fitxran(1) & bb(:,1)<=fitxran(2));
-% fitstruct=robustexpfit(bb(ind,1),bb(ind,2),'log10',[1e3 -1]);
-% fitobj=fitstruct.fitobj;
-% coef=coeffvalues(fitobj); slpd=coef(2);
-% xfit = xran(1):1e-2:xran(2);
-% yfitd = feval(fitobj,xfit);
-% plot(ax,xfit,yfitd,'k--','LineWidth',1);
-% 
-% aa=sort(dtintern(:,1)/sps);
-% % bb=(length(aa):-1:1)/length(aa);
-% [unival, ~, ind] = unique(aa);
-% counts = accumarray(ind, 1);
-% countsleq=zeros(length(counts),1);
-% for i=1:length(counts)
-%   countsleq(i,1)=sum(counts(i:end));
-% end
-% % Combine the unique values and their counts into a two-column matrix
-% bb = [unival countsleq/length(aa)];
-% 
-% p(2)=plot(ax,bb(:,1),bb(:,2),'r-','LineWidth',1.5);
-% label{2}='Synthetic noise';
-% ind = find(bb(:,1)>=fitxran(1) & bb(:,1)<=fitxran(2));
-% fitstruct=robustexpfit(bb(ind,1),bb(ind,2),'log10',[1e3 -1]);
-% fitobj=fitstruct.fitobj;
-% coef=coeffvalues(fitobj); slpn=coef(2);
-% yfitn = feval(fitobj,xfit);
-% plot(ax,xfit,yfitn,'r--','LineWidth',1);
-% 
-% text(ax,0.02,0.3,sprintf('slope: %.3f',slpd),'Units','normalized','FontSize',9,...
-%   'Color','k');
-% text(ax,0.02,0.2,sprintf('slope: %.3f',slpn),'Units','normalized','FontSize',9,...
-%   'Color','r');
-% text(ax,0.02,0.1,sprintf('fit w/i [%.1f, %.1f] s',fitxran(1),fitxran(2)),'Units',...
-%   'normalized','FontSize',9);
-% 
-% plot(ax,ax.XLim,[1 1]/length(dtinter(:,1)),'k:');
-% 
-% text(ax,0.5,0.94,supertstr,'HorizontalAlignment','left','Units','normalized',...
-%   'fontsize',10);
-% xlabel(ax,'Inter-event time dt (s)');
-% ylabel(ax,'P(dt>=t)');
-% 
-% ax=f.ax(2); hold(ax,'on'); ax.Box = 'on'; grid(ax, 'on'); set(ax,'YScale','log');
-% xlim(ax,xran);
-% ylim(ax,yran);
-% aa=sort(dtinter4th(:,1)/sps);
-% % bb=(length(aa):-1:1)/length(aa);
-% [unival, ~, ind] = unique(aa);
-% counts = accumarray(ind, 1);
-% countsleq=zeros(length(counts),1);
-% for i=1:length(counts)
-%   countsleq(i,1)=sum(counts(i:end));
-% end
-% % Combine the unique values and their counts into a two-column matrix
-% bb = [unival countsleq/length(aa)];
-% plot(ax,bb(:,1),bb(:,2),'k-','LineWidth',1.5);
-% ind = find(bb(:,1)>=fitxran(1) & bb(:,1)<=fitxran(2));
-% fitstruct=robustexpfit(bb(ind,1),bb(ind,2),'log10',[1e3 -1]);
-% fitobj=fitstruct.fitobj;
-% coef=coeffvalues(fitobj); slpd=coef(2);
-% yfitd = feval(fitobj,xfit);
-% plot(ax,xfit,yfitd,'k--','LineWidth',1);
-% 
-% aa=sort(dtintern4th(:,1)/sps);
-% % bb=(length(aa):-1:1)/length(aa);
-% [unival, ~, ind] = unique(aa);
-% counts = accumarray(ind, 1);
-% countsleq=zeros(length(counts),1);
-% for i=1:length(counts)
-%   countsleq(i,1)=sum(counts(i:end));
-% end
-% % Combine the unique values and their counts into a two-column matrix
-% bb = [unival countsleq/length(aa)];
-% plot(ax,bb(:,1),bb(:,2),'r-','LineWidth',1.5);
-% ind = find(bb(:,1)>=fitxran(1) & bb(:,1)<=fitxran(2));
-% fitstruct=robustexpfit(bb(ind,1),bb(ind,2),'log10',[1e3 -1]);
-% fitobj=fitstruct.fitobj;
-% coef=coeffvalues(fitobj); slpn=coef(2);
-% yfitn = feval(fitobj,xfit);
-% plot(ax,xfit,yfitn,'r--','LineWidth',1);
-% 
-% text(ax,0.02,0.3,sprintf('slope: %.3f',slpd),'Units','normalized','FontSize',9,...
-%   'Color','k');
-% text(ax,0.02,0.2,sprintf('slope: %.3f',slpn),'Units','normalized','FontSize',9,...
-%   'Color','r');
-% text(ax,0.02,0.1,sprintf('fit w/i [%.1f, %.1f] s',fitxran(1),fitxran(2)),'Units',...
-%   'normalized','FontSize',9);
-% 
-% plot(ax,ax.XLim,[1 1]/length(dtinter(:,1)),'k:');
-% text(ax,0.5,0.94,supertstr4th,'HorizontalAlignment','left','Units','normalized',...
-%   'fontsize',10);
-% xlabel(ax,'Inter-event time dt (s)');
-% ylabel(ax,'P(dt>=t)');
-% 
-% fname = sprintf('probintert%ds.pdf',xran(2));
-% print(f.fig,'-dpdf',strcat('/home/chaosong/Pictures/',fname));
-% 
-% keyboard
 
 
 

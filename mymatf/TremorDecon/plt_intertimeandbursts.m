@@ -62,7 +62,7 @@ text(ax,ax.XLim(1)+0.99*(range(ax.XLim)),1.2*ttol(2),sprintf('%d s',...
   round(ttol(2)*86400)),'FontSize',11,'horizontalalignment','right');
 text(ax,0.99,0.85,'2004','FontSize',11,'unit','normalized','horizontalalignment',...
   'right','EdgeColor','k','Margin',2);
-% ylabel(ax, 'Time (day) to the preceding detection');
+ylabel(ax, 'Time (day) to the preceding detection');
 xlabel(ax, 'Time (day) since 12 Jul. 2004');
 ylim(ax,[0, ymax]);
 longticks(ax,4);
@@ -83,7 +83,7 @@ text(ax,ax.XLim(1)+0.99*(range(ax.XLim)),1.2*ttol(3),sprintf('%d s',...
   round(ttol(3)*86400)),'FontSize',11,'horizontalalignment','right');
 text(ax,0.99,0.85,'2005','FontSize',11,'unit','normalized','horizontalalignment',...
   'right','EdgeColor','k','Margin',2);
-ylabel(ax, 'Time (day) to the preceding detection');
+% ylabel(ax, 'Time (day) to the preceding detection');
 xlabel(ax, 'Time (day) since 11 Sep. 2005');
 ylim(ax,[0, ymax]);
 longticks(ax,4);

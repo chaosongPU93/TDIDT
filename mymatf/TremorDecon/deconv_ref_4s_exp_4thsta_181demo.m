@@ -47,6 +47,8 @@ defval('rccmwsec',0.5); %moving win len in sec for computing RCC
 
 rccflag = 1; %1 means RCC weighting is used
 whichrcc = 0; %if rcc weighting, which pair is used, 0 is best 2 pairs; 1 is 12; 2 is 13; 3 is 23
+      
+saveflag = 1; %0 means don't save figures; 1 means yes
 
 %Choice to make upon the actual-used alignment at 4th stations
 if noiseflag
@@ -508,13 +510,19 @@ amprat(2,:) = minmax(greenf(:,1)')./minmax(greenf(:,3)');	% amp ratio between ma
 amprat(3,:) = minmax(greenf(:,2)')./minmax(greenf(:,3)');	% amp ratio between max at sta 3 and 1 or min  
 spread = range(greenf);   % range of the amp of template
 
-%%%plot the unfiltered and filtered templates
+%%%plot the unfiltered templates at diff stas in one panel, and filtered in another
 % plt_templates(green,greenf,stas,greenort,greenfort,lowlet,hiwlet,sps);
 % plt_templates(green,greenf,stas,[],[],lowlet,hiwlet,sps);
 
 %just the filtered templates
 % plt_templates_bp(greenf,stas,lowlet,hiwlet,sps);
 
+%plot the filtered templates at all components
+staplt = 1:7;
+winnoi = [1 3]; %empirical window for pre-arrival noise
+winsig = [4 7]; %empirical window for main arrival
+[f,snrf,snrfort,snrfvert]=plt_templates_bp_bysta(greenf,greenfort,greenfvert,stas,staplt,lowlet,hiwlet,sps,...
+  [winnoi;winsig]);
 
 
 %% prepare the signal and noise windows
@@ -818,7 +826,12 @@ for iii = 1: length(idxbst)
         for ista = 4:nsta
           tmp(1,ista-3) = xcorr(subw(:,1), subw(:,ista),0,'normalized');
         end
-        ccw1i = [ccw1i; tmp];        
+        ccw1i = [ccw1i; tmp]; 
+        
+        
+        %%%
+        subwtmp = detrend(subw(overshoot+1:end-overshoot, :));
+        subwsave{iwin} = subwtmp;
       end
       irccrank{k} = irccran;
       windowsk{k} = windows-windows(1,1)+1;
@@ -1536,7 +1549,6 @@ for iii = 1: length(idxbst)
         
       end
 
-      saveflag = 1; %0 means don't save figures; 1 means yes
       detecttype = [];
       xzoom = [5 30];
 
@@ -1555,6 +1567,7 @@ for iii = 1: length(idxbst)
           mfitvert,varsigvert,stas,ista,detecttype,0);
       end
 
+%       keyboard
 %       %%%For paper demo, plot the impulses, signal, prediction and res right after deconvolution
 %       if ~noiseflag
 %         ista = 1;
@@ -1974,6 +1987,62 @@ for iii = 1: length(idxbst)
 
       %% signal + zoom-in + map locations + some reference symbols 
       if ~noiseflag
+        
+        %%%plot all short windows, and LFE detections
+        htin = 6.3;   % maximum height allowed is 11 inches
+        widin = 8.4;  % maximum width allowed is 8.5 inches
+        nrow = 1;
+        ncol = 1;
+        f = initfig(widin,htin,nrow,ncol); %initialize fig
+        figxran = [0.08 0.98]; figyran = [0.08 0.98];
+        figxsep = 0.05; figysep = 0.02;
+        optaxpos(f,nrow,ncol,figxran,figyran,figxsep,figysep);
+        ax=f.ax(1); hold(ax,'on'); ax.Box = 'off'; grid(ax,'off');
+        %       set(ax, 'color', 'none');
+        %   xlim(ax,[]);
+        %   nolabels(ax,2);
+        longticks(ax,4);
+        axis(ax,'tight');
+        ylabel(f.ax(end),sprintf('Amplitude'),'FontSize',10);
+        xlabel(f.ax(end),sprintf('Time (s) on %s %s %s',dy,mo,yr),'FontSize',10);
+        vsep = 1;
+%         ylim(ax,[-vsep*(nwin+1) 0]);
+        
+        [clusibst,nclusibst,tclusibst]=clusters_in_burst(181);
+        
+        cumutime=0;
+        for iwin = 1:nwin
+          subwtmp = subwsave{iwin};
+          plot(ax,(1:length(subwtmp))/sps,subwtmp(:,1)-vsep*iwin,'r','linew',1);
+          plot(ax,(1:length(subwtmp))/sps,subwtmp(:,2)-vsep*iwin,'b','linew',1);
+          plot(ax,(1:length(subwtmp))/sps,subwtmp(:,3)-vsep*iwin,'k','linew',1);
+%           %%%plot the deconvolved sources
+%           yloc = -vsep*(iwin+0.45);
+%           tst = cumutime;
+%           ted = cumutime+length(subwtmp)/sps;
+% %           ind = find(impindepst(:,1)/sps >= tst & impindepst(:,1)/sps < ted);
+% %           scatter(ax,impindepst(ind,1)/sps-tst,yloc*ones(size(impindepst(ind,1))),...
+% %             6,[.6 .6 .6],'filled');
+%           ind = find(tclusibst(:,1)>=tst & tclusibst(:,2)<ted);
+%           clusibstxzoom = clusibst(ind);
+%           tclusibstxzoom = tclusibst(ind);
+%           nclus = length(ind);
+%           for iclus=1:2:nclus
+%             impclus=clusibstxzoom{iclus};
+%             scatter(ax,impclus(:,1)/sps-tst,yloc*ones(size(impclus(:,1))),10,'^','k');
+%           end
+%           for iclus=2:2:nclus
+%             impclus=clusibstxzoom{iclus};
+%             scatter(ax,impclus(:,1)/sps-tst,yloc*ones(size(impclus(:,1))),10,'v','k');
+%           end
+%           impuniclus = unique(cat(1,clusibstxzoom{:}),'rows');
+%           ind = find(impindepst(:,1)/sps >= tst & impindepst(:,1)/sps <ted);
+%           impiso = setdiff(impindepst(ind,:),impuniclus,'rows');
+%           scatter(ax,impiso(:,1)/sps-tst,yloc*ones(size(impiso(:,1))),10,'k');
+          
+          cumutime = ted;
+        end
+        
 %         xzoom = [0 25];
 %         [f] = plt_agu2022abstractv4(greenf(:,1:3),optdat(:,2:4),impindepst,sps,xzoom,off1iw,loff_max,...
 %           rcccat,overshoot,tstbuf,dy,mo,yr,ftrans,'spl');

@@ -71,18 +71,21 @@ for iets = 1: nets
 
     if ista ~= 1
       nolabels(ax,2);
+    % else
+    %   ylabel(ax,sprintf('Spectral density (amp.^{2}/Hz)'),'FontSize',10);
     end
     if iets ~= nrow
       nolabels(ax,1);
-    end
-    
+    else
+      xlabel(ax,'Frequency (Hz)','FontSize',10);
+    end    
   end   % all stations
 end   % all ets
 
-ax = f.ax((nrow-1)*ncol+1);
+ax = f.ax((nrow-2)*ncol+1);
 hold(ax,'on');
-xlabel(ax,'Frequency (Hz)','FontSize',10);
-ylabel(ax,'Spectral density (energy/Hz)','FontSize',10);
+% ylabel(ax,sprintf('Spectral density (amp.^{2}/Hz)'),'FontSize',10);
+ylabel(ax,sprintf('Spectral density (squared amp./Hz)'),'FontSize',10);
 lgd=legend(ax,[p1,p2],{'Mean','Median'},'location','south','FontSize',8);
 %make background transparent
 set(lgd.BoxFace, 'ColorType','truecoloralpha', 'ColorData',uint8(255*[1;1;1;.8]));

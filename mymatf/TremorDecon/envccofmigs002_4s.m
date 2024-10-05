@@ -562,13 +562,17 @@ for i = 1: 4
   axis(ax,[xran yran]);
   plot(ax, ax.XLim, [median(log10(envran(:,i))) median(log10(envran(:,i)))],...
     '--','Color',color(i,:),'Linew',2);
+  plot(ax, [median(log10(envmed(:,i))) median(log10(envmed(:,i)))], ax.YLim,...
+    '--','Color',color(i,:),'Linew',2);
   p(i)=scatter(ax,log10(envmed(:,i)),log10(envran(:,i)),30,...
       color(i,:),sybl(i,:),'filled','markeredgec','w');
   text(ax,0.98,0.95,stas(i,:),'Units','normalized','HorizontalAlignment',...
     'right','FontSize',12);
 end
 ylabel(f.ax(3),'log_{10}{Envelope range}');
+ylabel(f.ax(1),'log_{10}{Envelope range}');
 xlabel(f.ax(3),'log_{10}{Median envelope}');
+xlabel(f.ax(4),'log_{10}{Median envelope}');
 % legend(f.ax(3),p,stas(1:4,:),'Location','northwest');
 
 fname = strcat('bstenvran',num2str(prct(end)),num2str(prct(1)),'vsmed.pdf');
@@ -596,6 +600,8 @@ for i = 1: 4
   axis(ax,[xran yran]);
   plot(ax, ax.XLim, [median(log10(envortran(:,i))) median(log10(envortran(:,i)))],...
     '--','Color',color(i,:),'Linew',2);
+  plot(ax, [median(log10(envortmed(:,i))) median(log10(envortmed(:,i)))], ax.YLim,...
+    '--','Color',color(i,:),'Linew',2);
   p(i)=scatter(ax,log10(envortmed(:,i)),log10(envortran(:,i)),30,...
       color(i,:),sybl(i,:),'filled','markeredgec','w');
   text(ax,0.98,0.95,stas(i,:),'Units','normalized','HorizontalAlignment',...
@@ -604,7 +610,9 @@ for i = 1: 4
     'left','FontSize',12);
 end
 ylabel(f.ax(3),'log_{10}{Envelope range}');
+ylabel(f.ax(1),'log_{10}{Envelope range}');
 xlabel(f.ax(3),'log_{10}{Median envelope}');
+xlabel(f.ax(4),'log_{10}{Median envelope}');
 % legend(f.ax(3),p,stas(1:4,:),'Location','northwest');
 
 fname = strcat('bstenvortran',num2str(prct(end)),num2str(prct(1)),'vsmed.pdf');
@@ -633,6 +641,8 @@ for i = 1: 4
   axis(ax,[xran yran]);
   plot(ax, ax.XLim, [median(log10(envvertran(:,i))) median(log10(envvertran(:,i)))],...
     '--','Color',color(i,:),'Linew',2);
+  plot(ax, [median(log10(envvertmed(:,i))) median(log10(envvertmed(:,i)))], ax.YLim,...
+    '--','Color',color(i,:),'Linew',2);
   p(i)=scatter(ax,log10(envvertmed(:,i)),log10(envvertran(:,i)),30,...
       color(i,:),sybl(i,:),'filled','markeredgec','w');
   text(ax,0.98,0.95,stas(i,:),'Units','normalized','HorizontalAlignment',...
@@ -641,7 +651,9 @@ for i = 1: 4
     'left','FontSize',12);
 end
 ylabel(f.ax(3),'log_{10}{Envelope range}');
+ylabel(f.ax(1),'log_{10}{Envelope range}');
 xlabel(f.ax(3),'log_{10}{Median envelope}');
+xlabel(f.ax(4),'log_{10}{Median envelope}');
 % legend(f.ax(3),p,stas(1:4,:),'Location','northwest');
 
 fname = strcat('bstenvvertran',num2str(prct(end)),num2str(prct(1)),'vsmed.pdf');
@@ -871,9 +883,9 @@ for isub = 1:3
     nolabels(ax,2);
   end
   if isub==1
-    xlabel(ax,'Time lag to reach max CC (s)');
     ylabel(ax,'Max CC');
   end
+  xlabel(ax,'Time lag to reach max CC (s)');
   longticks(ax,1.5);
 end
 % supertit(f.ax(1:ncol),'cc of sig env; extended bursts; among trio stas');
@@ -958,12 +970,14 @@ for ii = 1:nrow
     if jj ~= 1
       nolabels(ax,2);
     end
+    if jj == 1
+      ylabel(ax,'Max CC');
+    end
     if ii ~= nrow
       nolabels(ax,1);
     end
-    if ii == nrow && jj==1
+    if ii == nrow
       xlabel(ax,'Time lag to reach max CC (s)');
-      ylabel(ax,'Max CC');
     end
     longticks(ax,1.5);
   end

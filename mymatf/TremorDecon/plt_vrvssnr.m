@@ -53,6 +53,9 @@ function f=plt_vrvssnr(greentype,mfit,varsig,mfitort,varsigort,...
   p(1)=scatter(ax,snrf(pltsta),varred(pltsta,3),20,'ro');
   p(2)=scatter(ax,snrfort(pltsta),varredort(pltsta,3),24,'bs');
   p(3)=scatter(ax,snrfvert(pltsta),varredvert(pltsta,3),20,'k^');
+  scatter(ax,snrf(1),varred(1,3),20,'ro','filled');
+  scatter(ax,snrfort(1),varredort(1,3),24,'bs','filled');
+  scatter(ax,snrfvert(1),varredvert(1,3),20,'k^','filled');
   lgd=legend(ax,p,'Optimal','Orthogonal','Vertical','location','southeast');
   set(lgd.BoxFace, 'ColorType','truecoloralpha', 'ColorData',uint8(255*[1;1;1;.8]));  %make background transparent
   xlabel(ax,'LFE template SNR');
@@ -71,6 +74,9 @@ function f=plt_vrvssnr(greentype,mfit,varsig,mfitort,varsigort,...
   scatter(ax,snrf(pltsta),varred4th(pltsta,3),20,'ro');
   scatter(ax,snrfort(pltsta),varredort4th(pltsta,3),24,'bs');
   scatter(ax,snrfvert(pltsta),varredvert4th(pltsta,3),20,'k^');
+  scatter(ax,snrf(1),varred4th(1,3),20,'ro','filled');
+  scatter(ax,snrfort(1),varredort4th(1,3),24,'bs','filled');
+  scatter(ax,snrfvert(1),varredvert4th(1,3),20,'k^','filled');
   xlabel(ax,'LFE template SNR');
   ylabel(ax,'Variance reduction (%)');
   %       title(ax,'4-station srcs');

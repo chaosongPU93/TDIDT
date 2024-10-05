@@ -65,8 +65,8 @@ for jj = 1:length(pltsta)
     nolabels(ax,1);
   else
     xlabel(ax,'Time (s)','fontsize',10);
-    ylabel(ax,'Amplitude','fontsize',10);
   end
+  ylabel(ax,'Amplitude','fontsize',10);
   if jj==1
     legend(ax,p,'Signal','Prediction','Location','south',...
       'Orientation','horizontal');%,'Residual'

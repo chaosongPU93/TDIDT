@@ -119,9 +119,16 @@ fnsuffix2 = [];
 % nsrcuse = nsrcn;
 % fnsuffix2 = 'noi';
 
-%choice of diameter of circular sources
-% diams = [0.1 0.3 0.5 0.7];
-diams = 0.75;
+% scaleflag = 'fixdiam';
+scaleflag = 'amp';
+if strcmp(scaleflag,'fixdiam')
+  %choice of diameter of circular sources
+  % diams = [0.1 0.3 0.5 0.7];
+  diams = 0.75;
+else
+  diams = 0;
+end
+  
 
 %% using new ways to generate EXCLUSIVE clusters from each other
 %%%determine the 'mmax' for which the resulting number of clusters is nonzero
@@ -135,7 +142,8 @@ mmax=getmmaxcluster(nbst,impuse,nsrcuse,sps,timetype);
   evtcluster_ex(nbst,impuse,nsrcuse,mmax,sps,timetype);
 
 %% various types of distance between events in the clusters
-m=6;  % a cluster of m+1 events
+for m=7:mmax
+% m=7;  % a cluster of m+1 events
 catclusm = catclus{m};
 ncluster = size(catclusm,1); %num of clusters, consecu. clusters may share events!
 
@@ -235,10 +243,13 @@ toc
 
 %% plot locations of srcs with finite size in each clusters assuming a diameter
 close all
+f1name = [];
 
-ampm = catmedamp{m};
+% ampm = catmedamp{m};
+% ampmed = ampm(:,1);
 amp=mean(imp(:,[2 4 6]),2);
 ampch=prctile(amp,5);
+ampmed=median(amp);
 nevt = m+1;
 
 for ii = 1: length(diams)
@@ -269,15 +280,19 @@ for ii = 1: length(diams)
     impplt = catclusm{i};
     tevt=impplt(:,1);
     implocplt = off2space002(impplt(:,7:8),sps,ftrans,0); % 8 cols, format: dx,dy,lon,lat,dep,ttrvl,off12,off13
-    ampplt = ampm(:,1);
     
     isub = isub+1; 
     if isub > nrow1*ncol1
       %print the current figure f1
       ind = setdiff(1:nrow1*ncol1, (nrow1-1)*ncol1+1);
       nolabels(f1.ax(ind),3);
-      f1name{ifig1,1} = sprintf('clusterloc_Fig%s_m%d_%.2fkm.pdf',...
-        num2zeropadstr(ifig1, 3),m,diam);
+      if strcmp(scaleflag,'fixdiam')
+        f1name{ifig1,1} = sprintf('clusterloc_Fig%s_m%d_%.2fkm.pdf',...
+          num2zeropadstr(ifig1, 3),nevt,diam);
+      elseif strcmp(scaleflag,'amp')
+        f1name{ifig1,1} = sprintf('clusterloc_Fig%s_m%d_medamp.pdf',...
+          num2zeropadstr(ifig1, 3),nevt);
+      end
       print(f1.fig,'-dpdf',strcat('/home/chaosong/Pictures/',f1name{ifig1,1}));
       %move on to next figure f1
       ifig1 = ifig1+1;  %initialize another figure
@@ -300,6 +315,11 @@ for ii = 1: length(diams)
       tevt = torisplst;
     end
     
+    ampplt = mean(impplt(:,[2 4 6]),2);
+%     amppltrat = ampplt./ampmed(i);
+    amppltrat = ampplt./ampmed;
+    refmsize = 60;
+    
     %plot locations of events in each cluster
 %     color=jet(nevt);
 %     color=gradientblue(nevt);
@@ -307,9 +327,22 @@ for ii = 1: length(diams)
     ax=f1.ax(isub); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
     axis(ax, 'equal');
     for j=1: nevt
-      [xcut,ycut] = circle_chao(implocplt(j,1),implocplt(j,2),radi,0.1);
-      plot(ax,xcut,ycut,'-','color',color(j,:),'linew',1);
+      if strcmp(scaleflag,'fixdiam')
+        %%%if plot each source with a fixed diameter 
+        [xcut,ycut] = circle_chao(implocplt(j,1),implocplt(j,2),radi,0.1);
+        plot(ax,xcut,ycut,'-','color',color(j,:),'linew',1);
+      elseif strcmp(scaleflag,'amp')
+        %%%if plot each source's size scaled with impulse amp
+        scatter(ax,implocplt(j,1),implocplt(j,2),refmsize*amppltrat(j),color(j,:),...
+          'o','linew',1);
+      end
     end
+    if strcmp(scaleflag,'amp')
+      %plot the size of reference, median
+      scatter(ax,-3.5,3,refmsize,'k','o','linew',1);
+      text(ax,-3.0,3,'median','HorizontalAlignment','left','fontsize',7); 
+    end
+        
     x0=mean(implocplt(:,1));
     y0=mean(implocplt(:,2));
     plot(ax,x0+[pca2vec(i,1), -pca2vec(i,1)],y0+[pca2vec(i,2), -pca2vec(i,2)],...
@@ -356,14 +389,23 @@ for ii = 1: length(diams)
     end
   end
   
-  %if all clusters have been plotted, print the current figure f1
-  f1name{ifig1,1} = sprintf('clusterloc_Fig%s_m%d_%.2fkm.pdf',...
-    num2zeropadstr(ifig1, 3),m,diam);
+  if strcmp(scaleflag,'fixdiam')
+    %if all clusters have been plotted, print the current figure f1
+    f1name{ifig1,1} = sprintf('clusterloc_Fig%s_m%d_%.2fkm.pdf',...
+      num2zeropadstr(ifig1, 3),nevt,diam);
+  elseif strcmp(scaleflag,'amp')
+    f1name{ifig1,1} = sprintf('clusterloc_Fig%s_m%d_medamp.pdf',...
+      num2zeropadstr(ifig1, 3),nevt);
+  end
   print(f1.fig,'-dpdf',strcat('/home/chaosong/Pictures/',f1name{ifig1,1}));
 
   %%
   %merge all figures into a single pdf file
-  mergef1name=sprintf('clusterloc_m%d_%.2fkm.pdf',m,diam);
+  if strcmp(scaleflag,'fixdiam')
+    mergef1name=sprintf('clusterloc_m%d_%.2fkm.pdf',nevt,diam);
+  elseif strcmp(scaleflag,'amp')
+    mergef1name=sprintf('clusterloc_m%d_medamp.pdf',nevt);
+  end
   str=strcat('rm -f /home/chaosong/Pictures/',mergef1name);
   status = system(str);
   % status = system('rm -f /home/chaosong/Pictures/clusterloc.pdf');
@@ -376,7 +418,7 @@ for ii = 1: length(diams)
 %   close all
 end
   
-
+end
 
 
 

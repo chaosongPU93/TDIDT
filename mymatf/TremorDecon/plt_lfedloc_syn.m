@@ -171,9 +171,9 @@ for insat = 1 : nnsat
     p(iround)=plot(ax,dprojxopt2all{insat,iround},countnopt2all{insat,iround},'-',...
       'linew',1,'color',color(iround,:));
     if ~singleflag
-      label{iround} = sprintf('%.2f, %.2f',semia(iround),semib(iround));
+      label{iround} = sprintf('%.1fx%.1f',2*semia(iround),2*semib(iround));
     else
-      label{iround} = sprintf('Noi=%.1f',perctrial(iround));
+      label{iround} = sprintf('%.1f',perctrial(iround));
     end
   end
   text(ax,0.98,0.05,sprintf('Sat=%.1f',nsat(insat)),'Units','normalized',...

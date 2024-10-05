@@ -102,12 +102,12 @@ fnsuffix = [];
 
 % keyboard
 
-impuse = imp;
-nsrcuse = nsrc;
-fnsuffix2 = [];
-% impuse = impn;
-% nsrcuse = nsrcn;
-% fnsuffix2 = 'noi';
+% impuse = imp;
+% nsrcuse = nsrc;
+% fnsuffix2 = [];
+impuse = impn;
+nsrcuse = nsrcn;
+fnsuffix2 = 'noi';
 
 [imploc, ~] = off2space002(impuse(:,7:8),sps,ftrans,0); % 8 cols, format: dx,dy,lon,lat,dep,ttrvl,off12,off13
 [imploc0, ~] = off2space002([0 0],sps,ftrans,0);  % a ref source at 0,0
@@ -126,8 +126,8 @@ n = 1;  %between N and N-n
 m = 1;  %max n to compute
 
 %%%Flag to indicate if it is necessary to recalculate everything
-% flagrecalc = 0;
-flagrecalc = 1;
+flagrecalc = 0;
+% flagrecalc = 1;
 
 if isequaln(impuse,imp)
   savefile = strcat('lfedloc',fnsuffix,num2str(subwsectar),'swin.mat');
@@ -266,6 +266,13 @@ dx=0.025; dy=0.025; % to distinguish dp near origin, size cannot exceed ~0.053 k
 cstr={'# events / grid'}; xran=[-4 4]; yran=[-4 4];
 [f,den1d,conmat]=plt_srcdloc(dloc,'km',3,cstr,...
   'o','linear','grid',xran,yran,dx,dy,smoothsigma,ncont);
+[coeff,score,angle,anglegeo,x0,y0,semia,semib,ellx,elly]=pcaellipse(dloc);
+[~,~,projxy] = customprojection(dloc(:,1:2),anglegeo(2));
+mdistprojopt = median(abs(projxy(:,1)))
+medprojopt = median(projxy(:,1))
+mdistprojort = median(abs(projxy(:,2)))
+medprojort = median(projxy(:,2)) 
+  
 fname = strcat('lfedloc2all',num2str(subwsectar),'swin',fnsuffix,fnsuffix2,'.pdf');
 print(f.fig,'-dpdf',...
   strcat('/home/data2/chaosong/CurrentResearch/Song_Rubin_2024/figures/',fname));
