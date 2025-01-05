@@ -1,4 +1,4 @@
-function [clusibst,nclusibst,tclusibst]=clusters_in_burst(idxbst)
+function [clusibst,nclusibst,tclusibst]=clusters_in_burst(idxbst,impuse,nsrcuse)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % This code is made to associate all types of event clusters in the
 % deconvolution catalog to each tremor burst. The existing code 'evtcluster_ex.m'
@@ -13,6 +13,8 @@ function [clusibst,nclusibst,tclusibst]=clusters_in_burst(idxbst)
 % Last modified date:   2024/03/06
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 defval('idxbst',[]);
+defval('impuse',[]);
+defval('nsrcuse',[]);
 
 %% Initialization
 %%% SAME if focusing on the same region (i.e. same PERMROTS and POLROTS)
@@ -52,47 +54,49 @@ sps = 160;
 ftrans = 'interpchao';
 [imploc0, ~] = off2space002([0 0],sps,ftrans,0);  % a ref source at 0,0
 
-%%%load data
-% savefile = 'deconv_stats4th_allbstsig.mat';
-savefile = 'deconv_stats4th_no23_allbstsig.mat';
-load(strcat(rstpath, '/MAPS/',savefile));
-% savefile = 'deconv_stats4th_allbstnoi.mat';
-savefile = 'deconv_stats4th_no23_allbstnoi.mat';
-load(strcat(rstpath, '/MAPS/',savefile));
- 
-% keyboard
+if isempty(impuse)
+  %%%load data
+  % savefile = 'deconv_stats4th_allbstsig.mat';
+  savefile = 'deconv_stats4th_no23_allbstsig.mat';
+  load(strcat(rstpath, '/MAPS/',savefile));
+  % savefile = 'deconv_stats4th_allbstnoi.mat';
+  savefile = 'deconv_stats4th_no23_allbstnoi.mat';
+  load(strcat(rstpath, '/MAPS/',savefile));
+  
+  % keyboard
 
-%%
-%%%param for secondary sources removed
-locxyprojall = allbstsig.locxyprojall;
-tarvlsplstall = allbstsig.impindepall(:,1);
-nsrc = allbstsig.nsrc;
-imp = allbstsig.impindepall;
-locxyprojalln = allbstnoi.locxyprojall;
-tarvlsplstalln = allbstnoi.impindepall(:,1);
-nsrcn = allbstnoi.nsrc;
-impn = allbstnoi.impindepall;
-supertstr = 'Secondary sources removed';
-fnsuffix = [];
+  %%
+  %%%param for secondary sources removed
+  locxyprojall = allbstsig.locxyprojall;
+  tarvlsplstall = allbstsig.impindepall(:,1);
+  nsrc = allbstsig.nsrc;
+  imp = allbstsig.impindepall;
+  locxyprojalln = allbstnoi.locxyprojall;
+  tarvlsplstalln = allbstnoi.impindepall(:,1);
+  nsrcn = allbstnoi.nsrc;
+  impn = allbstnoi.impindepall;
+  supertstr = 'Secondary sources removed';
+  fnsuffix = [];
 
-% %%%param for further checked at KLNB
-% locxyprojall = allbstsig.locxyproj4thall;
-% tarvlsplstall = allbstsig.impindep4thall(:,1);
-% nsrc = allbstsig.nsrc4th;
-% imp = allbstsig.impindep4thall;
-% locxyprojalln = allbstnoi.locxyproj4thall;
-% tarvlsplstalln = allbstnoi.impindep4thall(:,1);
-% nsrcn = allbstnoi.nsrc4th;
-% impn = allbstnoi.impindep4thall;
-% supertstr = 'Further checked at KLNB';
-% fnsuffix = '4th';
+  % %%%param for further checked at KLNB
+  % locxyprojall = allbstsig.locxyproj4thall;
+  % tarvlsplstall = allbstsig.impindep4thall(:,1);
+  % nsrc = allbstsig.nsrc4th;
+  % imp = allbstsig.impindep4thall;
+  % locxyprojalln = allbstnoi.locxyproj4thall;
+  % tarvlsplstalln = allbstnoi.impindep4thall(:,1);
+  % nsrcn = allbstnoi.nsrc4th;
+  % impn = allbstnoi.impindep4thall;
+  % supertstr = 'Further checked at KLNB';
+  % fnsuffix = '4th';
 
-impuse = imp;
-nsrcuse = nsrc;
-fnsuffix2 = [];
-% impuse = impn;
-% nsrcuse = nsrcn;
-% fnsuffix2 = 'noi';
+  impuse = imp;
+  nsrcuse = nsrc;
+  fnsuffix2 = [];
+  % impuse = impn;
+  % nsrcuse = nsrcn;
+  % fnsuffix2 = 'noi';
+end
 
 %% using new ways to generate EXCLUSIVE clusters from each other
 %%%determine the 'mmax' for which the resulting number of clusters is nonzero
@@ -163,7 +167,7 @@ mmax=getmmaxcluster(nbst,impuse,nsrcuse,sps,timetype);
   
   for i=1:k-1
     if tclusibst(i,2)>tclusibst(i+1,1)
-      disp('two clusters overlaps in time!');
+      fprintf('Clusters %d and %d overlap in time!\n',i,i+1);
     end
   end
   % keyboard

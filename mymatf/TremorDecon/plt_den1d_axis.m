@@ -140,12 +140,16 @@ end
 if strcmp(disttype,'spl')
   xlabel(ax,sprintf('\\Delta{t}_{12} (s)'),'FontSize',10);
   ylabel(ax,sprintf('\\Delta{t}_{13} (s)'),'FontSize',10);
+  xticks(ax,xran(1):10:xran(2));
+  yticks(ax,yran(1):10:yran(2));
 elseif strcmp(disttype,'km')
   xlabel(ax,'E (km)','FontSize',10);
   ylabel(ax,'N (km)','FontSize',10);
+  xticks(ax,xran(1):1:xran(2));
+  yticks(ax,yran(1):1:yran(2));
 end
 longticks(ax,2);
 pos = ax.Position;
-c.Position = [pos(1), pos(2)-0.07, pos(3), 0.02];
+c.Position = [pos(1), pos(2)-0.09, pos(3), 0.02];
 % hold(ax,'off');
 

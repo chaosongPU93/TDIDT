@@ -1,5 +1,5 @@
-function [ax,mu1,sigma1,mdistcrssec,dprojx,countn,Y1,pks]=plt_dloccrssect(ax,F,crssecx,crssecy,angle,...
-  linetype,color,xran,which2plt,normalizer,gaussnum)
+function [ax,mu1,sigma1,mdistcrssec,dprojx,countn,Y1,pks,plthdl]=plt_dloccrssect(ax,F,crssecx,crssecy,angle,...
+  linetype,color,xran,which2plt,normalizer,gaussnum,linew)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % [ax,mu,sigma,mdistcrssec]=plt_dloccrssect(ax,crssecx,crssecy,angle,...
 %   color,normalizer,crssecy1,crssecy2)
@@ -19,6 +19,8 @@ function [ax,mu1,sigma1,mdistcrssec,dprojx,countn,Y1,pks]=plt_dloccrssect(ax,F,c
 defval('which2plt','both');
 defval('normalizer',1);
 defval('gaussnum',1);
+defval('linew',2);
+
 
 count = F(crssecx,crssecy);
 dprojx = customprojection([crssecx crssecy],angle);
@@ -61,12 +63,12 @@ pks=[reshape(locs,[],1) reshape(pkhgt,[],1)];
 if ~isempty(ax)
   hold(ax,'on'); ax.Box='on'; grid(ax,'on');
   if strcmp(which2plt,'data')
-    plot(ax,dprojx,countn / normalizer,linetype(1,:),'Color',color(1,:),'linew',2);
+    plthdl(1)=plot(ax,dprojx,countn / normalizer,linetype(1,:),'Color',color(1,:),'linew',linew);
   elseif strcmp(which2plt,'gsfit')
-    plot(ax,dprojx,Y1 / normalizer,linetype(2,:),'Color',color(2,:),'linew',2);
+    plthdl(1)=plot(ax,dprojx,Y1 / normalizer,linetype(2,:),'Color',color(2,:),'linew',linew);
   elseif strcmp(which2plt,'both')
-    plot(ax,dprojx,countn / normalizer,linetype(1,:),'Color',color(1,:),'linew',2);
-    plot(ax,dprojx,Y1 / normalizer,linetype(2,:),'Color',color(2,:),'linew',2);
+    plthdl(1)=plot(ax,dprojx,Y1 / normalizer,linetype(2,:),'Color',color(2,:),'linew',linew);
+    plthdl(2)=plot(ax,dprojx,countn / normalizer,linetype(1,:),'Color',color(1,:),'linew',linew);
   end
 %   plot(ax,dprojx,Y2 / normalizer,'-','Color',color(2,:),'linew',1);
 %   scatter(ax,pks(:,1),pks(:,2) / normalizer,8,'ko','filled');  

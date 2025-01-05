@@ -61,37 +61,51 @@ sps = 160;
 ftrans = 'interpchao';
 
 %%%load data
-% savefile = 'deconv_stats4th_allbstsig.mat';
-savefile = 'deconv_stats4th_no23_allbstsig.mat';
+%choose the window length in sec for computing RCC 
+% rccwin = 0.25;
+rccwin = 0.5;
+
+if rccwin == 0.5
+  % savefile = 'deconv_stats4th_allbstsig.mat';
+  savefile = 'deconv_stats4th_no23_allbstsig.mat';
+elseif rccwin == 0.25
+  savefile = 'deconv_stats4th_no23_allbstsig0.25s.mat';
+end
 load(strcat(rstpath, '/MAPS/',savefile));
-% savefile = 'deconv_stats4th_allbstnoi.mat';
-savefile = 'deconv_stats4th_no23_allbstnoi.mat';
+
+if rccwin == 0.5
+  % savefile = 'deconv_stats4th_allbstnoi.mat';
+  savefile = 'deconv_stats4th_no23_allbstnoi.mat';
+elseif rccwin == 0.25
+  savefile = 'deconv_stats4th_no23_allbstnoi0.25s.mat';
+end
 load(strcat(rstpath, '/MAPS/',savefile));
+
 
 %%
-% %%%param for secondary sources removed
-% locxyprojall = allbstsig.locxyprojall;
-% tarvlsplstall = allbstsig.impindepall(:,1);
-% nsrc = allbstsig.nsrc;
-% imp = allbstsig.impindepall;
-% locxyprojalln = allbstnoi.locxyprojall;
-% tarvlsplstalln = allbstnoi.impindepall(:,1);
-% nsrcn = allbstnoi.nsrc;
-% impn = allbstnoi.impindepall;
-% supertstr = 'Secondary sources removed';
-% fnsuffix = [];
+%%%param for secondary sources removed
+locxyprojall = allbstsig.locxyprojall;
+tarvlsplstall = allbstsig.impindepall(:,1);
+nsrc = allbstsig.nsrc;
+imp = allbstsig.impindepall;
+locxyprojalln = allbstnoi.locxyprojall;
+tarvlsplstalln = allbstnoi.impindepall(:,1);
+nsrcn = allbstnoi.nsrc;
+impn = allbstnoi.impindepall;
+supertstr = 'Secondary sources removed';
+fnsuffix = [];
 
-%%%param for further checked at KLNB
-locxyprojall = allbstsig.locxyproj4thall;
-tarvlsplstall = allbstsig.impindep4thall(:,1);
-nsrc = allbstsig.nsrc4th;
-imp = allbstsig.impindep4thall;
-locxyprojalln = allbstnoi.locxyproj4thall;
-tarvlsplstalln = allbstnoi.impindep4thall(:,1);
-nsrcn = allbstnoi.nsrc4th;
-impn = allbstnoi.impindep4thall;
-supertstr = 'Further checked at KLNB';
-fnsuffix = '4th';
+% %%%param for further checked at KLNB
+% locxyprojall = allbstsig.locxyproj4thall;
+% tarvlsplstall = allbstsig.impindep4thall(:,1);
+% nsrc = allbstsig.nsrc4th;
+% imp = allbstsig.impindep4thall;
+% locxyprojalln = allbstnoi.locxyproj4thall;
+% tarvlsplstalln = allbstnoi.impindep4thall(:,1);
+% nsrcn = allbstnoi.nsrc4th;
+% impn = allbstnoi.impindep4thall;
+% supertstr = 'Further checked at KLNB';
+% fnsuffix = '4th';
 
 impuse = imp;
 nsrcuse = nsrc;
@@ -105,7 +119,13 @@ typepltnoi = 1; %plot noise
 %%%load the median seismic amp of a 6-s window centered at the detection
 %%%2 cols, 1st is the direct amp, 2nd is the envelope
 wlensec = 6;
-savefile = strcat('medseisampbetweenlfes',fnsuffix,num2str(wlensec),'s.mat');
+
+if rccwin==0.25
+  savefile = sprintf('medseisampbetweenlfes%s%ds%.2fs.mat',fnsuffix,wlensec,rccwin);
+else
+  savefile = sprintf('medseisampbetweenlfes%s%ds.mat',fnsuffix,wlensec);
+  % savefile = strcat('medseisampbetweenlfes',fnsuffix,num2str(wlensec),'s.mat');
+end
 load(strcat(rstpath, '/MAPS/',savefile));
 
 %link the seismic amp to specific event pairs N and N-m, use the average of two
@@ -135,7 +155,8 @@ for i = 1: nbst
   mamp=[mamp; mampi];
 end
 
-nbin=5;
+% nbin=5;
+nbin=10;
 binedge=[0 0.375:0.25:ceil(max(dtinter)/sps)];  % 1st bin [0 0.375], then 0.25 increment
 bincnt=(binedge(1:end-1)+binedge(2:end))/2;
 [ampbin,indbin,n] = binxeqnum(mamp(:,2),nbin);  %bin by amp with same number
@@ -188,21 +209,24 @@ catuimplump = cat(1, catuimp{:});
 [~, clusind] = ismember(catuimplump,imp,'rows');
 isoind = setdiff((1:size(imp,1))', clusind);
 isoimp = imp(isoind, :);
+ibst = findwhichburst(isoimp,imp,nsrc);
 nisoimp = size(isoimp,1);
 isoamp = mean(isoimp(:,[2 4 6]),2);
-isoimp = [isoimp isoamp (1:nisoimp)' ones(nisoimp,1)];
+isoimp = [isoimp isoamp (1:nisoimp)' ibst ones(nisoimp,1)];
   
 %for other clusters, give each event in the cluster sama amp, as the median amp of the cluster
 for m=1:mmax
   catimpm = catimp{m};
   catuimpm = catuimp{m};
+  catibstm = catclus{m,2};  %idendifier of which burst this cluster belongs to
 
   catmedampm = catmedamp{m};
   temp = catimpm;
   ncol = size(temp,2);
   for j = 1: size(catmedampm,1)
-    temp((j-1)*(m+1)+1: j*(m+1), ncol+1) = catmedampm(j,1);
-    temp((j-1)*(m+1)+1: j*(m+1), ncol+2) = j;
+    temp((j-1)*(m+1)+1: j*(m+1), ncol+1) = catmedampm(j,1); %median amp of cluster j
+    temp((j-1)*(m+1)+1: j*(m+1), ncol+2) = j; %keep track of cluster j for each m
+    temp((j-1)*(m+1)+1: j*(m+1), ncol+3) = catibstm(j);  %keep track of which burst
   end
   
   %find duplicates within the clusters of m, expected to exist
@@ -219,9 +243,9 @@ for m=1:mmax
   [~,ind] = unique(temp(:,1:ncol+1),'rows','stable');
   tempuni = temp(ind,:);
 
-  tempuni(:,ncol+3) = m+1;  %keep track of m
+  tempuni(:,ncol+4) = m+1;  %keep track of m
 
-  clusimpuni{m} = tempuni;
+  clusimpuni{m,1} = tempuni;
 
 end
 %lump in m
@@ -230,11 +254,13 @@ clusimp = cat(1,clusimpuni{:});
 %combine singletons and other clusters
 allimp = [isoimp; clusimp];
 
-%sort by amp first, cluster #, then 'm'
-allimp = sortrows(allimp,[ncol+1 ncol+3 ncol+2]);
-
+%sort by amp first, 'm', then cluster #, finally burst # 
+allimp = sortrows(allimp,[ncol+1 ncol+4 ncol+2 ncol+3]);
+%%
 %%%to avoid breaking the same cluster into diff amp bins, manually choose # in each bin
-nbin2 = 5;
+% nbin2 = 5;
+nbin2 = 10;
+
 if ~strcmp(fnsuffix,'4th')
   n2 = [3713; 3714; 3716; 3719; 3714];
   bindiv = [1 3713; 3714 7427; 7428 11143; 11144 14862; 14863 18576];
@@ -242,6 +268,13 @@ else
   n2 = [2179; 2179; 2181; 2178; 2177];
   bindiv = [1 2179; 2180 4358; 4359 6539; 6540 8717; 8718 10894];
 end
+
+if nbin2 ~=5
+  [~,~,n2] = binxeqnum(allimp(:,ncol+1),nbin2);  %bin by amp with same number
+  tmp = cumsum(n2);
+  bindiv = [[1; tmp(1:end-1)+1] tmp];
+end
+
 N2d = [];
 N2dn = [];
 N2dgeq = [];
@@ -252,8 +285,8 @@ for i = 1: nbin2
   impi = allimp(indi,:);
   medmampbin2(i) = median(impi(:,ncol+1));
   for m=1:mmax+1
-    N2d(m,i) = sum(impi(:,ncol+3)==m);
-    N2dgeq(m,i) = sum(impi(:,ncol+3)>=m);
+    N2d(m,i) = sum(impi(:,ncol+4)==m);
+    N2dgeq(m,i) = sum(impi(:,ncol+4)>=m);
   end
   N2dn(:,i) = N2d(:,i) ./ n2(i) *100;
   N2dgeqn(:,i) = N2dgeq(:,i) ./ n2(i) *100;
@@ -381,10 +414,18 @@ hold(ax,'off');
 % text(ax,0.02,0.05,'b','FontSize',11,'unit','normalized','EdgeColor','k',...
 %   'Margin',1,'backgroundcolor','w');
 
-if ~strcmp(yaxflag, 'cumu')  
-  fname = sprintf('tclustering_%dampbins%s.pdf',nbin,fnsuffix);
+if ~strcmp(yaxflag, 'cumu')
+  if rccwin == 0.25
+    fname = sprintf('tclustering_%dampbins%s%.2fs.pdf',nbin,fnsuffix,rccwin);
+  else
+    fname = sprintf('tclustering_%dampbins%s.pdf',nbin,fnsuffix);
+  end  
 else
-  fname = sprintf('tclustering_%dampbins_cumu%s.pdf',nbin,fnsuffix);
+  if rccwin == 0.25
+    fname = sprintf('tclustering_%dampbins_cumu%s%.2fs.pdf',nbin,fnsuffix,rccwin);
+  else
+    fname = sprintf('tclustering_%dampbins_cumu%s.pdf',nbin,fnsuffix);
+  end    
 end
 print(f.fig,'-dpdf',...
   strcat('/home/data2/chaosong/CurrentResearch/Song_Rubin_2024/figures/',fname));

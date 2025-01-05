@@ -64,43 +64,56 @@ rmse = planefit.gof{4}.rmse;
 offmax = round(2.0*rmse);
 
 %%%load data
-% savefile = 'deconv_stats4th_allbstsig.mat';
-savefile = 'deconv_stats4th_no23_allbstsig.mat';
+%choose the window length in sec for computing RCC 
+rccwin = 0.25;
+% rccwin = 0.5;
+
+if rccwin == 0.5
+  % savefile = 'deconv_stats4th_allbstsig.mat';
+  savefile = 'deconv_stats4th_no23_allbstsig.mat';
+elseif rccwin == 0.25
+  savefile = 'deconv_stats4th_no23_allbstsig0.25s.mat';
+end
 load(strcat(rstpath, '/MAPS/',savefile));
-% savefile = 'deconv_stats4th_allbstnoi.mat';
-savefile = 'deconv_stats4th_no23_allbstnoi.mat';
+
+if rccwin == 0.5
+  % savefile = 'deconv_stats4th_allbstnoi.mat';
+  savefile = 'deconv_stats4th_no23_allbstnoi.mat';
+elseif rccwin == 0.25
+  savefile = 'deconv_stats4th_no23_allbstnoi0.25s.mat';
+end
 load(strcat(rstpath, '/MAPS/',savefile));
  
 % keyboard
 
 %%
-% %%%param for secondary sources removed
-% locxyprojall = allbstsig.locxyprojall;
-% tarvlsplstall = allbstsig.impindepall(:,1);
-% nsrc = allbstsig.nsrc;
-% imp = allbstsig.impindepall;
-% off1i = allbstsig.off1i;
-% locxyprojalln = allbstnoi.locxyprojall;
-% tarvlsplstalln = allbstnoi.impindepall(:,1);
-% nsrcn = allbstnoi.nsrc;
-% impn = allbstnoi.impindepall;
-% off1in = allbstnoi.off1i;
-% supertstr = 'Secondary sources removed';
-% fnsuffix = [];
-
-%%%param for further checked at KLNB
-locxyprojall = allbstsig.locxyproj4thall;
-tarvlsplstall = allbstsig.impindep4thall(:,1);
-nsrc = allbstsig.nsrc4th;
-imp = allbstsig.impindep4thall;
+%%%param for secondary sources removed
+locxyprojall = allbstsig.locxyprojall;
+tarvlsplstall = allbstsig.impindepall(:,1);
+nsrc = allbstsig.nsrc;
+imp = allbstsig.impindepall;
 off1i = allbstsig.off1i;
-locxyprojalln = allbstnoi.locxyproj4thall;
-tarvlsplstalln = allbstnoi.impindep4thall(:,1);
-nsrcn = allbstnoi.nsrc4th;
-impn = allbstnoi.impindep4thall;
+locxyprojalln = allbstnoi.locxyprojall;
+tarvlsplstalln = allbstnoi.impindepall(:,1);
+nsrcn = allbstnoi.nsrc;
+impn = allbstnoi.impindepall;
 off1in = allbstnoi.off1i;
-supertstr = 'Further checked at KLNB';
-fnsuffix = '4th';
+supertstr = 'Secondary sources removed';
+fnsuffix = [];
+
+% %%%param for further checked at KLNB
+% locxyprojall = allbstsig.locxyproj4thall;
+% tarvlsplstall = allbstsig.impindep4thall(:,1);
+% nsrc = allbstsig.nsrc4th;
+% imp = allbstsig.impindep4thall;
+% off1i = allbstsig.off1i;
+% locxyprojalln = allbstnoi.locxyproj4thall;
+% tarvlsplstalln = allbstnoi.impindep4thall(:,1);
+% nsrcn = allbstnoi.nsrc4th;
+% impn = allbstnoi.impindep4thall;
+% off1in = allbstnoi.off1i;
+% supertstr = 'Further checked at KLNB';
+% fnsuffix = '4th';
 
 % keyboard
 
@@ -193,17 +206,21 @@ nets = length(years);
 %%%moving window length in samples for running CC, envelope, etc.
 %standard window length is about 0.5s, this is about the visual duration of the filtered and unfiltered
 %template, although in fact to include as least one cycle of the main dipole of template
-rccmwsec=0.5;
 sps = 160;
-rccmwlen=rccmwsec*sps;
+rccmwlen=rccwin*sps;
 
 wlensec = 6;
 
 %%%Flag to indicate if it is necessary to recalculate everything
-flagrecalc = 0;
-% flagrecalc = 1;
+% flagrecalc = 0;
+flagrecalc = 1;
 
-savefile = strcat('medseisampbetweenlfes',fnsuffix,num2str(wlensec),'s.mat');
+if rccwin==0.25
+  savefile = sprintf('medseisampbetweenlfes%s%ds%.2fs.mat',fnsuffix,wlensec,rccwin);
+else
+  savefile = sprintf('medseisampbetweenlfes%s%ds.mat',fnsuffix,wlensec);
+  % savefile = strcat('medseisampbetweenlfes',fnsuffix,num2str(wlensec),'s.mat');
+end
 
 if flagrecalc
 
@@ -451,6 +468,8 @@ end
 else
   load(strcat(rstpath, '/MAPS/',savefile));
 end
+
+keyboard
 
 %% fraction of 'isolated' events, eg, when m=1, evts whose minimum interevt time >0.375s
 %%%2 definitions of inter-event times, one is what we have been used

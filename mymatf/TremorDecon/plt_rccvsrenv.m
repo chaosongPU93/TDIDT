@@ -311,7 +311,7 @@ scatter(ax,dum(:,1),dum(:,2),msize,dum(:,3),marker,'filled','MarkerEdgeColor','n
 colormap(ax,flipud(colormap(ax,'plasma')));
 c=colorbar(ax,'SouthOutside');
 pos = ax.Position;
-c.Position = [pos(1), pos(2)-0.03, pos(3), 0.03];
+c.Position = [pos(1), pos(2)-0.025, pos(3), 0.03];
 if strcmp(scale,'log10')
   cstr = strcat({'log_{10}(# points / '},binmethod,')');
 elseif strcmp(scale,'linear')
@@ -331,10 +331,10 @@ scatter(ax,median(runplt(:,1)),median(runplt(:,3)),40,'k^','filled');
 text(ax,0.98,0.05,sprintf('%.1f-%.1f Hz',losig,hisig),'unit','normalized',...
   'HorizontalAlignment','right','fontsize',10);
 errorbar(ax,xcnt,ycnt,-y1sig,y1sig,'vertical','o',...
-  'markersize',4,'color','k','linewidth',0.8,'MarkerEdgeColor','k',...
+  'markersize',4,'color','w','linewidth',0.8,'MarkerEdgeColor','w',...
   'MarkerFaceColor','none','CapSize',4);
 errorbar(ax,xcnt90,ycnt90,-y1sig90,y1sig90,'vertical','o',...
-  'markersize',4,'color','r','linewidth',0.8,'MarkerEdgeColor','r',...
+  'markersize',4,'color','r','linewidth',1,'MarkerEdgeColor','r',...
   'MarkerFaceColor','none','CapSize',4);
 % text(ax,0.02,0.1,sprintf('S: %.2f',spear),'unit','normalized',...
 %   'HorizontalAlignment','left','fontsize',8);
@@ -389,15 +389,15 @@ colormap(ax,flipud(colormap(ax,'plasma')));
 % colormap(ax,'plasma');
 c=colorbar(ax,'SouthOutside');
 pos = ax.Position;
-c.Position = [pos(1), pos(2)-0.03, pos(3), 0.03];
+c.Position = [pos(1), pos(2)-0.025, pos(3), 0.03];
 if strcmp(scale,'log10')
-  cstr = strcat({'log_{10}(ratio of points / '},binmethod,')');
+  cstr = strcat({'log_{10}(ratio detections / points)'});
 elseif strcmp(scale,'linear')
-  cstr = strcat({'ratio of points / '},binmethod);  
+  cstr = strcat({'ratio detections / points'});  
 end
 c.Label.String = cstr;
 caxis(ax,[prctile(dum(:,3),1) 0]);
-scatter(ax,median(runsrcplt(:,1)),median(runsrcplt(:,3)),40,'k^','filled');
+scatter(ax,median(runsrcplt(:,1)),median(runsrcplt(:,3)),40,'w^','filled');
 % errorbar(ax,xcnt,ycnt,-y1sig,y1sig,'vertical','o',...
 %   'markersize',4,'color','k','linewidth',0.8,'MarkerEdgeColor','k',...
 %   'MarkerFaceColor','none','CapSize',4);
@@ -539,19 +539,19 @@ colormap(ax,flipud(colormap(ax,'plasma')));
 % colormap(ax,'plasma');
 c=colorbar(ax,'SouthOutside');
 pos = ax.Position;
-c.Position = [pos(1), pos(2)-0.03, pos(3), 0.03];
+c.Position = [pos(1), pos(2)-0.035, pos(3), 0.03];
 cstr = strcat({'median LF RCC / '},binmethod);  
 c.Label.String = cstr;
 % caxis(ax,minmax(dum(:,3)'));
 caxis(ax,[prctile(dum(:,3),1) prctile(dum(:,3),99)]);
-scatter(ax,median(xdata),median(ydata),40,'k^','filled');
+scatter(ax,median(xdata),median(ydata),40,'w^','filled');
 % text(ax,0.98,0.05,sprintf('%.1f-%.1f',losiglf,hisiglf),'unit','normalized',...
 %   'HorizontalAlignment','right','fontsize',10);
 errorbar(ax,xcnt,ycnt,-y1sig,y1sig,'vertical','o',...
-  'markersize',4,'color','k','linewidth',0.8,'MarkerEdgeColor','k',...
+  'markersize',4,'color','w','linewidth',0.8,'MarkerEdgeColor','w',...
   'MarkerFaceColor','none','CapSize',4);
 errorbar(ax,xcnt90,ycnt90,-y1sig90,y1sig90,'vertical','o',...
-  'markersize',4,'color','r','linewidth',0.8,'MarkerEdgeColor','r',...
+  'markersize',4,'color','r','linewidth',1,'MarkerEdgeColor','r',...
   'MarkerFaceColor','none','CapSize',4);
 % text(ax,0.02,0.1,sprintf('S: %.2f',spear),'unit','normalized',...
 %   'HorizontalAlignment','left','fontsize',8);
@@ -645,7 +645,7 @@ colormap(ax,flipud(colormap(ax,'plasma')));
 % colormap(ax,'plasma');
 c=colorbar(ax,'SouthOutside');
 pos = ax.Position;
-c.Position = [pos(1), pos(2)-0.03, pos(3), 0.03];
+c.Position = [pos(1), pos(2)-0.035, pos(3), 0.03];
 if strcmp(scale,'log10')
   cstr = strcat({'log_{10}(median opt/ort env ratio / '},binmethod,')');
 elseif strcmp(scale,'linear')

@@ -106,6 +106,7 @@ if ~singleflag  %%%synthetics from different region sizes and saturation levels
   nround = nreg;
   
   ttstr1 = {'Noise-free syn, '};
+  fnsuffix1 = '';
   
 else  %%%synthetics from different noise and saturation levels, sources at a single spot
   %different percent of noise
@@ -114,6 +115,7 @@ else  %%%synthetics from different noise and saturation levels, sources at a sin
   nround = ntrial;
   
   ttstr1 = {'Single-spot syn, '};
+  fnsuffix1 = '_onespot';
 end
 
 for iround = 1: nround
@@ -140,6 +142,11 @@ for iround = 1: nround
   end
 end
 % keyboard
+
+%%%whether to save the figure
+savefig = 1;
+% savefig = 0;
+
 
 %%
 %%%param for secondary sources removed
@@ -205,6 +212,15 @@ pltxsep = 0.01; pltysep = 0.02;
 optaxpos(f,nrow,ncol,pltxran,pltyran,pltxsep,pltysep);
 
 color = gradientblue(nround);
+  
+%   xran = [0 20];
+%   yran = [1e-4 1];
+% xran = [0 7];
+% yran = [5e-4 1];
+% xran = [0 4];
+% yran = [5e-3 1];
+xran = [0 2];
+yran = [5e-2 1];
 
 p=[]; label=[];
 for insat = 1 : nnsat
@@ -260,15 +276,18 @@ for insat = 1 : nnsat
   else
     nolabels(ax,3);
   end  
-  
-  %   xran = [0 20];
-  %   yran = [1e-4 1];
-  xran = [0 7];
-  yran = [5e-4 1];
   xlim(ax,xran);
   ylim(ax,yran);
   longticks(ax,2);
 end
+
+if savefig
+  fname = sprintf('probintert%ds_syn%s.pdf',xran(2),fnsuffix1);
+  print(f.fig,'-dpdf',...
+    strcat('/home/chaosong/Pictures/',fname));
+end
+
+
 
 %% compution, fraction of catalog of events in clusters vs. # of events in clusters
 for iround = 1: nround

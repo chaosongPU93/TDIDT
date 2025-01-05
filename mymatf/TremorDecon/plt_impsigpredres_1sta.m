@@ -50,6 +50,7 @@ if isempty(xzoom)
   xlim(ax,[0 lsig]/sps);
 else
   xlim(ax,xzoom);
+  xticks(ax,xzoom(1): 2: xzoom(2));
 end
 ax.YColor=ax.XColor;
 ylabel(ax,'Amplitude','fontsize',10);
@@ -77,6 +78,7 @@ if isempty(xzoom)
   xlim(ax,[0 lsig]/sps);
 else
   xlim(ax,xzoom);
+  xticks(ax,xzoom(1): 2: xzoom(2));
 end
 ax.YColor=ax.XColor;
 ylabel(ax,'Amplitude','fontsize',10);
@@ -106,6 +108,7 @@ if isempty(xzoom)
   xlim(ax,[0 lsig]/sps);
 else
   xlim(ax,xzoom);
+  xticks(ax,xzoom(1): 2: xzoom(2));
 end
 xlabel(ax,'Time (s)','fontsize',10);
 ylabel(ax,'Amplitude','fontsize',10);

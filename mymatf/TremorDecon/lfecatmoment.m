@@ -141,9 +141,10 @@ hfout = sortrows(hfout, [daycol, seccol]);
 ttol = 35;
 ntol = 3;
 % trange = load(strcat(rstpath, '/MAPS/tdec.bstran',num2str(ttol),'s.pgc002.',cutout(1:4)));
-trange = load(strcat(rstpath, '/MAPS/tdec.bstran',num2str(ttol),'s.',num2str(ntol),'.pgc002.',...
-  cutout(1:4)));
-tlen = trange(:,3)-trange(:,2);
+% trange = load(strcat(rstpath, '/MAPS/tdec.bstran',num2str(ttol),'s.',num2str(ntol),'.pgc002.',...
+%   cutout(1:4)));
+trange = load(strcat(rstpath, '/MAPS/tdec.bstranbuf',num2str(ttol),'s.pgc002.',cutout(1:4)));
+  tlen = trange(:,3)-trange(:,2);
 nbst = size(trange,1);
 
 dates = unique(trange(:,1));
@@ -381,9 +382,17 @@ armcato = armcat(isinbnd ~= 1, :);  %outside boundary
 clear armcat
 
 %% load LFE catalogs
+%choose the window length in sec for computing RCC 
+% rccmwsec = 0.25;
+rccmwsec = 0.5;
+
 %%%load the LFE catalog, 25-s-win
-% savefile = 'deconv_stats4th_allbstsig.mat';
-savefile = 'deconv_stats4th_no23_allbstsig.mat';
+if rccmwsec == 0.5
+  % savefile = 'deconv_stats4th_allbstsig.mat';
+  savefile = 'deconv_stats4th_no23_allbstsig.mat';
+elseif rccmwsec == 0.25
+  savefile = 'deconv_stats4th_no23_allbstsig0.25s.mat';
+end
 allsig = load(strcat(rstpath, '/MAPS/',savefile));
 imp = allsig.allbstsig.impindepall;
 imp4th = allsig.allbstsig.impindep4thall;
@@ -401,8 +410,12 @@ sps = 160;
 [imploc4th, indinput] = off2space002(imp4th(:,7:8),sps,ftrans,0); % 8 cols, format: dx,dy,lon,lat,dep,ttrvl,off12,off13
 
 %%%load the LFE catalog, 25-s-win, noise
-% savefile = 'deconv_stats4th_allbstnoi.mat';
-savefile = 'deconv_stats4th_no23_allbstnoi.mat';
+if rccmwsec == 0.5
+  % savefile = 'deconv_stats4th_allbstnoi.mat';
+  savefile = 'deconv_stats4th_no23_allbstnoi.mat';
+elseif rccmwsec == 0.25
+  savefile = 'deconv_stats4th_no23_allbstnoi0.25s.mat';
+end
 allnoi = load(strcat(rstpath, '/MAPS/',savefile));
 impn = allnoi.allbstnoi.impindepall;
 impn4th = allnoi.allbstnoi.impindep4thall;
@@ -448,7 +461,7 @@ fnsuffix = [];
 % catstr = '4-station';
 % fnsuffix = '4th';
 
-saveflag = 0;
+saveflag = 1;
 
 rccuse = rccbst;
 rcccol = 1;
@@ -468,7 +481,7 @@ pltflag = 0;
 hisig=6.3; % this will give a similar spectral shape between template and signal
 losig=1.8;
 
-rccmwsec = 0.5;
+% rccmwsec = 0.5;
 
 %moving window length in samples for running CC, envelope, etc.
 %standard window length is about 0.5s, this is about the visual duration of the filtered and unfiltered
@@ -1061,24 +1074,45 @@ end
 % amprat1iall = cat(1, amprat1i{:});
 
 %%
-nrow = 1; % rows and cols of subplots in each figure
-ncol = 3;
-widin = 8; % size of each figure
-htin = 3.5;
+% nrow = 1; % rows and cols of subplots in each figure
+% ncol = 3;
+% widin = 8; % size of each figure
+% htin = 3.5;
+% f = initfig(widin,htin,nrow,ncol);
+% axpos = [0.06 0.15 0.245 0.72;
+%          0.42 0.15 0.245 0.72;
+%          0.74 0.15 0.245 0.72;
+%          ];
+% for isub = 1:nrow*ncol
+%   set(f.ax(isub), 'position', axpos(isub,:));
+% end
+
+nrow = 2; % rows and cols of subplots in each figure
+ncol = 2;
+widin = 5.5; % size of each figure
+htin = 6;
 f = initfig(widin,htin,nrow,ncol);
-% pltxran = [0.08 0.98]; pltyran = [0.15 0.98];
-% pltxsep = 0.08; pltysep = 0.05;
-% axpos = optaxpos(f,nrow,ncol,pltxran,pltyran,pltxsep,pltysep);
+pltxran = [0.1 0.93]; pltyran = [0.09 0.96];
+pltxsep = 0.11; pltysep = 0.09;
+axpos = optaxpos(f,nrow,ncol,pltxran,pltyran,pltxsep,pltysep);
 
-axpos = [0.06 0.15 0.245 0.72;
-         0.42 0.15 0.245 0.72;
-         0.74 0.15 0.245 0.72;
-         ];
-for isub = 1:nrow*ncol
-  set(f.ax(isub), 'position', axpos(isub,:));
-end
+%%%what is the difference in time between the common LFEs?
+ax = f.ax(1); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
+histogram(ax,toff2cloa,'binw',0.02,'facec',[.2 .2 .2]);
+xlim(ax,[0 0.5]);
+xticks(ax,0:0.1:0.5);
+ylim(ax,[0 450]);
+plot(ax,[maxtoff maxtoff],ax.YLim,'k--','LineWidth',1);
+text(ax,0.99,0.95,catstr,'HorizontalAlignment',...
+  'right','Units','normalized','fontsize',10);
+text(ax,0.99,0.90,sprintf('%d common LFEs',length(impcomma)),...
+  'HorizontalAlignment','right','Units','normalized','FontSize',8);
+xlabel(ax,"Closest time (s) to Bostock's LFEs");
+ylabel(ax,'Count');
+text(ax,0.02,0.94,'a','FontSize',10,'unit','normalized','EdgeColor','k',...
+  'Margin',1,'backgroundcolor','w','HorizontalAlignment','left');
 
-ax=f.ax(1); hold(ax,'on'); ax.Box = 'on'; grid(ax, 'on');
+ax=f.ax(2); hold(ax,'on'); ax.Box = 'on'; grid(ax, 'on');
 yyaxis(ax,'left');
 plot(ax,1:mmax+1,ninclusm,'-',...
   'linew',1,'color','k','marker','o','markersize',3,...
@@ -1093,7 +1127,7 @@ xlabel(ax,'m (# of events in cluster)');
 ylabel(ax,'# of common events in clusters of m');
 text(ax,0.2,0.9,num2str(sum(ninclusm)),'Units','normalized','HorizontalAlignment','left',...
   'FontSize',10);
-text(ax,0.02,0.95,'a','FontSize',10,'unit','normalized','EdgeColor','k',...
+text(ax,0.02,0.94,'b','FontSize',10,'unit','normalized','EdgeColor','k',...
   'Margin',1,'backgroundcolor','w');
 ylim(ax,[0 350]);
 yran = ax.YLim;
@@ -1107,7 +1141,7 @@ ax.YAxis(2).Exponent = 3;
 ylabel(ax,'Total # of events in clusters of m');
 hold(ax,'off');
 
-ax=f.ax(2); hold(ax,'on'); ax.Box = 'on'; grid(ax, 'on');
+ax=f.ax(3); hold(ax,'on'); ax.Box = 'on'; grid(ax, 'on');
 % yyaxis(ax,'left');
 plot(ax,1:mmax+1,ninclusm./nuimp,'-',...
   'linew',1,'color','k','marker','o','markersize',3,...
@@ -1120,11 +1154,11 @@ xticks(ax,1:2:mmax+1);
 ylim(ax,[0 0.2]);
 xlabel(ax,'m (# of events in cluster)');
 ylabel(ax,'Ratio of common events to total events');
-text(ax,0.02,0.95,'b','FontSize',10,'unit','normalized','EdgeColor','k',...
+text(ax,0.02,0.94,'c','FontSize',10,'unit','normalized','EdgeColor','k',...
   'Margin',1,'backgroundcolor','w');
 hold(ax,'off');
 
-ax=f.ax(3); hold(ax,'on'); ax.Box = 'on'; grid(ax, 'on');% ax.XScale='log';
+ax=f.ax(4); hold(ax,'on'); ax.Box = 'on'; grid(ax, 'on');% ax.XScale='log';
 xlim(ax,[-1 1]);
 ylim(ax,[0 150]);
 patge1 = [0 ax.YLim(2);
@@ -1186,19 +1220,23 @@ for m = 1:mmaxplt
 end  
 lgd=legend(ax,p,label,'Location','northeast','fontsize',8);  %'Orientation','vertical'
 
-text(ax,0.02,0.95,'c','FontSize',10,'unit','normalized','EdgeColor','k',...
+text(ax,0.02,0.94,'d','FontSize',10,'unit','normalized','EdgeColor','k',...
   'Margin',1,'backgroundcolor','w');
 xlabel(ax,'log_{10}{amp ratio}');
 ylabel(ax,'Count');  
 hold(ax,'off');
-
+% %%
 if saveflag
-  fname = strcat('MBcommlfesinclus',fnsuffix,'.pdf');
+  if rccmwsec == 0.25
+    fname = sprintf('MBcommlfesinclus%s%.2fs.pdf',fnsuffix,rccmwsec);
+  else
+    fname = strcat('MBcommlfesinclus',fnsuffix,'.pdf');
+  end
   print(f.fig,'-dpdf',...
     strcat('/home/data2/chaosong/CurrentResearch/Song_Rubin_2024/figures/',fname));
 end
 
-% keyboard
+keyboard
 
 %% map locations of common detections 
 loccomma = off2space002(impcomma(:,7:8),sps,ftrans,0);
@@ -1222,7 +1260,7 @@ xran = [-4 4];
 yran = [-4 4];
 msize = 30;
 if ~isempty(impcomma)
-  wt = median(impcomma(:,[2 4 6]),2);
+  wt = mean(impcomma(:,[2 4 6]),2);
   wtmax = prctile(wt,95); %use percentile in case
   refscl = wt./wtmax;
   refscl(refscl>=1) = 1;  %force the larger amp to be plotted as the same size in case of saturation
@@ -1280,9 +1318,121 @@ hold(ax,'off');
 if saveflag
   fname = strcat('loccommlfe',fnsuffix,'.pdf');
   print(f.fig,'-dpdf',...
-    strcat('/home/data2/chaosong/CurrentResearch/Song_Rubin_2024_2/figures/',fname));
+    strcat('/home/data2/chaosong/CurrentResearch/Song_Rubin_2024/figures/',fname));
 end
 
+%%
+impcommtmp = [];
+for ibst = 1:nbst
+  tmp = impcomm{ibst};
+  [iets,i,j] = indofburst(trange,ibst);
+  year = years(iets);
+  datesets = dates(floor(dates/1000)==year);    
+  date = datesets(i);
+  tst = trange(ibst,2);
+  tmp = [tmp ones(size(tmp,1),1)*[ibst date tst]];
+  impcommtmp = [impcommtmp; tmp];
+end
+
+projang = 135; %along SE
+[~,~,projxy] = customprojection(loccomma(:,1:2),projang);
+
+widin = 8.4;  % maximum width allowed is 8.5 inches
+htin = 9;   % maximum height allowed is 11 inches
+nrow = nday;
+ncol = 1;
+f = initfig(widin,htin,nrow,ncol); %initialize fig
+
+pltxran = [0.07 0.98]; pltyran = [0.03 0.99];
+pltxsep = 0.07; pltysep = 0.03;
+optaxpos(f,nrow,ncol,pltxran,pltyran,pltxsep,pltysep);
+
+for i = 1:nday
+  impcommday = impcommtmp(impcommtmp(:,end-1)==dates(i),:);
+  tday = (impcommday(:,end)+impcommday(:,1)/sps)/3600;
+  projxyday = projxy(impcommtmp(:,end-1)==dates(i),:);
+  
+  ax=f.ax(i); hold(ax,'on'); ax.Box = 'on'; grid(ax, 'on');
+  scatter(ax,tday,projxyday(:,1),5,'b','filled');  %SE
+  scatter(ax,tday,projxyday(:,2),5,'r','filled');  %NE
+  xlim(ax,[0 24]);
+  longticks(ax,4);
+end
+
+%% from above, choose a few ranges in which LFEs seem to migrate
+tran=[1 70 83;
+      1 218 230;
+      2 25 42;
+      3 84 98;
+      3 104 126;
+      3 160 176;
+      3 193 211;
+      4 24 36;
+      4 38 50;
+      4 77 96;
+      7 45 59;
+      8 2 23;
+      8 38 56;
+      8 76 91];
+    
+widin = 11;  % maximum width allowed is 8.5 inches
+htin = 8;   % maximum height allowed is 11 inches
+nrow = 4;
+ncol = 4;
+f = initfig(widin,htin,nrow,ncol); %initialize fig
+
+pltxran = [0.02 0.98]; pltyran = [0.03 0.99];
+pltxsep = 0.03; pltysep = 0.03;
+optaxpos(f,nrow,ncol,pltxran,pltyran,pltxsep,pltysep);
+
+for iran = 1: size(tran,1)
+  i = tran(iran,1);
+  impcommday = impcommtmp(impcommtmp(:,end-1)==dates(i),:);
+  tday = (impcommday(:,end)+impcommday(:,1)/sps);
+  locday = loccomma(impcommtmp(:,end-1)==dates(i),:);
+  
+  imptmp = impcommday(tran(iran,2):tran(iran,3),:);
+  ttmp = tday(tran(iran,2):tran(iran,3),:);
+  loctmp = locday(tran(iran,2):tran(iran,3),:);
+  
+  ax=f.ax(iran); hold(ax,'on'); ax.Box = 'on'; grid(ax, 'on'); axis(ax, 'equal');
+  cran = [0 ceil(max(ttmp))-floor(min(ttmp))];
+  xran = [-4 4];
+  yran = [-4 4];
+  msize = 30;
+  if ~isempty(imptmp)
+    wt = mean(imptmp(:,[2 4 6]),2);
+    wtmax = prctile(wt,95); %use percentile in case
+    refscl = wt./wtmax;
+    refscl(refscl>=1) = 1;  %force the larger amp to be plotted as the same size in case of saturation
+    scatter(ax,loctmp(:,1),loctmp(:,2),msize*refscl,ttmp-floor(min(ttmp)),'filled','o',...
+      'MarkerEdgeColor',[.5 .5 .5]);
+  end
+  text(ax,0.99,0.05,sprintf('%d events',size(loctmp,1)),'Units','normalized',...
+    'HorizontalAlignment','right','FontSize',8);
+  colormap(ax,flipud(colormap(ax,'kelicol')));
+%   colormap(ax,'viridis');
+  c1=colorbar(ax);
+  caxis(ax,cran);
+  c1.Label.String = sprintf('Relative origin time (s)');
+  c1.Label.FontSize = 9;
+  scatter(ax,xran(1)+0.1*range(xran),yran(2)-0.05*range(yran),msize,'w','filled',...
+    'MarkerEdgeColor',[.5 .5 .5],'linew',1);
+  text(ax,0.02,0.9,strcat({'Amplitude '},'$\geq$',{' 95th prctile'}) ,'Units','normalized',...
+    'HorizontalAlignment','left','FontSize',8,'interpreter','latex');
+  axis(ax,'equal');
+  xticks(ax,xran(1):1:xran(2));
+  yticks(ax,yran(1):1:yran(2));
+  axis(ax,[xran yran]);
+    
+end
+
+delete(f.ax(size(tran,1)+1:end));
+
+orient(f.fig,'landscape');
+fname = strcat('loccommlfemig',fnsuffix,'.pdf');
+print(f.fig,'-dpdf',...
+  strcat('/home/data2/chaosong/CurrentResearch/Song_Rubin_2024/figures/',fname));
 
 % keyboard
 
@@ -1549,7 +1699,7 @@ if saveflag
   print(f.fig,'-dpdf',...
     strcat('/home/data2/chaosong/CurrentResearch/Song_Rubin_2024_2/figures/',fname));
 end
-% keyboard
+keyboard
 
 %% moment correction
 %the above moment could be deviated from truth in several ways, see NOTE for details:

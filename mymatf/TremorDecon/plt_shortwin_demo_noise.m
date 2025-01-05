@@ -47,7 +47,7 @@ xran = [-4 4];
 yran = [-4 4];
 msize = 35;
 if ~isempty(imp)
-  wt = median(imp(:,[2 4 6]),2);
+  wt = mean(imp(:,[2 4 6]),2);
   wtmax = prctile(wt,95); %use percentile in case
   refscl = wt./wtmax;
   refscl(refscl>=1) = 1;  %force the larger amp to be plotted as the same size in case of saturation
@@ -93,7 +93,7 @@ set(f.ax(2), 'position', [0.56 0.1 0.40 0.8]);
 ax=f.ax(2); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
 plot(ax,xcut,ycut,'k-','linew',2);
 if ~isempty(imp4th) && ~isempty(imp)
-  wt4th = median(imp4th(:,[2 4 6]),2);
+  wt4th = mean(imp4th(:,[2 4 6]),2);
   % wt4thmax = prctile(wt4th,95); %use percentile in case
   refscl4th = wt4th./wtmax;
   refscl4th(refscl4th>=1) = 1;  %force the larger amp to be plotted as the same size in case of saturation

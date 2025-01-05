@@ -1,14 +1,14 @@
-% deconv_ref_4s_exp_4thsta_suppledemo.m
+% deconv_4s_exp_4thsta_suppledemo.m
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% This is the script to call the function "deconv_ref_4s_exp_4thsta_fn.m"
-% to run the short-win deconvolution to a few particular burst windows 
+% This is the script to call the function "deconv_4s_exp_4thsta_fn.m"
+% to run the whole-win deconvolution to a few particular burst windows 
 % that are shown in the supplement of the paper.
 %
 %
 %
 % Chao Song, chaosong@princeton.edu
-% First created date:   2024/08/10
-% Last modified date:   2024/11/03
+% First created date:   2024/11/23
+% Last modified date:   2024/11/23
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% Initialization
@@ -46,7 +46,7 @@ offmax = round(2.0*rmse);
 
 sps = 160;
 
-indhi = [99; 100; 115; 164; 170; 174;]; % 
+indhi = [99; 100; 115; 164; 170; 174; 181]; 
 
 %% call function 'deconv_ref_4s_exp_rand_fn', all bursts, DATA VS NOISE
 %%%Flag to indicate if it is necessary to recalculate everything
@@ -55,24 +55,15 @@ flagrecalc = 1;
 
 if flagrecalc
   normflag = 0; %do not normalize the templates
-  pltflag = 1;  %do not create summary plots for each choice of inputs
+  pltflag = 0;  %do not create summary plots for each choice of inputs
   % rccmwsec = 0.25; %use 0.5s or 0.25s 
   rccmwsec = 0.5; %use 0.5s or 0.25s
   
   %%%all bursts using real data
   noiseflag = 0;
-%   deconv_4s_exp_4thsta_fn(indhi,normflag,noiseflag,pltflag,rccmwsec); %
+  allbstsig = deconv_4s_exp_4thsta_fn(indhi,normflag,noiseflag,pltflag,rccmwsec); %
 
-  allbstsig = deconv_ref_4s_exp_4thsta_fn(indhi,normflag,noiseflag,pltflag,rccmwsec); %
-
-  savefile = 'deconv_stats4th_no23_allbstsig_indhi.mat';
+  savefile = 'deconv1win_stats4th_no23_allbstsig_indhi.mat';
   save(strcat(rstpath, '/MAPS/',savefile), 'allbstsig');
-
+  
 end
-
-
-
-
-
-
-

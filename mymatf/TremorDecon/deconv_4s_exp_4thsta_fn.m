@@ -287,6 +287,15 @@ for ista = 1: nsta
 end
 STAort = detrend(ccstackort);
 
+%%%vertical
+ccstackvert = [];
+for ista = 1: nsta
+    fname = strcat(temppath, fam, '_', strtrim(stas(ista, :)), '_', num2str(sps), 'sps_', ...
+        num2str(templensec), 's_', 'BBCCS_', 'vert_Nof_Non_Chao_catnew');
+    ccstackvert(:,ista) = load(fname);
+end
+STAvert = detrend(ccstackvert);
+
 %flag of normalization
 % normflg = 0;
 
@@ -327,6 +336,7 @@ ie=zcrosses+sampaft;
 for ista=1:nsta
     STAtmp(:,ista)=detrend(STA(is(ista):ie(ista),ista));  % this means templates are 'aligned' at zero-crossings
     STAtmport(:,ista)=detrend(STAort(is(ista):ie(ista),ista)); 
+    STAtmpvert(:,ista)=detrend(STAvert(is(ista):ie(ista),ista)); 
 end
 %x-correlation independently between each station pair 
 mshiftadd=10*sps/40;
@@ -342,12 +352,14 @@ imax(2)-imax(3)+imax(1);   %enclosed if it equals to 0
 for ista=2:nsta
     STAtmp(mshiftadd+1:end-(mshiftadd+1),ista)=detrend(STAtmp(mshiftadd+1-imax(ista):end-(mshiftadd+1)-imax(ista),ista));
     STAtmport(mshiftadd+1:end-(mshiftadd+1),ista)=detrend(STAtmport(mshiftadd+1-imax(ista):end-(mshiftadd+1)-imax(ista),ista));
+    STAtmpvert(mshiftadd+1:end-(mshiftadd+1),ista)=detrend(STAtmpvert(mshiftadd+1-imax(ista):end-(mshiftadd+1)-imax(ista),ista));
 end
 %normalization
 if normflag 
   for ista=1:nsta
       STAtmp(:,ista)=STAtmp(:,ista)/spread(ista); % now templates are 'aligned' indeoendently by x-corr wrt. sta 1
       STAtmport(:,ista)=STAtmport(:,ista)/spread(ista);
+      STAtmpvert(:,ista)=STAtmpvert(:,ista)/spread(ista);
   end
 end
 % figure
@@ -369,6 +381,8 @@ tmpwletf = STAtmp;  % bandpassed version
 fractap = sps/size(tmpwlet,1);
 tmpwletort = STAtmport; % no bandpass
 tmpwletfort = STAtmport;  % bandpassed version
+tmpwletvert = STAtmpvert; % no bandpass
+tmpwletfvert = STAtmpvert;  % bandpassed version
 for ista = 1: nsta
   %romve mean, linear trend of template
   tmpwlet(:,ista) = detrend(tmpwlet(:,ista));
@@ -390,6 +404,13 @@ for ista = 1: nsta
   tmpwletort(:,ista) = detrend(tmpwletort(:,ista));
   tmpwletfort(:,ista) = Bandpass(tmpwletort(:,ista), sps, lowlet, hiwlet, 2, 2, 'butter');
   tmpwletfort(:,ista) = detrend(tmpwletfort(:,ista));
+  
+  %same process for vertical
+  tmpwletvert(:,ista) = detrend(tmpwletvert(:,ista));
+  tmpwletvert(:,ista) = w.* tmpwletvert(:,ista);
+  tmpwletvert(:,ista) = detrend(tmpwletvert(:,ista));
+  tmpwletfvert(:,ista) = Bandpass(tmpwletvert(:,ista), sps, lowlet, hiwlet, 2, 2, 'butter');
+  tmpwletfvert(:,ista) = detrend(tmpwletfvert(:,ista));
 end
 
 %%%constrained CC, so that only 2 offsets are independent
@@ -420,6 +441,8 @@ ppeaks = zeros(nsta,1); % positive peaks
 npeaks = zeros(nsta,1); % negative peaks
 greenort = zeros(greenlen,nsta); % no bandpass
 greenfort = zeros(greenlen,nsta);  % bandpassed version
+greenvert = zeros(greenlen,nsta); % no bandpass
+greenfvert = zeros(greenlen,nsta);  % bandpassed version
 for ista = 1: nsta
   %cut according to the zero-crossing and the time shift from the constrained CC
   green(:,ista) = tmpwlet(zcsta1+8*sps-greenlen+1-offwlet1i(ista): zcsta1+8*sps-offwlet1i(ista), ista);
@@ -441,6 +464,16 @@ for ista = 1: nsta
   if normflag
     greenort(:,ista) = greenort(:,ista)/max(abs(green(:,ista)));    % normalize
     greenfort(:,ista) = greenfort(:,ista)/max(abs(green(:,ista)));    % normalize
+  end
+  
+  %same process for vertical
+  greenvert(:,ista) = tmpwletvert(zcsta1+8*sps-greenlen+1-offwlet1i(ista): zcsta1+8*sps-offwlet1i(ista), ista);
+  greenfvert(:,ista) = tmpwletfvert(zcsta1+8*sps-greenlen+1-offwlet1i(ista): zcsta1+8*sps-offwlet1i(ista), ista);
+  greenvert(:,ista) = detrend(greenvert(:,ista));
+  greenfvert(:,ista) = detrend(greenfvert(:,ista));
+  if normflag
+    greenvert(:,ista) = greenvert(:,ista)/max(abs(green(:,ista)));    % normalize
+    greenfvert(:,ista) = greenfvert(:,ista)/max(abs(green(:,ista)));    % normalize
   end
   
   %re-find the zero-crossing as the template length has changed
@@ -481,6 +514,14 @@ spread = range(greenf);   % range of the amp of template
 %just the filtered templates
 % plt_templates_bp(greenf,stas,lowlet,hiwlet,sps);
 
+%plot the filtered templates at all components
+staplt = 1:7;
+winnoi = [1 3]; %empirical window for pre-arrival noise
+winsig = [4 7]; %empirical window for main arrival
+[f,snrf,snrfort,snrfvert]=plt_templates_bp_bysta(greenf,greenfort,greenfvert,stas,staplt,lowlet,hiwlet,sps,...
+  [winnoi;winsig]);
+close(f.fig);
+
 
 %% prepare the signal and noise windows
 %filtering passband for reading data, confirmed by 'spectrabursts002_4s.m'
@@ -501,6 +542,12 @@ ccali = zeros(size(trange,1),1);  % CC value using the best alignment
 subwseclfit = zeros(size(trange,1),1);  % subwin length from linear fitting, ie, time for 1-sample offset change
 mrcc = zeros(size(trange,1),1);  % median RCC using the best alignment
 mcc = zeros(size(trange,1),1);  % mean of 0-lag CC using the best alignment
+menv = zeros(size(trange,1),nsta);  % median of the mean envelope for each burst 
+mamp = zeros(size(trange,1),nsta);  % median of the mean absolute amplitude for each burst
+menvort = zeros(size(trange,1),nsta);  % median of the mean envelope for each burst, ort comp 
+mamport = zeros(size(trange,1),nsta);  % median of the mean absolute amplitude for each burst, ort comp
+menvvert = zeros(size(trange,1),nsta);  % median of the mean envelope for each burst, vert comp 
+mampvert = zeros(size(trange,1),nsta);  % median of the mean absolute amplitude for each burst, vert comp 
 rampk = cell(size(trange,1),1); % similar to 'rampcatk', but for the whole-win aligned
 rampnormk = cell(size(trange,1),1);
 renvk = cell(size(trange,1),1);
@@ -702,10 +749,10 @@ for iii = 1: length(idxbst)
       continue    % continue to the next day
     end
     
-%     %read vertical components too, as we want to have a sense of the SNR at the orthogonal and vertical
-%     %components
-%     [STAvert,~,~,fileflag] = rd_daily_bpdata(year,jday,prename,stas,PERMSTA,POLSTA,...
-%       PERMROTS,POLROTS,sps,losig,hisig,npo,npa,[],[],[],[],'Z');
+    %read vertical components too, as we want to have a sense of the SNR at the orthogonal and vertical
+    %components
+    [STAvert,~,~,fileflag] = rd_daily_bpdata(year,jday,prename,stas,PERMSTA,POLSTA,...
+      PERMROTS,POLROTS,sps,losig,hisig,npo,npa,[],[],[],[],'Z');
 
 %     keyboard
     % for j = 14: size(rangetemp,1)  
@@ -756,7 +803,9 @@ for iii = 1: length(idxbst)
         min(floor(tedbuf*sps+overshoot+msftaddm),86400*sps), :); % sta 1
       ortseg = STAort(max(floor(tstbuf*sps+1-overshoot-msftaddm),1): ...
         min(floor(tedbuf*sps+overshoot+msftaddm),86400*sps), :);
-        
+      vertseg = STAvert(max(floor(tstbuf*sps+1-overshoot-msftaddm),1): ...
+        min(floor(tedbuf*sps+overshoot+msftaddm),86400*sps), :);
+       
       %%%obtain a single best alignment based on the entire win 
       %       optcc = optseg(:, 2:end);
       optcc = detrend(optseg(1+msftaddm: end-msftaddm, 2:end));
@@ -817,11 +866,14 @@ for iii = 1: length(idxbst)
       %%%Align and compute the RCC based on the entire win, and take that as the input signal!
       optdat = [];  % win segment of interest
       ortdat = [];
+      vertdat = [];
       optdat(:, 1) = optseg(1+msftaddm: end-msftaddm, 1); % time column
       ortdat(:, 1) = ortseg(1+msftaddm: end-msftaddm, 1);
+      vertdat(:, 1) = vertseg(1+msftaddm: end-msftaddm, 1);
       for ista = 1: nsta 
         optdat(:, ista+1) = optseg(1+msftaddm-off1i(k,ista): end-msftaddm-off1i(k,ista), ista+1);
         ortdat(:, ista+1) = ortseg(1+msftaddm-off1i(k,ista): end-msftaddm-off1i(k,ista), ista+1);
+        vertdat(:, ista+1) = vertseg(1+msftaddm-off1i(k,ista): end-msftaddm-off1i(k,ista), ista+1);
       end
 
       %Align the noise using the same offset
@@ -832,6 +884,9 @@ for iii = 1: length(idxbst)
       noidat(:, 4) = STAopt(max(floor((tstbuf-4)*sps+1)-off1i(k,3),1): ...
                             min(floor((tstbuf-0)*sps)-off1i(k,3),86400*sps), 4); % sta 3                          
                                 
+      %save room for memory
+      clear STAopt STAort STAvert 
+
       %%%taper the signal and obtain the new rcc between tapered signals
       %%%2022/06/06, do NOT taper whatsoever!!
       sigsta = zeros(size(optdat,1), nsta);
@@ -901,6 +956,13 @@ for iii = 1: length(idxbst)
       ccpair(k,:) = [cc12 cc13 cc23];
       mcc(k,1) = (cc12+cc13)/2;
 
+      %median envelope for each burst at each station
+      [envup,~] = envelope(detrend(sigsta(:,1:nsta)));
+      menv(k,1:nsta) = median(envup);
+      %median of the mean absolute amplitude for each burst
+      absamp = abs(detrend(sigsta(:,1:nsta)));
+      mamp(k,1:nsta) = median(absamp);        
+                    
       %%%for ort. comp
       sigstaort = zeros(size(ortdat,1), nsta);
       for ista = 1:nsta
@@ -912,7 +974,28 @@ for iii = 1: length(idxbst)
       irccort = irccort-overshoot;
       rccort = (rcc12+rcc13+rcc23)/3;
       sigstaort = detrend(sigstaort(overshoot+1:end-overshoot, :));  %excluding the overshoot
+      %median envelope for each burst at each station
+      [envup,~] = envelope(detrend(sigstaort(:,1:nsta)));
+      menvort(k,1:nsta) = median(envup);
+      %median of the mean absolute amplitude for each burst
+      absamp = abs(detrend(sigstaort(:,1:nsta)));
+      mamport(k,1:nsta) = median(absamp);         
       
+      %%%for vertical comp
+      sigstavert = zeros(size(vertdat,1), nsta);
+      for ista = 1:nsta
+        tmp = vertdat(:,ista+1); %best aligned, filtered
+        tmp = detrend(tmp);
+        sigstavert(:,ista) = tmp;
+      end
+      sigstavert = detrend(sigstavert(overshoot+1:end-overshoot, :));  %excluding the overshoot
+      %median envelope for each burst at each station
+      [envup,~] = envelope(detrend(sigstavert(:,1:nsta)));
+      menvvert(k,1:nsta) = median(envup);
+      %median of the mean absolute amplitude for each burst
+      absamp = abs(detrend(sigstavert(:,1:nsta)));
+      mampvert(k,1:nsta) = median(absamp);         
+
       %%%Doing this here is mainly to note down the thresholds used in the real data 
       fixthresh = zeros(nsta,1);  %fixed thresholds used in real data to stop iteration
       mswccpksep = zeros(nsta,1); %Med sep of peaks in sig-wlet CC
@@ -962,11 +1045,17 @@ for iii = 1: length(idxbst)
         xfrand = amp.*nfft.*exp(1i.*pharand);
         optseg(:,2:end) = real(ifft(xfrand,nfft));
 
-        %%%for orthogonal components, with the same phase??
+        %%%for orthogonal components, with the same phase!!
         [xf,ft,amp,pha] = fftspectrum(ortseg(:,2:end), nfft, sps,'twosided');
 %         pharand = (rand(nfft,3)-0.5)*2*pi;
         xfrand = amp.*nfft.*exp(1i.*pharand);
         ortseg(:,2:end) = real(ifft(xfrand,nfft));
+
+        %%%for vertical components, with the SAME phase!!
+        [xf,ft,amp,pha] = fftspectrum(vertseg(:,2:end), nfft, sps,'twosided');
+%         pharand = (rand(nfft,3)-0.5)*2*pi;
+        xfrand = amp.*nfft.*exp(1i.*pharand);
+        vertseg(:,2:end) = real(ifft(xfrand,nfft));
 
         ircc = [];   % indices of RCC
         rcc = [];  % average RCC
@@ -1037,11 +1126,14 @@ for iii = 1: length(idxbst)
         %%%Align and compute the RCC based on the entire win, and take that as the input signal!      
         optdat = [];  % win segment of interest
         ortdat = [];
+        vertdat = [];
         optdat(:, 1) = optseg(1+msftaddm: end-msftaddm, 1); % time column
         ortdat(:, 1) = ortseg(1+msftaddm: end-msftaddm, 1);
+        vertdat(:, 1) = vertseg(1+msftaddm: end-msftaddm, 1);
         for ista = 1: nsta 
           optdat(:, ista+1) = optseg(1+msftaddm-off1i(k,ista): end-msftaddm-off1i(k,ista), ista+1);
           ortdat(:, ista+1) = ortseg(1+msftaddm-off1i(k,ista): end-msftaddm-off1i(k,ista), ista+1);
+          vertdat(:, ista+1) = vertseg(1+msftaddm-off1i(k,ista): end-msftaddm-off1i(k,ista), ista+1);
         end
 
         %%%taper the signal and obtain the new rcc between tapered signals
@@ -1113,6 +1205,13 @@ for iii = 1: length(idxbst)
         ccpair(k,:) = [cc12 cc13 cc23];
         mcc(k,1) = (cc12+cc13)/2;
               
+        %median envelope for each burst at each station
+        [envup,~] = envelope(detrend(sigsta(:,1:nsta)));
+        menv(k,1:nsta) = median(envup);
+        %median of the mean absolute amplitude for each burst
+        absamp = abs(detrend(sigsta(:,1:nsta)));
+        mamp(k,1:nsta) = median(absamp);        
+                    
         %%%for ort. comp
         sigstaort = zeros(size(ortdat,1), nsta);
         for ista = 1:nsta
@@ -1124,7 +1223,28 @@ for iii = 1: length(idxbst)
         irccort = irccort-overshoot;
         rccort = (rcc12+rcc13+rcc23)/3;
         sigstaort = detrend(sigstaort(overshoot+1:end-overshoot, :));  %excluding the overshoot
-          
+        %median envelope for each burst at each station
+        [envup,~] = envelope(detrend(sigstaort(:,1:nsta)));
+        menvort(k,1:nsta) = median(envup);
+        %median of the mean absolute amplitude for each burst
+        absamp = abs(detrend(sigstaort(:,1:nsta)));
+        mamport(k,1:nsta) = median(absamp);         
+        
+        %%%for vertical comp
+        sigstavert = zeros(size(vertdat,1), nsta);
+        for ista = 1:nsta
+          tmp = vertdat(:,ista+1); %best aligned, filtered
+          tmp = detrend(tmp);
+          sigstavert(:,ista) = tmp;
+        end
+        sigstavert = detrend(sigstavert(overshoot+1:end-overshoot, :));  %excluding the overshoot
+        %median envelope for each burst at each station
+        [envup,~] = envelope(detrend(sigstavert(:,1:nsta)));
+        menvvert(k,1:nsta) = median(envup);
+        %median of the mean absolute amplitude for each burst
+        absamp = abs(detrend(sigstavert(:,1:nsta)));
+        mampvert(k,1:nsta) = median(absamp);         
+        
       end 
       
       rccbst{iii} = rcccomb;
@@ -1197,6 +1317,19 @@ for iii = 1: length(idxbst)
       impindep(:,7:8) = impindep(:,7:8)+repmat([off1i(k,2) off1i(k,3)],size(impindep,1),1); %account for prealignment
       impindepst = sortrows(impindep,1);
       
+      %%%prediction via convolution between grouped impulses and template at each station
+      [~,predgrp,resgrp,predgrpl,resgrpl,l2normred1,varred(k,:,:)]= ...
+        predsig_conv_imptemp(sigsta(:,1:3),optdat(:,1:4),impindepst,...
+        greenf,zcrosses,overshoot,stas,0,sps);
+      %%%predictions at ort. comp.
+      [~,predgrport,resgrport,~,~,l2normred1ort,varredort(k,:,:)]= ...
+        predsig_conv_imptemp(sigstaort(:,1:3),ortdat(:,1:4),impindepst,...
+        greenfort,zcrosses,overshoot,stas,0,sps);
+      %%%prediction at vert. comp.
+      [~,predgrpvert,resgrpvert,~,~,l2normred1vert,varredvert(k,:,:)]= ...
+        predsig_conv_imptemp(sigstavert(:,1:3),vertdat(:,1:4),impindepst,...
+        greenfvert,zcrosses,overshoot,stas,0,sps);
+
 %       %%%plot the scatter of offsets, accounting for prealignment offset, == true offset
 %       xran = [-loff_max+off1i(k,2)-1 loff_max+off1i(k,2)+1];
 %       yran = [-loff_max+off1i(k,3)-1 loff_max+off1i(k,3)+1];
@@ -1597,9 +1730,17 @@ for iii = 1: length(idxbst)
       diffoff14trall = [diffoff14trall; diffoff14tr(indsort)];  %sorted to have the same order as saved impulses
       
       %%%final prediction via convolution between grouped impulses and template at each station 
-      [~,predgrp,resgrp,predgrpl,resgrpl,l2normred(k,:,:),varred(k,:,:)]=...
-        predsig_conv_imptemp(sigsta,optdat,impindepst,...
-        greenf,zcrosses,overshoot,stas,0);
+      [~,predgrp,resgrp,predgrpl,resgrpl,l2normred1,varred4th(k,:,:)]= ...
+        predsig_conv_imptemp(sigsta,optdat,impindepst,greenf,zcrosses,...
+        overshoot,stas,0,sps);
+      %%%predictions at ort. comp.
+      [~,predgrport,resgrport,~,~,l2normred1ort,varredort4th(k,:,:)]= ...
+        predsig_conv_imptemp(sigstaort,ortdat,impindepst,...
+        greenfort,zcrosses,overshoot,stas,0,sps);
+      %%%prediction at vert. comp.
+      [~,predgrpvert,resgrpvert,~,~,l2normred1vert,varredvert4th(k,:,:)]= ...
+        predsig_conv_imptemp(sigstavert,vertdat,impindepst,...
+        greenfvert,zcrosses,overshoot,stas,0,sps);
 
       %% 4th-sta checked, recompute time separation and distance (mainly using arrival time) 
       %%%Plot the separation in time between these preserved positive peaks after removing the
@@ -2164,6 +2305,12 @@ rststruct.ccali = ccali;
 rststruct.ninbst = ninbst;
 rststruct.mrcc = mrcc;
 rststruct.mcc = mcc;
+rststruct.menv = menv;
+rststruct.mamp = mamp;
+rststruct.menvort = menvort;
+rststruct.mamport = mamport;
+rststruct.menvvert = menvvert;
+rststruct.mampvert = mampvert;
 rststruct.ccpair = ccpair;
 
 rststruct.pred4difftrall = pred4difftrall;
@@ -2249,8 +2396,16 @@ if ~isempty(impindepst)
   rststruct.madpsrcamprs4th = madpsrcamprs4th;
   rststruct.mnsrcamprs4th = mnsrcamprs4th;
   rststruct.madnsrcamprs4th = madnsrcamprs4th;
-  rststruct.l2normred = l2normred;
+  % rststruct.l2normred = l2normred;
+  rststruct.snrf = snrf;
+  rststruct.snrfort = snrfort;
+  rststruct.snrfvert = snrfvert;
   rststruct.varred = varred;
+  rststruct.varredort = varredort;
+  rststruct.varredvert = varredvert;
+  rststruct.varred4th = varred4th;
+  rststruct.varredort4th = varredort4th;
+  rststruct.varredvert4th = varredvert4th;
   rststruct.projangrm = projangrm;
   rststruct.projangsl = projangsl;
   rststruct.projpear = projpear;
@@ -2296,7 +2451,7 @@ end
 
 
 %% if 'pltflag' is on, then summary plots for each choice of inputs would be made 
-if pltflag && ~isempty(impindepst)
+% if pltflag && ~isempty(impindepst)
 %   %%%the direct deconvolved pos/neg source peak ratio between all station pairs, for each
 %   %%%burst win separately
 %   f1 = initfig(16,5,1,size(msrcampr,2));
@@ -2311,13 +2466,13 @@ if pltflag && ~isempty(impindepst)
 %   f3 = initfig(15,7,2,size(lgdevsrcamprall,2)); %initialize fig
 %   plt_deconpk_ratdevvsrcc4th(f3,lgdevsrcamprall,rccpairsrcall,rcccatsrcall,'k');
 
-  %%%diff between predicted arrival and selected peak at 4th sta
-  f4 = initfig(5,5,1,size(pred4difftrall,2)); %initialize fig
-  plt_errorof4thtarvlpred(f4,pred4difftrall,offmax,'k');
+  % %%%diff between predicted arrival and selected peak at 4th sta
+  % f4 = initfig(5,5,1,size(pred4difftrall,2)); %initialize fig
+  % plt_errorof4thtarvlpred(f4,pred4difftrall,offmax,'k');
 
-  %%%preserved sources' amp ratio between 4th and 1st stas
-  f5 = initfig(12,5,1,3); %initialize fig
-  plt_deconpk_rat14(f5,impindep4thall,srcamprall,'k');
+  % %%%preserved sources' amp ratio between 4th and 1st stas
+  % f5 = initfig(12,5,1,3); %initialize fig
+  % plt_deconpk_rat14(f5,impindep4thall,srcamprall,'k');
 
 %   %%%histogram of RCC itslef
 %   figure
@@ -2345,7 +2500,7 @@ if pltflag && ~isempty(impindepst)
 %     'Units','normalized','HorizontalAlignment','left');
 %   xlabel('Mean RCC of 2 best pairs');
 
-end
+% end
 
 
 % keyboard

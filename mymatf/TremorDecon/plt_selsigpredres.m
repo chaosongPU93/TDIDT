@@ -54,6 +54,7 @@ for jj = 1:length(pltsta)
     xlim(ax,[0 lsig]/sps);
   else
     xlim(ax,xzoom);
+    xticks(ax,xzoom(1): 2: xzoom(2));
   end
   longticks(ax,6);
   if jj~=nrow

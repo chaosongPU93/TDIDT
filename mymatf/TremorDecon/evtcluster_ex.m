@@ -30,7 +30,7 @@ function [catclus,catclusbst,catimp,catuimp,catmedamp,catdtnnm,catind]=...
 % category that are also shown in a longer cluster!!
 %
 % --RETURN:
-%     catclus = cell(mmax,1); %each category, all srcs included in EACH cluster  
+%     catclus = cell(mmax,2); %each category, all srcs included in EACH cluster  
 %     catclusbst = cell(mmax,1); %each category, all srcs included in EACH cluster, separated by burst 
 %     catimp = cell(mmax,1);  %each category, all srcs included in ALL clusters lumped 
 %     catuimp = cell(mmax,1); %each category, UNIQUE srcs included in ALL clusters lumped 
@@ -48,7 +48,7 @@ defval('sps',160);
 defval('timetype','tarvl');
 
 %store different categories of clusters, from 1 to mmax
-catclus = cell(mmax,1); %each category, all srcs included in EACH cluster  
+catclus = cell(mmax,2); %each category, all srcs included in EACH cluster  
 catclusbst = cell(mmax,1); %each category, all srcs included in EACH cluster, separated by burst 
 catimp = cell(mmax,1);  %each category, all srcs included in ALL clusters lumped 
 catuimp = cell(mmax,1); %each category, UNIQUE srcs included in ALL clusters lumped 
@@ -79,6 +79,7 @@ for m = mmax:-1:1
   ncluster=size(indimpdtcut,1); %num of clusters, in total
   impclusteribst=cell(nbst,1); %events in each cluster
   impclusterkclus=cell(ncluster,1); %events in each cluster
+  impclusterkclusibst=zeros(ncluster,1); %identifier of which burst the cluster belongs to
   impunii=cell(nbst,1); %unique events in clusters for each burst
   k = 0;  %count of clusters in total (all bursts combined)
   
@@ -113,6 +114,7 @@ for m = mmax:-1:1
         k=k+1;
         ind = inddtcuti{j};
         impclusterkclus{k} = impi(ind,:);
+        impclusterkclusibst(k) = i;  %identifier of which burst it belongs to
         impclusterj{j} = impi(ind,:);
 %         locator(k,:) = [i j ind(1) ind(end)];
 %         locator{m} = aa;
@@ -142,7 +144,8 @@ for m = mmax:-1:1
   impuni = cat(1,impunii{:}); %unique events included in clusters
   catuimp{m} = impuni;
   catclusbst{m} = impclusteribst;
-  catclus{m} = impclusterkclus;
+  catclus{m,1} = impclusterkclus;
+  catclus{m,2} = impclusterkclusibst;
   catimp{m} = cat(1,impclusterkclus{:});
   
 %   %check if their are duplicates  

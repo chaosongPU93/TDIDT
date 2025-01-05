@@ -37,7 +37,7 @@ text(ax,0.99,0.95,strtrim(stas(ista,:)),...
 ax=f1.ax(2); hold(ax,'on'); ax.Box = 'on'; grid(ax, 'on');
 plot(ax,1:nit,mfitort,'b-','linew',1);
 plot(ax,1:nit,mfitvert,'k-','linew',1);
-legend(ax,'Orthogonal','Vertical','Location','east');
+legend(ax,'Orthogonal','Vertical','Location','best');
 ylabel(ax,'Variance of residual');
 xlabel(ax,'Iteration #');
 
@@ -68,10 +68,10 @@ plot(ax,1:nit,relavarort,'b-','linew',1);
 plot(ax,1:nit,relavarvert,'k-','linew',1);
 ylabel(ax,'Relative variance of residual (%)');
 xlabel(ax,'Iteration #');
-legend(ax,'Optimal','Orthogonal','Vertical','Location','east');
+legend(ax,'Optimal','Orthogonal','Vertical','Location','best');
 text(ax,0.99,0.95,strtrim(stas(ista,:)),...
   'Units','normalized','HorizontalAlignment','right','fontsize',10);
-ylim(ax,[0 100]);
+% ylim(ax,[0 120]);
 
 if saveflag
   % orient(f.fig,'landscape');

@@ -72,12 +72,18 @@ for m=n:mmax
   catmampcont{m} = mampcont;
   
   %for found UNIQUE event PAIRS
-  dt = imppaired(:,1) - imppairst(:,1);
-  dloc_spl = imppaired(:,7:8) - imppairst(:,7:8);
-  %for diff in loc in map view, do the mapping first, then diff
-  implocpairst = off2space002(imppairst(:,7:8),sps,ftrans,0); % 8 cols, format: dx,dy,lon,lat,dep,ttrvl,off12,off13
-  implocpaired = off2space002(imppaired(:,7:8),sps,ftrans,0); % 8 cols, format: dx,dy,lon,lat,dep,ttrvl,off12,off13
-  dloc = implocpaired(:,1:2) - implocpairst(:,1:2);
+  if ~isempty(imppaired)
+    dt = imppaired(:,1) - imppairst(:,1);
+    dloc_spl = imppaired(:,7:8) - imppairst(:,7:8);
+    %for diff in loc in map view, do the mapping first, then diff
+    implocpairst = off2space002(imppairst(:,7:8),sps,ftrans,0); % 8 cols, format: dx,dy,lon,lat,dep,ttrvl,off12,off13
+    implocpaired = off2space002(imppaired(:,7:8),sps,ftrans,0); % 8 cols, format: dx,dy,lon,lat,dep,ttrvl,off12,off13
+    dloc = implocpaired(:,1:2) - implocpairst(:,1:2);
+  else
+    dt=[];
+    dloc=[];
+    dloc_spl=[];
+  end
   catdt{m}=dt;
   catdloc{m}=dloc;
   catdlocspl{m}=dloc_spl;  

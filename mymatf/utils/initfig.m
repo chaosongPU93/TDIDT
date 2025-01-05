@@ -33,14 +33,14 @@ else
   f.fig = figure(ifig);
 end
 f.fig.Renderer = 'painters';
-set(f.fig,'Position',[8*scrsz(3)/20 scrsz(4)/10 widin*resol htin*resol]);
+set(f.fig,'Position',[5*scrsz(3)/20 scrsz(4)/10 widin*resol htin*resol]);
 
 for isub = 1:nrow*ncol
     f.ax(isub) = subplot(nrow,ncol,isub);
     f.ax(isub).Box = 'on';
 %     grid(f.ax(isub),'on');
 %     f.ax(isub).YAxis.Exponent = 3;
-%     longticks(f.ax(isub),2);
+    longticks(f.ax(isub),2);
 end
 
 xran = [0.1 0.96]; yran = [0.1 0.96];

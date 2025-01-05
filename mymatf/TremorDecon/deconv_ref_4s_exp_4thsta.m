@@ -132,7 +132,7 @@ if flagrecalc
   %%all bursts using real data
   noiseflag = 0;
   allbstsig = deconv_ref_4s_exp_4thsta_fn(1:size(trange,1),normflag,noiseflag,pltflag,rccmwsec); %
-  % savefile = 'deconv_stats4th_allbstsig.mat';
+  % savefile = 'deconv_stats4th_allbstsig.mat'; 
   savefile = 'deconv_stats4th_no23_allbstsig.mat';
 %   savefile = 'deconv_stats4th_no23_allbstsig0.25s.mat';
   save(strcat(rstpath, '/MAPS/',savefile), 'allbstsig');

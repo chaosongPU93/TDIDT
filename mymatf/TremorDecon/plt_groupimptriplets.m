@@ -58,6 +58,7 @@ for ista = 1: nsta
     xlim(ax,[0 lsig]/sps);
   else
     xlim(ax,xzoom);
+    xticks(ax,xzoom(1): 2: xzoom(2));
   end
   ylim(ax,[0 4.5]);
 %   if ista == 1
@@ -86,6 +87,7 @@ if isempty(xzoom)
   xlim(ax,[0 lsig]/sps);
 else
   xlim(ax,xzoom);
+  xticks(ax,xzoom(1): 2: xzoom(2));
 end
 ax.YColor=[.6 .6 .6];
 

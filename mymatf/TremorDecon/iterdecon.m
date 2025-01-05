@@ -200,7 +200,7 @@ else
 end
 % medwtcoef
 
-mwtcoef = medwtcoef*1.1;  % intial amplitude of max master CC weighted by rcc, value doesn't really matter 
+mwtcoef = abs(medwtcoef*1.1);  % intial amplitude of max master CC weighted by rcc, value doesn't really matter 
 medrccpeak = median(rcc(pkind));
 rccimp = 1;
 %%%%%%%%%%%%%%%%%

@@ -287,7 +287,7 @@ if ~isempty(hfplt)
 %      'EdgeColor','k','Margin',2);
 % text(ax,0.85,0.8,'HF','FontSize',12,'unit','normalized','horizontalalignment','center');
 %   text(ax,0.04,0.93,'a','FontSize',11,'unit','normalized','EdgeColor','k','Margin',2);
-  text(ax,0.98,0.05,strcat(num2str(length(hfplt(:,1))),{' events'}),'FontSize',10,'unit','normalized',...
+  text(ax,0.98,0.05,strcat(num2str(length(hfplt(:,1))),{' detections'}),'FontSize',10,'unit','normalized',...
       'horizontalalignment','right');
   %%%Add contour lines if needed  
   if contourflag

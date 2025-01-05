@@ -163,9 +163,9 @@ if isequaln(impuse,imp)
   axpos = [0.05 0.54 0.3 0.4;
           0.36 0.54 0.3 0.4;
           0.72 0.570 0.27 0.340;
-          0.05 0.06 0.3 0.4;
-          0.36 0.06 0.3 0.4;
-          0.72 0.090 0.27 0.340];
+          0.05 0.08 0.3 0.4;
+          0.36 0.08 0.3 0.4;
+          0.72 0.110 0.27 0.340];
   for isub = 1:nrow*ncol
     set(f.ax(isub), 'position', axpos(isub,:));
   end
@@ -303,13 +303,13 @@ if isequaln(impuse,imp)
   xlim(ax,xran);
   ylim(ax,yran);
   if strcmp(disttype,'spl')
-    %     xlabel(ax,'Diff off12 (samples)');
-    %     ylabel(ax,'Diff off13 (samples)');
-    xticks(ax,xran(1):5:xran(2));
-    yticks(ax,yran(1):5:yran(2));
+    xlabel(ax,'Diff off12 (samples)');
+    % ylabel(ax,'Diff off13 (samples)');
+    xticks(ax,xran(1):10:xran(2));
+    yticks(ax,yran(1):10:yran(2));
   elseif strcmp(disttype,'km')
-    %     xlabel(ax,'Diff E loc (km)');
-    %     ylabel(ax,'Diff N loc (km)');
+    xlabel(ax,'Location difference E (km)');
+    % ylabel(ax,'Location difference N (km)');
     xticks(ax,xran(1):1:xran(2));
     yticks(ax,yran(1):1:yran(2));
   end
@@ -317,7 +317,7 @@ if isequaln(impuse,imp)
   % c.Position = [pos(1), pos(2)-0.12, pos(3), 0.02];
   c.Position = [0.36 0.54 0.3 0.02];
   longticks(ax,2);
-  nolabels(ax,3);
+  nolabels(ax,2);
   text(ax,0.02,0.95,'b','FontSize',10,'unit','normalized','EdgeColor','k',...
     'Margin',1,'backgroundcolor','w');
   hold(ax,'off');
@@ -326,9 +326,9 @@ if isequaln(impuse,imp)
   F = scatteredInterpolant(conmat(:,3),conmat(:,4),conmat(:,1),'linear','none');
   normalizer=length(dloc);
   ax=f.ax(3); hold(ax,'on'); ax.Box = 'on'; grid(ax, 'on');
-  [ax,muopt,sigmaopt,mdistprojopt,~,countn1,gsfit1]=plt_dloccrssect(ax,F,x,yopt,...
+  [~,muopt,sigmaopt,mdistprojopt,~,countn1,gsfit1]=plt_dloccrssect([],F,x,yopt,...
     anglegeo(2),['-';'-'],[.5 .5 .5; 0 0 1],xran,'both',normalizer);
-  [ax,muort,sigmaort,mdistprojort,~,countn1r,gsfit1r]=plt_dloccrssect(ax,F,x,yort,...
+  [~,muort,sigmaort,mdistprojort,~,countn1r,gsfit1r]=plt_dloccrssect([],F,x,yort,...
     anglegeo(1),[':';':'],[.5 .5 .5; 0 0 1],xran,'both',normalizer);
   %rather than the median dist of the cross-section, get the median of the whole set
   x0=mean(dplt(:,1));
@@ -422,7 +422,7 @@ if isequaln(impuse,imp)
     xticks(ax,xran(1):10:xran(2));
     yticks(ax,yran(1):10:yran(2));
   elseif strcmp(disttype,'km')
-    xlabel(ax,'Location difference E (km)');
+    % xlabel(ax,'Location difference E (km)');
     ylabel(ax,'Location difference N (km)');
     xticks(ax,xran(1):1:xran(2));
     yticks(ax,yran(1):1:yran(2));
@@ -431,7 +431,7 @@ if isequaln(impuse,imp)
   % pos = ax.Position;
   % c.Position = [pos(1), pos(2)-0.12, pos(3), 0.02];
   % 0.08 0.55 0.4 0.4
-  c.Position = [0.05 0.06 0.3 0.02];
+  c.Position = [0.05 0.08 0.3 0.02];
   longticks(ax,2);
   % nolabels(ax,3);
   hold(ax,'off');
@@ -482,21 +482,21 @@ if isequaln(impuse,imp)
   xlim(ax,xran);
   ylim(ax,yran);
   if strcmp(disttype,'spl')
-  %   xlabel(ax,'Diff off12 (samples)');
-  %   ylabel(ax,'Diff off13 (samples)');
-    xticks(ax,xran(1):5:xran(2));
-    yticks(ax,yran(1):5:yran(2));
+    % xlabel(ax,'Diff off12 (samples)');
+    % ylabel(ax,'Diff off13 (samples)');
+    xticks(ax,xran(1):10:xran(2));
+    yticks(ax,yran(1):10:yran(2));
   elseif strcmp(disttype,'km')
-  %   xlabel(ax,'Diff E loc (km)');
-  %   ylabel(ax,'Diff N loc (km)');
+    % xlabel(ax,'Location difference E (km)');
+    % ylabel(ax,'Location difference N (km)');
     xticks(ax,xran(1):1:xran(2));
     yticks(ax,yran(1):1:yran(2));
   end
   % pos = ax.Position;
   % c.Position = [pos(1), pos(2)-0.12, pos(3), 0.02];
-  c.Position = [0.36 0.06 0.3 0.02];
+  c.Position = [0.36 0.08 0.3 0.02];
   longticks(ax,2);
-  nolabels(ax,3);
+  nolabels(ax,2);
   text(ax,0.02,0.95,'e','FontSize',10,'unit','normalized','EdgeColor','k',...
     'Margin',1,'backgroundcolor','w');
   hold(ax,'off');
@@ -505,9 +505,9 @@ if isequaln(impuse,imp)
   F2all = scatteredInterpolant(conmat2all(:,3),conmat2all(:,4),conmat2all(:,1),'linear','none');
   normalizer2all=length(dloc2all);
   ax=f.ax(6); hold(ax,'on'); ax.Box = 'on'; grid(ax, 'on');
-  [ax,muopt,sigmaopt,mdistprojopt,~,countn2,gsfit2]=plt_dloccrssect(ax,F2all,x,yopt2all,...
+  [~,muopt,sigmaopt,mdistprojopt,~,countn2,gsfit2]=plt_dloccrssect([],F2all,x,yopt2all,...
     anglegeo2all(2),['-';'-'],[.5 .5 .5; 1 0 0],xran,'both',normalizer2all);
-  [ax,muort,sigmaort,mdistprojort,~,countn2r,gsfit2r]=plt_dloccrssect(ax,F2all,x,yort2all,...
+  [~,muort,sigmaort,mdistprojort,~,countn2r,gsfit2r]=plt_dloccrssect([],F2all,x,yort2all,...
     anglegeo2all(1),[':';':'],[.5 .5 .5; 1 0 0],xran,'both',normalizer2all);
   %rather than the median dist of the cross-section, get the median of the whole set
   x0=mean(dplt(:,1));
@@ -538,26 +538,36 @@ if isequaln(impuse,imp)
 %   ylabel(ax,'Probability');
 
   %add the Gaussian fit along the SE direction 
+  ax=f.ax(3); hold(ax,'on');
   normalizer1 = max(gsfit2)/max(gsfit1)*normalizer;
-  [f.ax(3)]=plt_dloccrssect(f.ax(3),F2all,x,yopt2all,...
-    anglegeo2all(2),['-';'-'],[.5 .5 .5; 1 0 0],xran,'gsfit',normalizer1);
-
-  %add the Gaussian fit along the NE direction 
-  normalizer2 = max(gsfit1r)/max(gsfit2r)*normalizer2all;
-  [f.ax(6)]=plt_dloccrssect(f.ax(6),F,x,yort,anglegeo(1),...
-    [':';':'],[.5 .5 .5; 0 0 1],xran,'gsfit',normalizer2);
-
-  lgd1 = legend(f.ax(3),'SE profile','SE gsfit','NE profile','NE gsfit','SE gsfit in (f)',...
+  [ax,~,~,~,~,~,~,~,pother]=plt_dloccrssect(ax,F2all,x,yopt2all,...
+    anglegeo2all(2),['-';'-'],[.5 .5 .5; 1 0 0],xran,'gsfit',normalizer1,1,1);
+  [ax,~,~,~,~,~,~,~,popt]=plt_dloccrssect(ax,F,x,yopt,...
+    anglegeo(2),['-';'-'],[.5 .5 .5; 0 0 1],xran,'both',normalizer,1,2);
+  [ax,~,~,~,~,~,~,~,port]=plt_dloccrssect(ax,F,x,yort,...
+    anglegeo(1),[':';':'],[.5 .5 .5; 0 0 1],xran,'both',normalizer,1,2);
+  lgd1 = legend(ax,[popt port pother],'SE gsfit','SE profile','NE gsfit','NE profile','SE gsfit in (f)',...
     'Location','north','fontsize',7,'NumColumns',2,'orientation','horizontal');
   %make background transparent
   set(lgd1.BoxFace, 'ColorType','truecoloralpha', 'ColorData',uint8(255*[1;1;1;.8]));
 
-  lgd2 = legend(f.ax(6),'SE profile','SE gsfit','NE profile','NE gsfit','NE gsfit in (c)',...
+  %add the Gaussian fit along the NE direction 
+  ax=f.ax(6); hold(ax,'on');
+  normalizer2 = max(gsfit1r)/max(gsfit2r)*normalizer2all;
+  [ax,~,~,~,~,~,~,~,pother]=plt_dloccrssect(ax,F,x,yort,anglegeo(1),...
+    [':';':'],[.5 .5 .5; 0 0 1],xran,'gsfit',normalizer2,1,1);
+  [ax,~,~,~,~,~,~,~,popt]=plt_dloccrssect(ax,F2all,x,yopt2all,...
+    anglegeo2all(2),['-';'-'],[.5 .5 .5; 1 0 0],xran,'both',normalizer2all,1,2);
+  [ax,~,~,~,~,~,~,~,port]=plt_dloccrssect(ax,F2all,x,yort2all,...
+    anglegeo2all(1),[':';':'],[.5 .5 .5; 1 0 0],xran,'both',normalizer2all,1,2);
+  lgd2 = legend(f.ax(6),[popt port pother],'SE gsfit','SE profile','NE gsfit','NE profile','NE gsfit in (c)',...
     'Location','north','fontsize',7,'NumColumns',2,'orientation','horizontal');
   %make background transparent
   set(lgd2.BoxFace, 'ColorType','truecoloralpha', 'ColorData',uint8(255*[1;1;1;.8]));
-
+% keyboard
   
+
+
 elseif isequaln(impuse,impn)
   nrow = 2;
   ncol = 2;
@@ -574,8 +584,8 @@ elseif isequaln(impuse,impn)
 %           0.60 0.090 0.39 0.337];
 axpos = [0.07 0.55 0.44 0.4;
          0.60 0.580 0.39 0.34;
-         0.07 0.07 0.44 0.4;
-         0.60 0.100 0.39 0.34];
+         0.07 0.09 0.44 0.4;
+         0.60 0.120 0.39 0.34];
   for isub = 1:nrow*ncol
     set(f.ax(isub), 'position', axpos(isub,:));
   end
@@ -703,9 +713,9 @@ axpos = [0.07 0.55 0.44 0.4;
   F = scatteredInterpolant(conmat(:,3),conmat(:,4),conmat(:,1),'linear','none');
   normalizer=length(dloc);
   ax=f.ax(2); hold(ax,'on'); ax.Box = 'on'; grid(ax, 'on');
-  [ax,muopt,sigmaopt,mdistprojopt,~,countn1,gsfit1]=plt_dloccrssect(ax,F,x,yopt,...
+  [~,muopt,sigmaopt,mdistprojopt,~,countn1,gsfit1]=plt_dloccrssect([],F,x,yopt,...
     anglegeo(2),['-';'-'],[.5 .5 .5; 0 0 1],xran,'both',normalizer);
-  [ax,muort,sigmaort,mdistprojort,~,countn1r,gsfit1r]=plt_dloccrssect(ax,F,x,yort,...
+  [~,muort,sigmaort,mdistprojort,~,countn1r,gsfit1r]=plt_dloccrssect([],F,x,yort,...
     anglegeo(1),[':';':'],[.5 .5 .5; 0 0 1],xran,'both',normalizer);
   %rather than the median dist of the cross-section, get the median of the whole set
   x0=mean(dplt(:,1));
@@ -791,12 +801,12 @@ axpos = [0.07 0.55 0.44 0.4;
   xlim(ax,xran);
   ylim(ax,yran);
   if strcmp(disttype,'spl')
-  %   xlabel(ax,'Diff off12 (samples)');
-  %   ylabel(ax,'Diff off13 (samples)');
+    % xlabel(ax,'Diff off12 (samples)');
+    ylabel(ax,'Diff off13 (samples)');
     xticks(ax,xran(1):10:xran(2));
     yticks(ax,yran(1):10:yran(2));
   elseif strcmp(disttype,'km')
-    xlabel(ax,'Location difference E (km)');
+    % xlabel(ax,'Location difference E (km)');
     ylabel(ax,'Location difference N (km)');
     xticks(ax,xran(1):1:xran(2));
     yticks(ax,yran(1):1:yran(2));
@@ -805,7 +815,7 @@ axpos = [0.07 0.55 0.44 0.4;
   % pos = ax.Position;
   % c.Position = [pos(1), pos(2)-0.12, pos(3), 0.02];
   % 0.08 0.55 0.4 0.4
-  c.Position = [0.07 0.07 0.44 0.02];
+  c.Position = [0.07 0.09 0.44 0.02];
   longticks(ax,2);
   % nolabels(ax,3);
 
@@ -846,9 +856,9 @@ axpos = [0.07 0.55 0.44 0.4;
   F2all = scatteredInterpolant(conmat2all(:,3),conmat2all(:,4),conmat2all(:,1),'linear','none');
   normalizer2all=length(dloc2all);
   ax=f.ax(4); hold(ax,'on'); ax.Box = 'on'; grid(ax, 'on');
-  [ax,muopt,sigmaopt,mdistprojopt,~,countn2,gsfit2]=plt_dloccrssect(ax,F2all,x,...
+  [~,muopt,sigmaopt,mdistprojopt,~,countn2,gsfit2]=plt_dloccrssect([],F2all,x,...
     yopt2all,anglegeo2all(2),['-';'-'],[.5 .5 .5; 1 0 0],xran,'both',normalizer2all);
-  [ax,muort,sigmaort,mdistprojort,~,countn2r,gsfit2r]=plt_dloccrssect(ax,F2all,x,...
+  [~,muort,sigmaort,mdistprojort,~,countn2r,gsfit2r]=plt_dloccrssect([],F2all,x,...
     yort2all,anglegeo2all(1),[':';':'],[.5 .5 .5; 1 0 0],xran,'both',normalizer2all);
   %rather than the median dist of the cross-section, get the median of the whole set
   x0=mean(dplt(:,1));
@@ -878,28 +888,37 @@ axpos = [0.07 0.55 0.44 0.4;
   yticks(ax,0: 0.5e-4: 1.5e-4);
 %   ylabel(ax,'Probability');
 
-  %add the Gaussian fit along the SE direction 
+  %add the Gaussian fit along the SE direction
+  ax=f.ax(2); hold(ax,'on');
   normalizer1 = max(gsfit2)/max(gsfit1)*normalizer;
-  [f.ax(2)]=plt_dloccrssect(f.ax(2),F2all,x,yopt2all,...
-    anglegeo2all(2),['-';'-'],[.5 .5 .5; 1 0 0],xran,'gsfit',normalizer1);
-
-  %add the Gaussian fit along the NE direction 
-  normalizer2 = max(gsfit1r)/max(gsfit2r)*normalizer2all;
-  [f.ax(4)]=plt_dloccrssect(f.ax(4),F,x,yort,anglegeo(1),...
-    [':';':'],[.5 .5 .5; 0 0 1],xran,'gsfit',normalizer2);
-
-  lgd1 = legend(f.ax(2),'SE profile','SE gsfit','NE profile','NE gsfit','SE gsfit in (f)',...
+  [ax,~,~,~,~,~,~,~,pother]=plt_dloccrssect(ax,F2all,x,yopt2all,...
+    anglegeo2all(2),['-';'-'],[.5 .5 .5; 1 0 0],xran,'gsfit',normalizer1,1,1);
+  [ax,~,~,~,~,~,~,~,popt]=plt_dloccrssect(ax,F,x,yopt,...
+    anglegeo(2),['-';'-'],[.5 .5 .5; 0 0 1],xran,'both',normalizer,1,2);
+  [ax,~,~,~,~,~,~,~,port]=plt_dloccrssect(ax,F,x,yort,...
+    anglegeo(1),[':';':'],[.5 .5 .5; 0 0 1],xran,'both',normalizer,1,2);
+  lgd1 = legend(ax,[popt port pother],'SE gsfit','SE profile','NE gsfit','NE profile','SE gsfit in (f)',...
     'Location','north','fontsize',7,'NumColumns',2,'orientation','horizontal');
   %make background transparent
   set(lgd1.BoxFace, 'ColorType','truecoloralpha', 'ColorData',uint8(255*[1;1;1;.8]));
 
-  lgd2 = legend(f.ax(4),'SE profile','SE gsfit','NE profile','NE gsfit','NE gsfit in (c)',...
+  %add the Gaussian fit along the NE direction 
+  ax=f.ax(4); hold(ax,'on');
+  normalizer2 = max(gsfit1r)/max(gsfit2r)*normalizer2all;
+  [ax,~,~,~,~,~,~,~,pother]=plt_dloccrssect(ax,F,x,yort,anglegeo(1),...
+    [':';':'],[.5 .5 .5; 0 0 1],xran,'gsfit',normalizer2,1,1);
+  [ax,~,~,~,~,~,~,~,popt]=plt_dloccrssect(ax,F2all,x,...
+    yopt2all,anglegeo2all(2),['-';'-'],[.5 .5 .5; 1 0 0],xran,'both',normalizer2all,1,2);
+  [ax,~,~,~,~,~,~,~,port]=plt_dloccrssect(ax,F2all,x,...
+    yort2all,anglegeo2all(1),[':';':'],[.5 .5 .5; 1 0 0],xran,'both',normalizer2all,1,2);
+  lgd2 = legend(ax,[popt port pother],'SE gsfit','SE profile','NE gsfit','NE profile','NE gsfit in (c)',...
     'Location','north','fontsize',7,'NumColumns',2,'orientation','horizontal');
   %make background transparent
   set(lgd2.BoxFace, 'ColorType','truecoloralpha', 'ColorData',uint8(255*[1;1;1;.8]));
 
 end
 
+keyboard
 fname = strcat('lfedloc',fnsuffix,fnsuffix2,'.pdf');
 print(f.fig,'-dpdf',...
   strcat('/home/data2/chaosong/CurrentResearch/Song_Rubin_2024/figures/',fname));

@@ -40,7 +40,7 @@ indhi = [99; 100; 164; 170; 174;]; %115;
 
 defval('idxbst',181); %global indices of bursts to run 
 defval('normflag',0); %whether to normalize templates
-defval('noiseflag',0);  %whether to use synthetic noises
+defval('noiseflag',1);  %whether to use synthetic noises
 defval('pltflag',0);  %whether to plot figs for each burst
 defval('rccmwsec',0.5); %moving win len in sec for computing RCC
 
@@ -304,6 +304,9 @@ clear armcat
 %% prepare templates (Green's functions), from 'lfetemp002_160sps.m'
 sps = 160;
 templensec = 60;
+
+%if everything stays the same, but using templates from other fams
+% fam = '047';   % family number
 
 %%%optimal
 ccstack = [];
@@ -712,6 +715,9 @@ for iii = 1: length(idxbst)
       tlenbuf = tedbuf-tstbuf;
       trangenew(iii,2)=tstbuf;
       trangenew(iii,3)=tedbuf;
+      
+      %plot the bostock's LFE catalog inside ellipse
+      indbi = find(tbosti>=tstbuf & tbosti<=tedbuf);                                    
             
       %max allowable shift in best alignment
       %       msftaddm = (round(max(abs([off12ran off13ran])))+1)*sps/40;  %+1 for safety
@@ -1178,13 +1184,13 @@ for iii = 1: length(idxbst)
 %                
         %%%for orthogonal components, with the SAME phase!!
         [xf,ft,amp,pha] = fftspectrum(ortseg(:,2:end), nfft, sps,'twosided');
-%         pharand = (rand(nfft,3)-0.5)*2*pi;
+%         pharand = (rand(nfft,nsta)-0.5)*2*pi;  %make the phases span from -pi to pi
         xfrand = amp.*nfft.*exp(1i.*pharand);
         ortseg(:,2:end) = real(ifft(xfrand,nfft));
         
         %%%for vertical components, with the SAME phase!!
         [xf,ft,amp,pha] = fftspectrum(vertseg(:,2:end), nfft, sps,'twosided');
-%         pharand = (rand(nfft,3)-0.5)*2*pi;
+%         pharand = (rand(nfft,nsta)-0.5)*2*pi;  %make the phases span from -pi to pi
         xfrand = amp.*nfft.*exp(1i.*pharand);
         vertseg(:,2:end) = real(ifft(xfrand,nfft));
 
@@ -1335,7 +1341,7 @@ for iii = 1: length(idxbst)
         cc23 = xcorr(sigsta(:,2), sigsta(:,3),0,'normalized');
         ccpair(k,:) = [cc12 cc13 cc23];
         mcc(k,1) = (cc12+cc13)/2;
-              
+
         %%%for ort. comp
         sigstaort = zeros(size(ortdat,1), nsta);
         for ista = 1:nsta
@@ -1410,20 +1416,20 @@ for iii = 1: length(idxbst)
       end
       
       %%     
-      if ~noiseflag
-        ista = 1;
-        %%%orthogonal comp.
-        mfitort = msfitvsiter(ampit,sigstaort,greenfort,zcrosses,ista,sps);
-        %%%vertical comp.
-        mfitvert = msfitvsiter(ampit,sigstavert,greenfvert,zcrosses,ista,sps);
-        %%%optimal comp.
-        varsig = var(sigsta(:,ista));
-        mfit = mfitit{ista};
-        varsigort = var(sigstaort(:,ista));
-        varsigvert = var(sigstavert(:,ista));
+      ista = 1;
+      %%%orthogonal comp.
+      mfitort = msfitvsiter(ampit,sigstaort,greenfort,zcrosses,ista,sps);
+      %%%vertical comp.
+      mfitvert = msfitvsiter(ampit,sigstavert,greenfvert,zcrosses,ista,sps);
+      %%%optimal comp.
+      varsig = var(sigsta(:,ista));
+      mfit = mfitit{ista};
+      varsigort = var(sigstaort(:,ista));
+      varsigvert = var(sigstavert(:,ista));
+%       if ~noiseflag
         [f1,f2] = plt_msfitvsiter_allcomp(mfit,varsig,mfitort,varsigort,...
           mfitvert,varsigvert,stas,ista,detecttype,0);
-      end
+%       end
       
       if ~noiseflag
         %%%For paper demo, plot the impulses, signal, prediction and res right after deconvolution
@@ -1468,11 +1474,11 @@ for iii = 1: length(idxbst)
       impindep(:,7:8) = impindep(:,7:8)+repmat([off1i(k,2) off1i(k,3)],size(impindep,1),1); %account for prealignment
       impindepst = sortrows(impindep,1);
       
-      if ~noiseflag
         %%%prediction via convolution between grouped impulses and template at each station
         [~,predgrp,resgrp,predgrpl,resgrpl,l2normred1,varred]= ...
           predsig_conv_imptemp(sigsta(:,1:3),optdat(:,1:4),impindepst,...
           greenf,zcrosses,overshoot,stas,0,sps);
+      if ~noiseflag
         %%%simply plot the trio stations signal, prediction and residual
         pltsta = [1 2 3];
 %         f1 = plt_selsigpredres(sigsta,predgrp,resgrp,varred1,stas,pltsta,sps,...
@@ -1496,14 +1502,14 @@ for iii = 1: length(idxbst)
         normflag=1;
         f = plt_selsigpred_allcomp(sigsta,predgrp,varred,sigstaort,predgrport,...
           varredort,sigstavert,predgrpvert,varredvert,greenfort,greenfvert,...
-          stas,pltsta,sps,xzoom,patchwins,normflag,detecttype,saveflag);
+          stas,pltsta,sps,xzoom,impindepst,patchwins,normflag,detecttype,saveflag);
 % 
 %         f = plt_selsigpred_ortvert(sigstaort,predgrport,varredort,...
 %           sigstavert,predgrpvert,varredvert,greenfort,greenfvert,...
-%           stas,pltsta,sps,xzoom,patchwins,detecttype,saveflag);
-        
-        
+%           stas,pltsta,sps,xzoom,patchwins,detecttype,saveflag);                
       end
+
+%       keyboard
 
 %       %%%plot the scatter of offsets, accounting for prealignment offset, == true offset
 %       xran = [-loff_max+off1i(k,2)-1 loff_max+off1i(k,2)+1];
@@ -1710,7 +1716,7 @@ for iii = 1: length(idxbst)
       if ~noiseflag
         ttype = 'tori';
         [locxyproj,~,stats] = srcprojdistNtoNm(torisplst,implocorist,1,sps);
-        wt = median(impindeporist(:,[2 4 6]),2);
+        wt = mean(impindeporist(:,[2 4 6]),2);
         %       pltstr='Secondary removed';
         pltstr='3-station';
 %%
@@ -1741,6 +1747,16 @@ for iii = 1: length(idxbst)
             
 % keyboard
       %% signal + zoom-in + map locations + some reference symbols 
+%       if ~noiseflag
+%         xzoom = [5 30];
+%         tbostplt=tbosti(indbi); %bostock's LFE detections inside the burst, pointing to positive peaks
+%         tbostzcplt=tbostplt-(ppeaks(1)-zcrosses(1))/sps; %shift it to zero-crossings
+%         winnoi = [1 3]; %empirical window for pre-arrival noise
+%         winsig = [4 7]; %empirical window for main arrival    
+%         patchwins = [winnoi;winsig];
+%         f=plt_002lfe_signalzoom(green,greenf,sigsta,[],impindepst,sps,xzoom,...
+%           tstbuf,dy,mo,yr,tbostzcplt,patchwins,0);
+%       end
 %       if noiseflag
 %         xzoom = [0 25];
 %         [f] = plt_agu2022abstractv4(greenf(:,1:3),optdat(:,2:4),impindepst,sps,xzoom,off1i(k,:),loff_max,...
@@ -2000,16 +2016,17 @@ for iii = 1: length(idxbst)
         [~,predgrpvert,resgrpvert,~,~,l2normred1vert,varredvert4th]= ...
           predsig_conv_imptemp(sigstavert,vertdat,impindepst,...
           greenfvert,zcrosses,overshoot,stas,0,sps);
+        %%
         normflag=1;
         f = plt_selsigpred_allcomp(sigsta,predgrp,varred4th,sigstaort,predgrport,...
           varredort4th,sigstavert,predgrpvert,varredvert4th,greenfort,greenfvert,...
-          stas,pltsta,sps,xzoom,patchwins,normflag,detecttype,saveflag);
+          stas,pltsta,sps,xzoom,impindepst,patchwins,normflag,detecttype,saveflag);
 
 %         f = plt_selsigpred_ortvert(sigstaort,predgrport,varredort4th,...
 %           sigstavert,predgrpvert,varredvert4th,greenfort,greenfvert,...
 %           stas,pltsta,sps,xzoom,patchwins,detecttype,saveflag);
-
       end
+
       %%
       %%%plot the variance reduction vs the signal-to-noise ratio of templates
       if isequaln(STA, detrend(ccstack))
@@ -2017,12 +2034,41 @@ for iii = 1: length(idxbst)
       elseif isequaln(STA, detrend(dstack))
         greentype = 'dstack';
       end
-      f=plt_vrvssnr(greentype,mfit,varsig,mfitort,varsigort,...
+      
+      %%%save the result from using 047 templates for deconvolution for comparison
+      %%%with 002 templates
+      if strcmp(fam, '047')
+        savefile = strcat('deconrst',fam,'.mat');
+        save(strcat(rstpath, '/MAPS/',savefile),'mfit','varsig','mfitort','varsigort',...
+          'mfitvert','varsigvert','snrf','snrfort','snrfvert',...
+          'varred','varredort','varredvert','varred4th','varredort4th','varredvert4th');
+      else
+        savefile = strcat('deconrst047.mat');
+        if isfile(strcat(rstpath, '/MAPS/',savefile))
+          deconrst047 = load(strcat(rstpath, '/MAPS/',savefile));
+        end
+      end
+      %%
+      if strcmp(fam, '002')
+        f=plt_vrvssnr(greentype,mfit,varsig,mfitort,varsigort,...
           mfitvert,varsigvert,stas,1,snrf,snrfort,snrfvert,...
           varred,varredort,varredvert,varred4th,varredort4th,varredvert4th,...
-          detecttype,1);
-
-%       keyboard
+          detecttype,saveflag,deconrst047);
+      elseif strcmp(fam, '047')
+        f=plt_vrvssnr_v2(stas,1,snrf,snrfort,snrfvert,...
+          varred,varredort,varredvert,varred4th,varredort4th,varredvert4th);
+        text(f.ax(1),0.01,0.85,sprintf('Using %s templates',fam),...
+          'Units','normalized','HorizontalAlignment','left','fontsize',10);
+        text(f.ax(2),0.01,0.85,sprintf('Using %s templates',fam),...
+          'Units','normalized','HorizontalAlignment','left','fontsize',10);
+        if saveflag
+          fname = strcat('vrvssnr',greentype,detecttype,'_v2.pdf');
+          print(f.fig,'-dpdf',...
+            strcat('/home/data2/chaosong/CurrentResearch/Song_Rubin_2024/figures/',fname));
+        end
+        
+      end
+      keyboard
 
 
       %% recompute time separation and distance after 4th sta check  

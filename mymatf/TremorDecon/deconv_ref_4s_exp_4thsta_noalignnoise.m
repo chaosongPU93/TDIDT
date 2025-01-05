@@ -1,20 +1,18 @@
-% deconv_ref_4s_exp_4thsta_suppledemo.m
+% deconv_ref_4s_exp_4thsta_noalignnoise.m
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% This is the script to call the function "deconv_ref_4s_exp_4thsta_fn.m"
-% to run the short-win deconvolution to a few particular burst windows 
-% that are shown in the supplement of the paper.
-%
+% This is the 'driver' script to call 'deconv_ref_4s_exp_4thsta_fn' to 
+% re-run the deconvolution to original synthetic noise but DO NOT align the
+% both the whole-win and 25-s wins
 %
 %
 % Chao Song, chaosong@princeton.edu
-% First created date:   2024/08/10
-% Last modified date:   2024/11/03
+% First created date:   2024/11/05
+% Last modified date:   2024/11/05
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 %% Initialization
 %%% SAME if focusing on the same region (i.e. same PERMROTS and POLROTS)
 %%% AND if using the same family, same station trio
-format short e   % Set the format to 5-digit floating point
+% format short e   % Set the format to 5-digit floating point
 clear
 clc
 close all
@@ -37,7 +35,9 @@ ttol = 35;
 ntol = 3;
 trange = load(strcat(rstpath, '/MAPS/tdec.bstran',num2str(ttol),'s.',...
   num2str(ntol),'.pgc002.',cutout(1:4)));
+% trange = trange(1:end-1,:);
 tlen = trange(:,3)-trange(:,2);
+tlensum = sum(tlen);
 
 modname = 'timeoff_plfit_4thsta_160sps.mat';
 planefit = load(strcat(rstpath, '/MAPS/',modname));
@@ -46,33 +46,30 @@ offmax = round(2.0*rmse);
 
 sps = 160;
 
-indhi = [99; 100; 115; 164; 170; 174;]; % 
-
-%% call function 'deconv_ref_4s_exp_rand_fn', all bursts, DATA VS NOISE
+%% call function 'deconv_ref_4s_exp_4thsta_fn_diffseed', all bursts NOISE
 %%%Flag to indicate if it is necessary to recalculate everything
 % flagrecalc = 0;
 flagrecalc = 1;
 
 if flagrecalc
   normflag = 0; %do not normalize the templates
-  pltflag = 1;  %do not create summary plots for each choice of inputs
-  % rccmwsec = 0.25; %use 0.5s or 0.25s 
+  pltflag = 0;  %do not create summary plots for each burst
+%   rccmwsec = 0.25; %use 0.5s or 0.25s 
   rccmwsec = 0.5; %use 0.5s or 0.25s
   
-  %%%all bursts using real data
-  noiseflag = 0;
-%   deconv_4s_exp_4thsta_fn(indhi,normflag,noiseflag,pltflag,rccmwsec); %
-
-  allbstsig = deconv_ref_4s_exp_4thsta_fn(indhi,normflag,noiseflag,pltflag,rccmwsec); %
-
-  savefile = 'deconv_stats4th_no23_allbstsig_indhi.mat';
-  save(strcat(rstpath, '/MAPS/',savefile), 'allbstsig');
-
+  %%%all bursts using synthetic noise
+  noiseflag = 1; %
+  alignflag = 0; %do not align the trio stations fror 25-s windows
+  tmp = setdiff(1:size(trange,1),45);
+  allbstnoi = deconv_ref_4s_exp_4thsta_fn(tmp,normflag,noiseflag,pltflag,rccmwsec,alignflag);  %
+  savefile = 'deconv_stats4th_no23_allbstnoi_noalign.mat';
+%   savefile = 'deconv_stats4th_no23_allbstnoi0.25s_noalign.mat';
+  save(strcat(rstpath, '/MAPS/',savefile), 'allbstnoi');
+  
+else
+  savefile = 'deconv_stats4th_no23_allbstnoi_noalign.mat';
+  load(strcat(rstpath, '/MAPS/',savefile));
 end
 
 
-
-
-
-
-
+% keyboard

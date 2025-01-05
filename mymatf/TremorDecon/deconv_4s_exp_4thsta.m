@@ -120,7 +120,7 @@ flagrecalc = 1;
 
 if flagrecalc
   normflag = 0; %do not normalize the templates
-  pltflag = 0;  %do not create summary plots for each choice of inputs
+  pltflag = 1;  %do not create summary plots for each choice of inputs
   % rccmwsec = 0.25; %use 0.5s or 0.25s 
   rccmwsec = 0.5; %use 0.5s or 0.25s
   
@@ -131,12 +131,12 @@ if flagrecalc
   savefile = 'deconv1win_stats4th_no23_allbstsig.mat';
   save(strcat(rstpath, '/MAPS/',savefile), 'allbstsig');
   
-  %%%all bursts using synthetic noise
-  noiseflag = 1;
-  allbstnoi = deconv_4s_exp_4thsta_fn(1:size(trange,1),normflag,noiseflag,pltflag,rccmwsec);  %
-  % savefile = 'deconv1win_stats4th_allbstnoi.mat';
-  savefile = 'deconv1win_stats4th_no23_allbstnoi.mat';
-  save(strcat(rstpath, '/MAPS/',savefile), 'allbstnoi');
+  % %%%all bursts using synthetic noise
+  % noiseflag = 1;
+  % allbstnoi = deconv_4s_exp_4thsta_fn(1:size(trange,1),normflag,noiseflag,pltflag,rccmwsec);  %
+  % % savefile = 'deconv1win_stats4th_allbstnoi.mat';
+  % savefile = 'deconv1win_stats4th_no23_allbstnoi.mat';
+  % save(strcat(rstpath, '/MAPS/',savefile), 'allbstnoi');
 else
 %   savefile = 'deconv1win_stats4th_allbstsig.mat';
   savefile = 'deconv1win_stats4th_no23_allbstsig.mat';

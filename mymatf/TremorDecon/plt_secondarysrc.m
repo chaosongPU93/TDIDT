@@ -53,6 +53,7 @@ for ista = 1: nsta
   ylim(ax,[0 4.5]);
   %       xlim(ax,[0 lsig]/sps);
   xlim(ax,xzoom);
+  xticks(ax,xzoom(1): 2: xzoom(2));
   longticks(ax,6);
   noticks(ax,2);
   if ista <3

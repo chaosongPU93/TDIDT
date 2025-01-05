@@ -47,7 +47,7 @@ xran = [-4 4];
 yran = [-4 4];
 msize = 40;
 if ~isempty(imp)
-  wt = median(imp(:,[2 4 6]),2);
+  wt = mean(imp(:,[2 4 6]),2);
   wtmax = prctile(wt,95); %use percentile in case
   refscl = wt./wtmax;
   refscl(refscl>=1) = 1;  %force the larger amp to be plotted as the same size in case of saturation
@@ -152,9 +152,11 @@ tranbst = load(strcat(rstpath, '/MAPS/tdec.bstran',num2str(ttol),'s.',...
   num2str(ntol),'.pgc002.',cutout(1:4)));
 
 %actually-used in decon, ranges with a little buffer
-tranbstbuf = load(strcat(rstpath, '/MAPS/tdec.bstranbuf',...
-  num2str(ttol),'s.pgc002.',cutout(1:4)));
-tlen = tranbstbuf(:,3)-tranbstbuf(:,2);
+% tranbstbuf = load(strcat(rstpath, '/MAPS/tdec.bstranbuf',...
+%   num2str(ttol),'s.pgc002.',cutout(1:4)));
+% tlen = tranbstbuf(:,3)-tranbstbuf(:,2);
+tranbstbuf181 = [2005255 58985 59235];
+tlen181 = tranbstbuf181(3)-tranbstbuf181(2);
 
 ttol = 1e-3*86400;
 tranmig = load(strcat(rstpath, '/MAPS/migran',num2str(round(ttol)),'s.pgc002'),'w+');
@@ -173,13 +175,13 @@ ind = find(hfall(:,daycol)==tranmig(indmig,1) & ...
   hfall(:,seccol)<=tranmig(indmig,3));
 mig = hfall(ind,:);
 mig(:,seccol) = mig(:,seccol)-tranmig(indmig,2);
-indtmr = find(mig(:,seccol)+tranmig(indmig,2)>=tranbstbuf(181,2) & ...
-  mig(:,seccol)+tranmig(indmig,2)<=tranbstbuf(181,3));
+indtmr = find(mig(:,seccol)+tranmig(indmig,2)>=tranbstbuf181(2) & ...
+  mig(:,seccol)+tranmig(indmig,2)<=tranbstbuf181(3));
 tlenmig = tranmig(indmig,3)-tranmig(indmig,2);
 
 %%%4-s detections inside the burst win 181
 migtmr = sortrows(mig(indtmr,:),seccol);
-timevecbst = migtmr(:,seccol)+tranmig(indmig,2)-tranbstbuf(181,2);
+timevecbst = migtmr(:,seccol)+tranmig(indmig,2)-tranbstbuf181(2);
 %%%force the projection onto prop. direction of LFEs in burst 181
 migtmrdum = migtmr;
 for j = 1: size(migtmr,1)
@@ -189,7 +191,8 @@ for j = 1: size(migtmr,1)
   migtmrdum(j,1) = newx;
   migtmrdum(j,2) = newy;
 end
-% p2=scatter(ax,timevecbst,migtmrdum(:,1),msize*3/4,'rs','linewidth',0.75);
+% keyboard
+p2=scatter(ax,timevecbst,migtmrdum(:,1),msize*3/4,'rs','linewidth',0.75);
 % create fit object
 [fitobjtmr,goftmr,outtmr] = fit(timevecbst,migtmrdum(:,1),fttpfree,'Robust',...
   'Bisquare','StartPoint',[1 1]);
@@ -197,11 +200,11 @@ end
 statstmr = statsofrobustlnfit(fitobjtmr,goftmr,outtmr,timevecbst,migtmrdum(:,1));
 restmr=statstmr.output.residuals;
 fittmr = feval(fitobjtmr,timevecbst);
-% plot(ax,timevecbst,fittmr,'--','linewidth',1.5,'color','r');
-% text(ax,0.99,0.22,sprintf('Speed: %.1f m/s',statstmr.slope*1e3),...
-%   'HorizontalAlignment','right','Units','normalized','FontSize',8,'color','r');
-% text(ax,0.99,0.17,sprintf('Pearson: %.2f',statstmr.pearwt),...
-%   'HorizontalAlignment','right','Units','normalized','FontSize',8,'color','r');
+plot(ax,timevecbst,fittmr,'--','linewidth',1.5,'color','r');
+text(ax,0.99,0.22,sprintf('Speed: %.1f m/s',statstmr.slope*1e3),...
+  'HorizontalAlignment','right','Units','normalized','FontSize',8,'color','r');
+text(ax,0.99,0.17,sprintf('Pearson: %.2f',statstmr.pearwt),...
+  'HorizontalAlignment','right','Units','normalized','FontSize',8,'color','r');
 %%%%%%%%%%%%%%% above, projections of loc of tremors within the same win
 
 %%%distribution of fitting misfit
@@ -222,8 +225,8 @@ fittmr = feval(fitobjtmr,timevecbst);
 % std2=std(restmr(abs(restmr)<3));
 % text(0.5,0.4,sprintf('%.1f',std2),'Units','normalized','Color','r');
 
-lgd=legend(ax,[p1],'LFE','Location','northwest');
-% lgd=legend(ax,[p1,p2],'LFE', '4-s tremor','Location','northwest');
+% lgd=legend(ax,[p1],'LFE','Location','northwest');
+lgd=legend(ax,[p1,p2],'LFE', '4-s tremor','Location','northwest');
 set(lgd.BoxFace, 'ColorType','truecoloralpha', 'ColorData',uint8(255*[1;1;1;.8]));
 if isequal(ttype,'tori')
   xlabel(ax,'Relative origin time (s)');
@@ -245,7 +248,7 @@ set(f.ax(3), 'position', [0.08 0.395 0.42 0.3]);
 ax=f.ax(3); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
 plot(ax,xcut,ycut,'k-','linew',2);
 if ~isempty(imp4th) && ~isempty(imp)
-  wt4th = median(imp4th(:,[2 4 6]),2);
+  wt4th = mean(imp4th(:,[2 4 6]),2);
   % wt4thmax = prctile(wt4th,95); %use percentile in case
   refscl4th = wt4th./wtmax;
   refscl4th(refscl4th>=1) = 1;  %force the larger amp to be plotted as the same size in case of saturation
@@ -412,8 +415,8 @@ else
 end
 day = num2str(a(2));
 yr = num2str(a(3));
-c1.Label.String = sprintf('Time (s) since %.1f s on %s %s %s', ...
-  tranmig(indmig,2),day, mo, yr);
+c1.Label.String = sprintf('Time (s) since %d s on %s %s %s', ...
+  round(tranmig(indmig,2)),day, mo, yr);
 c1.Label.FontSize = 9;
 %     c.Label.String = strcat(num2str(trange(i,1)),' of HF',' (hr)');
 caxis(ax,[0 tlenmig]);
@@ -441,7 +444,7 @@ ylabel(ax,'N (km)');
 % text(f.ax(1),0.5,0.1,num2str(i),'FontSize',12,'unit','normalized');
 text(ax,0.98,0.15,strcat(num2str(size(migdum,1)),{' events'}),'FontSize',8,...
   'unit','normalized','horizontalalignment','right');
-text(ax,0.98,0.10,strcat({'in '},num2str(tlenmig),{' s'}),'FontSize',8,...
+text(ax,0.98,0.10,strcat({'in '},num2str(round(tlenmig)),{' s'}),'FontSize',8,...
   'unit','normalized','horizontalalignment','right');
 rate = sprintf('%.3f',size(migdum,1)/tlenmig);
 text(ax,0.98,0.05,strcat({'rate: '},rate),'FontSize',8,...
@@ -474,12 +477,12 @@ colormap(ax,'viridis');
 c2=colorbar(ax,'SouthOutside');
 pos = ax.Position;
 % c2.Position = [pos(1), 0.11, pos(3), 0.02];
-c2st = pos(1)+(tranbstbuf(181,2)-tranmig(indmig,2))/tlenmig*pos(3);
-c2len = tlen(181)/tlenmig*pos(3);
+c2st = pos(1)+(tranbstbuf181(2)-tranmig(indmig,2))/tlenmig*pos(3);
+c2len = tlen181/tlenmig*pos(3);
 c2.Position = [c2st, c1.Position(2), c2len, c1.Position(4)];
-% caxis(ax,[0 tlen(181)]);
+% caxis(ax,[0 tlen181]);
 % c2.Label.String = sprintf('Time (s) since %.1f s on %s %s %s', ...
-%   tranbstbuf(181,2),day, mo, yr);
+%   tranbstbuf181(2),day, mo, yr);
 caxis(ax,minmax(timevecbst'));
 c2.Ticks = [1050 1250];
 c2.TickLabels = ['1050'; '1250'];
@@ -511,7 +514,7 @@ ax.XAxisLocation = 'top';
 hold(ax,'off');
 
 %an inset on top, map view of tremors that correspond to burst win #181
-timevecbst = migtmr(:,seccol)+tranmig(indmig,2)-tranbstbuf(181,2);
+timevecbst = migtmr(:,seccol)+tranmig(indmig,2)-tranbstbuf181(2);
 ax=f.ax(7); hold(ax,'on'); ax.Box='on'; grid(ax,'on');
 plot(ax,[-100 100],[0 0],'k--');
 plot(ax,[0 0],[-100 100],'k--');
@@ -519,7 +522,7 @@ plot(ax,xcut,ycut,'k-','linew',1.5);
 scatter(ax,migtmr(:,1),migtmr(:,2), 12, timevecbst, 'filled','o',...
   'MarkerEdgeColor',[.5 .5 .5]);
 colormap(ax,'viridis');
-caxis(ax,[0 tlen(181)]);
+caxis(ax,[0 tlen181]);
 [rotx, roty] = complex_rot(0,1,-statstmr.angrmse);
 xarrow = [1-rotx 1+rotx];
 yarrow = [-1-roty -1+roty];

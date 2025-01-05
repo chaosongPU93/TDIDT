@@ -55,6 +55,7 @@ text(ax,0.02,0.2,'Broadband','Units','normalized','HorizontalAlignment','left',.
 text(ax,0.98,0.9,'LFE templates at family 002','Units','normalized',...
   'HorizontalAlignment','right','FontSize',10);
 text(ax,0.02,0.85,'a','FontSize',11,'unit','normalized','EdgeColor','k','Margin',1);
+ylabel(ax,'Amplitude','fontsize',10);
 xlim(ax,[0 lwlet/sps]);  
 % ylim(ax,yran/2);
 ylim(ax,[-0.5 0.5]);
@@ -75,6 +76,7 @@ ylim(ax,[-0.5 0.5]);
 if ~isempty(patchwins)
   winnoi=patchwins(1,:);
   winsig=patchwins(2,:);
+  winsrc=patchwins(3,:);
   %patch a gray shaded part for zoomed-in in other plots
   patnoi = [winnoi(1) ax.YLim(2);
     winnoi(2) ax.YLim(2);
@@ -88,6 +90,12 @@ if ~isempty(patchwins)
     winsig(1) ax.YLim(1);
     winsig(1) ax.YLim(2)];
   patch(ax,patsig(:,1),patsig(:,2),'c','Facealpha',0.15,'edgecolor','none');
+  patsrc = [winsrc(1) ax.YLim(2);
+    winsrc(2) ax.YLim(2);
+    winsrc(2) ax.YLim(1);
+    winsrc(1) ax.YLim(1);
+    winsrc(1) ax.YLim(2)];
+  patch(ax,patsrc(:,1),patsrc(:,2),[0 100 0]/255,'Facealpha',0.2,'edgecolor','none');
   
   staplt=1:nsta;
   envf = envelope(detrend(greenf(:,staplt)));
@@ -98,6 +106,16 @@ if ~isempty(patchwins)
       'normalized','FontSize',9,'color',color(ista,:));
   end  
 end
+%an arrow pointing at the max amp
+[rotx, roty] = complex_rot(0,0.25,180);
+[~,locmaxamp] = max(greenf(:,1));
+locmaxamp = locmaxamp/sps;
+xarrow = [locmaxamp locmaxamp+rotx];
+yarrow = [0.5 0.5+roty];
+a=annotation('arrow','color','k','linestyle','-','linewidth',1,'HeadLength',6,...
+  'HeadWidth',6);
+a.Parent = ax;
+a.Position = [xarrow(1), yarrow(1), xarrow(2)-xarrow(1), yarrow(2)-yarrow(1)];
 legend(ax,p,{'PGC','SSIB','SILB'},'Location','southeast','NumColumns',3,...
   'fontsize',8);
 text(ax,0.02,0.2,'1.8-18 Hz','Units','normalized','HorizontalAlignment','left',...
@@ -171,36 +189,36 @@ ylabel(ax,'Amplitude','FontSize',10);
 xlabel(ax,sprintf('Time (s) since %.1f s on %s %s %s',tstbuf,dy,mo,yr),...
   'FontSize',10);
 longticks(ax,5); 
-% %simply plot the deconvolved sources
-% yloc = (yran(1)+range(yran)*0.05);
-% ind = find(impindepst(:,1)/sps >= xzoom(1) & impindepst(:,1)/sps <= xzoom(2));
-% scatter(ax,impindepst(ind,1)/sps-xzoom(1),yloc*ones(size(impindepst(ind,1))),10,'k');
-%plot deconvolved sources separated by clusters
-[clusibst,nclusibst,tclusibst]=clusters_in_burst(181);
-ind = find(tclusibst(:,1)>=xzoom(1) & tclusibst(:,2)<=xzoom(2));
-clusibstxzoom = clusibst(ind);
-tclusibstxzoom = tclusibst(ind);
-nclus = length(ind);
-for i=1:2:nclus-1
-  yloc = (yran(1)+range(yran)*0.05);
-  impclus=clusibstxzoom{i};
-  scatter(ax,impclus(:,1)/sps-xzoom(1),yloc*ones(size(impclus(:,1))),10,'^','k');
-end
-for i=2:2:nclus-1
-  yloc = (yran(1)+range(yran)*0.05);
-  impclus=clusibstxzoom{i};
-  scatter(ax,impclus(:,1)/sps-xzoom(1),yloc*ones(size(impclus(:,1))),10,'v','k');
-end
-impuniclus = unique(cat(1,clusibstxzoom{:}),'rows');
+%simply plot the deconvolved sources
+yloc = (yran(1)+range(yran)*0.05);
 ind = find(impindepst(:,1)/sps >= xzoom(1) & impindepst(:,1)/sps <= xzoom(2));
-impiso = setdiff(impindepst(ind,:),impuniclus,'rows');
-scatter(ax,impiso(:,1)/sps-xzoom(1),yloc*ones(size(impiso(:,1))),10,'k');
+scatter(ax,impindepst(ind,1)/sps-xzoom(1),yloc*ones(size(impindepst(ind,1))),10,'k');
+% %plot deconvolved sources separated by clusters
+% [clusibst,nclusibst,tclusibst]=clusters_in_burst(181);
+% ind = find(tclusibst(:,1)>=xzoom(1) & tclusibst(:,2)<=xzoom(2));
+% clusibstxzoom = clusibst(ind);
+% tclusibstxzoom = tclusibst(ind);
+% nclus = length(ind);
+% for i=1:2:nclus-1
+%   yloc = (yran(1)+range(yran)*0.05);
+%   impclus=clusibstxzoom{i};
+%   scatter(ax,impclus(:,1)/sps-xzoom(1),yloc*ones(size(impclus(:,1))),10,'^','k');
+% end
+% for i=2:2:nclus-1
+%   yloc = (yran(1)+range(yran)*0.05);
+%   impclus=clusibstxzoom{i};
+%   scatter(ax,impclus(:,1)/sps-xzoom(1),yloc*ones(size(impclus(:,1))),10,'v','k');
+% end
+% impuniclus = unique(cat(1,clusibstxzoom{:}),'rows');
+% ind = find(impindepst(:,1)/sps >= xzoom(1) & impindepst(:,1)/sps <= xzoom(2));
+% impiso = setdiff(impindepst(ind,:),impuniclus,'rows');
+% scatter(ax,impiso(:,1)/sps-xzoom(1),yloc*ones(size(impiso(:,1))),10,'k');
 
 %%%7 events between 27.1 and 28.68 s form a cluster, highlight them
 % indclus = find(impindepst(:,1)/sps >= 27.1 & impindepst(:,1)/sps <= 28.68);
 % scatter(ax,impindepst(indclus,1)/sps-xzoom(1),yloc*ones(size(impindepst(indclus,1))),10,'k','filled');
-impclus=clusibstxzoom{nclus};
-scatter(ax,impclus(:,1)/sps-xzoom(1),yloc*ones(size(impclus(:,1))),10,'k','filled');
+% impclus=clusibstxzoom{nclus};
+% scatter(ax,impclus(:,1)/sps-xzoom(1),yloc*ones(size(impclus(:,1))),10,'k','filled');
 %plot bostock's LFE detections
 yloc = (yran(1)+range(yran)*0.11);
 tbost=tbostplt-tstbuf;
@@ -221,6 +239,7 @@ ylim(ax,[-1 1]);
 ax.YColor=[.6 .6 .6];
 hold(ax,'off');
 
+% keyboard
 if saveflag
   % orient(f.fig,'landscape');
   fname = 'lfetempvstremor.pdf';

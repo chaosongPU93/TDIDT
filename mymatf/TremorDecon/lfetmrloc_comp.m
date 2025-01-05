@@ -1,24 +1,20 @@
-% lfetmrdloc.m
+% lfetmrloc_comp.m
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % We need a comparison between the locations of 4-s tremors and lfes that 
 % fall inside the same 4-s window of tremor. 
 %
-% --Besides the direct display in map view of their locations side by side
-% and look at them with eyes qualitatively like in 
-% 'plt_shortwin_bst181_tmr.m', this script would compute their location
-% difference.
-% --One way is to plot the dloc between each tremor and all concurrent lfes,
-% and regard each as a measurement
-% --Another way is plot the dloc between each tremor and the mean (or median)
-% of the concurrent lfes. Can you also visualize their direction locations on
-% map while aalso being able tell which is which? Maybe choose a certain 
-% window size?
+% --The easiest way is to directly compare the map view of their locations
+%  side by side and look at them with eyes qualitatively like in 
+% 'plt_shortwin_bst181_tmr.m'
+% --More, you can get an average location of lfes in each 4-s tremor window,
+% and then compare the average with the tremor location. Regarding the 
+% average, you can try a arithmetic average or an amplitude-weighted average
 %
 %
 %
 % Chao Song, chaosong@princeton.edu
-% First created date:   2024/05/25
-% Last modified date:   2024/05/25
+% First created date:   2024/12/19
+% Last modified date:   2024/12/19
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Initialization
 %%% SAME if focusing on the same region (i.e. same PERMROTS and POLROTS)
@@ -204,8 +200,8 @@ sps = 160;
 % keyboard
 
 %%
-% tmruse = hfall;
-tmruse = hfbnd;
+tmruse = hfall;
+% tmruse = hfbnd;
 
 %% For each tremor, find lfes in the same 4-s time window
 ktmr=0;
@@ -266,15 +262,13 @@ for iii = 1: length(idxbst)
     ktmr = ktmr+1;
     nlfeintmr(ktmr,1) = length(ind);
     lfeintmr{ktmr,1} = impii(ind, :);
-    lfelocintmr{ktmr,1} = implocii(ind, :);
+    lfelocintmr{ktmr,1} = implocii(ind, :);    
     
     %arithmetic average
     mlfeloc = mean(implocii(ind, 1:2), 1); %mean loc of all lfes
-    mlfelocspl = mean(implocii(ind, 7:8), 1); %likely non-integer
+    mlfelocspl = mean(impii(ind, 7:8), 1); %likely non-integer
     mlfelocintmr(ktmr,:) = mlfeloc;
     mlfelocintmrspl(ktmr,:) = mlfelocspl;
-    dlocm(ktmr,:) = tmrii(jj, 1:2) - mlfeloc;
-    dlocsplm(ktmr,:) = tmrii(jj, 7:8) - mlfelocspl; %this contains non-integer
 
     %weighted average by the amp
     wt = mean(impii(ind,[2 4 6]),2);  %use amp as weight
@@ -282,14 +276,6 @@ for iii = 1: length(idxbst)
     wmlfelocspl = wt_mean(impii(ind, 7:8), wt); %likely non-integer
     wmlfelocintmr(ktmr,:) = wmlfeloc;
     wmlfelocintmrspl(ktmr,:) = wmlfelocspl;
-    dlocwm(ktmr,:) = tmrii(jj, 1:2) - wmlfeloc;
-    dlocsplwm(ktmr,:) = tmrii(jj, 7:8) - wmlfelocspl; %this contains non-integer
-
-    for jjj = 1: length(ind)
-      klfe = klfe+1;
-      dloc(klfe,:) = tmrii(jj, 1:2) - implocii(ind(jjj), 1:2);
-      dlocspl(klfe,:) = tmrii(jj, 7:8) - implocii(ind(jjj), 7:8);
-    end
 
   end
 end
@@ -297,40 +283,52 @@ end
 lfeintmrlump = cat(1, lfeintmr{:}); %unique LFEs
 lfeintmruni = unique(lfeintmrlump,'rows','stable');
 
-keyboard  
+% keyboard  
 
-%%
-nrow = 2;
-ncol = 2;
-widin = 5.5;  % maximum width allowed is 8.5 inches
-htin = 7.3;   % maximum height allowed is 11 inches
-f = initfig(widin,htin,nrow,ncol);
+%% map locations 4-s tremor loc, VS the average loc of LFEs within that 4-s wins
+widin = 8.4;  % maximum width allowed is 8.5 inches
+htin = 4.5;   % maximum height allowed is 11 inches
+nrow = 1;
+ncol = 3;
+f = initfig(widin,htin,nrow,ncol); %initialize fig
 
-% pltxran = [0.06 0.98]; pltyran = [0.05 0.98]; % optimal axis location
-% pltxsep = 0.01; pltysep = 0.03;
-% optaxpos(f,nrow,ncol,pltxran,pltyran,pltxsep,pltysep);
-axpos = [0.07 0.55 0.44 0.4;
-         0.60 0.580 0.39 0.34;
-         0.07 0.07 0.44 0.4;
-         0.60 0.100 0.39 0.34];
-for isub = 1:nrow*ncol
-  set(f.ax(isub), 'position', axpos(isub,:));
-end
-  
+pltxran = [0.05 0.98]; pltyran = [0.08 0.95];
+pltxsep = 0.05; pltysep = 0.05;
+optaxpos(f,nrow,ncol,pltxran,pltyran,pltxsep,pltysep);
+
+% %%%if getting the density at each unique pixel
+% binmethod = 'pixel';
+% marker = 'o';
+% msize = 5;
+% disttype = 'km';
+% contourflag = 0;
+% smoothsigma = [];
+% ncont = [];
+
+%%%if getting the density at each unique grid 
 disttype = 'km';
 msize = 3;
 cstr={'# events / grid'}; 
 marker = 'o';
-scale = 'linear';
 binmethod = 'grid';
-xran=[-4 4]; yran=[-4 4]; %in km
 dx=0.025; dy=0.025; %in km, to distinguish dp near origin, size cannot exceed ~0.053 km 
 smoothsigma=5;
-ncont = 100;
+ncont = [];
 
-%%%cumulative density for N and N-1 w/i 0.375s 
-dplt = dlocm;
+% scale = 'log10';
+scale = 'linear';
+xran=[-4 4]; yran=[-4 4]; %in km
+
+%4-s tremor inside bursts
+dplt = tmr;
 ax=f.ax(1); hold(ax,'on'); ax.Box = 'on'; grid(ax, 'on'); axis(ax, 'equal');
+ax.GridLineStyle = '--';
+ax.XAxisLocation = 'top';
+plot(ax,[-100 100],[0 0],'k--');
+plot(ax,[0 0],[-100 100],'k--');
+plot(ax,xcut,ycut,'k-','linew',2);
+xlim(ax,xran);
+ylim(ax,yran);
 if strcmp(binmethod,'pixel')
   den1d = density_pixel(dplt(:,1),dplt(:,2));
 elseif strcmp(binmethod,'grid')
@@ -345,14 +343,77 @@ if strcmp(scale,'log10')
   dum(:,3) = log10(dum(:,3));
 end
 scatter(ax,dum(:,1),dum(:,2),msize,dum(:,3),marker,'linew',0.2);  %, 'MarkerEdgeColor', 'k'
-
 dum = sortrows(den1d,3);
 dum(dum(:,3)==1, :) = [];
 if strcmp(scale,'log10')
   dum(:,3) = log10(dum(:,3));
 end
 scatter(ax,dum(:,1),dum(:,2),msize,dum(:,3),marker,'filled','MarkerEdgeColor','none');
-text(ax,0.98,0.05,sprintf('%d pairs',size(dplt,1)),'Units','normalized',...
+text(ax,0.98,0.05,sprintf('%d events',size(dplt,1)),'Units','normalized',...
+  'HorizontalAlignment','right','FontSize',9); %,'FontName','Monospaced'
+colormap(ax,'plasma');
+c=colorbar(ax,'SouthOutside');
+
+if strcmp(scale,'log10')
+  c.Label.String = strcat('log_{10}(',cstr{1},')');
+elseif strcmp(scale,'linear')
+  c.Label.String = cstr{1};
+end
+text(ax,0.02,0.95,'a','FontSize',10,'unit','normalized','EdgeColor','k',...
+  'Margin',1,'backgroundcolor','w');
+text(ax,0.99,0.95,'4-s tremor inside bursts','HorizontalAlignment','right','Units',...
+  'normalized','FontSize',10);  
+if strcmp(disttype,'spl')
+  xlabel(ax,'Off12 (samples)');
+  ylabel(ax,'Off13 (samples)');
+  xticks(ax,xran(1):10:xran(2));
+  yticks(ax,yran(1):10:yran(2));
+elseif strcmp(disttype,'km')
+  xlabel(ax,'E (km)');
+  ylabel(ax,'N (km)');
+  xticks(ax,xran(1):1:xran(2));
+  yticks(ax,yran(1):1:yran(2));
+end
+% plot(ax,ax.XLim,ax.YLim,'k--','linew',1);
+% pos = ax.Position;
+% c.Position = [pos(1), pos(2)-0.12, pos(3), 0.02];
+% 0.06 0.54 0.32 0.4;
+% 0.4 0.54 0.32 0.4;
+% c.Position = [0.07 0.55 0.44 0.02];
+longticks(ax,2);
+% nolabels(ax,3);
+
+%Average LFEs in each 4-s win
+dplt = mlfelocintmr;
+ax=f.ax(2); hold(ax,'on'); ax.Box = 'on'; grid(ax, 'on'); axis(ax, 'equal');
+ax.GridLineStyle = '--';
+ax.XAxisLocation = 'top';
+plot(ax,[-100 100],[0 0],'k--');
+plot(ax,[0 0],[-100 100],'k--');
+plot(ax,xcut,ycut,'k-','linew',2);
+xlim(ax,xran);
+ylim(ax,yran);
+if strcmp(binmethod,'pixel')
+  den1d = density_pixel(dplt(:,1),dplt(:,2));
+elseif strcmp(binmethod,'grid')
+  den1d = density_matrix(dplt(:,1),dplt(:,2),xran,yran,dx,dy);
+end
+den1d = den1d(den1d(:,3)>0, :);
+den1d = sortrows(den1d,3);
+
+dum = den1d;
+dum(dum(:,3)>1, :) = [];
+if strcmp(scale,'log10')
+  dum(:,3) = log10(dum(:,3));
+end
+scatter(ax,dum(:,1),dum(:,2),msize,dum(:,3),marker,'linew',0.2);  %, 'MarkerEdgeColor', 'k'
+dum = sortrows(den1d,3);
+dum(dum(:,3)==1, :) = [];
+if strcmp(scale,'log10')
+  dum(:,3) = log10(dum(:,3));
+end
+scatter(ax,dum(:,1),dum(:,2),msize,dum(:,3),marker,'filled','MarkerEdgeColor','none');
+text(ax,0.98,0.05,sprintf('%d events',size(dplt,1)),'Units','normalized',...
   'HorizontalAlignment','right','FontSize',9); %,'FontName','Monospaced'
 colormap(ax,'plasma');
 c=colorbar(ax,'SouthOutside');
@@ -362,35 +423,18 @@ if strcmp(scale,'log10')
 elseif strcmp(scale,'linear')
   c.Label.String = cstr{1};
 end
-%Principal component analysis
-[coeff,score,angle,anglegeo,x0,y0,semia,semib,ellx,elly]=pcaellipse(dplt);
-plot(ax,ellx,elly,'-','linew',1.5,'color','k');
-% plot(ax,x0+semib*[coeff(1,2),-coeff(1,2)],y0+semib*[coeff(2,2),-coeff(2,2)],...
-%   '-','linew',2,'color','b');
-% plot(ax,x0+semia*[coeff(1,1),-coeff(1,1)],y0+semia*[coeff(2,1),-coeff(2,1)],...
-%   ':','linew',2,'color','b');
-% text(ax,0.98,0.16,strcat(num2str(round(anglegeo(2))),'$^{\,\circ}$',{'; '},...
-%   num2str(round(anglegeo(1))),'$^{\,\circ}$'),'FontSize',11,...
-%   'unit','normalized','interpreter','latex','HorizontalAlignment','right');
-text(ax,0.98,0.17,sprintf('%d%c; %d%c',round(anglegeo(2)),char(176),...
-  round(anglegeo(1)),char(176)),'Units','normalized',...
-  'HorizontalAlignment','right','FontSize',9);
-text(ax,0.98,0.11,strcat({'Asp. ratio: '},sprintf('%.2f',semia/semib)),'Units',...
-  'normalized','HorizontalAlignment','right','FontSize',9);
-text(ax,0.02,0.95,'a','FontSize',10,'unit','normalized','EdgeColor','k',...
+text(ax,0.02,0.95,'b','FontSize',10,'unit','normalized','EdgeColor','k',...
   'Margin',1,'backgroundcolor','w');
-ax.GridLineStyle = '--';
-ax.XAxisLocation = 'top';
-xlim(ax,xran);
-ylim(ax,yran);
+text(ax,0.99,0.95,'Averaged of LFEs in each 4-s win','HorizontalAlignment','right','Units',...
+  'normalized','FontSize',10);  
 if strcmp(disttype,'spl')
-  xlabel(ax,'Diff off12 (samples)');
-  ylabel(ax,'Diff off13 (samples)');
+  xlabel(ax,'Off12 (samples)');
+  ylabel(ax,'Off13 (samples)');
   xticks(ax,xran(1):10:xran(2));
   yticks(ax,yran(1):10:yran(2));
 elseif strcmp(disttype,'km')
-  xlabel(ax,'Location difference E (km)');
-  ylabel(ax,'Location difference N (km)');
+  xlabel(ax,'E (km)');
+  ylabel(ax,'N (km)');
   xticks(ax,xran(1):1:xran(2));
   yticks(ax,yran(1):1:yran(2));
 end
@@ -399,89 +443,43 @@ end
 % c.Position = [pos(1), pos(2)-0.12, pos(3), 0.02];
 % 0.06 0.54 0.32 0.4;
 % 0.4 0.54 0.32 0.4;
-c.Position = [0.07 0.55 0.44 0.02];
+% c.Position = [0.07 0.55 0.44 0.02];
 longticks(ax,2);
 % nolabels(ax,3);
 
-if strcmp(disttype,'spl')
-  [~,xgrid,ygrid,zgrid] = ...
-    zeropadmat2d(den1d,min(den1d(:,1)):1:max(den1d(:,1)),...
-    min(den1d(:,2)):1:max(den1d(:,2)));
-elseif strcmp(disttype,'km')
-  [~,xgrid,ygrid,zgrid] = ...
-    zeropadmat2d(den1d,floor(min(den1d(:,1))):dx:ceil(max(den1d(:,1))),...
-    floor(min(den1d(:,2))):dy:ceil(max(den1d(:,2))));
-end
-if ~isempty(smoothsigma)
-  zgridgf = imgaussfilt(zgrid,smoothsigma);  %smooth it a bit
-else
-  zgridgf = zgrid;
-end
-if strcmp(scale,'log10')
-  zgridgf = log10(zgridgf);
-end
 
-[conmat,conobj] = contour(ax,xgrid,ygrid,zgridgf,ncont,'-','linew',1);
-delete(conobj);
-if ~isempty(conmat)
-  contable = getContourLineCoordinates(conmat);
-  conmat=table2array(contable);
-end
-%a line cross (0,0) in the projection direction
-x = reshape(xran(1):0.001:xran(2), [], 1);
-yopt = linefcn(x,tand(angle(2)),0);
-plot(ax,x,yopt,'-','linew',2,'color','b');
-%a line cross (0,0) in the orthogonal direction
-yort = linefcn(x,tand(angle(1)),0);
-plot(ax,x,yort,':','linew',2,'color','b');
-hold(ax,'off');
-
-%interpolation to obtain the intersection between PCA directions and contours
-F = scatteredInterpolant(conmat(:,3),conmat(:,4),conmat(:,1),'linear','none');
-normalizer=length(dloc);
-ax=f.ax(2); hold(ax,'on'); ax.Box = 'on'; grid(ax, 'on');
-[ax,muopt,sigmaopt,mdistprojopt,~,countn1]=plt_dloccrssect(ax,F,x,yopt,anglegeo(2),...
-  ['-';'-'],[.5 .5 .5; 0 0 1],xran,'both',normalizer);
-[ax,muort,sigmaort,mdistprojort,~,countn1r]=plt_dloccrssect(ax,F,x,yort,anglegeo(1),...
-  [':';':'],[.5 .5 .5; 0 0 1],xran,'both',normalizer);
-text(ax,0.01,0.65,sprintf('SE \\mu=%.3f;\nSE \\sigma=%.3f;\nmed(|x|)=%.3f',...
-  muopt,sigmaopt,mdistprojopt),'Units','normalized',...
-  'HorizontalAlignment','left','FontSize',9,'color','b');
-text(ax,0.61,0.65,sprintf('NE \\mu=%.3f;\nNE \\sigma=%.3f;\nmed(|x|)=%.3f',...
-  muort,sigmaort,mdistprojort),'Units','normalized',...
-  'HorizontalAlignment','left','FontSize',9,'color','b');
-text(ax,0.02,0.05,'b','FontSize',10,'unit','normalized','EdgeColor','k',...
-  'Margin',1,'backgroundcolor','w');
-ylim(ax,[0 1.1e-3]);
-% ylabel(ax,'Probability');
-% keyboard
-
-%%%cumulative density for each to all later ones in 25-s windows.
-dplt = dlocwm;
+%Amp-averaged LFEs in each 4-s win
+dplt = wmlfelocintmr;
 ax=f.ax(3); hold(ax,'on'); ax.Box = 'on'; grid(ax, 'on'); axis(ax, 'equal');
+ax.GridLineStyle = '--';
+ax.XAxisLocation = 'top';
+plot(ax,[-100 100],[0 0],'k--');
+plot(ax,[0 0],[-100 100],'k--');
+plot(ax,xcut,ycut,'k-','linew',2);
+xlim(ax,xran);
+ylim(ax,yran);
 if strcmp(binmethod,'pixel')
-  den1dm = density_pixel(dplt(:,1),dplt(:,2));
+  den1d = density_pixel(dplt(:,1),dplt(:,2));
 elseif strcmp(binmethod,'grid')
-  den1dm = density_matrix(dplt(:,1),dplt(:,2),xran,yran,dx,dy);
+  den1d = density_matrix(dplt(:,1),dplt(:,2),xran,yran,dx,dy);
 end
-den1dm = den1dm(den1dm(:,3)>0, :);
-den1dm = sortrows(den1dm,3);
+den1d = den1d(den1d(:,3)>0, :);
+den1d = sortrows(den1d,3);
 
-dum = den1dm;
+dum = den1d;
 dum(dum(:,3)>1, :) = [];
 if strcmp(scale,'log10')
   dum(:,3) = log10(dum(:,3));
 end
 scatter(ax,dum(:,1),dum(:,2),msize,dum(:,3),marker,'linew',0.2);  %, 'MarkerEdgeColor', 'k'
-
-dum = sortrows(den1dm,3);
+dum = sortrows(den1d,3);
 dum(dum(:,3)==1, :) = [];
 if strcmp(scale,'log10')
   dum(:,3) = log10(dum(:,3));
 end
 scatter(ax,dum(:,1),dum(:,2),msize,dum(:,3),marker,'filled','MarkerEdgeColor','none');
-text(ax,0.98,0.05,sprintf('%d pairs',size(dplt,1)),'Units','normalized',...
-  'HorizontalAlignment','right','FontSize',9);
+text(ax,0.98,0.05,sprintf('%d events',size(dplt,1)),'Units','normalized',...
+  'HorizontalAlignment','right','FontSize',9); %,'FontName','Monospaced'
 colormap(ax,'plasma');
 c=colorbar(ax,'SouthOutside');
 ax.CLim(2) = prctile(dum(:,3),99);
@@ -490,159 +488,78 @@ if strcmp(scale,'log10')
 elseif strcmp(scale,'linear')
   c.Label.String = cstr{1};
 end
-%Principal component analysis
-[coeff,score,anglem,anglegeom,x0,y0,semia,semib,ellx,elly]=pcaellipse(dplt);
-plot(ax,ellx,elly,'-','linew',1.5,'color','k');
-% plot(ax,x0+semib*[coeff(1,2),-coeff(1,2)],y0+semib*[coeff(2,2),-coeff(2,2)],...
-%   '-','linew',2,'color','r');
-% plot(ax,x0+semia*[coeff(1,1),-coeff(1,1)],y0+semia*[coeff(2,1),-coeff(2,1)],...
-%   ':','linew',2,'color','r');
-% text(ax,0.98,0.16,strcat(num2str(round(anglegeom(2))),'$^{\,\circ}$',{'; '},...
-%   num2str(round(anglegeom(1))),'$^{\,\circ}$'),'FontSize',11,...
-%   'unit','normalized','interpreter','latex','HorizontalAlignment','right');
-text(ax,0.98,0.17,sprintf('%d%c; %d%c',round(anglegeom(2)),char(176),...
-  round(anglegeom(1)),char(176)),'Units','normalized',...
-  'HorizontalAlignment','right','FontSize',9);
-text(ax,0.98,0.11,strcat({'Asp. ratio: '},sprintf('%.2f',semia/semib)),'Units',...
-  'normalized','HorizontalAlignment','right','FontSize',9);
 text(ax,0.02,0.95,'c','FontSize',10,'unit','normalized','EdgeColor','k',...
   'Margin',1,'backgroundcolor','w');
-ax.GridLineStyle = '--';
-ax.XAxisLocation = 'top';
-xlim(ax,xran);
-ylim(ax,yran);
+text(ax,0.99,0.95,'Amp-weighted average of LFEs in each 4-s win','HorizontalAlignment','right','Units',...
+  'normalized','FontSize',10);  
 if strcmp(disttype,'spl')
-%   xlabel(ax,'Diff off12 (samples)');
-%   ylabel(ax,'Diff off13 (samples)');
+  xlabel(ax,'Off12 (samples)');
+  ylabel(ax,'Off13 (samples)');
   xticks(ax,xran(1):10:xran(2));
   yticks(ax,yran(1):10:yran(2));
 elseif strcmp(disttype,'km')
-  xlabel(ax,'Location difference E (km)');
-  ylabel(ax,'Location difference N (km)');
+  xlabel(ax,'E (km)');
+  ylabel(ax,'N (km)');
   xticks(ax,xran(1):1:xran(2));
   yticks(ax,yran(1):1:yran(2));
 end
 % plot(ax,ax.XLim,ax.YLim,'k--','linew',1);
 % pos = ax.Position;
 % c.Position = [pos(1), pos(2)-0.12, pos(3), 0.02];
-% 0.08 0.55 0.4 0.4
-c.Position = [0.07 0.07 0.44 0.02];
+% 0.06 0.54 0.32 0.4;
+% 0.4 0.54 0.32 0.4;
+% c.Position = [0.07 0.55 0.44 0.02];
 longticks(ax,2);
 % nolabels(ax,3);
 
-if strcmp(disttype,'spl')
-  [~,xgrid,ygrid,zgrid] = ...
-    zeropadmat2d(den1dm,min(den1dm(:,1)):1:max(den1dm(:,1)),...
-    min(den1dm(:,2)):1:max(den1dm(:,2)));
-elseif strcmp(disttype,'km')
-  [~,xgrid,ygrid,zgrid] = ...
-    zeropadmat2d(den1dm,floor(min(den1dm(:,1))):dx:ceil(max(den1dm(:,1))),...
-    floor(min(den1dm(:,2))):dy:ceil(max(den1dm(:,2))));
-end
-if ~isempty(smoothsigma)
-  zgridgf = imgaussfilt(zgrid,smoothsigma);  %smooth it a bit
-else
-  zgridgf = zgrid;
-end
-if strcmp(scale,'log10')
-  zgridgf = log10(zgridgf);
-end
-
-[conmatm,conobj] = contour(ax,xgrid,ygrid,zgridgf,ncont,'-','linew',1);
-delete(conobj);
-if ~isempty(conmatm)
-  contable = getContourLineCoordinates(conmatm);
-  conmatm=table2array(contable);
-end
-%a line cross (0,0) in the projection direction
-x = reshape(xran(1):0.001:xran(2), [], 1);
-yoptm = linefcn(x,tand(anglem(2)),0);
-plot(ax,x,yoptm,'-','linew',2,'color','r');
-%a line cross (0,0) in the orthogonal direction
-yortm = linefcn(x,tand(anglem(1)),0);
-plot(ax,x,yortm,':','linew',2,'color','r');
-hold(ax,'off');
-
-%interpolation to obtain the intersection between PCA directions and contours
-Fm = scatteredInterpolant(conmatm(:,3),conmatm(:,4),conmatm(:,1),'linear','none');
-normalizerm=length(dlocm);
-ax=f.ax(4); hold(ax,'on'); ax.Box = 'on'; grid(ax, 'on');
-[ax,muopt,sigmaopt,mdistprojopt,~,countn2]=plt_dloccrssect(ax,Fm,x,yoptm,...
-  anglegeom(2),['-';'-'],[.5 .5 .5; 1 0 0],xran,'both',normalizerm);
-[ax,muort,sigmaort,mdistprojort,~,countn2r]=plt_dloccrssect(ax,Fm,x,yortm,...
-  anglegeom(1),[':';':'],[.5 .5 .5; 1 0 0],xran,'both',normalizerm);
-text(ax,0.01,0.65,sprintf('SE \\mu=%.3f;\nSE \\sigma=%.3f;\nmed(|x|)=%.3f',...
-  muopt,sigmaopt,mdistprojopt),'Units','normalized',...
-  'HorizontalAlignment','left','FontSize',9,'color','r');
-text(ax,0.61,0.65,sprintf('NE \\mu=%.3f;\nNE \\sigma=%.3f;\nmed(|x|)=%.3f',...
-  muort,sigmaort,mdistprojort),'Units','normalized',...
-  'HorizontalAlignment','left','FontSize',9,'color','r');
-text(ax,0.02,0.05,'d','FontSize',10,'unit','normalized','EdgeColor','k',...
-  'Margin',1,'backgroundcolor','w');
-ylim(ax,[0 1.1e-3]);
-% ylabel(ax,'Probability');
-
-lgd1 = legend(f.ax(2),'SE data','SE gsfit','NE data','NE gsfit',...
-  'Location','north','fontsize',7,'NumColumns',2,'orientation','horizontal');
-%make background transparent
-set(lgd1.BoxFace, 'ColorType','truecoloralpha', 'ColorData',uint8(255*[1;1;1;.8]));
-
-lgd2 = legend(f.ax(4),'SE data','SE gsfit','NE data','NE gsfit',...
-  'Location','north','fontsize',7,'NumColumns',2,'orientation','horizontal');
-%make background transparent
-set(lgd2.BoxFace, 'ColorType','truecoloralpha', 'ColorData',uint8(255*[1;1;1;.8]));
-
-
-fname = strcat('lfetmrdloc',fnsuffix,'.pdf');
+fname = strcat('lfetmrloccomp.pdf');
 print(f.fig,'-dpdf',...
   strcat('/home/data2/chaosong/CurrentResearch/Song_Rubin_2024/figures/',fname));
-% print(f.fig,'-dpdf',...
-%   strcat('/home/chaosong/Pictures/',fname));
 
+% ax=f.ax(1); hold(ax,'on'); ax.Box = 'on'; grid(ax, 'on'); axis(ax, 'equal');
+% ax.GridLineStyle = '--';
+% ax.XAxisLocation = 'top';
+% plot(ax,[-100 100],[0 0],'k--');
+% plot(ax,[0 0],[-100 100],'k--');
+% plot(ax,xcut,ycut,'k-','linew',2);
+% data = tmrii(:,7:8);
+% den1d = density_pixel(data(:,1),data(:,2));
+% den1d = sortrows(den1d,3);
+% tmploc = off2space002(den1d(:,1:2),sps,ftrans,0); % 8 cols, format: dx,dy,lon,lat,dep,ttrvl,off12,off13
+% den1d(:,1:2) = tmploc(:,1:2);
+% [ax,~,c]= plt_den1d_axis(ax,den1d,[],...
+%   xran,yran,[],[],binmethod,marker,msize,disttype,smoothsigma,contourflag,ncont,scale);
+% c.Position(2) = c.Position(2)-0.03;
+% % caxis(ax,[0 1.7]);
+% text(ax,0.99,0.95,'4-s tremor inside bursts','HorizontalAlignment','right','Units',...
+%   'normalized','FontSize',10);  
+% text(ax,0.02,0.05,'a','FontSize',10,'unit','normalized','EdgeColor','k',...
+%   'Margin',1,'backgroundcolor','w');
+% xticks(ax,xran(1):1:xran(2));
+% yticks(ax,yran(1):1:yran(2));
+% hold(ax,'off');
 
-%% analyze the location difference between concurrent tmrs and lfes
-% smoothsigma=1;  %smoothing sigma for Gaussian filtering 
-% ncont=100;  %num of contour lines
-% dx=1; dy=1;
-% cstr={'# events / pixel'}; xran=[-40 40]; yran=[-40 40];
-% [f,den1d_spl,conmat]=plt_srcdloc(dlocsplm,'spl',3,cstr,...
-%   'o','linear','pixel',xran,yran,dx,dy,smoothsigma,ncont);
-% fname = strcat('lfetmrdlocsplm',fnsuffix,fnsuffix2,'.pdf');
-% print(f.fig,'-dpdf',...
-%   strcat('/home/chaosong/Pictures/',fname));
-% keyboard
- 
-% smoothsigma=1;  %smoothing sigma for Gaussian filtering 
-% ncont=100;  %num of contour lines
-% dx=1; dy=1;
-% cstr={'# events / pixel'}; xran=[-40 40]; yran=[-40 40];
-% [f,den1d_spl,conmat]=plt_srcdloc(dlocspl,'spl',3,cstr,...
-%   'o','linear','pixel',xran,yran,dx,dy,smoothsigma,ncont);
-% fname = strcat('lfetmrdlocspl',fnsuffix,'.pdf');
-% print(f.fig,'-dpdf',...
-%   strcat('/home/chaosong/Pictures/',fname));
-% keyboard
-
-% smoothsigma=5;
-% ncont=100;  %num of contour lines
-% dx=0.025; dy=0.025; % to distinguish dp near origin, size cannot exceed ~0.053 km 
-% cstr={'# events / grid'}; xran=[-4 4]; yran=[-4 4];
-% [f,den1dm,conmat]=plt_srcdloc(dlocm,'km',3,cstr,...
-%   'o','linear','grid',xran,yran,dx,dy,smoothsigma,ncont);
-% fname = strcat('lfetmrdlocm',fnsuffix,'.pdf');
-% print(f.fig,'-dpdf',...
-%   strcat('/home/chaosong/Pictures/',fname));
-% keyboard
-
-% smoothsigma=5;
-% ncont=100;  %num of contour lines
-% dx=0.025; dy=0.025; % to distinguish dp near origin, size cannot exceed ~0.053 km 
-% cstr={'# events / grid'}; xran=[-4 4]; yran=[-4 4];
-% [f,den1dm,conmat]=plt_srcdloc(dloc,'km',3,cstr,...
-%   'o','linear','grid',xran,yran,dx,dy,smoothsigma,ncont);
-% fname = strcat('lfetmrdloc',fnsuffix,'.pdf');
-% print(f.fig,'-dpdf',...
-%   strcat('/home/chaosong/Pictures/',fname));
-% keyboard
+% ax=f.ax(2); hold(ax,'on'); ax.Box = 'on'; grid(ax, 'on'); axis(ax, 'equal');
+% ax.GridLineStyle = '--';
+% ax.XAxisLocation = 'top';
+% plot(ax,[-100 100],[0 0],'k--');
+% plot(ax,[0 0],[-100 100],'k--');
+% plot(ax,xcut,ycut,'k-','linew',2);
+% data = tmrii(:,7:8);
+% den1d = density_pixel(data(:,1),data(:,2));
+% den1d = sortrows(den1d,3);
+% tmploc = off2space002(den1d(:,1:2),sps,ftrans,0); % 8 cols, format: dx,dy,lon,lat,dep,ttrvl,off12,off13
+% den1d(:,1:2) = tmploc(:,1:2);
+% [ax,~,c]= plt_den1d_axis(ax,den1d,[],...
+%   xran,yran,[],[],binmethod,marker,msize,disttype,smoothsigma,contourflag,ncont,scale);
+% c.Position(2) = c.Position(2)-0.03;
+% % caxis(ax,[0 1.7]);
+% text(ax,0.99,0.95,'4-s tremor inside bursts','HorizontalAlignment','right','Units',...
+%   'normalized','FontSize',10);  
+% text(ax,0.02,0.05,'a','FontSize',10,'unit','normalized','EdgeColor','k',...
+%   'Margin',1,'backgroundcolor','w');
+% xticks(ax,xran(1):1:xran(2));
+% yticks(ax,yran(1):1:yran(2));
+% hold(ax,'off');
 
 

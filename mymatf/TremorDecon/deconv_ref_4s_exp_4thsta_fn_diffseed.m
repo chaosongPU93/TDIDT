@@ -1,32 +1,18 @@
-% deconv_ref_4s_exp_4thsta_fn.m
-function rststruct = deconv_ref_4s_exp_4thsta_fn(idxbst,normflag,noiseflag,pltflag,rccmwsec,alignflag)
+% deconv_ref_4s_exp_4thsta_fn_diffseed.m
+function rststruct = deconv_ref_4s_exp_4thsta_fn_diffseed(idxbst,normflag,noiseflag,rccmwsec,seedscl,sclmethod)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Based on 'deconvbursts002_ref_4s_exp' and 'deconv_ref_4s_exp_rand_fn', but
-% this version tries to involve the 4th station to check the deconvolution
-% result from the trio stations
-%
-% --The key of making this work is to obtain the observational/empirical/
-%   theoretical time offset between the 4th sta and 1st sta (or equivalently
-%   the aligned 2nd or 3rd stas), which has already been estimated from the 
-%   script 'empioffset4thsta002', for each deconvolved source location.
-% --As long as you know the time offset off14 for each source, you would know
-%   the arrival time at sta 4 based on the arrival time at sta 1 for all
-%   sources.
-% --Convolving the arrival times of sources at 4th sta and its own templates
-%   at the optimal component results in the prediction at 4th sta. The residual
-%   of subtracting pred from the opt data, if this is smaller than the data,
-%   it means the deconvolved sources are explaining the opt data at 4th sta
-%   as well.
-% --2022/11/21, add the 'noise' option similar to that in 'deconv_ref_4s_exp_rand_fn'
-% --2022/11/30, to resolve the amp issue at KLNB wrt. PGC, I modified 'fact' in 
-%   'rd_daily_bpdata', I had to recompute templates in 'lfetemp002_160sps.m',
-%   and then all results were recalculated!
+% This function is bascailly the same as "deconv_ref_4s_exp_4thsta_fn.m", the
+% only difference is the seed to generate random numbers to make synthetic
+% noise.
+% Orginally, the seed number is the same as the burst number, and stays 
+% invariant. This function can accept different scaling or addition to the 
+% default seed numbers, to vary the syn noise, and make new decon catalogs
 %
 %
 %
 % Chao Song, chaosong@princeton.edu
-% First created date:   2022/10/10
-% Last modified date:   2022/11/30
+% First created date:   2024/11/05
+% Last modified date:   2024/11/05
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 format short e   % Set the format to 5-digit floating point
 % clear
@@ -39,7 +25,8 @@ defval('normflag',0); %whether to normalize templates
 defval('noiseflag',0);  %whether to use synthetic noises
 defval('pltflag',0);  %whether to plot figs for each burst
 defval('rccmwsec',0.5); %moving win len in sec for computing RCC
-defval('alignflag',1); %align the short wins between trio stations 
+defval('seedscl',0); %add 0 to the current seed number of each burst
+defval('sclmethod','add'); %scaling method of varying seed number is addition
 
 rccflag = 1; %1 means RCC weighting is used
 whichrcc = 0; %if rcc weighting, which pair is used, 0 is best 2 pairs; 1 is 12; 2 is 13; 3 is 23
@@ -882,11 +869,6 @@ for iii = 1: length(idxbst)
         for ista = 4: nsta
           [ccaliw(iwin,ista-2),off1iw(iwin,ista)] = xcorrmax(optcc(:,1),optcc(:,ista), 1.5*msftadd, 'coeff');
         end
-
-        %if DO NOT align over short wins, set to 0
-        if ~alignflag
-          off1iw(iwin,1:nsta) = zeros(1,nsta);
-        end
         
         %Align records
         optdat = [];  % win +/-3 s, segment of interest,first 1s will be tapered 
@@ -1050,10 +1032,7 @@ for iii = 1: length(idxbst)
       
       %for real data, USE the best whole-win alignment before decon
       off1i(k,1:3) = off1ic(k,1:3); 
-      %if DO NOT align over short wins, set to 0
-      if ~alignflag
-        off1i(k,1:3) = [0 0 0];
-      end      
+%       off1i(k,1:3) = [0 0 0];
       
       %Choice to make upon the actual-used alignment at 4th stations
       %for data case, DO align!
@@ -1166,7 +1145,14 @@ for iii = 1: length(idxbst)
 
         %uniform, random phase with the same span [-pi,pi];
         mpharan = minmax(pha');
-        seed = idxbst(iii);
+        %%% decide 'seed' num to generate random numbers
+        %seed = idxbst(iii); %default is the burst num
+        if strcmp(sclmethod,'add')
+          seed = idxbst(iii)+seedscl;
+        elseif strcmp(sclmethod,'multi')  
+          seed = idxbst(iii)*seedscl;
+        end
+        
         rng(seed);
         pharand = (rand(nfft,nsta)-0.5)*2*pi;  %make the phases span from -pi to pi
                 
@@ -1234,12 +1220,6 @@ for iii = 1: length(idxbst)
           for ista = 4: nsta
             [ccaliw(iwin,ista-2),off1iw(iwin,ista)] = xcorrmax(optcc(:,1), optcc(:,ista), 1.5*msftadd, 'coeff');
           end
-
-          %if DO NOT align over short wins, set to 0
-          if ~alignflag
-            off1iw(iwin,1:nsta) = zeros(1,nsta);
-          end
-
           %Align records
           optdat = [];  % win +/-3 s, segment of interest,first 1s will be tapered 
           ortdat = [];
@@ -1381,7 +1361,7 @@ for iii = 1: length(idxbst)
         
         %for synthetic noise case, do NOT align traces
         off1i(k,1:3) = [0 0 0];  % technically unnecessary given it has been predefined 
-
+        
         %for synthetic noise case, do NOT align traces
         %Choice to make upon the actual-used alignment at 4th stations
 %         align14flag = 0;
@@ -1502,7 +1482,7 @@ for iii = 1: length(idxbst)
           hold(ax,'off');
         end
         
-        nit(1,ista)
+        % nit(1,ista)
         
       end
 
@@ -2723,40 +2703,39 @@ for iii = 1: length(idxbst)
       fitstatsrem{k} = [];
     end     
     %%
-    if pltflag
-      if noiseflag 
-        f=plt_shortwin_summary_noise(sigsta(:,1:3),impindeporist,torisplst,...
-          implocorist,impindeporist4th,torisplst4th,implocorist4th,...
-          tstbuf,dy,mo,yr,sps,ttype);
-        supertit(f.ax(1),sprintf('Burst #%s',num2zeropadstr(idxbst(iii), 3)),10);
-        % f1name{idxbst(iii),1} = sprintf('shortwinsum_noi_bst%s.pdf',...
-        %   num2zeropadstr(idxbst(iii), 3));
-        f1name{idxbst(iii),1} = sprintf('shortwinsum_no23_noi_bst%s.pdf',...
-          num2zeropadstr(idxbst(iii), 3));
-        print(f.fig,'-dpdf',fullfile(rstpath,'/FIGS',f1name{idxbst(iii),1}));
-      else
-        f=plt_shortwin_summary(sigsta(:,1:3),impindeporist,torisplst,implocorist,...
-          locxyproj,stats,impindeporist4th,torisplst4th,implocorist4th,...
-          locxyproj4th,stats4th,tstbuf,dy,mo,yr,sps,ttype);
-        supertit(f.ax(1),sprintf('Burst #%s',num2zeropadstr(idxbst(iii), 3)),10);
-        % f1name{idxbst(iii),1} = sprintf('shortwinsum_bst%s.pdf',...
-        %   num2zeropadstr(idxbst(iii), 3));
-        f1name{idxbst(iii),1} = sprintf('shortwinsum_no23_bst%s.pdf',...
-          num2zeropadstr(idxbst(iii), 3));
-        print(f.fig,'-dpdf',fullfile(rstpath,'/FIGS',f1name{idxbst(iii),1}));
-      end
-    end
+    % if pltflag
+    %   if noiseflag 
+    %     f=plt_shortwin_summary_noise(sigsta(:,1:3),impindeporist,torisplst,...
+    %       implocorist,impindeporist4th,torisplst4th,implocorist4th,...
+    %       tstbuf,dy,mo,yr,sps,ttype);
+    %     supertit(f.ax(1),sprintf('Burst #%s',num2zeropadstr(idxbst(iii), 3)),10);
+    %     % f1name{idxbst(iii),1} = sprintf('shortwinsum_noi_bst%s.pdf',...
+    %     %   num2zeropadstr(idxbst(iii), 3));
+    %     f1name{idxbst(iii),1} = sprintf('shortwinsum_no23_noi_bst%s.pdf',...
+    %       num2zeropadstr(idxbst(iii), 3));
+    %     print(f.fig,'-dpdf',fullfile(rstpath,'/FIGS',f1name{idxbst(iii),1}));
+    %   else
+    %     f=plt_shortwin_summary(sigsta(:,1:3),impindeporist,torisplst,implocorist,...
+    %       locxyproj,stats,impindeporist4th,torisplst4th,implocorist4th,...
+    %       locxyproj4th,stats4th,tstbuf,dy,mo,yr,sps,ttype);
+    %     supertit(f.ax(1),sprintf('Burst #%s',num2zeropadstr(idxbst(iii), 3)),10);
+    %     % f1name{idxbst(iii),1} = sprintf('shortwinsum_bst%s.pdf',...
+    %     %   num2zeropadstr(idxbst(iii), 3));
+    %     f1name{idxbst(iii),1} = sprintf('shortwinsum_no23_bst%s.pdf',...
+    %       num2zeropadstr(idxbst(iii), 3));
+    %     print(f.fig,'-dpdf',fullfile(rstpath,'/FIGS',f1name{idxbst(iii),1}));
+    %   end
+    % end
 % keyboard
 
 end
 
 % keyboard
-if ~noiseflag && (length(idxbst) == size(trange,1))
-  fid = fopen(strcat(rstpath, '/MAPS/tdec.bstranbuf',...
-    num2str(ttol),'s.pgc002.',cutout(1:4)),'w+');
-  fprintf(fid,'%d %9.2f %9.2f \n',trangenew');
-  fclose(fid);
-end
+
+% fid = fopen(strcat(rstpath, '/MAPS/tdec.bstranbuf',...
+%   num2str(ttol),'s.pgc002.',cutout(1:4)),'w+');
+% fprintf(fid,'%d %9.2f %9.2f \n',trangenew');
+% fclose(fid);
 
 %% Ouput everything in the form of a structure array
 rststruct.srcamprall = srcamprall;
@@ -2942,90 +2921,6 @@ rststruct.ngrp = ngrp;
   rststruct.projspangsl4th = projspangsl4th;
   rststruct.projsppear4th = projsppear4th;
 % end
-
-
-%% merge all figures into a single pdf file
-%%%Only merge figures when ALL bursts have been plotted
-if pltflag && (length(idxbst) == size(trange,1))
-  k=0;
-  for i = 1:length(idxbst)
-    %%%Below seems complicated in case that there are no detections for some bursts
-    if ~isempty(f1name{i})
-      k=k+1;
-      f1namefull{k} = fullfile(rstpath, '/FIGS/',f1name{i});
-    end
-  end
-  if noiseflag
-    % status = system('rm -f /home/data2/chaosong/matlab/allan/data-no-resp/PGCtrio/FIGS/shortwinsum_noi_ALL.pdf');
-    % append_pdfs(fullfile(rstpath, '/FIGS/shortwinsum_noi_ALL.pdf'),f1namefull);
-    % status = system('rm -f /home/data2/chaosong/matlab/allan/data-no-resp/PGCtrio/FIGS/shortwinsum_noi_bst*.pdf');  
-    status = system('rm -f /home/data2/chaosong/matlab/allan/data-no-resp/PGCtrio/FIGS/shortwinsum_no23_noi_ALL.pdf');
-    append_pdfs(fullfile(rstpath, '/FIGS/shortwinsum_no23_noi_ALL.pdf'),f1namefull);
-    status = system('rm -f /home/data2/chaosong/matlab/allan/data-no-resp/PGCtrio/FIGS/shortwinsum_no23_noi_bst*.pdf');  
-  else
-    % status = system('rm -f /home/data2/chaosong/matlab/allan/data-no-resp/PGCtrio/FIGS/shortwinsum_ALL.pdf');
-    % append_pdfs(fullfile(rstpath, '/FIGS/shortwinsum_ALL.pdf'),f1namefull);
-    % status = system('rm -f /home/data2/chaosong/matlab/allan/data-no-resp/PGCtrio/FIGS/shortwinsum_bst*.pdf');
-    status = system('rm -f /home/data2/chaosong/matlab/allan/data-no-resp/PGCtrio/FIGS/shortwinsum_no23_ALL.pdf');
-    append_pdfs(fullfile(rstpath, '/FIGS/shortwinsum_no23_ALL.pdf'),f1namefull);
-    status = system('rm -f /home/data2/chaosong/matlab/allan/data-no-resp/PGCtrio/FIGS/shortwinsum_no23_bst*.pdf');
-  end
-end
-
-%% if 'pltflag' is on, then summary plots for each choice of inputs would be made 
-% if pltflag && ~isempty(impindepst)
-%   %%%the direct deconvolved pos/neg source peak ratio between all station pairs, for each
-%   %%%burst win separately
-%   f1 = initfig(16,5,1,size(msrcampr,2));
-%   plt_deconpk_rat4th(f1,msrcampr,madsrcampr,nsrc,'k');
-% 
-%   %%%combine the direct/scaled deconvolved pos/neg source peak ratio between all station pairs of
-%   %%%all burst wins, and summarize into one histogram
-%   f2 = initfig(16,9,2,size(srcamprall,2));
-%   plt_deconpk_rat_comb4th(f2,srcamprall,impindepstall,'k');
-% 
-%   %%%deviation of source amp ratio from some median vs. RCC
-%   f3 = initfig(15,7,2,size(lgdevsrcamprall,2)); %initialize fig
-%   plt_deconpk_ratdevvsrcc4th(f3,lgdevsrcamprall,rccpairsrcall,rcccatsrcall,'k');
-
-  % %%%diff between predicted arrival and selected peak at 4th sta
-  % f4 = initfig(5,5,1,size(pred4difftrall,2)); %initialize fig
-  % plt_errorof4thtarvlpred(f4,pred4difftrall,offmax,'k');
-
-  % %%%preserved sources' amp ratio between 4th and 1st stas
-  % f5 = initfig(12,5,1,3); %initialize fig
-  % plt_deconpk_rat14(f5,impindep4thall,srcamprall,'k');
-
-%   %%%histogram of RCC itslef
-%   figure
-%   for i = 1:3
-%     subplot(1,4,i)
-%     hold on; box on; grid on; ax=gca;
-%     histogram(rccpairsrcall(:,i));
-%     plot([median(rccpairsrcall(:,i)) median(rccpairsrcall(:,i))],ax.YLim,'r--','linew',1);  
-%     text(0.05,0.9,sprintf('med=%.2f',median(rccpairsrcall(:,i))),...
-%       'Units','normalized','HorizontalAlignment','left');
-%     if i ==1
-%       ylabel('# of source');
-%       xlabel('RCC_{12}');
-%     elseif i ==2
-%       xlabel('RCC_{13}');
-%     else
-%       xlabel('RCC_{23}');
-%     end
-%   end
-%   subplot(1,4,4)
-%   hold on; box on; grid on; ax=gca;
-%   histogram(rcccatsrcall);
-%   plot([median(rcccatsrcall) median(rcccatsrcall)],ax.YLim,'r--','linew',1);
-%   text(0.05,0.9,sprintf('med=%.2f',median(rcccatsrcall)),...
-%     'Units','normalized','HorizontalAlignment','left');
-%   xlabel('Mean RCC of 2 best pairs');
-
-% end
-
-
-% keyboard
 
 
 

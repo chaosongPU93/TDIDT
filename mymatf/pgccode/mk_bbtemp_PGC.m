@@ -1,5 +1,5 @@
-% function [dstack,ccstack,dstackort,ccstackort,dstackvert,ccstackvert] = ...
-%   mk_bbtemp_PGC(fam,CATA,sps,templensec,ccmethod,ccbp,plflag)
+function [dstack,ccstack,dstackort,ccstackort,dstackvert,ccstackvert] = ...
+  mk_bbtemp_PGC(fam,CATA,sps,templensec,ccmethod,ccbp,plflag)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
 % This is the function to generate the broadband LFE family template from Bostock's

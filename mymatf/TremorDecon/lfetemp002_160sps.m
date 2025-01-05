@@ -15,7 +15,15 @@ clear
 clc
 close all
 
-fam = '002';
+% fam = '002';
+% CATA = 'new';
+% sps = 160;
+% templensec = 60;
+% ccmethod = 2; % only using lfes passed the cc thresholds (ccmethod=1); using all lfes (ccmethod=2)  
+% ccbp = [2 8];
+% plflag = 0;
+
+fam = '047';
 CATA = 'new';
 sps = 160;
 templensec = 60;
